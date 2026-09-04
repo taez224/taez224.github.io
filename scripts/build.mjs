@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createMarkdownRenderer } from './markdown.mjs';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, '..');
@@ -18,6 +19,18 @@ async function walk(directory) {
     const absolute = path.join(directory, entry.name);
     if (entry.isDirectory()) files.push(...await walk(absolute));
     else if (entry.isFile() && entry.name.endsWith('.md')) files.push(absolute);
+  }
+  return files;
+}
+
+async function walkAll(directory) {
+  const entries = await fs.readdir(directory, { withFileTypes: true });
+  const files = [];
+  for (const entry of entries) {
+    if (entry.name.startsWith('.')) continue;
+    const absolute = path.join(directory, entry.name);
+    if (entry.isDirectory()) files.push(...await walkAll(absolute));
+    else if (entry.isFile()) files.push(absolute);
   }
   return files;
 }
@@ -130,18 +143,21 @@ function publicUrl(value, fallback) {
 function blogRecord(relativePath, note) {
   const fileTitle = path.posix.basename(relativePath, '.md');
   const title = String(note.meta.title ?? firstHeading(note.body, fileTitle));
-  const noteUrl = githubUrl(relativePath);
+  const sourceUrl = publicUrl(note.meta.source, '');
   return {
     path: relativePath,
     fileTitle,
     title,
-    url: publicUrl(note.meta.source, noteUrl),
-    noteUrl,
+    displayTitle: displayTitleFor(relativePath, title),
+    url: siteUrl(relativePath),
+    sourceUrl,
+    sourceNoteUrl: githubUrl(relativePath),
     publication: String(note.meta.publication ?? ''),
     published: String(note.meta.published ?? ''),
     series: String(note.meta.series ?? ''),
     seriesOrder: numberValue(note.meta.series_order),
     summary: note.meta.type === 'series' ? seriesSummaryFor(note) : summaryFor(note),
+    summaryIsExplicit: Boolean(String(note.meta.summary ?? '').trim()),
     status: String(note.meta.status ?? ''),
     tags: Array.isArray(note.meta.tags) ? note.meta.tags : [],
     created: firstDate(note.meta)
@@ -169,6 +185,11 @@ function isIncluded(relativePath, meta) {
 function githubUrl(relativePath) {
   const encodedPath = relativePath.split('/').map(encodeURIComponent).join('/');
   return `${config.repoUrl}/blob/${config.branch}/${encodedPath}`;
+}
+
+function siteUrl(relativePath, fragment = '') {
+  const query = `?note=${encodeURIComponent(relativePath)}`;
+  return fragment ? `${query}#${encodeURIComponent(fragment)}` : query;
 }
 
 function stripLinkTarget(rawTarget) {
@@ -253,7 +274,8 @@ const blogSeries = blogSeriesNames.map((seriesName) => {
     .sort((left, right) => left.seriesOrder - right.seriesOrder || left.published.localeCompare(right.published));
   return {
     title: seriesName,
-    noteUrl: hub?.noteUrl ?? '',
+    noteUrl: hub?.url ?? '',
+    sourceNoteUrl: hub?.sourceNoteUrl ?? '',
     summary: hub?.summary ?? '',
     status: hub?.status ?? '',
     started: hub?.started ?? '',
@@ -292,9 +314,11 @@ const developmentRecords = [...candidateFiles]
     path: relativePath,
     fileTitle: path.posix.basename(relativePath, '.md'),
     title: firstHeading(note.body, path.posix.basename(relativePath, '.md')),
-    url: githubUrl(relativePath),
+    url: siteUrl(relativePath),
+    sourceUrl: githubUrl(relativePath),
     category: relativePath.includes('/Troubleshooting/') ? 'Troubleshooting' : 'Tools',
     summary: summaryFor(note),
+    summaryIsExplicit: Boolean(String(note.meta.summary ?? '').trim()),
     tags: Array.isArray(note.meta.tags) ? note.meta.tags : [],
     date: firstDate(note.meta)
   }))
@@ -320,6 +344,7 @@ for (const [relativePath, note] of graphCandidateFiles) {
 }
 
 const books = [];
+const bookSources = new Map();
 const booksDirectory = path.join(vaultRoot, '30_Resources/References/Books');
 try {
   for (const absoluteFile of await walk(booksDirectory)) {
@@ -327,6 +352,7 @@ try {
     if (path.posix.basename(relativePath).startsWith('_')) continue;
     const source = await fs.readFile(absoluteFile, 'utf8');
     const parsed = parseFrontmatter(source);
+    bookSources.set(relativePath, parsed);
     const rate = numberValue(parsed.meta.my_rate);
     const author = Array.isArray(parsed.meta.author)
       ? parsed.meta.author.join(', ')
@@ -335,7 +361,8 @@ try {
       path: relativePath,
       fileTitle: path.posix.basename(relativePath, '.md'),
       title: String(parsed.meta.title ?? firstHeading(parsed.body, path.posix.basename(relativePath, '.md'))),
-      url: githubUrl(relativePath),
+      url: siteUrl(relativePath),
+      sourceUrl: githubUrl(relativePath),
       author,
       publisher: String(parsed.meta.publisher ?? ''),
       category: String(parsed.meta.category ?? ''),
@@ -354,6 +381,141 @@ try {
   console.warn('Skipped missing books directory');
 }
 books.sort((left, right) => right.rate - left.rate || right.created.localeCompare(left.created) || left.title.localeCompare(right.title, 'ko'));
+
+function publicEntry(relativePath, note) {
+  const fileTitle = path.posix.basename(relativePath, '.md');
+  const kind = kindFor(relativePath);
+  const title = String(note.meta.title ?? firstHeading(note.body, fileTitle));
+  return {
+    path: relativePath,
+    fileTitle,
+    title,
+    displayTitle: displayTitleFor(relativePath, title),
+    kind,
+    status: String(note.meta.status ?? ''),
+    type: String(note.meta.type ?? ''),
+    tags: Array.isArray(note.meta.tags) ? note.meta.tags : [],
+    topic: topicFor(Array.isArray(note.meta.tags) ? note.meta.tags : []),
+    date: firstDate(note.meta),
+    summary: kind === 'blog' && note.meta.type === 'series' ? seriesSummaryFor(note) : summaryFor(note),
+    summaryIsExplicit: Boolean(String(note.meta.summary ?? '').trim()),
+    url: siteUrl(relativePath),
+    sourceUrl: githubUrl(relativePath),
+    publishedUrl: kind === 'blog' ? publicUrl(note.meta.source, '') : '',
+    body: note.body
+  };
+}
+
+const publicEntries = new Map(
+  [...candidateFiles].map(([relativePath, note]) => [relativePath, publicEntry(relativePath, note)])
+);
+for (const book of books) {
+  const source = bookSources.get(book.path);
+  publicEntries.set(book.path, {
+    path: book.path,
+    fileTitle: book.fileTitle,
+    title: book.title,
+    displayTitle: book.fileTitle,
+    kind: 'book',
+    status: book.status,
+    type: 'book',
+    tags: Array.isArray(source?.meta.tags) ? source.meta.tags : [],
+    topic: topicFor(Array.isArray(source?.meta.tags) ? source.meta.tags : []),
+    date: book.created,
+    summary: book.note || excerpt(source?.body ?? ''),
+    summaryIsExplicit: Boolean(book.note),
+    url: book.url,
+    sourceUrl: book.sourceUrl,
+    body: source?.body ?? ''
+  });
+}
+
+const publicByPath = new Map(publicEntries);
+const publicByBasename = new Map();
+for (const relativePath of publicEntries.keys()) {
+  const basename = path.posix.basename(relativePath).toLowerCase();
+  publicByBasename.set(basename, [...(publicByBasename.get(basename) ?? []), relativePath]);
+}
+
+const publicAssetPaths = new Set();
+for (const include of config.include) {
+  const absoluteDirectory = path.join(vaultRoot, include.path);
+  try {
+    for (const absoluteFile of await walkAll(absoluteDirectory)) {
+      const relativePath = normalize(path.relative(vaultRoot, absoluteFile));
+      if (!relativePath.endsWith('.md') && !isExcluded(relativePath)) publicAssetPaths.add(relativePath);
+    }
+  } catch {
+    // The Markdown include loop already reports missing public directories.
+  }
+}
+for (const absoluteFile of await walkAll(booksDirectory).catch(() => [])) {
+  const relativePath = normalize(path.relative(vaultRoot, absoluteFile));
+  if (!relativePath.endsWith('.md') && !isExcluded(relativePath)) publicAssetPaths.add(relativePath);
+}
+
+const publicAssetsByBasename = new Map();
+for (const relativePath of publicAssetPaths) {
+  const basename = path.posix.basename(relativePath).toLowerCase();
+  publicAssetsByBasename.set(basename, [...(publicAssetsByBasename.get(basename) ?? []), relativePath]);
+}
+
+const imageExtensions = new Set(['.avif', '.gif', '.jpeg', '.jpg', '.png', '.svg', '.webp']);
+const assetCopies = new Map();
+function isImagePath(value) {
+  return imageExtensions.has(path.posix.extname(value).toLowerCase());
+}
+
+function resolvePublicAsset(sourcePath, rawTarget) {
+  const target = String(rawTarget ?? '').split('#')[0].trim();
+  if (/^(?:https?:)?\/\//i.test(target)) return { url: target };
+  if (!target || !isImagePath(target)) return null;
+  const cleanTarget = target.replace(/^\//, '');
+  const candidates = [
+    normalize(path.posix.join(path.posix.dirname(sourcePath), cleanTarget)),
+    normalize(cleanTarget)
+  ];
+  let assetPath = candidates.find((candidate) => publicAssetPaths.has(candidate));
+  if (!assetPath) {
+    const matches = publicAssetsByBasename.get(path.posix.basename(cleanTarget).toLowerCase()) ?? [];
+    if (matches.length === 1) assetPath = matches[0];
+  }
+  if (!assetPath) return null;
+  const destination = `assets/vault/${assetPath.split('/').map(encodeURIComponent).join('/')}`;
+  assetCopies.set(assetPath, destination);
+  return { url: destination };
+}
+
+function resolvePublicNote(sourcePath, rawTarget, fragment = '') {
+  const target = String(rawTarget ?? '').trim();
+  const resolved = target === sourcePath
+    ? sourcePath
+    : resolveTarget(sourcePath, target, publicByPath, publicByBasename);
+  if (!resolved || !publicEntries.has(resolved)) return null;
+  const entry = publicEntries.get(resolved);
+  return { title: entry.displayTitle || entry.title, url: siteUrl(resolved, fragment) };
+}
+
+const renderMarkdown = createMarkdownRenderer({
+  resolveAsset: resolvePublicAsset,
+  resolveNote: resolvePublicNote
+});
+
+function stripLeadingTitle(body) {
+  return String(body ?? '').replace(/^\s*#\s+.+(?:\r?\n){1,2}/, '');
+}
+
+const notes = [...publicEntries.values()].map(({ body, ...entry }) => ({
+  ...entry,
+  bodyHtml: renderMarkdown(entry.path, stripLeadingTitle(body))
+}));
+
+const allPublicEdges = [];
+for (const [relativePath, entry] of publicEntries) {
+  for (const target of extractTargets(relativePath, entry.body, publicByPath, publicByBasename)) {
+    allPublicEdges.push({ source: relativePath, target });
+  }
+}
 
 const seedSet = new Set();
 for (const seed of config.seeds) {
@@ -396,23 +558,23 @@ if (selectedPaths.length > config.maxGraphNodes) {
 const selectedSet = new Set(selectedPaths);
 
 const nodes = selectedPaths.map((relativePath) => {
-  const note = graphCandidateFiles.get(relativePath);
-  const title = firstHeading(note.body, path.posix.basename(relativePath, '.md'));
-  const tags = Array.isArray(note.meta.tags) ? note.meta.tags : [];
+  const entry = publicEntries.get(relativePath);
   return {
     id: relativePath,
-    title,
-    displayTitle: displayTitleFor(relativePath, title),
+    title: entry.title,
+    displayTitle: entry.displayTitle,
     path: relativePath,
-    url: githubUrl(relativePath),
-    kind: kindFor(relativePath),
-    status: note.meta.status ?? '',
-    type: note.meta.type ?? '',
-    tags,
-    topic: topicFor(tags),
-    date: firstDate(note.meta),
-    summary: summaryFor(note),
-    excerpt: excerpt(note.body),
+    url: entry.url,
+    sourceUrl: entry.sourceUrl,
+    kind: entry.kind,
+    status: entry.status,
+    type: entry.type,
+    tags: entry.tags,
+    topic: entry.topic,
+    date: entry.date,
+    summary: entry.summary,
+    summaryIsExplicit: entry.summaryIsExplicit,
+    excerpt: entry.summary,
     degree: degree.get(relativePath) ?? 0
   };
 }).sort((left, right) => left.title.localeCompare(right.title, 'ko'));
@@ -438,8 +600,10 @@ const data = {
   generatedAt: new Date().toISOString(),
   repoUrl: config.repoUrl,
   branch: config.branch,
+  notes,
   nodes,
   edges,
+  noteEdges: allPublicEdges,
   paths,
   blog,
   development,
@@ -460,5 +624,10 @@ const output = template.replace('__GARDEN_PAYLOAD__', payload);
 const outputDirectory = path.join(projectRoot, 'dist');
 await fs.mkdir(outputDirectory, { recursive: true });
 await fs.writeFile(path.join(outputDirectory, 'index.html'), output);
+for (const [sourcePath, destination] of assetCopies) {
+  const destinationPath = path.join(outputDirectory, destination);
+  await fs.mkdir(path.dirname(destinationPath), { recursive: true });
+  await fs.copyFile(path.join(vaultRoot, sourcePath), destinationPath);
+}
 
 console.log(`Built public garden: ${nodes.length} nodes, ${edges.length} edges, ${paths.length} reading paths`);
