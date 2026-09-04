@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createMarkdownRenderer } from './markdown.mjs';
+import { createMarkdownRenderer, slugifyHeading } from './markdown.mjs';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, '..');
@@ -67,6 +67,19 @@ function parseFrontmatter(source) {
 function firstHeading(body, fallback) {
   const heading = body.match(/^#\s+(.+)$/m);
   return heading ? heading[1].trim() : fallback;
+}
+
+function headingsFor(body) {
+  const headingIds = new Map();
+  return [...String(body ?? '').matchAll(/^(#{2,4})\s+(.+)$/gm)]
+    .map((match) => {
+      const title = match[2].trim();
+      const baseId = slugifyHeading(title);
+      const count = (headingIds.get(baseId) ?? 0) + 1;
+      headingIds.set(baseId, count);
+      return { id: count === 1 ? baseId : `${baseId}-${count}`, level: match[1].length, title };
+    })
+    .slice(0, 8);
 }
 
 function excerpt(body) {
@@ -143,15 +156,14 @@ function publicUrl(value, fallback) {
 function blogRecord(relativePath, note) {
   const fileTitle = path.posix.basename(relativePath, '.md');
   const title = String(note.meta.title ?? firstHeading(note.body, fileTitle));
-  const sourceUrl = publicUrl(note.meta.source, '');
+  const publishedUrl = publicUrl(note.meta.source, '');
   return {
     path: relativePath,
     fileTitle,
     title,
     displayTitle: displayTitleFor(relativePath, title),
     url: siteUrl(relativePath),
-    sourceUrl,
-    sourceNoteUrl: githubUrl(relativePath),
+    publishedUrl,
     publication: String(note.meta.publication ?? ''),
     published: String(note.meta.published ?? ''),
     series: String(note.meta.series ?? ''),
@@ -180,11 +192,6 @@ function isIncluded(relativePath, meta) {
   if ((rule.files ?? []).includes(relativePath)) return true;
   if (rule.mode === 'all') return true;
   return (rule.statuses ?? []).includes(meta.status) || (rule.types ?? []).includes(meta.type);
-}
-
-function githubUrl(relativePath) {
-  const encodedPath = relativePath.split('/').map(encodeURIComponent).join('/');
-  return `${config.repoUrl}/blob/${config.branch}/${encodedPath}`;
 }
 
 function siteUrl(relativePath, fragment = '') {
@@ -275,7 +282,6 @@ const blogSeries = blogSeriesNames.map((seriesName) => {
   return {
     title: seriesName,
     noteUrl: hub?.url ?? '',
-    sourceNoteUrl: hub?.sourceNoteUrl ?? '',
     summary: hub?.summary ?? '',
     status: hub?.status ?? '',
     started: hub?.started ?? '',
@@ -315,7 +321,6 @@ const developmentRecords = [...candidateFiles]
     fileTitle: path.posix.basename(relativePath, '.md'),
     title: firstHeading(note.body, path.posix.basename(relativePath, '.md')),
     url: siteUrl(relativePath),
-    sourceUrl: githubUrl(relativePath),
     category: relativePath.includes('/Troubleshooting/') ? 'Troubleshooting' : 'Tools',
     summary: summaryFor(note),
     summaryIsExplicit: Boolean(String(note.meta.summary ?? '').trim()),
@@ -362,7 +367,6 @@ try {
       fileTitle: path.posix.basename(relativePath, '.md'),
       title: String(parsed.meta.title ?? firstHeading(parsed.body, path.posix.basename(relativePath, '.md'))),
       url: siteUrl(relativePath),
-      sourceUrl: githubUrl(relativePath),
       author,
       publisher: String(parsed.meta.publisher ?? ''),
       category: String(parsed.meta.category ?? ''),
@@ -399,8 +403,8 @@ function publicEntry(relativePath, note) {
     date: firstDate(note.meta),
     summary: kind === 'blog' && note.meta.type === 'series' ? seriesSummaryFor(note) : summaryFor(note),
     summaryIsExplicit: Boolean(String(note.meta.summary ?? '').trim()),
+    headings: headingsFor(note.body),
     url: siteUrl(relativePath),
-    sourceUrl: githubUrl(relativePath),
     publishedUrl: kind === 'blog' ? publicUrl(note.meta.source, '') : '',
     body: note.body
   };
@@ -424,8 +428,8 @@ for (const book of books) {
     date: book.created,
     summary: book.note || excerpt(source?.body ?? ''),
     summaryIsExplicit: Boolean(book.note),
+    headings: headingsFor(source?.body ?? ''),
     url: book.url,
-    sourceUrl: book.sourceUrl,
     body: source?.body ?? ''
   });
 }
@@ -493,6 +497,7 @@ function resolvePublicNote(sourcePath, rawTarget, fragment = '') {
     : resolveTarget(sourcePath, target, publicByPath, publicByBasename);
   if (!resolved || !publicEntries.has(resolved)) return null;
   const entry = publicEntries.get(resolved);
+  if (entry.kind === 'book') return null;
   return { title: entry.displayTitle || entry.title, url: siteUrl(resolved, fragment) };
 }
 
@@ -505,14 +510,18 @@ function stripLeadingTitle(body) {
   return String(body ?? '').replace(/^\s*#\s+.+(?:\r?\n){1,2}/, '');
 }
 
-const notes = [...publicEntries.values()].map(({ body, ...entry }) => ({
-  ...entry,
-  bodyHtml: renderMarkdown(entry.path, stripLeadingTitle(body))
-}));
+const notes = [...publicEntries.values()]
+  .filter((entry) => entry.kind !== 'book')
+  .map(({ body, ...entry }) => ({
+    ...entry,
+    bodyHtml: renderMarkdown(entry.path, stripLeadingTitle(body))
+  }));
 
 const allPublicEdges = [];
 for (const [relativePath, entry] of publicEntries) {
+  if (entry.kind === 'book') continue;
   for (const target of extractTargets(relativePath, entry.body, publicByPath, publicByBasename)) {
+    if (publicEntries.get(target)?.kind === 'book') continue;
     allPublicEdges.push({ source: relativePath, target });
   }
 }
@@ -565,7 +574,6 @@ const nodes = selectedPaths.map((relativePath) => {
     displayTitle: entry.displayTitle,
     path: relativePath,
     url: entry.url,
-    sourceUrl: entry.sourceUrl,
     kind: entry.kind,
     status: entry.status,
     type: entry.type,
@@ -574,6 +582,7 @@ const nodes = selectedPaths.map((relativePath) => {
     date: entry.date,
     summary: entry.summary,
     summaryIsExplicit: entry.summaryIsExplicit,
+    headings: entry.headings,
     excerpt: entry.summary,
     degree: degree.get(relativePath) ?? 0
   };
@@ -598,8 +607,6 @@ const paths = config.paths.map((readingPath) => ({
 
 const data = {
   generatedAt: new Date().toISOString(),
-  repoUrl: config.repoUrl,
-  branch: config.branch,
   notes,
   nodes,
   edges,

@@ -157,7 +157,8 @@ function renderCallouts(source, renderCore, depth = 0) {
 
     const title = customTitle?.trim() || CALLOUT_TITLES[type] || type;
     const body = quotedLines.join('\n').trim();
-    const bodyHtml = depth < 3 ? renderCallouts(body, renderCore, depth + 1) : renderCore(body);
+    const nestedBody = depth < 3 ? renderCallouts(body, renderCore, depth + 1) : body;
+    const bodyHtml = renderCore(nestedBody);
     const className = `callout callout-${type.replace(/[^a-z0-9_-]/gi, '') || 'note'}`;
     if (foldMarker === '-') {
       output.push(`<details class="${className}"><summary>${escapeHtml(title)}</summary><div class="callout-body">${bodyHtml}</div></details>`);
