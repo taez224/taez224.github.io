@@ -1,0 +1,464 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const projectRoot = path.resolve(scriptDir, '..');
+const vaultRoot = path.resolve(projectRoot, '../..');
+const config = JSON.parse(await fs.readFile(path.join(projectRoot, 'config.json'), 'utf8'));
+
+const toPosix = (value) => value.split(path.sep).join('/');
+const normalize = (value) => toPosix(value).replace(/^\.\//, '').replace(/\\/g, '/');
+
+async function walk(directory) {
+  const entries = await fs.readdir(directory, { withFileTypes: true });
+  const files = [];
+  for (const entry of entries) {
+    if (entry.name.startsWith('.')) continue;
+    const absolute = path.join(directory, entry.name);
+    if (entry.isDirectory()) files.push(...await walk(absolute));
+    else if (entry.isFile() && entry.name.endsWith('.md')) files.push(absolute);
+  }
+  return files;
+}
+
+function parseFrontmatter(source) {
+  if (!source.startsWith('---')) return { body: source, meta: {} };
+  const end = source.indexOf('\n---', 3);
+  if (end < 0) return { body: source, meta: {} };
+
+  const frontmatter = source.slice(3, end).replace(/^\n/, '');
+  const meta = {};
+  let activeListKey = null;
+  for (const line of frontmatter.split('\n')) {
+    const listItem = line.match(/^\s*-\s*["']?(.*?)["']?\s*$/);
+    if (activeListKey && listItem) {
+      meta[activeListKey] ??= [];
+      meta[activeListKey].push(listItem[1]);
+      continue;
+    }
+    const field = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
+    if (!field) continue;
+    const [, key, rawValue] = field;
+    if (!rawValue) {
+      activeListKey = key;
+      meta[key] = [];
+      continue;
+    }
+    activeListKey = null;
+    meta[key] = rawValue.replace(/^['"]|['"]$/g, '');
+  }
+  return { body: source.slice(end + 4), meta };
+}
+
+function firstHeading(body, fallback) {
+  const heading = body.match(/^#\s+(.+)$/m);
+  return heading ? heading[1].trim() : fallback;
+}
+
+function excerpt(body) {
+  const cleaned = body
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/^#{1,6}\s+.+$/gm, ' ')
+    .replace(/^\s*>?\s*\[![^\]]+\]\s*/gm, ' ')
+    .replace(/^\s*>\s?/gm, ' ')
+    .replace(/^\s*[-*+]\s+/gm, ' ')
+    .replace(/^\s*\d+\.\s+/gm, ' ')
+    .replace(/!?(\[\[|\]\])/g, ' ')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/[`*_>#|]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return cleaned.slice(0, 220).replace(/\s+\S*$/, '') + (cleaned.length > 220 ? '…' : '');
+}
+
+function summaryFor(note) {
+  const summary = String(note.meta.summary ?? '').trim();
+  return summary || excerpt(note.body);
+}
+
+function sectionExcerpt(body, sectionNames) {
+  const wanted = sectionNames.map((name) => name.toLowerCase());
+  const headings = [...body.matchAll(/^##\s+(.+)$/gm)];
+  const heading = headings.find((match) => wanted.includes(match[1].trim().toLowerCase()));
+  if (!heading || heading.index === undefined) return '';
+  const contentStart = heading.index + heading[0].length;
+  const rest = body.slice(contentStart);
+  const nextHeading = rest.search(/^##\s+/m);
+  const content = nextHeading < 0 ? rest : rest.slice(0, nextHeading);
+  return excerpt(content);
+}
+
+function seriesSummaryFor(note) {
+  const summary = String(note.meta.summary ?? '').trim();
+  return summary || sectionExcerpt(note.body, ['연재 목적', '시리즈 소개']) || excerpt(note.body);
+}
+
+function topicFor(tags) {
+  const topic = tags.find((tag) => tag !== 'slipbox');
+  return topic ? topic.split('/')[0] : '기타';
+}
+
+function numberValue(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function bookTier(rate) {
+  return ({ 5: 'S', 4: 'A', 3: 'B', 2: 'C', 1: 'D' })[Math.floor(rate)] ?? '미분류';
+}
+
+function firstDate(meta) {
+  const value = [meta.published, meta.created, meta.date].find(Boolean);
+  return String(value ?? '').match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? '';
+}
+
+function kindFor(relativePath) {
+  if (relativePath.startsWith('01_Slipbox/')) return 'slipbox';
+  if (relativePath.startsWith('20_Projects/blog/')) return 'blog';
+  return 'development';
+}
+
+function displayTitleFor(relativePath, title) {
+  return relativePath === '01_Slipbox/생각의 정원.md' ? '시작점' : title;
+}
+
+function publicUrl(value, fallback) {
+  return /^https:\/\//.test(String(value ?? '')) ? String(value) : fallback;
+}
+
+function blogRecord(relativePath, note) {
+  const fileTitle = path.posix.basename(relativePath, '.md');
+  const title = String(note.meta.title ?? firstHeading(note.body, fileTitle));
+  const noteUrl = githubUrl(relativePath);
+  return {
+    path: relativePath,
+    fileTitle,
+    title,
+    url: publicUrl(note.meta.source, noteUrl),
+    noteUrl,
+    publication: String(note.meta.publication ?? ''),
+    published: String(note.meta.published ?? ''),
+    series: String(note.meta.series ?? ''),
+    seriesOrder: numberValue(note.meta.series_order),
+    summary: note.meta.type === 'series' ? seriesSummaryFor(note) : summaryFor(note),
+    status: String(note.meta.status ?? ''),
+    tags: Array.isArray(note.meta.tags) ? note.meta.tags : [],
+    created: firstDate(note.meta)
+  };
+}
+
+function pathMatches(relativePath, configuredPath) {
+  const pathValue = normalize(configuredPath).replace(/\/$/, '');
+  return relativePath === pathValue || relativePath.startsWith(`${pathValue}/`);
+}
+
+function isExcluded(relativePath) {
+  return config.exclude.some((entry) => pathMatches(relativePath, entry));
+}
+
+function isIncluded(relativePath, meta) {
+  if (isExcluded(relativePath)) return false;
+  const rule = config.include.find((entry) => pathMatches(relativePath, entry.path));
+  if (!rule) return false;
+  if ((rule.files ?? []).includes(relativePath)) return true;
+  if (rule.mode === 'all') return true;
+  return (rule.statuses ?? []).includes(meta.status) || (rule.types ?? []).includes(meta.type);
+}
+
+function githubUrl(relativePath) {
+  const encodedPath = relativePath.split('/').map(encodeURIComponent).join('/');
+  return `${config.repoUrl}/blob/${config.branch}/${encodedPath}`;
+}
+
+function stripLinkTarget(rawTarget) {
+  return rawTarget.split('|')[0].split('#')[0].trim().replace(/^!/, '');
+}
+
+function resolveTarget(sourcePath, rawTarget, byPath, byBasename) {
+  const target = stripLinkTarget(rawTarget);
+  if (!target || target.startsWith('http://') || target.startsWith('https://')) return null;
+  const sourceDirectory = path.posix.dirname(sourcePath);
+  const withExtension = target.endsWith('.md') ? target : `${target}.md`;
+  const relativeCandidate = normalize(path.posix.join(sourceDirectory, withExtension));
+  if (byPath.has(relativeCandidate)) return relativeCandidate;
+  const rootCandidate = normalize(withExtension);
+  if (byPath.has(rootCandidate)) return rootCandidate;
+  const basename = path.posix.basename(withExtension).toLowerCase();
+  const matches = byBasename.get(basename) ?? [];
+  return matches.length === 1 ? matches[0] : null;
+}
+
+function extractTargets(sourcePath, body, byPath, byBasename) {
+  const targets = new Set();
+  for (const match of body.matchAll(/!?\[\[([^\]]+)\]\]/g)) {
+    const resolved = resolveTarget(sourcePath, match[1], byPath, byBasename);
+    if (resolved) targets.add(resolved);
+  }
+  for (const match of body.matchAll(/\[[^\]]*\]\(([^)]+\.md(?:#[^)]*)?)\)/g)) {
+    const resolved = resolveTarget(sourcePath, match[1], byPath, byBasename);
+    if (resolved) targets.add(resolved);
+  }
+  return [...targets];
+}
+
+const candidateFiles = new Map();
+for (const include of config.include) {
+  const absoluteDirectory = path.join(vaultRoot, include.path);
+  let files = [];
+  try {
+    files = await walk(absoluteDirectory);
+  } catch {
+    console.warn(`Skipped missing include path: ${include.path}`);
+    continue;
+  }
+  for (const absoluteFile of files) {
+    const relativePath = normalize(path.relative(vaultRoot, absoluteFile));
+    const source = await fs.readFile(absoluteFile, 'utf8');
+    const parsed = parseFrontmatter(source);
+    if (isIncluded(relativePath, parsed.meta)) {
+      candidateFiles.set(relativePath, { source, ...parsed });
+    }
+  }
+}
+
+const graphCandidateFiles = new Map([...candidateFiles].filter(([relativePath]) => {
+  const rule = config.include.find((entry) => pathMatches(relativePath, entry.path));
+  return rule?.graph !== false;
+}));
+const graphAll = config.include.some((entry) => entry.graph === true && entry.mode === 'all');
+
+const blogHubRecords = new Map();
+for (const [relativePath, note] of candidateFiles) {
+  if (kindFor(relativePath) !== 'blog' || note.meta.type !== 'series') continue;
+  const record = blogRecord(relativePath, note);
+  blogHubRecords.set(record.title, {
+    ...record,
+    started: String(note.meta.started ?? ''),
+    ended: String(note.meta.ended ?? ''),
+    lastPublished: String(note.meta.last_published ?? ''),
+    nextAction: String(note.meta.next_action ?? '')
+  });
+}
+
+const publishedBlogPosts = [...candidateFiles]
+  .filter(([relativePath, note]) => kindFor(relativePath) === 'blog' && note.meta.status === 'published')
+  .map(([relativePath, note]) => blogRecord(relativePath, note));
+
+const blogSeriesNames = [...new Set(publishedBlogPosts.map((post) => post.series).filter(Boolean))];
+const blogSeries = blogSeriesNames.map((seriesName) => {
+  const hub = blogHubRecords.get(seriesName);
+  const posts = publishedBlogPosts
+    .filter((post) => post.series === seriesName)
+    .sort((left, right) => left.seriesOrder - right.seriesOrder || left.published.localeCompare(right.published));
+  return {
+    title: seriesName,
+    noteUrl: hub?.noteUrl ?? '',
+    summary: hub?.summary ?? '',
+    status: hub?.status ?? '',
+    started: hub?.started ?? '',
+    ended: hub?.ended ?? '',
+    lastPublished: hub?.lastPublished ?? '',
+    nextAction: hub?.nextAction ?? '',
+    posts
+  };
+}).sort((left, right) => right.lastPublished.localeCompare(left.lastPublished) || left.title.localeCompare(right.title, 'ko'));
+
+const standaloneByPublication = new Map();
+for (const post of publishedBlogPosts.filter((candidate) => !candidate.series)) {
+  const publication = post.publication || '발행처 미상';
+  standaloneByPublication.set(publication, [...(standaloneByPublication.get(publication) ?? []), post]);
+}
+const blogPublications = [...standaloneByPublication.entries()]
+  .map(([publication, posts]) => ({
+    publication,
+    posts: posts.sort((left, right) => right.published.localeCompare(left.published) || left.title.localeCompare(right.title, 'ko'))
+  }))
+  .sort((left, right) => left.publication.localeCompare(right.publication, 'ko'));
+
+const blog = {
+  series: blogSeries,
+  publications: blogPublications,
+  stats: {
+    posts: publishedBlogPosts.length,
+    series: blogSeries.length,
+    standalone: publishedBlogPosts.filter((post) => !post.series).length
+  }
+};
+
+const developmentRecords = [...candidateFiles]
+  .filter(([relativePath]) => kindFor(relativePath) === 'development')
+  .map(([relativePath, note]) => ({
+    path: relativePath,
+    fileTitle: path.posix.basename(relativePath, '.md'),
+    title: firstHeading(note.body, path.posix.basename(relativePath, '.md')),
+    url: githubUrl(relativePath),
+    category: relativePath.includes('/Troubleshooting/') ? 'Troubleshooting' : 'Tools',
+    summary: summaryFor(note),
+    tags: Array.isArray(note.meta.tags) ? note.meta.tags : [],
+    date: firstDate(note.meta)
+  }))
+  .sort((left, right) => right.date.localeCompare(left.date) || left.title.localeCompare(right.title, 'ko'));
+
+const development = {
+  troubleshooting: developmentRecords.filter((record) => record.category === 'Troubleshooting'),
+  tools: developmentRecords.filter((record) => record.category === 'Tools')
+};
+
+const byPath = new Map(graphCandidateFiles);
+const byBasename = new Map();
+for (const relativePath of graphCandidateFiles.keys()) {
+  const basename = path.posix.basename(relativePath).toLowerCase();
+  byBasename.set(basename, [...(byBasename.get(basename) ?? []), relativePath]);
+}
+
+const allEdges = [];
+for (const [relativePath, note] of graphCandidateFiles) {
+  for (const target of extractTargets(relativePath, note.body, byPath, byBasename)) {
+    allEdges.push({ source: relativePath, target });
+  }
+}
+
+const books = [];
+const booksDirectory = path.join(vaultRoot, '30_Resources/References/Books');
+try {
+  for (const absoluteFile of await walk(booksDirectory)) {
+    const relativePath = normalize(path.relative(vaultRoot, absoluteFile));
+    if (path.posix.basename(relativePath).startsWith('_')) continue;
+    const source = await fs.readFile(absoluteFile, 'utf8');
+    const parsed = parseFrontmatter(source);
+    const rate = numberValue(parsed.meta.my_rate);
+    const author = Array.isArray(parsed.meta.author)
+      ? parsed.meta.author.join(', ')
+      : String(parsed.meta.author ?? '');
+    books.push({
+      path: relativePath,
+      fileTitle: path.posix.basename(relativePath, '.md'),
+      title: String(parsed.meta.title ?? firstHeading(parsed.body, path.posix.basename(relativePath, '.md'))),
+      url: githubUrl(relativePath),
+      author,
+      publisher: String(parsed.meta.publisher ?? ''),
+      category: String(parsed.meta.category ?? ''),
+      publishDate: String(parsed.meta.publish_date ?? ''),
+      coverUrl: String(parsed.meta.cover_url ?? ''),
+      status: String(parsed.meta.status ?? ''),
+      startDate: String(parsed.meta.start_read_date ?? ''),
+      finishDate: String(parsed.meta.finish_read_date ?? ''),
+      rate,
+      tier: bookTier(rate),
+      note: String(parsed.meta.book_note ?? ''),
+      created: firstDate(parsed.meta)
+    });
+  }
+} catch {
+  console.warn('Skipped missing books directory');
+}
+books.sort((left, right) => right.rate - left.rate || right.created.localeCompare(left.created) || left.title.localeCompare(right.title, 'ko'));
+
+const seedSet = new Set();
+for (const seed of config.seeds) {
+  const normalizedSeed = normalize(seed);
+  if (graphCandidateFiles.has(normalizedSeed)) seedSet.add(normalizedSeed);
+  else console.warn(`Seed is outside the public graph scope: ${normalizedSeed}`);
+}
+
+const pathItemSet = new Set();
+for (const readingPath of config.paths) {
+  for (const item of readingPath.items) {
+    if (typeof item === 'string') pathItemSet.add(normalize(item));
+  }
+}
+
+const selected = graphAll
+  ? new Set(graphCandidateFiles.keys())
+  : new Set([...seedSet, ...[...pathItemSet].filter((item) => graphCandidateFiles.has(item))]);
+for (let level = 0; level < config.depth; level += 1) {
+  for (const edge of allEdges) {
+    if (selected.has(edge.source)) selected.add(edge.target);
+    if (selected.has(edge.target)) selected.add(edge.source);
+  }
+}
+
+const degree = new Map();
+for (const edge of allEdges) {
+  degree.set(edge.source, (degree.get(edge.source) ?? 0) + 1);
+  degree.set(edge.target, (degree.get(edge.target) ?? 0) + 1);
+}
+
+const required = new Set([...seedSet, ...[...pathItemSet].filter((item) => graphCandidateFiles.has(item))]);
+let selectedPaths = [...selected];
+if (selectedPaths.length > config.maxGraphNodes) {
+  const optional = selectedPaths
+    .filter((item) => !required.has(item))
+    .sort((left, right) => (degree.get(right) ?? 0) - (degree.get(left) ?? 0));
+  selectedPaths = [...required, ...optional.slice(0, config.maxGraphNodes - required.size)];
+}
+const selectedSet = new Set(selectedPaths);
+
+const nodes = selectedPaths.map((relativePath) => {
+  const note = graphCandidateFiles.get(relativePath);
+  const title = firstHeading(note.body, path.posix.basename(relativePath, '.md'));
+  const tags = Array.isArray(note.meta.tags) ? note.meta.tags : [];
+  return {
+    id: relativePath,
+    title,
+    displayTitle: displayTitleFor(relativePath, title),
+    path: relativePath,
+    url: githubUrl(relativePath),
+    kind: kindFor(relativePath),
+    status: note.meta.status ?? '',
+    type: note.meta.type ?? '',
+    tags,
+    topic: topicFor(tags),
+    date: firstDate(note.meta),
+    summary: summaryFor(note),
+    excerpt: excerpt(note.body),
+    degree: degree.get(relativePath) ?? 0
+  };
+}).sort((left, right) => left.title.localeCompare(right.title, 'ko'));
+
+const edges = allEdges.filter((edge) => selectedSet.has(edge.source) && selectedSet.has(edge.target));
+const nodeByPath = new Map(nodes.map((node) => [node.path, node]));
+const blogByPath = new Map(publishedBlogPosts.map((post) => [post.path, { ...post, kind: 'blog' }]));
+const developmentByPath = new Map(developmentRecords.map((record) => [record.path, { ...record, kind: 'development' }]));
+const pathEntries = new Map([...nodeByPath, ...blogByPath, ...developmentByPath]);
+const paths = config.paths.map((readingPath) => ({
+  ...readingPath,
+  items: readingPath.items.map((item) => {
+    if (typeof item !== 'string') return { ...item, external: true };
+    const normalized = normalize(item);
+    const entry = pathEntries.get(normalized);
+    return entry
+      ? { label: entry.displayTitle ?? entry.title, path: entry.path, url: entry.url, kind: entry.kind }
+      : { label: path.posix.basename(normalized, '.md'), path: normalized, missing: true };
+  })
+}));
+
+const data = {
+  generatedAt: new Date().toISOString(),
+  repoUrl: config.repoUrl,
+  branch: config.branch,
+  nodes,
+  edges,
+  paths,
+  blog,
+  development,
+  books,
+  stats: {
+    candidates: graphCandidateFiles.size,
+    nodes: nodes.length,
+    edges: edges.length,
+    blogPosts: blog.stats.posts,
+    blogSeries: blog.stats.series,
+    developmentNotes: developmentRecords.length
+  }
+};
+
+const template = await fs.readFile(path.join(projectRoot, 'site-template.html'), 'utf8');
+const payload = JSON.stringify(data).replace(/</g, '\\u003c');
+const output = template.replace('__GARDEN_PAYLOAD__', payload);
+const outputDirectory = path.join(projectRoot, 'dist');
+await fs.mkdir(outputDirectory, { recursive: true });
+await fs.writeFile(path.join(outputDirectory, 'index.html'), output);
+
+console.log(`Built public garden: ${nodes.length} nodes, ${edges.length} edges, ${paths.length} reading paths`);

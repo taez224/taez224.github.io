@@ -1,0 +1,943 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="TaeZ의 노트, 개발 기록, 글, 독서 기록을 모아둔 공개 인덱스." />
+  <title>TaeZ · notes, builds, writing, reading</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f2efe7;
+      --paper-strong: #fbfaf6;
+      --ink: #242720;
+      --muted: #746f64;
+      --faint: #a39c8f;
+      --line: #d6cfc1;
+      --accent: #2f5c49;
+      --accent-soft: #e3ece5;
+      --slipbox: #3d7158;
+      --blog: #a66a38;
+      --development: #787b47;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+      line-height: 1.6;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+
+    .shell { width: min(1080px, calc(100% - 40px)); margin: 0 auto; }
+    h1, h2, h3, p { margin-top: 0; }
+    h2 { margin-bottom: 7px; font-size: 1.45rem; letter-spacing: -.04em; }
+    h3 { margin-bottom: 8px; font-size: 1.05rem; letter-spacing: -.025em; }
+
+    .site-header { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-top: 26px; border-bottom: 1px solid var(--line); }
+    .site-mark { order: 2; flex: 0 0 auto; color: var(--ink); font-family: Georgia, ui-serif, serif; font-size: 1.05rem; font-weight: 700; letter-spacing: -.03em; }
+    .site-mark:hover { color: var(--accent); text-decoration: none; }
+    .tabs { display: flex; order: 1; flex: 1; flex-wrap: wrap; justify-content: flex-start; gap: 0; }
+    .tab {
+      position: relative;
+      padding: 14px 20px 12px 0;
+      margin-right: 24px;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: .88rem;
+      font-weight: 750;
+    }
+    .tab:hover, .tab.active { color: var(--accent); }
+    .tab.active::after { position: absolute; right: 20px; bottom: -1px; left: 0; height: 2px; background: var(--accent); content: ""; }
+
+    main { padding: 42px 0 74px; min-height: 480px; }
+    .view-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 20px; margin-bottom: 3px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+    .view-head h2 { display: inline; }
+    .view-head p { display: inline; margin-left: 12px; }
+    .view-head p { margin-bottom: 0; color: var(--muted); }
+    .count { color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .72rem; white-space: nowrap; }
+    .path-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 48px; }
+    .card { background: transparent; }
+    .path-card { display: flex; flex-direction: column; min-height: 0; padding: 24px 0 28px; border-bottom: 1px solid var(--line); }
+    .path-card-top { display: flex; align-items: center; gap: 10px; margin-bottom: 13px; color: var(--faint); }
+    .path-index { color: var(--accent); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .74rem; font-weight: 800; }
+    .path-label { font-size: .72rem; }
+    .path-card p { color: var(--muted); }
+    .path-card ol { margin: 12px 0 0; padding-left: 22px; }
+    .path-card li { padding: 4px 0; font-size: .92rem; }
+    .path-card li::marker { color: var(--accent); font-weight: 800; }
+    .path-card .missing { color: #bd4c4c; }
+
+    .hub-entries { margin-bottom: 38px; }
+    .hub-entries-head { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; margin-bottom: 3px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+    .hub-entries-head h2 { margin-bottom: 0; font-size: 1.15rem; }
+    .hub-entries-head p { margin: 0; color: var(--muted); font-size: .86rem; }
+    .hub-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 30px; }
+    .hub-card { display: flex; flex-direction: column; min-width: 0; padding: 18px 0 20px; border-bottom: 1px solid var(--line); color: var(--ink); }
+    .hub-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; color: var(--faint); font-size: .7rem; }
+    .hub-card-index { color: var(--accent); font-weight: 800; }
+    .hub-card h3 { margin-bottom: 8px; font-size: 1rem; }
+    .hub-card p { display: -webkit-box; min-height: 3.1em; margin-bottom: 16px; overflow: hidden; color: var(--muted); font-size: .84rem; line-height: 1.55; text-overflow: ellipsis; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+    .hub-card-foot { display: flex; align-items: center; justify-content: space-between; margin-top: auto; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .68rem; }
+    .hub-links { margin-top: 2px; border-top: 1px solid var(--line); }
+    .hub-links summary { padding: 9px 0; cursor: pointer; color: var(--muted); font-size: .76rem; list-style: none; }
+    .hub-links summary::-webkit-details-marker { display: none; }
+    .hub-links summary::before { display: inline-block; width: 16px; color: var(--accent); content: "+"; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .hub-links[open] summary::before { content: "−"; }
+    .hub-links ul { display: grid; gap: 5px; margin: 0 0 10px; padding: 0 0 0 16px; list-style: none; }
+    .hub-note { display: flex; width: 100%; align-items: baseline; justify-content: space-between; gap: 8px; padding: 0; border: 0; background: transparent; color: var(--ink); font-size: .78rem; text-align: left; }
+    .hub-note:hover { color: var(--accent); }
+    .hub-note small { flex: 0 0 auto; color: var(--faint); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .64rem; }
+    .hub-card-link { color: var(--accent); }
+    .hub-card-source { color: var(--muted); }
+
+    .blog-section { margin-top: 30px; }
+    .blog-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+    .blog-section-head h3 { margin: 0; font-size: 1.05rem; }
+    .blog-section-head span { color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .7rem; }
+    .blog-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 9px 0 2px; color: var(--muted); font-size: .76rem; }
+    .blog-action-buttons { display: inline-flex; gap: 10px; }
+    .blog-action { padding: 0; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: var(--muted); font-size: .74rem; }
+    .blog-action:hover { border-bottom-color: var(--accent); color: var(--accent); }
+    .blog-group { border-bottom: 1px solid var(--line); }
+    .blog-group summary { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; padding: 15px 0; cursor: pointer; list-style: none; }
+    .blog-group summary::-webkit-details-marker { display: none; }
+    .blog-group summary::before { width: 14px; color: var(--accent); content: "+"; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9rem; }
+    .blog-group[open] summary::before { content: "−"; }
+    .blog-group-summary { display: flex; flex: 1; align-items: baseline; gap: 10px; min-width: 0; }
+    .blog-group-label { flex: 0 0 auto; color: var(--faint); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .62rem; letter-spacing: .1em; text-transform: uppercase; }
+    .blog-group-title { overflow: hidden; color: var(--ink); font-size: .96rem; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+    .blog-group-count { flex: 0 0 auto; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .7rem; }
+    .blog-group-body { padding: 0 0 15px 24px; }
+    .blog-group-intro { max-width: 700px; margin: 0 0 13px; color: var(--muted); font-size: .84rem; }
+    .blog-post-list { display: grid; margin: 0; padding: 0; list-style: none; }
+    .blog-post { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 10px 0; border-top: 1px solid var(--line); }
+    .blog-post-order { color: var(--faint); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .7rem; }
+    .blog-post-main { min-width: 0; }
+    .blog-post-title { display: inline; color: var(--ink); font-size: .86rem; font-weight: 750; }
+    .blog-post-title:hover { color: var(--accent); }
+    .blog-post-summary { display: block; margin-top: 3px; color: var(--muted); font-size: .78rem; line-height: 1.45; }
+    .blog-post-meta { display: block; margin-top: 5px; color: var(--faint); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .66rem; }
+    .blog-note-link { color: var(--muted); font-size: .72rem; white-space: nowrap; }
+    .blog-note-link:hover { color: var(--accent); }
+
+    .tools { display: flex; flex-wrap: wrap; gap: 20px; margin: 17px 0 16px; }
+    .tools input, .tools select {
+      min-width: 220px;
+      padding: 8px 0;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      border-radius: 0;
+      outline: none;
+      background: transparent;
+      color: var(--ink);
+    }
+    .tools input:focus, .tools select:focus { border-bottom-color: var(--accent); }
+    .tools select { min-width: 150px; }
+    .graph-layout { display: grid; grid-template-columns: minmax(0, 1fr) 270px; gap: 30px; align-items: start; }
+    .graph-card { padding: 0; overflow: hidden; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    #graph { display: block; width: 100%; min-height: 560px; background: var(--paper); touch-action: none; cursor: grab; }
+    #graph.is-panning { cursor: grabbing; }
+    .graph-edge { stroke: var(--line); stroke-width: 1.1; opacity: .28; transition: opacity .15s ease, stroke .15s ease, stroke-width .15s ease; }
+    .graph-edge.is-connected { stroke: var(--accent); stroke-width: 1.8; opacity: .9; }
+    .graph-edge.is-dim { opacity: .06; }
+    .graph-node { cursor: pointer; outline: none; transition: opacity .15s ease; }
+    .graph-node.is-dim { opacity: .2; }
+    .graph-node-dot { stroke: var(--paper); stroke-width: 2.5; transition: transform .15s ease, stroke-width .15s ease, stroke .15s ease; }
+    .graph-hub-ring { fill: none; stroke: var(--accent); stroke-width: 1.2; opacity: .7; }
+    .graph-node.is-hub .graph-node-dot { stroke: var(--accent); stroke-width: 2.5; }
+    .graph-node.is-hub .graph-label { font-weight: 700; }
+    .graph-node.is-neighbor .graph-node-dot { stroke: var(--accent); stroke-width: 3.5; }
+    .graph-node.is-selected .graph-node-dot, .graph-node:hover .graph-node-dot, .graph-node:focus .graph-node-dot { stroke: var(--accent); stroke-width: 4; }
+    .graph-label { display: none; fill: var(--ink); font-size: 10px; pointer-events: none; paint-order: stroke; stroke: var(--paper); stroke-width: 4px; stroke-linejoin: round; }
+    .graph-node.is-hub .graph-label, .graph-node.is-selected .graph-label, .graph-node.is-neighbor .graph-label, .graph-node:hover .graph-label, .graph-node:focus .graph-label, #graph.labels-all .graph-label, #graph.labels-filtered .graph-label { display: block; }
+    .legend { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 4px 2px; color: var(--muted); font-size: .8rem; }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .legend-filter { display: inline-flex; align-items: center; gap: 6px; padding: 2px 4px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); cursor: pointer; font: inherit; font-size: .8rem; }
+    .legend-filter:hover, .legend-filter.active { background: var(--accent-soft); color: var(--accent); }
+    .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; }
+    .dot.hub-dot { border: 2px solid var(--accent); background: transparent; }
+    .graph-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 4px 10px; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .66rem; }
+    .graph-control-buttons { display: inline-flex; gap: 5px; }
+    .graph-control { min-width: 28px; padding: 3px 7px; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--muted); font-family: inherit; font-size: .72rem; }
+    .graph-control:hover { border-color: var(--accent); color: var(--accent); }
+    .entry-strip { margin-bottom: 28px; }
+    .entry-strip-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+    .entry-strip-head h2 { margin: 0; font-size: 1.08rem; }
+    .entry-strip-head span { color: var(--muted); font-size: .78rem; }
+    .entry-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 28px; }
+    .entry-item { display: grid; grid-template-columns: 25px minmax(0, 1fr) auto; gap: 8px; align-items: baseline; padding: 13px 0; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: var(--ink); text-align: left; }
+    .entry-item:hover { color: var(--accent); }
+    .entry-index { color: var(--accent); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .68rem; font-weight: 800; }
+    .entry-title { overflow: hidden; font-size: .84rem; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+    .entry-item small { color: var(--faint); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .64rem; white-space: nowrap; }
+    .routes-panel { margin-top: 34px; }
+    .routes-panel summary { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 13px 0; cursor: pointer; color: var(--ink); font-size: .86rem; font-weight: 750; list-style: none; }
+    .routes-panel summary::-webkit-details-marker { display: none; }
+    .routes-panel summary::before { width: 14px; color: var(--accent); content: "+"; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 400; }
+    .routes-panel[open] summary::before { content: "−"; }
+    .routes-panel-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 15px 0 10px; border-top: 1px solid var(--line); color: var(--ink); font-size: .86rem; font-weight: 750; }
+    .routes-panel-summary { display: flex; flex: 1; align-items: baseline; gap: 10px; }
+    .routes-panel-count { color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .68rem; font-weight: 400; }
+    .routes-panel-body { display: grid; grid-template-columns: minmax(220px, .8fr) minmax(0, 1.2fr); gap: 32px; padding: 0 0 22px; }
+    .routes-panel-body.single { grid-template-columns: 1fr; }
+    .routes-column { min-width: 0; }
+    .routes-column-title { display: block; margin-bottom: 8px; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .66rem; letter-spacing: .08em; text-transform: uppercase; }
+    .route-hubs { display: grid; gap: 5px; }
+    .route-hub { display: flex; width: 100%; align-items: baseline; justify-content: space-between; gap: 8px; padding: 3px 0; border: 0; background: transparent; color: var(--ink); font-size: .82rem; text-align: left; }
+    .route-hub:hover { color: var(--accent); }
+    .route-hub small { color: var(--faint); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .64rem; }
+    .route-path-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 34px; row-gap: 18px; margin: 0; padding: 0; list-style: none; }
+    .route-path { padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+    .route-path:last-child { padding-bottom: 0; border-bottom: 0; }
+    .route-path-head { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 9px; }
+    .route-path-index { color: var(--accent); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .7rem; font-weight: 800; }
+    .route-path-title { display: block; color: var(--ink); font-size: .86rem; font-weight: 750; }
+    .route-path-description { display: block; margin-top: 3px; color: var(--muted); font-size: .76rem; line-height: 1.45; }
+    .route-path-items { display: grid; gap: 4px; margin: 10px 0 0 37px; padding: 0; list-style: none; counter-reset: route-step; }
+    .route-path-items li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 5px; align-items: baseline; counter-increment: route-step; font-size: .77rem; }
+    .route-path-items li::before { color: var(--faint); content: counter(route-step, decimal-leading-zero); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .64rem; }
+    .route-path-items a { color: var(--accent); }
+    .route-path-items .missing { color: var(--muted); }
+
+    .detail { position: sticky; top: 18px; padding: 17px 0 0 18px; border-left: 2px solid var(--accent); }
+    .detail.empty { color: var(--muted); }
+    .detail .kind { margin-bottom: 12px; color: var(--accent); font-size: .75rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .detail .excerpt { color: var(--muted); font-size: .92rem; }
+    .detail .meta { margin: 14px 0; color: var(--muted); font-size: .8rem; }
+    .detail-link { display: inline-flex; padding: 7px 0; border-bottom: 1px solid currentColor; font-weight: 750; }
+    .related { margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line); }
+    .related-heading { margin-bottom: 8px; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; }
+    .related-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+    .related-list a { display: block; color: var(--ink); font-size: .84rem; line-height: 1.4; }
+    .related-list a:hover { color: var(--accent); }
+    .related-empty { margin: 0; color: var(--muted); font-size: .84rem; }
+
+    .note-list { display: grid; }
+    .note-row { display: grid; grid-template-columns: 9px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 14px 0; border-bottom: 1px solid var(--line); }
+    .note-row .dot { margin-top: 8px; }
+    .note-title { display: block; margin-bottom: 2px; font-weight: 750; }
+    .note-excerpt { display: block; color: var(--muted); font-size: .87rem; }
+    .note-date { color: var(--muted); font-size: .78rem; white-space: nowrap; }
+    .empty-state { padding: 32px 0; border-bottom: 1px solid var(--line); color: var(--muted); text-align: center; }
+    .note-table-wrap { overflow-x: auto; border-top: 1px solid var(--line); }
+    .note-table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: .82rem; }
+    .note-table th { padding: 10px 12px 9px 0; border-bottom: 1px solid var(--line); color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .66rem; font-weight: 700; letter-spacing: .08em; text-align: left; text-transform: uppercase; }
+    .note-table td { padding: 13px 12px 13px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+    .note-table tbody tr:hover { background: rgba(47, 92, 73, .04); }
+    .note-table th:nth-child(1), .note-table td:nth-child(1) { width: 112px; }
+    .note-table th:nth-child(2), .note-table td:nth-child(2) { width: 27%; }
+    .note-table th:nth-child(3), .note-table td:nth-child(3) { width: auto; }
+    .note-table th:nth-child(4), .note-table td:nth-child(4) { width: 72px; }
+    .note-table th:nth-child(5), .note-table td:nth-child(5) { width: 82px; }
+    .note-table th:nth-child(6), .note-table td:nth-child(6) { width: 58px; text-align: right; }
+    .note-table th:nth-child(7), .note-table td:nth-child(7) { width: 94px; text-align: right; }
+    .note-table a { color: var(--ink); font-weight: 750; }
+    .note-table a:hover { color: var(--accent); }
+    .note-kind { font-size: .76rem; font-weight: 750; }
+    .note-kind.slipbox { color: var(--slipbox); }
+    .note-kind.blog { color: var(--blog); }
+    .note-kind.development { color: var(--development); }
+    .note-summary { display: -webkit-box; overflow: hidden; color: var(--muted); line-height: 1.45; text-overflow: ellipsis; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+    .note-role { color: var(--muted); font-size: .74rem; }
+    .note-role.hub { color: var(--accent); font-weight: 750; }
+    .dev-section { margin-top: 30px; }
+    .dev-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+    .dev-section-head h3 { margin: 0; font-size: 1.05rem; }
+    .dev-section-head span { color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .7rem; }
+    .dev-group { border-bottom: 1px solid var(--line); }
+    .dev-group summary { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; padding: 15px 0; cursor: pointer; list-style: none; }
+    .dev-group summary::-webkit-details-marker { display: none; }
+    .dev-group summary::before { width: 14px; color: var(--accent); content: "+"; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9rem; }
+    .dev-group[open] summary::before { content: "−"; }
+    .dev-group-summary { display: flex; flex: 1; align-items: baseline; gap: 10px; min-width: 0; }
+    .dev-group-title { color: var(--ink); font-size: .96rem; font-weight: 750; }
+    .dev-group-count { flex: 0 0 auto; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .7rem; }
+    .dev-group-body { padding-bottom: 7px; }
+    .dev-table { min-width: 760px; }
+    .dev-table th:nth-child(1), .dev-table td:nth-child(1) { width: 28%; }
+    .dev-table th:nth-child(2), .dev-table td:nth-child(2) { width: auto; }
+    .dev-table th:nth-child(3), .dev-table td:nth-child(3) { width: 25%; }
+    .dev-table th:nth-child(4), .dev-table td:nth-child(4) { width: 94px; text-align: right; }
+    .dev-tag-list { display: flex; flex-wrap: wrap; gap: 5px; }
+    .dev-tag { color: var(--muted); font-size: .7rem; }
+    .note-status { color: var(--muted); font-size: .74rem; }
+    .note-degree { color: var(--accent); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .74rem; }
+    .note-table .note-date { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .7rem; }
+
+    .book-index-note { max-width: 680px; }
+    .book-tier-section { margin-top: 27px; }
+    .book-tier-heading { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; padding-bottom: 7px; border-bottom: 1px solid var(--line); }
+    .book-tier-heading strong { color: var(--accent); font-family: Georgia, ui-serif, serif; font-size: 1.25rem; }
+    .book-tier-heading span { color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .7rem; }
+    .book-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px 20px; }
+    .book-card { display: flex; flex-direction: column; min-width: 0; padding: 0 0 20px; border-bottom: 1px solid var(--line); }
+    .book-cover-wrap { display: block; width: 100%; aspect-ratio: 11 / 16; background: var(--paper-strong); border: 1px solid var(--line); }
+    .book-cover { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .book-cover-placeholder { display: grid; width: 100%; height: 100%; place-items: center; padding: 8px; color: var(--faint); font-size: .7rem; text-align: center; }
+    .book-cover-placeholder[hidden] { display: none; }
+    .book-content { min-width: 0; padding-top: 11px; }
+    .book-title { display: -webkit-box; margin-bottom: 7px; overflow: hidden; color: var(--ink); font-size: .92rem; font-weight: 750; line-height: 1.4; text-overflow: ellipsis; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+    .book-title:hover { color: var(--accent); text-decoration: underline; }
+    .book-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 7px; }
+    .book-tier { color: var(--accent); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .68rem; font-weight: 800; letter-spacing: .08em; }
+    .book-rating { margin-bottom: 0; color: var(--accent); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .72rem; letter-spacing: .03em; }
+    .book-rating .stars { letter-spacing: -.12em; }
+    .book-rating .empty-rating { color: var(--faint); letter-spacing: 0; }
+    .book-note { display: -webkit-box; margin-bottom: 10px; overflow: hidden; color: var(--muted); font-size: .82rem; font-style: italic; line-height: 1.45; text-overflow: ellipsis; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+    .book-meta { color: var(--muted); font-size: .72rem; line-height: 1.55; }
+    .book-meta span { display: block; }
+    .book-status { color: var(--accent); }
+
+    footer { padding: 22px 0 50px; border-top: 1px solid var(--line); color: var(--muted); font-size: .78rem; }
+    footer a { font-weight: 700; }
+    @media (max-width: 780px) {
+      .path-grid, .graph-layout { grid-template-columns: 1fr; }
+      .entry-list { grid-template-columns: 1fr; }
+      .hub-grid { grid-template-columns: 1fr; }
+      .book-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .detail { position: static; }
+      #graph { min-height: 460px; }
+      .view-head { grid-template-columns: 1fr; gap: 4px; }
+      .view-head h2, .view-head p { display: block; margin-left: 0; }
+      .view-head p { margin-top: 5px; }
+      .note-date { display: none; }
+      .hub-entries-head { display: block; }
+      .hub-entries-head p { margin-top: 5px; }
+      .blog-group summary { align-items: start; }
+      .blog-group-summary { display: block; }
+      .blog-group-label { display: block; margin-bottom: 3px; }
+      .blog-group-body { padding-left: 24px; }
+      .blog-actions { align-items: start; flex-direction: column; gap: 7px; }
+      .site-header { align-items: flex-start; flex-direction: column; gap: 8px; padding-bottom: 0; }
+      .tabs { width: 100%; justify-content: flex-start; }
+      .site-mark { align-self: flex-end; }
+      .routes-panel-body { grid-template-columns: 1fr; gap: 20px; }
+      .route-path-list { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 480px) {
+      .book-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="site-header">
+      <span class="site-mark">TaeZ</span>
+      <nav class="tabs" aria-label="TaeZ site sections">
+        <button class="tab active" data-view="notes">노트</button>
+        <button class="tab" data-view="blog">글과 연재</button>
+        <button class="tab" data-view="development">개발 기록</button>
+        <button class="tab" data-view="books">독서 기록</button>
+      </nav>
+    </header>
+
+    <main id="app" aria-live="polite"></main>
+
+    <footer>
+      <a href="https://github.com/taez224/obsidian">TaeZ의 공개 노트</a> · <span id="generated-at"></span> 생성
+    </footer>
+  </div>
+
+  <script>
+    const DATA = __GARDEN_PAYLOAD__;
+    const state = { view: 'notes', query: '', kind: 'all', topic: 'all', graphLabelMode: 'smart', status: 'all', blogQuery: '', devQuery: '', devCategory: 'all', selected: null, positions: new Map(), graphTransform: { x: -30, y: -17.5, scale: 1.05 } };
+    const app = document.querySelector('#app');
+    let graphAnimationFrame = null;
+    const kindLabels = { slipbox: 'Slipbox', blog: 'Blog', development: 'Development' };
+    const graphTopicColors = { AI: '#80698f', 소프트웨어공학: '#5d7897', 커리어: '#9a7852', 지식관리: '#5c806c', 글쓰기: '#9c6e6e', 철학: '#7b7086', 개발: '#5f8184', 기타: '#817f72' };
+    const graphTopicOrder = ['AI', '소프트웨어공학', '커리어', '지식관리', '글쓰기', '철학', '개발', '기타'];
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
+    }
+
+    function safeUrl(value) {
+      return /^https:\/\//.test(value) ? value : '#';
+    }
+
+    function nodeDisplayTitle(node) {
+      return node.displayTitle || node.title;
+    }
+
+    function visibleNodes() {
+      const query = state.query.trim().toLowerCase();
+      return DATA.nodes.filter((node) => {
+        const matchesKind = state.kind === 'all' || node.kind === state.kind;
+        const matchesTopic = state.topic === 'all' || node.topic === state.topic;
+        const haystack = `${nodeDisplayTitle(node)} ${node.title} ${node.path} ${node.summary} ${node.excerpt} ${(node.tags || []).join(' ')}`.toLowerCase();
+        return matchesKind && matchesTopic && (!query || haystack.includes(query));
+      });
+    }
+
+    function renderPaths() {
+      const hubOrder = [
+        '01_Slipbox/생각의 정원.md',
+        '01_Slipbox/AI 활용.md',
+        '01_Slipbox/나의 일하는 방식.md'
+      ];
+      const hubs = hubOrder.map((path) => DATA.nodes.find((node) => node.path === path)).filter(Boolean);
+      const hubLinks = new Map(hubs.map((hub) => [hub.id, DATA.nodes
+        .filter((node) => DATA.edges.some((edge) => edge.source === hub.id && edge.target === node.id))
+        .sort((left, right) => left.title.localeCompare(right.title, 'ko'))]));
+      app.innerHTML = `
+        <section class="hub-entries">
+          <div class="hub-entries-head"><h2>입구</h2><p>반복해서 돌아오는 질문에서 시작해보세요.</p></div>
+          <div class="hub-grid">
+            ${hubs.map((hub, index) => {
+              const links = hubLinks.get(hub.id) ?? [];
+              return `<article class="hub-card">
+              <div class="hub-card-top"><span class="hub-card-index">${String(index + 1).padStart(2, '0')}</span><span>허브</span></div>
+              <h3>${escapeHtml(nodeDisplayTitle(hub))}</h3>
+              <p>${escapeHtml(hub.summary || hub.excerpt || '이 허브에서 연결된 노트를 따라가 볼 수 있습니다.')}</p>
+              ${links.length ? `<details class="hub-links"><summary>직접 연결된 노트 ${links.length}개</summary><ul>${links.map((link) => `<li><button class="hub-note" type="button" data-node="${escapeHtml(link.id)}"><span>${escapeHtml(nodeDisplayTitle(link))}</span><small>${link.degree}개 연결</small></button></li>`).join('')}</ul></details>` : ''}
+              <div class="hub-card-foot"><span>${hub.degree}개 연결</span><span><button class="hub-card-link hub-graph-link" type="button" data-node="${escapeHtml(hub.id)}">연결 보기</button> · <a class="hub-card-source" href="${safeUrl(hub.url)}">원문 ↗</a></span></div>
+            </article>`;
+            }).join('')}
+          </div>
+        </section>
+        <div class="view-head">
+          <div><h2>추천 경로</h2><p>관심 있는 질문을 골라 관련 기록을 따라가 보세요.</p></div>
+          <span class="count">${DATA.paths.length}개 경로 · ${DATA.stats.nodes}개 노트</span>
+        </div>
+        <div class="path-grid">
+          ${DATA.paths.map((readingPath, index) => `
+            <article class="card path-card">
+              <div class="path-card-top"><span class="path-index">${String(index + 1).padStart(2, '0')}</span><span class="path-label">읽는 경로</span></div>
+              <h3>${escapeHtml(readingPath.title)}</h3>
+              <p>${escapeHtml(readingPath.description)}</p>
+              <ol>
+                ${readingPath.items.map((item) => item.missing
+                  ? `<li class="missing">${escapeHtml(item.label)} <small>(not in public scope)</small></li>`
+                  : `<li><a href="${safeUrl(item.url)}">${escapeHtml(item.label)} ↗</a></li>`).join('')}
+              </ol>
+            </article>
+          `).join('')}
+        </div>`;
+      document.querySelectorAll('.hub-graph-link, .hub-note').forEach((button) => button.addEventListener('click', () => openGraphNode(button.dataset.node)));
+    }
+
+    function openGraphNode(nodeId) {
+      state.view = 'notes';
+      state.query = '';
+      state.kind = 'all';
+      state.topic = 'all';
+      state.selected = nodeId;
+      render();
+      focusGraphNode(nodeId);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function hashPosition(id, width, height, index) {
+      let hash = 0;
+      for (const char of id) hash = ((hash << 5) - hash + char.charCodeAt(0)) | 0;
+      const angle = Math.abs(hash % 628) / 100;
+      const radius = 80 + Math.abs(hash % 190);
+      return {
+        x: width / 2 + Math.cos(angle) * radius + ((index % 5) - 2) * 24,
+        y: height / 2 + Math.sin(angle) * radius + ((index % 7) - 3) * 18
+      };
+    }
+
+    function layoutGraph(nodes, edges, width = 1200, height = 700) {
+      const positions = new Map(nodes.map((node, index) => [node.id, hashPosition(node.id, width, height, index)]));
+      const activeTopics = graphTopicOrder.filter((topic) => nodes.some((node) => node.topic === topic));
+      const anchorSets = {
+        1: [{ x: width * .5, y: height * .5 }],
+        2: [{ x: width * .3, y: height * .5 }, { x: width * .7, y: height * .5 }],
+        3: [{ x: width * .25, y: height * .3 }, { x: width * .75, y: height * .3 }, { x: width * .5, y: height * .73 }],
+        4: [{ x: width * .28, y: height * .28 }, { x: width * .72, y: height * .28 }, { x: width * .28, y: height * .72 }, { x: width * .72, y: height * .72 }],
+        5: [{ x: width * .22, y: height * .28 }, { x: width * .5, y: height * .2 }, { x: width * .78, y: height * .28 }, { x: width * .32, y: height * .72 }, { x: width * .68, y: height * .72 }],
+        6: [{ x: width * .2, y: height * .24 }, { x: width * .5, y: height * .19 }, { x: width * .8, y: height * .24 }, { x: width * .2, y: height * .73 }, { x: width * .5, y: height * .78 }, { x: width * .8, y: height * .73 }]
+      };
+      const anchors = anchorSets[Math.min(activeTopics.length, 6)];
+      const centers = new Map(activeTopics.map((topic, index) => [topic, anchors[index % anchors.length]]));
+      const edgePairs = edges.filter((edge) => positions.has(edge.source) && positions.has(edge.target));
+      for (let iteration = 0; iteration < 120; iteration += 1) {
+        const force = new Map(nodes.map((node) => [node.id, { x: 0, y: 0 }]));
+        for (let leftIndex = 0; leftIndex < nodes.length; leftIndex += 1) {
+          for (let rightIndex = leftIndex + 1; rightIndex < nodes.length; rightIndex += 1) {
+            const left = positions.get(nodes[leftIndex].id);
+            const right = positions.get(nodes[rightIndex].id);
+            let dx = left.x - right.x;
+            let dy = left.y - right.y;
+            const distance = Math.max(18, Math.hypot(dx, dy));
+            const strength = 3200 / (distance * distance);
+            dx = dx / distance * strength;
+            dy = dy / distance * strength;
+            force.get(nodes[leftIndex].id).x += dx;
+            force.get(nodes[leftIndex].id).y += dy;
+            force.get(nodes[rightIndex].id).x -= dx;
+            force.get(nodes[rightIndex].id).y -= dy;
+          }
+        }
+        for (const edge of edgePairs) {
+          const source = positions.get(edge.source);
+          const target = positions.get(edge.target);
+          let dx = target.x - source.x;
+          let dy = target.y - source.y;
+          const distance = Math.max(1, Math.hypot(dx, dy));
+          const strength = (distance - 125) * .0045;
+          dx = dx / distance * strength;
+          dy = dy / distance * strength;
+          force.get(edge.source).x += dx;
+          force.get(edge.source).y += dy;
+          force.get(edge.target).x -= dx;
+          force.get(edge.target).y -= dy;
+        }
+        for (const node of nodes) {
+          const point = positions.get(node.id);
+          const center = centers.get(node.topic) ?? { x: width / 2, y: height / 2 };
+          const pull = iteration < 40 ? .0025 : .0011;
+          const currentForce = force.get(node.id);
+          currentForce.x += (center.x - point.x) * pull;
+          currentForce.y += (center.y - point.y) * pull;
+          point.x = Math.max(24, Math.min(width - 24, point.x + currentForce.x * 8));
+          point.y = Math.max(24, Math.min(height - 24, point.y + currentForce.y * 8));
+        }
+      }
+      return positions;
+    }
+
+    function clearSelection() {
+      cancelGraphAnimation();
+      state.selected = null;
+      const detail = document.querySelector('#detail');
+      if (detail) {
+        detail.classList.add('empty');
+        detail.innerHTML = '노드를 선택하면 노트 요약과 원문 링크가 여기에 표시됩니다.';
+      }
+      document.querySelectorAll('.graph-node').forEach((element) => {
+        element.setAttribute('aria-pressed', 'false');
+        element.classList.remove('is-selected', 'is-neighbor', 'is-dim');
+      });
+      document.querySelectorAll('.graph-edge').forEach((element) => element.classList.remove('is-connected', 'is-dim'));
+    }
+
+    function applyGraphTransform() {
+      const scene = document.querySelector('#graph-scene');
+      if (!scene) return;
+      const { x, y, scale } = state.graphTransform;
+      scene.setAttribute('transform', `translate(${x.toFixed(2)} ${y.toFixed(2)}) scale(${scale.toFixed(3)})`);
+    }
+
+    function cancelGraphAnimation() {
+      if (graphAnimationFrame !== null) cancelAnimationFrame(graphAnimationFrame);
+      graphAnimationFrame = null;
+    }
+
+    function animateGraphTransform(target, duration = 320) {
+      cancelGraphAnimation();
+      const start = { ...state.graphTransform };
+      const startedAt = performance.now();
+      const ease = (value) => 1 - Math.pow(1 - value, 3);
+      const frame = (now) => {
+        const progress = Math.min(1, (now - startedAt) / duration);
+        const eased = ease(progress);
+        state.graphTransform = {
+          x: start.x + (target.x - start.x) * eased,
+          y: start.y + (target.y - start.y) * eased,
+          scale: start.scale + (target.scale - start.scale) * eased
+        };
+        applyGraphTransform();
+        if (progress < 1) graphAnimationFrame = requestAnimationFrame(frame);
+        else graphAnimationFrame = null;
+      };
+      graphAnimationFrame = requestAnimationFrame(frame);
+    }
+
+    function focusGraphNode(nodeId) {
+      const point = state.positions.get(nodeId);
+      if (!point) return;
+      const scale = Math.max(state.graphTransform.scale, 1.2);
+      animateGraphTransform({ x: 600 - point.x * scale, y: 350 - point.y * scale, scale });
+    }
+
+    function graphPoint(svg, event) {
+      const rect = svg.getBoundingClientRect();
+      return {
+        x: (event.clientX - rect.left) * 1200 / rect.width,
+        y: (event.clientY - rect.top) * 700 / rect.height
+      };
+    }
+
+    function wrapGraphLabel(value, maxLength = 14) {
+      const characters = [...String(value ?? '')];
+      const lines = [];
+      while (characters.length && lines.length < 2) lines.push(characters.splice(0, maxLength).join(''));
+      if (characters.length && lines.length) lines[lines.length - 1] = `${lines[lines.length - 1].slice(0, -1)}…`;
+      return lines.length ? lines : [''];
+    }
+
+    function zoomGraph(factor, focus = { x: 600, y: 350 }) {
+      cancelGraphAnimation();
+      const current = state.graphTransform;
+      const scale = Math.max(.65, Math.min(3.2, current.scale * factor));
+      const worldX = (focus.x - current.x) / current.scale;
+      const worldY = (focus.y - current.y) / current.scale;
+      state.graphTransform = {
+        scale,
+        x: focus.x - worldX * scale,
+        y: focus.y - worldY * scale
+      };
+      applyGraphTransform();
+    }
+
+    function resetGraphView() {
+      cancelGraphAnimation();
+      state.graphTransform = { x: 0, y: 0, scale: 1 };
+      applyGraphTransform();
+    }
+
+    function selectNode(nodeId, shouldFocus = false) {
+      state.selected = nodeId;
+      const node = DATA.nodes.find((candidate) => candidate.id === nodeId);
+      const detail = document.querySelector('#detail');
+      if (!node || !detail) return;
+      const relatedIds = new Set();
+      for (const edge of DATA.edges) {
+        if (edge.source === nodeId) relatedIds.add(edge.target);
+        if (edge.target === nodeId) relatedIds.add(edge.source);
+      }
+      const relatedNodes = DATA.nodes.filter((candidate) => relatedIds.has(candidate.id)).sort((left, right) => left.title.localeCompare(right.title, 'ko'));
+      detail.classList.remove('empty');
+      detail.innerHTML = `
+        <div class="kind">${escapeHtml(kindLabels[node.kind])}</div>
+        <h3>${escapeHtml(nodeDisplayTitle(node))}</h3>
+        <p class="excerpt">${escapeHtml(node.summary || node.excerpt || '이 노트에 대한 요약이 아직 없습니다.')}</p>
+        <p class="meta">${escapeHtml(node.date || '날짜 미상')} · 연결 ${node.degree}개</p>
+        <a class="detail-link" href="${safeUrl(node.url)}">원문 노트 열기 ↗</a>
+        <div class="related">
+          <div class="related-heading">직접 연결된 노트 · ${relatedNodes.length}</div>
+          ${relatedNodes.length ? `<ul class="related-list">${relatedNodes.map((related) => `<li><a href="${safeUrl(related.url)}">${escapeHtml(related.title)} ↗</a></li>`).join('')}</ul>` : '<p class="related-empty">직접 연결된 공개 노트가 없습니다.</p>'}
+        </div>`;
+      document.querySelectorAll('.graph-node').forEach((element) => {
+        const isSelected = element.dataset.node === nodeId;
+        element.setAttribute('aria-pressed', String(isSelected));
+        element.classList.toggle('is-selected', isSelected);
+        element.classList.toggle('is-neighbor', relatedIds.has(element.dataset.node));
+        element.classList.toggle('is-dim', !isSelected && !relatedIds.has(element.dataset.node));
+      });
+      document.querySelectorAll('.graph-edge').forEach((element) => {
+        const touchesSelected = element.dataset.source === nodeId || element.dataset.target === nodeId;
+        element.classList.toggle('is-connected', touchesSelected);
+        element.classList.toggle('is-dim', !touchesSelected);
+      });
+      if (shouldFocus) focusGraphNode(nodeId);
+    }
+
+    function renderEntryPanel() {
+      const hubOrder = [
+        '01_Slipbox/생각의 정원.md',
+        '01_Slipbox/AI 활용.md',
+        '01_Slipbox/나의 일하는 방식.md'
+      ];
+      const hubs = hubOrder.map((path) => DATA.nodes.find((node) => node.path === path)).filter(Boolean);
+      return `<section class="entry-strip"><div class="entry-strip-head"><h2>입구</h2><span>허브를 골라 연결을 따라가 보세요.</span></div><div class="entry-list">${hubs.map((hub, index) => `<button class="entry-item" type="button" data-node="${escapeHtml(hub.id)}"><span class="entry-index">${String(index + 1).padStart(2, '0')}</span><span class="entry-title">${escapeHtml(nodeDisplayTitle(hub))}</span><small>${hub.degree}개 연결</small></button>`).join('')}</div></section>`;
+    }
+
+    function renderRoutesPanel() {
+      const pathItems = DATA.paths.map((readingPath, index) => `<li class="route-path"><div class="route-path-head"><span class="route-path-index">${String(index + 1).padStart(2, '0')}</span><div><span class="route-path-title">${escapeHtml(readingPath.title)}</span><span class="route-path-description">${escapeHtml(readingPath.description)}</span></div></div><ol class="route-path-items">${readingPath.items.map((item) => item.missing ? `<li class="missing">${escapeHtml(item.label)}</li>` : `<li><a href="${safeUrl(item.url)}">${escapeHtml(item.label)}</a></li>`).join('')}</ol></li>`).join('');
+      return `<section class="routes-panel" aria-labelledby="routes-heading"><div class="routes-panel-heading"><span id="routes-heading">추천 경로</span><span class="routes-panel-count">${DATA.paths.length}개 경로</span></div><div class="routes-panel-body single"><div class="routes-column"><ol class="route-path-list">${pathItems}</ol></div></div></section>`;
+    }
+
+    function renderGraph() {
+      const topics = graphTopicOrder.filter((topic) => DATA.nodes.some((node) => node.topic === topic));
+      app.innerHTML = `
+        ${renderEntryPanel()}
+        <div class="view-head">
+          <div><h2>Slipbox 그래프</h2><p>허브와 영구 노트 사이의 연결을 탐색할 수 있습니다.</p></div>
+          <span class="count">${DATA.stats.nodes}개 노트 · ${DATA.stats.edges}개 연결</span>
+        </div>
+        <div class="tools">
+          <input id="graph-search" type="search" placeholder="노트 검색" value="${escapeHtml(state.query)}" aria-label="노트 검색" />
+          <select id="graph-topic" aria-label="Slipbox 주제 필터">
+            <option value="all" ${state.topic === 'all' ? 'selected' : ''}>모든 주제</option>
+            ${topics.map((topic) => `<option value="${escapeHtml(topic)}" ${state.topic === topic ? 'selected' : ''}>${escapeHtml(topic)}</option>`).join('')}
+          </select>
+          <select id="graph-label-mode" aria-label="그래프 제목 표시 방식">
+            <option value="smart" ${state.graphLabelMode === 'smart' ? 'selected' : ''}>핵심 제목만</option>
+            <option value="all" ${state.graphLabelMode === 'all' ? 'selected' : ''}>전체 제목</option>
+          </select>
+        </div>
+        <div class="graph-layout">
+          <div class="card graph-card">
+            <div class="graph-controls"><span>트랙패드 핀치·휠로 확대·축소 · 빈 곳을 드래그해 이동</span><span class="graph-control-buttons"><button class="graph-control" type="button" data-graph-action="zoom-out" aria-label="축소">−</button><button class="graph-control" type="button" data-graph-action="reset">1×</button><button class="graph-control" type="button" data-graph-action="zoom-in" aria-label="확대">＋</button></span></div>
+            <svg id="graph" viewBox="0 0 1200 700" role="img" aria-label="노트 연결 그래프"></svg>
+            <div class="legend">
+              ${topics.map((topic) => `<button class="legend-filter${state.topic === topic ? ' active' : ''}" type="button" data-topic="${escapeHtml(topic)}" aria-pressed="${state.topic === topic}"><i class="dot" style="background:${graphTopicColors[topic]}"></i>${escapeHtml(topic)}</button>`).join('')}
+              <span><i class="dot hub-dot"></i>허브</span>
+            </div>
+          </div>
+          <aside id="detail" class="card detail empty">노드를 선택하면 노트 요약과 원문 링크가 여기에 표시됩니다.</aside>
+        </div>
+        ${renderRoutesPanel()}`;
+
+      document.querySelector('#graph-search').addEventListener('input', (event) => { state.query = event.target.value; renderGraph(); });
+      document.querySelector('#graph-topic').addEventListener('change', (event) => { state.topic = event.target.value; state.selected = null; renderGraph(); });
+      document.querySelector('#graph-label-mode').addEventListener('change', (event) => { state.graphLabelMode = event.target.value; document.querySelector('#graph').classList.toggle('labels-all', state.graphLabelMode === 'all'); });
+      document.querySelectorAll('.legend-filter').forEach((button) => button.addEventListener('click', () => {
+        state.topic = state.topic === button.dataset.topic ? 'all' : button.dataset.topic;
+        state.selected = null;
+        renderGraph();
+      }));
+      const nodes = visibleNodes();
+      const nodeIds = new Set(nodes.map((node) => node.id));
+      const edges = DATA.edges.filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target));
+      const positions = layoutGraph(nodes, edges);
+      state.positions = positions;
+      const svg = document.querySelector('#graph');
+      const lineMarkup = edges.map((edge) => {
+        const source = positions.get(edge.source);
+        const target = positions.get(edge.target);
+        return `<line class="graph-edge" data-source="${escapeHtml(edge.source)}" data-target="${escapeHtml(edge.target)}" x1="${source.x.toFixed(1)}" y1="${source.y.toFixed(1)}" x2="${target.x.toFixed(1)}" y2="${target.y.toFixed(1)}" />`;
+      }).join('');
+      const nodeMarkup = nodes.map((node) => {
+        const point = positions.get(node.id);
+        const isHub = node.type === 'hub';
+        const radius = isHub ? Math.min(18, 9 + Math.sqrt(node.degree + 1) * 2) : Math.min(13, 5 + Math.sqrt(node.degree + 1) * 2);
+        const labelLines = wrapGraphLabel(nodeDisplayTitle(node));
+        const labelX = point.x + radius + 4;
+        const labelY = point.y - ((labelLines.length - 1) * 6) + 3;
+        const label = labelLines.map((line, lineIndex) => `<tspan x="${labelX.toFixed(1)}" dy="${lineIndex === 0 ? 0 : 12}">${escapeHtml(line)}</tspan>`).join('');
+        const ring = isHub ? `<circle class="graph-hub-ring" cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="${(radius + 5).toFixed(1)}" />` : '';
+        return `<g class="graph-node${isHub ? ' is-hub' : ''}" data-node="${escapeHtml(node.id)}" tabindex="0" role="button" aria-label="${escapeHtml(nodeDisplayTitle(node))}" aria-pressed="false"><title>${escapeHtml(nodeDisplayTitle(node))}</title>${ring}<circle class="graph-node-dot" cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="${radius.toFixed(1)}" fill="${graphTopicColors[node.topic] || graphTopicColors.기타}" /><text class="graph-label" x="${labelX.toFixed(1)}" y="${labelY.toFixed(1)}">${label}</text></g>`;
+      }).join('');
+      svg.innerHTML = `<g id="graph-scene">${lineMarkup + nodeMarkup}</g>`;
+      svg.classList.toggle('labels-all', state.graphLabelMode === 'all');
+      svg.classList.toggle('labels-filtered', state.topic !== 'all');
+      applyGraphTransform();
+      document.querySelectorAll('.graph-node').forEach((element) => {
+        element.addEventListener('click', (event) => {
+          event.stopPropagation();
+          if (state.selected === element.dataset.node) clearSelection();
+          else selectNode(element.dataset.node, true);
+        });
+        element.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); if (state.selected === element.dataset.node) clearSelection(); else selectNode(element.dataset.node, true); } });
+      });
+      let panStart = null;
+      svg.addEventListener('pointerdown', (event) => {
+        if (event.target.closest?.('.graph-node')) return;
+        cancelGraphAnimation();
+        panStart = { clientX: event.clientX, clientY: event.clientY, x: state.graphTransform.x, y: state.graphTransform.y, moved: false };
+        svg.setPointerCapture(event.pointerId);
+        svg.classList.add('is-panning');
+      });
+      svg.addEventListener('pointermove', (event) => {
+        if (!panStart) return;
+        const dx = event.clientX - panStart.clientX;
+        const dy = event.clientY - panStart.clientY;
+        if (Math.hypot(dx, dy) > 3) panStart.moved = true;
+        state.graphTransform.x = panStart.x + dx * 1200 / svg.clientWidth;
+        state.graphTransform.y = panStart.y + dy * 700 / svg.clientHeight;
+        applyGraphTransform();
+      });
+      const finishPan = (event) => {
+        if (!panStart) return;
+        svg.dataset.suppressClick = String(panStart.moved);
+        panStart = null;
+        svg.classList.remove('is-panning');
+        if (svg.hasPointerCapture(event.pointerId)) svg.releasePointerCapture(event.pointerId);
+      };
+      svg.addEventListener('pointerup', finishPan);
+      svg.addEventListener('pointercancel', finishPan);
+      svg.addEventListener('click', (event) => {
+        if (svg.dataset.suppressClick === 'true') {
+          delete svg.dataset.suppressClick;
+          return;
+        }
+        if (!event.target.closest?.('.graph-node')) clearSelection();
+      });
+      svg.addEventListener('wheel', (event) => {
+        const isTrackpadPinch = event.ctrlKey;
+        const isLineBasedMouseWheel = event.deltaMode === 1;
+        if (!isTrackpadPinch && !isLineBasedMouseWheel) return;
+        event.preventDefault();
+        const factor = Math.max(.82, Math.min(1.22, Math.exp(-event.deltaY * .008)));
+        zoomGraph(factor, graphPoint(svg, event));
+      }, { passive: false });
+      document.querySelector('[data-graph-action="zoom-out"]').addEventListener('click', () => zoomGraph(.84));
+      document.querySelector('[data-graph-action="reset"]').addEventListener('click', resetGraphView);
+      document.querySelector('[data-graph-action="zoom-in"]').addEventListener('click', () => zoomGraph(1.19));
+      document.querySelectorAll('.entry-item, .route-hub').forEach((button) => button.addEventListener('click', () => openGraphNode(button.dataset.node)));
+      if (state.selected && nodeIds.has(state.selected)) selectNode(state.selected);
+    }
+
+    function blogStatusLabel(status) {
+      return ({ active: '진행 중', completed: '완결', 'on-hold': '잠정 중단' })[status] || status || '상태 미상';
+    }
+
+    function matchesBlogQuery(post, query) {
+      const haystack = `${post.title} ${post.fileTitle} ${post.summary} ${post.publication} ${post.series}`.toLowerCase();
+      return !query || haystack.includes(query);
+    }
+
+    function latestBlogDate(posts, fallback = '') {
+      return posts.map((post) => post.published).filter(Boolean).sort().at(-1) || fallback;
+    }
+
+    function renderBlogPost(post, index) {
+      const title = post.fileTitle || post.title;
+      const noteLink = post.url !== post.noteUrl && post.noteUrl
+        ? `<a class="blog-note-link" href="${safeUrl(post.noteUrl)}">노트</a>`
+        : '';
+      return `<li class="blog-post"><span class="blog-post-order">${String(index + 1).padStart(2, '0')}</span><div class="blog-post-main"><a class="blog-post-title" href="${safeUrl(post.url)}" title="${escapeHtml(post.title)}">${escapeHtml(title)} ↗</a><span class="blog-post-summary">${escapeHtml(post.summary || '요약 없음')}</span><span class="blog-post-meta">${escapeHtml(post.publication || '발행처 미상')} · ${escapeHtml(post.published || '발행일 미상')}</span></div>${noteLink}</li>`;
+    }
+
+    function renderBlog() {
+      const query = state.blogQuery.trim().toLowerCase();
+      const series = DATA.blog.series
+        .map((group) => ({ ...group, posts: group.posts.filter((post) => matchesBlogQuery(post, query)) }))
+        .filter((group) => group.posts.length);
+      const publications = DATA.blog.publications
+        .map((group) => ({ ...group, posts: group.posts.filter((post) => matchesBlogQuery(post, query)) }))
+        .filter((group) => group.posts.length);
+      const visiblePosts = [...series.flatMap((group) => group.posts), ...publications.flatMap((group) => group.posts)];
+      app.innerHTML = `
+        <div class="view-head">
+          <div><h2>글과 연재</h2><p>연재는 흐름으로, 단독 글은 발행처별로 모아두었습니다.</p></div>
+          <span class="count">${visiblePosts.length}편 · ${series.length}개 시리즈</span>
+        </div>
+        <div class="tools">
+          <input id="blog-search" type="search" placeholder="글·시리즈·발행처 검색" value="${escapeHtml(state.blogQuery)}" aria-label="글·시리즈·발행처 검색" />
+        </div>
+        <div class="blog-actions"><span>발행된 글만 표시 · 제목은 실제 발행 글로 이동합니다.</span><span class="blog-action-buttons"><button class="blog-action" type="button" data-blog-action="open">모두 펼치기</button><button class="blog-action" type="button" data-blog-action="close">모두 접기</button></span></div>
+        <section class="blog-section">
+          <div class="blog-section-head"><h3>연재</h3><span>${series.length}개</span></div>
+          ${series.length ? series.map((group) => { const latest = latestBlogDate(group.posts, group.lastPublished); return `<details class="blog-group"${query ? ' open' : ''}><summary><span class="blog-group-summary"><span class="blog-group-label">연재</span><span class="blog-group-title">${escapeHtml(group.title)}</span></span><span class="blog-group-count">${group.posts.length}편 · ${escapeHtml(blogStatusLabel(group.status))}${latest ? ` · 최근 ${escapeHtml(latest)}` : ''}</span></summary><div class="blog-group-body">${group.summary ? `<p class="blog-group-intro">${escapeHtml(group.summary)}</p>` : ''}<ul class="blog-post-list">${group.posts.map(renderBlogPost).join('')}</ul></div></details>`; }).join('') : '<p class="empty-state">검색 조건에 맞는 공개 연재가 없습니다.</p>'}
+        </section>
+        <section class="blog-section">
+          <div class="blog-section-head"><h3>단독 글</h3><span>${publications.reduce((total, group) => total + group.posts.length, 0)}편</span></div>
+          ${publications.length ? publications.map((group) => { const latest = latestBlogDate(group.posts); return `<details class="blog-group"${query ? ' open' : ''}><summary><span class="blog-group-summary"><span class="blog-group-label">발행처</span><span class="blog-group-title">${escapeHtml(group.publication)}</span></span><span class="blog-group-count">${group.posts.length}편${latest ? ` · 최근 ${escapeHtml(latest)}` : ''}</span></summary><div class="blog-group-body"><ul class="blog-post-list">${group.posts.map(renderBlogPost).join('')}</ul></div></details>`; }).join('') : '<p class="empty-state">검색 조건에 맞는 단독 글이 없습니다.</p>'}
+        </section>`;
+      document.querySelector('#blog-search').addEventListener('input', (event) => { state.blogQuery = event.target.value; renderBlog(); });
+      document.querySelectorAll('.blog-action').forEach((button) => button.addEventListener('click', () => { document.querySelectorAll('.blog-group').forEach((group) => { group.open = button.dataset.blogAction === 'open'; }); }));
+    }
+
+    function visibleBooks() {
+      const query = state.query.trim().toLowerCase();
+      return DATA.books.filter((book) => {
+        const matchesStatus = state.status === 'all' || book.status === state.status;
+        const haystack = `${book.title} ${book.author} ${book.publisher} ${book.note}`.toLowerCase();
+        return matchesStatus && (!query || haystack.includes(query));
+      });
+    }
+
+    function ratingMarkup(rate) {
+      if (!rate) return '<span class="empty-rating">별점 없음</span>';
+      const filled = Math.max(0, Math.min(5, Math.round(rate)));
+      return `<span class="stars">${'★'.repeat(filled)}${'☆'.repeat(5 - filled)}</span> ${rate}`;
+    }
+
+    function renderBookCard(book) {
+      const title = book.fileTitle || book.title;
+      const bookUrl = safeUrl(book.url);
+      const coverUrl = safeUrl(book.coverUrl);
+      const cover = coverUrl !== '#'
+        ? `<img class="book-cover" src="${coverUrl}" alt="${escapeHtml(title)} 표지" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false" /><span class="book-cover-placeholder" hidden>표지 없음</span>`
+        : '<span class="book-cover-placeholder">표지 없음</span>';
+      return `
+        <article class="book-card">
+          <a class="book-cover-wrap" href="${bookUrl}" aria-label="${escapeHtml(title)} 원문 열기">${cover}</a>
+          <div class="book-content">
+            <a class="book-title" href="${bookUrl}" title="${escapeHtml(book.title)}">${escapeHtml(title)}</a>
+            <div class="book-card-top"><span class="book-tier">${escapeHtml(book.tier)}</span><div class="book-rating">${ratingMarkup(book.rate)}</div></div>
+            ${book.note ? `<div class="book-note">${escapeHtml(book.note)}</div>` : ''}
+            <div class="book-meta">
+              ${book.author ? `<span>${escapeHtml(book.author)}</span>` : ''}
+              ${book.publisher || book.category ? `<span>${escapeHtml([book.publisher, book.category].filter(Boolean).join(' · '))}</span>` : ''}
+              ${book.status ? `<span class="book-status">${escapeHtml(book.status)}${book.finishDate ? ` · ${escapeHtml(book.finishDate)}` : ''}</span>` : ''}
+            </div>
+          </div>
+        </article>`;
+    }
+
+    function renderBooks() {
+      const books = visibleBooks();
+      const tierOrder = ['S', 'A', 'B', 'C', 'D', '미분류'];
+      const statuses = [...new Set(DATA.books.map((book) => book.status).filter(Boolean))];
+      const tierSections = tierOrder.map((tier) => {
+        const tierBooks = books.filter((book) => book.tier === tier);
+        if (!tierBooks.length) return '';
+        return `<section class="book-tier-section" id="book-tier-${escapeHtml(tier)}"><div class="book-tier-heading"><strong>${tier}</strong><span>${tierBooks.length}권</span></div><div class="book-grid">${tierBooks.map(renderBookCard).join('')}</div></section>`;
+      }).join('');
+      app.innerHTML = `
+        <div class="view-head">
+          <div><h2>독서 기록</h2><p>평점과 독서 상태를 기준으로 정리한 책 기록입니다.</p></div>
+          <span class="count">${books.length}권</span>
+        </div>
+        <div class="tools">
+          <input id="books-search" type="search" placeholder="책·저자 검색" value="${escapeHtml(state.query)}" aria-label="책·저자 검색" />
+          <select id="books-status" aria-label="독서 상태 필터">
+            <option value="all" ${state.status === 'all' ? 'selected' : ''}>모든 상태</option>
+            ${statuses.map((status) => `<option value="${escapeHtml(status)}" ${state.status === status ? 'selected' : ''}>${escapeHtml(status)}</option>`).join('')}
+          </select>
+        </div>
+        ${books.length ? tierSections : '<div class="empty-state">조건에 맞는 책이 없습니다.</div>'}`;
+      document.querySelector('#books-search').addEventListener('input', (event) => { state.query = event.target.value; renderBooks(); });
+      document.querySelector('#books-status').addEventListener('change', (event) => { state.status = event.target.value; renderBooks(); });
+    }
+
+    function visibleDevelopment() {
+      const records = [...DATA.development.troubleshooting, ...DATA.development.tools];
+      const query = state.devQuery.trim().toLowerCase();
+      return records.filter((record) => {
+        const matchesCategory = state.devCategory === 'all' || record.category === state.devCategory;
+        const haystack = `${record.title} ${record.summary} ${record.tags.join(' ')}`.toLowerCase();
+        return matchesCategory && (!query || haystack.includes(query));
+      });
+    }
+
+    function displayDevelopmentTags(record) {
+      const structuralTag = record.category === 'Troubleshooting' ? '개발/트러블슈팅' : '개발/도구';
+      return record.tags
+        .filter((tag) => tag !== structuralTag)
+        .map((tag) => tag.startsWith('개발/') ? tag.slice(3) : tag);
+    }
+
+    function renderDevelopment() {
+      const records = visibleDevelopment();
+      const groups = [
+        { category: 'Troubleshooting', title: '문제 해결', records: records.filter((record) => record.category === 'Troubleshooting') },
+        { category: 'Tools', title: '도구·워크플로', records: records.filter((record) => record.category === 'Tools') }
+      ].filter((group) => group.records.length);
+      app.innerHTML = `
+        <div class="view-head">
+          <div><h2>개발 기록</h2><p>재현 가능한 문제 해결과 도구·워크플로를 Base처럼 정리했습니다.</p></div>
+          <span class="count">${records.length}개</span>
+        </div>
+        <div class="tools">
+          <input id="dev-search" type="search" placeholder="기록·기술 태그 검색" value="${escapeHtml(state.devQuery)}" aria-label="기록·기술 태그 검색" />
+          <select id="dev-category" aria-label="개발 기록 종류 필터">
+            <option value="all" ${state.devCategory === 'all' ? 'selected' : ''}>모든 기록</option>
+            <option value="Troubleshooting" ${state.devCategory === 'Troubleshooting' ? 'selected' : ''}>문제 해결</option>
+            <option value="Tools" ${state.devCategory === 'Tools' ? 'selected' : ''}>도구·워크플로</option>
+          </select>
+        </div>
+        ${groups.length ? groups.map((group, index) => `<details class="dev-group"${index === 0 ? ' open' : ''}><summary><span class="dev-group-summary"><span class="dev-group-title">${escapeHtml(group.title)}</span></span><span class="dev-group-count">${group.records.length}개</span></summary><div class="dev-group-body"><div class="note-table-wrap"><table class="note-table dev-table"><thead><tr><th>기록</th><th>요약</th><th>기술·주제</th><th>날짜</th></tr></thead><tbody>${group.records.map((record) => { const tags = displayDevelopmentTags(record); return `<tr><td><a href="${safeUrl(record.url)}">${escapeHtml(record.fileTitle || record.title)}</a></td><td><span class="note-summary">${escapeHtml(record.summary || '—')}</span></td><td><div class="dev-tag-list">${tags.length ? tags.map((tag) => `<span class="dev-tag">${escapeHtml(tag)}</span>`).join(' · ') : '<span class="dev-tag">—</span>'}</div></td><td><span class="note-date">${escapeHtml(record.date || '—')}</span></td></tr>`; }).join('')}</tbody></table></div></div></details>`).join('') : '<div class="empty-state">조건에 맞는 개발 기록이 없습니다.</div>'}`;
+      document.querySelector('#dev-search').addEventListener('input', (event) => { state.devQuery = event.target.value; renderDevelopment(); });
+      document.querySelector('#dev-category').addEventListener('change', (event) => { state.devCategory = event.target.value; renderDevelopment(); });
+    }
+
+    function render() {
+      document.querySelectorAll('.tab').forEach((tab) => tab.classList.toggle('active', tab.dataset.view === state.view));
+      if (state.view === 'notes') renderGraph();
+      else if (state.view === 'development') renderDevelopment();
+      else if (state.view === 'blog') renderBlog();
+      else if (state.view === 'books') renderBooks();
+      else renderPaths();
+    }
+
+    document.querySelectorAll('.tab').forEach((tab) => tab.addEventListener('click', () => { state.view = tab.dataset.view; render(); }));
+    document.querySelector('#generated-at').textContent = new Date(DATA.generatedAt).toLocaleDateString('ko-KR');
+    render();
+  </script>
+</body>
+</html>

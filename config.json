@@ -1,0 +1,96 @@
+{
+  "repoUrl": "https://github.com/taez224/obsidian",
+  "branch": "main",
+  "depth": 2,
+  "maxGraphNodes": 80,
+  "include": [
+    {
+      "path": "01_Slipbox",
+      "mode": "all",
+      "graph": true
+    },
+    {
+      "path": "20_Projects/blog",
+      "statuses": ["published"],
+      "types": ["series"],
+      "graph": false
+    },
+    {
+      "path": "30_Resources/Development/Troubleshooting",
+      "mode": "all",
+      "graph": false
+    },
+    {
+      "path": "30_Resources/Development/Tools",
+      "mode": "all",
+      "graph": false
+    }
+  ],
+  "exclude": [
+    "00_Inbox",
+    "10_Periodic Notes",
+    "20_Projects/job-search-2026",
+    "30_Resources/References",
+    "40_Archive",
+    "99_Templates"
+  ],
+  "seeds": [
+    "01_Slipbox/생각의 정원.md",
+    "01_Slipbox/AI 활용.md",
+    "01_Slipbox/나의 일하는 방식.md"
+  ],
+  "paths": [
+    {
+      "id": "build-verify-write",
+      "title": "Build · Verify · Write",
+      "description": "개발하며 생긴 질문을 작은 실험과 검증, 기록으로 이어가는 경로",
+      "items": [
+        "20_Projects/blog/60일간의 AI 에이전틱 워크플로.md",
+        "20_Projects/blog/AI로 빨라진 개인, 소화하지 못하는 팀.md",
+        "20_Projects/blog/Front-end에서의 Testing.md",
+        "20_Projects/blog/AI로 만든 보고서, 사람이 남긴 생각.md"
+      ]
+    },
+    {
+      "id": "document-integration",
+      "title": "문서 편집기를 시스템에 연결하기",
+      "description": "문서 편집·콜백·저장·버전 관리가 하나의 흐름이 되는 과정",
+      "items": [
+        "20_Projects/blog/ONLYOFFICE 01 - 그냥 문서 편집기인 줄 알았는데.md",
+        "20_Projects/blog/ONLYOFFICE 02 - Antigravity와 함께한 Vibe Coding기.md",
+        "20_Projects/blog/ONLYOFFICE 03 - key와 메타데이터 관리.md",
+        "20_Projects/blog/ONLYOFFICE 04 - SDK, MinIO, Saga.md",
+        {
+          "label": "공개 데모 코드 보기",
+          "url": "https://github.com/taez224/onlyoffice-demo"
+        }
+      ]
+    },
+    {
+      "id": "thinking-garden",
+      "title": "생각을 기록하고 다시 꺼내 쓰기",
+      "description": "개발 경험과 개인적인 질문을 노트와 글로 연결하는 경로",
+      "items": [
+        "01_Slipbox/생각의 정원.md",
+        "01_Slipbox/세컨드 브레인은 퍼스트 브레인의 사고를 보조해야 한다.md",
+        "01_Slipbox/포착과 영구 노트 승격은 분리해야 한다.md",
+        "20_Projects/blog/AI로 만든 보고서, 사람이 남긴 생각.md",
+        {
+          "label": "개인 지식 정원 저장소",
+          "url": "https://github.com/taez224/obsidian"
+        }
+      ]
+    },
+    {
+      "id": "failure-and-recovery",
+      "title": "실패를 이해하고 복구 경로를 남기기",
+      "description": "작은 문제를 재현 가능한 설명과 대응 방법으로 바꾸는 개발 기록",
+      "items": [
+        "30_Resources/Development/Troubleshooting/DataBuffer 해제 책임은 최종 소비자가 정한다.md",
+        "30_Resources/Development/Troubleshooting/스트림으로 받은 ZIP은 엔트리 크기를 모른다.md",
+        "30_Resources/Development/Troubleshooting/인메모리 SSE 팬아웃 유실 - 이벤트 처리 인스턴스와 연결 보유 인스턴스가 다르다.md",
+        "30_Resources/Development/Troubleshooting/Spring Async 스레드풀 기아 - 완료되지 않는 CompletableFuture.md"
+      ]
+    }
+  ]
+}
