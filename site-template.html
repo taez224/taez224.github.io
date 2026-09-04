@@ -392,7 +392,7 @@
     <main id="app" aria-live="polite"></main>
 
     <footer>
-      <a href="https://github.com/taez224/obsidian">TaeZ의 공개 노트</a> · <span id="generated-at"></span> 생성
+      <a href="https://taez224.github.io/obsidian/">TaeZ의 공개 노트</a> · <span id="generated-at"></span> 생성
     </footer>
   </div>
 
@@ -424,6 +424,14 @@
 
     function noteKindLabel(note) {
       return ({ slipbox: 'Slipbox', blog: '글', development: '개발 기록', book: '독서 기록' })[note?.kind] || '노트';
+    }
+
+    function noteSectionLabel(note) {
+      if (note?.kind === 'slipbox') return 'Slipbox';
+      if (note?.kind === 'blog') return note.series || '단독 글';
+      if (note?.kind === 'development') return note.category === 'Tools' ? '도구·워크플로' : '문제 해결';
+      if (note?.kind === 'book') return '독서 기록';
+      return '공개 노트';
     }
 
     function noteUrl(notePath) {
@@ -733,9 +741,11 @@
     function renderNoteView() {
       const note = noteByPath(state.notePath);
       if (!note) {
+        document.title = 'TaeZ · notes, builds, writing, reading';
         app.innerHTML = '<div class="empty-state">찾을 수 없는 공개 노트입니다.</div>';
         return;
       }
+      document.title = `${note.title} · TaeZ`;
       const outgoing = DATA.noteEdges
         .filter((edge) => edge.source === note.path)
         .map((edge) => noteByPath(edge.target))
@@ -761,7 +771,7 @@
       app.innerHTML = `
         <div class="note-view">
           <article class="note-article">
-            <div class="note-view-nav"><button class="note-back" type="button" data-note-back>← ${escapeHtml(noteKindLabel(note))} 목록</button><span>${escapeHtml(note.path)}</span></div>
+            <div class="note-view-nav"><button class="note-back" type="button" data-note-back>← ${escapeHtml(noteKindLabel(note))} 목록</button><span>${escapeHtml(noteSectionLabel(note))}</span></div>
             <div class="note-kicker">${escapeHtml(noteKindLabel(note))}</div>
             <h1>${escapeHtml(note.title)}</h1>
             ${note.summary ? `<div class="note-lead"><span class="note-lead-label">${leadLabel}</span>${escapeHtml(note.summary)}</div>` : ''}
