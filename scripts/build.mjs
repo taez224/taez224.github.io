@@ -606,7 +606,7 @@ const paths = config.paths.map((readingPath) => ({
 }));
 
 const data = {
-  generatedAt: new Date().toISOString(),
+  home: { featured: (config.home?.featured || []).filter((notePath) => notes.some((note) => note.path === notePath)), contacts: config.home?.contacts || [] },
   notes,
   nodes,
   edges,
@@ -626,11 +626,21 @@ const data = {
 };
 
 const template = await fs.readFile(path.join(projectRoot, 'site-template.html'), 'utf8');
+const styles = await fs.readFile(path.join(projectRoot, 'client/site.css'), 'utf8');
+const script = await fs.readFile(path.join(projectRoot, 'client/site.js'), 'utf8');
+const shortcuts = (await fs.readFile(path.join(projectRoot, 'client/shortcuts.mjs'), 'utf8')).replace(/^export /gm, '');
+const graphGestures = (await fs.readFile(path.join(projectRoot, 'client/graph-gestures.mjs'), 'utf8')).replace(/^export /gm, '');
+const graphFocus = (await fs.readFile(path.join(projectRoot, 'client/graph-focus.mjs'), 'utf8')).replace(/^export /gm, '');
 const payload = JSON.stringify(data).replace(/</g, '\\u003c');
-const output = template.replace('__GARDEN_PAYLOAD__', payload);
+// Keep the generated page self-contained, including file:// previews.
+// Replacement callbacks preserve literal $ sequences in note content.
+const output = template
+  .replace('__GARDEN_STYLES__', () => styles)
+  .replace('__GARDEN_SCRIPT__', () => `${shortcuts}\n${graphGestures}\n${graphFocus}\n${script.replace('__GARDEN_PAYLOAD__', () => payload)}`);
 const outputDirectory = path.join(projectRoot, 'dist');
 await fs.mkdir(outputDirectory, { recursive: true });
 await fs.writeFile(path.join(outputDirectory, 'index.html'), output);
+await fs.cp(path.join(projectRoot, 'assets/social'), path.join(outputDirectory, 'assets/social'), { recursive: true });
 for (const [sourcePath, destination] of assetCopies) {
   const destinationPath = path.join(outputDirectory, destination);
   await fs.mkdir(path.dirname(destinationPath), { recursive: true });
