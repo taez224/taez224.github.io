@@ -37,7 +37,7 @@ const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slic
         <div><span class="meta">공개된 글 {series.total}편</span><p>{series.first.title}</p></div>
         <a class="btn" href={series.first.url}>1편부터 읽기 <span aria-hidden="true">→</span></a>
       </nav>}
-      {series && series.total > 0 && <details class="series-index" open={series.total <= 5}>
+      {series && series.total > 0 && <details class="series-index" open>
         <summary>연재 목차 <span class="meta">{series.isHub ? `공개 ${series.total}편` : `현재 ${series.position} / ${series.total}편`}</span></summary>
         <nav aria-label="연재 목차">
           <p class="meta">{!series.isHub && series.url ? <a href={series.url}>{series.title} · 연재 안내</a> : series.title}</p>
@@ -80,7 +80,7 @@ const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slic
   .series-index summary .meta { margin-left: 12px; font-weight: 400; }
   .series-index nav { padding: 8px 0 16px; }
   .series-index nav > p { margin: 0 0 12px; }
-  .series-index ol { list-style: none; padding: 0; margin: 0; }
+  .series-index ol { list-style: none; padding: 0; margin: 0; max-height: 280px; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
   .series-index li + li { margin-top: 4px; }
   .series-index li a { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: baseline; gap: 10px; padding: 10px 12px; border-radius: 3px; color: var(--ink); line-height: 1.6; }
   .series-index li a:hover { background: var(--accent-soft); text-decoration: none; }
@@ -140,3 +140,4 @@ const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slic
   }
 </style>
 <script src="../scripts/mermaid.js"></script>
+<script src="../scripts/series-index.js"></script>

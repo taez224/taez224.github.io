@@ -9,7 +9,7 @@ const hasReview = review && !/^한줄평\s*[.…]*$/.test(review);
   <div class="cover">{book.coverUrl ? <img src={book.coverUrl} alt="" loading="lazy" width="88" height="128" /> : <div class="placeholder">{title}</div>}</div>
   <div class="content">
     <div class="heading"><h3>{title}</h3>{book.rate ? <span class="rating"><span class="display value">{book.rate.toFixed(1)}</span><span class="meta">/ 5</span></span> : null}</div>
-    {hasReview && <div class="note"><span class="note-label">내 한줄평</span><p>{review}</p></div>}
+    {hasReview && <p class="note">{review}</p>}
     <div class="meta">{[book.author, book.publisher].filter(Boolean).join(' · ')}<br />{book.status}{book.finishDate && <> · {formatDate(book.finishDate)}</>}</div>
   </div>
 </article>
@@ -21,8 +21,6 @@ const hasReview = review && !/^한줄평\s*[.…]*$/.test(review);
   .heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: baseline; margin-bottom: 10px; }
   .heading h3 { margin: 0; font-size: 17px; font-weight: 600; line-height: 1.55; }
   .rating .value { font-size: 22px; color: var(--accent); }
-  .note { margin: 0 0 14px; padding: 12px 14px; border-left: 2px solid var(--accent); border-radius: 0 3px 3px 0; background: var(--accent-soft); font-size: 16px; line-height: 1.65; }
-  .note-label { display: block; margin-bottom: 4px; color: var(--accent); font-size: 12px; font-weight: 600; }
-  .note p { margin: 0; }
+  .note { margin: 16px 0 18px; font-family: var(--display); font-size: 17px; font-weight: 600; line-height: 1.8; letter-spacing: -.02em; }
   @media (max-width: 480px) { .book { grid-template-columns: 68px minmax(0, 1fr); gap: 14px; } .cover { width: 68px; height: 100px; } }
 </style>
