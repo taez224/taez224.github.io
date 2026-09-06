@@ -1,0 +1,24 @@
+---
+import Shell from '../../layouts/Shell.astro';
+import { getGarden } from '../../lib/get-garden.mjs';
+import { withBase } from '../../lib/format.mjs';
+const { nodes, stats } = await getGarden();
+const hubs = nodes.filter((n) => n.type === 'hub');
+---
+<Shell title="노트 지도" description="노트를 고르고 연결된 생각을 따라가는 지도." path="/map/" active="map">
+  <div class="wrap map-page">
+    <div class="page-head"><h1 class="display">노트 지도</h1><span class="meta">노트 {stats.nodes} · 연결 {stats.edges}</span></div>
+    <div class="map-layout">
+      <div class="map-stage" data-map><img src={withBase('/assets/graph-snapshot.svg')} alt="" width="1000" height="640" /></div>
+      <aside class="list-block"><div class="meta">시작점</div><ul class="side-list">{hubs.map((h) => <li><a href={h.url}>{h.displayTitle}</a></li>)}</ul></aside>
+    </div>
+  </div>
+</Shell>
+<style>
+  .map-page { padding: 36px 0 64px; }
+  .page-head { display: flex; align-items: baseline; gap: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+  .page-head h1 { margin: 0; font-size: 28px; }
+  .map-layout { display: grid; grid-template-columns: minmax(0, 1fr) 310px; gap: 40px; margin-top: 22px; align-items: start; }
+  .map-stage img { display: block; width: 100%; height: auto; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  @media (max-width: 1000px) { .map-layout { grid-template-columns: 1fr; } }
+</style>

@@ -1,0 +1,17 @@
+---
+const { about, contacts, mapUrl } = Astro.props;
+const shown = contacts.filter((c) => c.name !== 'Velog');
+---
+<div class="about">
+  <h1 class="display">소프트웨어 개발자 TaeZ</h1>
+  <p>{about}</p>
+  <div class="contacts">{shown.map((c) => <a href={c.url} target="_blank" rel="noreferrer">{c.name}</a>)}</div>
+  <a class="btn" href={mapUrl}>노트 지도 열기</a>
+</div>
+<style>
+  .about { display: flex; flex-direction: column; gap: 18px; }
+  .about h1 { margin: 0; font-size: 28px; line-height: 1.45; }
+  .about p { margin: 0; color: var(--muted); font-size: var(--t-body); line-height: 1.8; }
+  .contacts { display: flex; gap: 18px; font-size: var(--t-meta); }
+  .about .btn { align-self: flex-start; margin-top: 10px; }
+</style>

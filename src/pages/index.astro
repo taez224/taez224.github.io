@@ -1,11 +1,59 @@
 ---
 import Shell from '../layouts/Shell.astro';
+import About from '../components/About.astro';
 import { getGarden } from '../lib/get-garden.mjs';
+import { formatDate, kindLabel, withBase } from '../lib/format.mjs';
 const garden = await getGarden();
+const byPath = new Map(garden.notes.map((n) => [n.path, n]));
+const featured = byPath.get(garden.home.featured[0]);
+const recent = garden.notes.filter((n) => n.date && n.type !== 'series').sort((a, b) => b.date.localeCompare(a.date) || a.title.localeCompare(b.title, 'ko')).slice(0, 8);
+const firstSentence = (text) => text.match(/^.*?[.!?](?:\s|$)/)?.[0]?.trim() || text;
 ---
-<Shell title="TaeZ" description={garden.home.about || 'TaeZ의 글, 개발 노트, 노트와 독서 기록.'} path="/">
-  <section class="wrap" style="padding: 48px 0;">
-    <h1 class="display" style="font-size: var(--t-h2);">소프트웨어 개발자 TaeZ</h1>
-    <p style="color: var(--muted); max-width: 32em;">{garden.home.about}</p>
+<Shell title="TaeZ" description={garden.home.about} path="/">
+  <section class="hero" aria-label="소개와 노트 지도">
+    <div class="hero-graph" data-graph><img src={withBase('/assets/graph-snapshot.svg')} alt={`노트 지도. 노드 ${garden.stats.nodes}개와 연결 ${garden.stats.edges}개.`} width="1000" height="640" /></div>
+    <div class="hero-fade" aria-hidden="true"></div>
+    <div class="hero-about"><About about={garden.home.about} contacts={garden.home.contacts} mapUrl={withBase('/map/')} /></div>
+  </section>
+  {featured && <section class="wrap featured">
+    <div class="meta">대표 글 · {formatDate(featured.date)}{featured.publication && <> · {featured.publication} 발행</>}</div>
+    <h2 class="display"><a href={featured.url}>{featured.title}</a></h2>
+    {featured.summaryIsExplicit && <p>{firstSentence(featured.summary)}</p>}
+  </section>}
+  <section class="wrap recent" aria-labelledby="recent-heading">
+    <h2 id="recent-heading" class="display">최근 기록</h2>
+    <ol>{recent.map((n) => <li><time class="meta" datetime={n.date}>{formatDate(n.date)}</time><a href={n.url}>{n.title}</a><span class="meta">{n.kind === 'development' ? '개발' : kindLabel(n)}</span></li>)}</ol>
   </section>
 </Shell>
+<style>
+  .hero { position: relative; height: 600px; overflow: hidden; }
+  .hero-graph { position: absolute; top: 0; left: calc(50% - 720px + 440px); width: 1060px; height: 600px; }
+  .hero-graph img, .hero-graph svg { display: block; width: 100%; height: 100%; }
+  .hero-fade { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, var(--paper) 0%, var(--paper) 30%, rgba(247,247,242,0) 54%); }
+  .hero-about { position: absolute; left: calc(50% - 590px); top: 60px; width: 430px; }
+  .featured { padding: 68px 0 64px; border-top: 1px solid var(--ink); }
+  .featured h2 { margin: 20px 0; font-size: var(--t-hero); line-height: 1.25; letter-spacing: -.03em; max-width: 960px; }
+  .featured h2 a { color: var(--ink); }
+  .featured p { margin: 0; max-width: 34em; color: var(--muted); font-size: var(--t-list); line-height: 1.65; }
+  .recent { padding: 48px 0 96px; }
+  .recent h2 { margin: 0 0 14px; font-size: var(--t-h2); }
+  .recent ol { list-style: none; margin: 0; padding: 0; }
+  .recent li { display: grid; grid-template-columns: 110px minmax(0, 1fr) 56px; gap: 28px; align-items: baseline; padding: 19px 0; border-top: 1px solid var(--line); }
+  .recent li:last-child { border-bottom: 1px solid var(--line); }
+  .recent li a { color: var(--ink); font-size: var(--t-list); line-height: 1.5; }
+  .recent li .meta:last-child { text-align: right; }
+  @media (max-width: 1240px) { .hero-graph { left: auto; right: -60px; } .hero-about { left: 24px; } }
+  @media (max-width: 1000px) { .hero { height: 520px; } .hero-about { width: 360px; } .hero-graph { width: 900px; } }
+  @media (max-width: 720px) {
+    .hero { height: auto; overflow: visible; }
+    .hero-graph { position: static; width: 100%; height: 250px; margin-top: 10px; }
+    .hero-fade { display: none; }
+    .hero-about { position: static; width: calc(100% - 40px); margin: 14px auto 0; }
+    .featured { padding: 32px 0 36px; }
+    .featured h2 { font-size: 31px; }
+    .featured p { font-size: 16px; }
+    .recent li { grid-template-columns: 1fr; gap: 4px; padding: 16px 0; }
+    .recent li a { font-size: 17px; }
+    .recent li .meta:last-child { text-align: left; }
+  }
+</style>

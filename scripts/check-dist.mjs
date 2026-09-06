@@ -56,6 +56,14 @@ checks.push(async () => {
   check(search.length >= site.notes.length, 'search.json 레코드 수 부족');
   check(search.every((r) => typeof r.text === 'string'), 'search.json 검색 텍스트 형식 오류');
 });
+checks.push(async () => {
+  for (const file of ['favicon.svg', 'og.png', 'apple-touch-icon.png', 'robots.txt', 'assets/graph-snapshot.svg', 'map/index.html', '404.html']) check(await exists(file), `${file} 없음`);
+  const home = await read('index.html');
+  check(home.includes('노트 지도 열기'), 'index: 지도 버튼 없음');
+  check(!home.includes('Velog'), 'index: Velog 링크 잔존');
+  check(!/노트 \d+개 · 연결 \d+개/.test(home.replace(/alt="[^"]*"/g, '')), 'index: 히어로 집계 잔존');
+  check((home.match(/<li>/g) || []).length === 8 || (home.match(/<li /g) || []).length === 8, 'index: 최근 기록이 8개가 아니다');
+});
 // __MORE_CHECKS__ (뒤 Task가 이 자리에 검사를 추가한다)
 
 for (const run of checks) await run();
