@@ -65,7 +65,7 @@ checks.push(async () => {
   for (const note of site.notes) check(await exists(`og/${prefixes[note.kind]}/${note.slug}.png`), `og 이미지 없음: ${note.slug}`);
 });
 checks.push(async () => {
-  for (const file of ['rss.xml', 'feeds/posts.xml', 'feeds/notes.xml', 'favicon.svg', 'og.png', 'apple-touch-icon.png', 'robots.txt', 'assets/graph-snapshot.svg', 'map/index.html', '404.html']) check(await exists(file), `${file} 없음`);
+  for (const file of ['rss.xml', 'feeds/posts.xml', 'feeds/notes.xml', 'favicon.svg', 'og/site.png', 'apple-touch-icon.png', 'robots.txt', 'assets/graph-snapshot.svg', 'map/index.html', '404.html']) check(await exists(file), `${file} 없음`);
   const home = await read('index.html');
   check(home.includes('노트 지도 열기'), 'index: 지도 버튼 없음');
   check(!home.includes('Velog'), 'index: Velog 링크 잔존');

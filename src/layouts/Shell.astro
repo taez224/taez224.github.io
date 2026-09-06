@@ -10,7 +10,7 @@ const { title, description, path, active = '', ogType = 'website', ogImage: ogIm
 const siteName = 'TaeZ';
 const fullTitle = path === '/' ? SITE_TITLE : `${title} · ${siteName}`;
 const canonical = new URL(withBase(path), Astro.site).href;
-const ogImage = new URL(ogImagePath ?? withBase('/og.png'), Astro.site).href;
+const ogImage = new URL(ogImagePath ?? withBase('/og/site.png'), Astro.site).href;
 ---
 <!doctype html>
 <html lang="ko">
@@ -37,7 +37,7 @@ const ogImage = new URL(ogImagePath ?? withBase('/og.png'), Astro.site).href;
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
     {umami && <script is:inline defer src={umami.src} data-website-id={umami.websiteId} data-domains={(umami.domains ?? []).join(',')}></script>}
     {umami && <script is:inline>{`/* 주소에 ?stats=off 를 붙여 열면 이 브라우저의 방문은 통계에서 뺀다(?stats=on 으로 되돌림). */
-(function(){try{var v=new URLSearchParams(location.search).get('stats');if(v==='off')localStorage.setItem('umami.disabled','1');if(v==='on')localStorage.removeItem('umami.disabled');}catch(e){}})();`}</script>}
+(function(){try{var v=new URLSearchParams(location.search).get('stats');if(v!=='off'&&v!=='on')return;if(v==='off')localStorage.setItem('umami.disabled','1');else localStorage.removeItem('umami.disabled');var msg=v==='off'?'이 브라우저의 방문은 이제 통계에서 제외됩니다.':'이 브라우저의 방문을 다시 통계에 넣습니다.';document.addEventListener('DOMContentLoaded',function(){var p=document.createElement('p');p.setAttribute('role','status');p.textContent=msg;p.style.cssText='margin:0;padding:10px 24px;background:#e3ece5;color:#315b48;font-size:14px;text-align:center';document.body.prepend(p);});}catch(e){}})();`}</script>}
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
   </head>
