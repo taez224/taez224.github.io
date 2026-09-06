@@ -71,6 +71,7 @@ function mount(data) {
   graph = createGraph(svg, {
     ...data,
     mode: 'map',
+    nodeScale: 0.85,
     onSelect: (id) => select(id, true),
     onOpen: (id) => { const node = site.nodes.find((n) => n.id === id); if (node) window.location.href = node.url; }
   });
@@ -80,7 +81,7 @@ function mount(data) {
 // 노드 아래 제목 상자(노드 원 + 제목 두 줄까지)를 픽셀 단위로 어림한다.
 const textWidth = (line) => [...line].reduce((sum, ch) => sum + (/[\u3131-\uD79D]/.test(ch) ? 12.5 : /[A-Za-z0-9]/.test(ch) ? 7.2 : 4.5), 0);
 const labelBoxes = (nodes) => new Map(nodes.map((n) => {
-  const r = nodeRadius(n.degree ?? 0), lines = wrapLabel(cleanTitle(n.displayTitle ?? n.title));
+  const r = nodeRadius(n.degree ?? 0, 0.85), lines = wrapLabel(cleanTitle(n.displayTitle ?? n.title));
   const w = Math.max(2 * r, Math.max(...lines.map(textWidth)) + 8);
   return [n.id, { w, h: 2 * r + 6 + lines.length * 18 + 4, top: r, left: w / 2 }];
 }));

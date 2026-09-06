@@ -85,7 +85,9 @@ export function wrapLabel(title, maxChars = 20) {
   return lines;
 }
 
-export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelAll = false, labelLines = null, labelAnchor = 'auto', fitBounds = null, onSelect = () => {}, onOpen = () => {}, onHover = () => {} }) {
+export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelAll = false, labelLines = null, labelAnchor = 'auto', fitBounds = null, nodeScale = 1, onSelect = () => {}, onOpen = () => {}, onHover = () => {} }) {
+  // nodeScale: 노드 원 크기 배율. 지도는 무대가 좁아 0.85로 그려 홈과 밀도를 맞춘다.
+  const radius = (node) => nodeRadius(node.degree ?? 0, nodeScale);
   const el = (name, attrs = {}) => { const node = document.createElementNS(SVG_NS, name); for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, String(v)); return node; };
   const size = () => ({ width: svg.clientWidth || LAYOUT.width, height: svg.clientHeight || LAYOUT.height });
   const byId = new Map(nodes.map((n) => [n.id, n]));
@@ -139,7 +141,7 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
     for (const node of nodes) {
       const p = positions.get(node.id);
       if (!p) continue;
-      const r = nodeRadius(node.degree ?? 0);
+      const r = radius(node);
       const g = el('g', { class: 'node', 'data-id': node.id, tabindex: '0', role: 'button', 'aria-pressed': 'false', 'aria-label': cleanTitle(node.displayTitle ?? node.title) });
       if (node.type === 'hub') g.append(el('circle', { class: 'hub-ring', cx: p.x, cy: p.y, r: (r + 6).toFixed(1) }));
       g.append(el('circle', { class: 'hit', cx: p.x, cy: p.y, r: Math.max(22, r), fill: 'transparent' }));
@@ -158,7 +160,7 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
     for (const id of ids) {
       const node = byId.get(id), p = positions.get(id);
       if (!node || !p) continue;
-      const r = nodeRadius(node.degree ?? 0), anchor = anchorFor(p.x);
+      const r = radius(node), anchor = anchorFor(p.x);
       const x = anchor === 'start' ? p.x - r : anchor === 'end' ? p.x + r : p.x;
       const lines = labelLines?.get(id) ?? wrapLabel(cleanTitle(node.displayTitle ?? node.title));
       const multiLine = lines.length > 1 || Boolean(labelLines?.has(id));
