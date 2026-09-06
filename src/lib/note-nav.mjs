@@ -10,8 +10,24 @@ export function parentLink(note, mapKey = '') {
 
 // 연재 글의 앞·뒤 편. seriesList는 assembleGarden의 blog.series(편은 series_order 순으로 정렬됨).
 export function seriesNeighbors(note, seriesList) {
-  const series = seriesList.find((item) => item.posts.some((post) => post.path === note.path));
+  const series = seriesList.find((item) => {
+    if (note.type === 'series' && item.noteUrl && note.url) return item.noteUrl === note.url;
+    return item.posts.some((post) => post.path === note.path);
+  });
   if (!series) return null;
-  const index = series.posts.findIndex((post) => post.path === note.path);
-  return { title: series.title, url: series.noteUrl || '', prev: series.posts[index - 1] ?? null, next: series.posts[index + 1] ?? null };
+  const posts = (series.posts ?? []).filter((post) => post.status === undefined || post.status === 'published');
+  const isHub = note.type === 'series' && series.noteUrl === note.url;
+  const index = posts.findIndex((post) => post.path === note.path);
+  const position = isHub ? 0 : index + 1;
+  return {
+    title: series.title,
+    url: series.noteUrl || '',
+    prev: isHub || index < 0 ? null : posts[index - 1] ?? null,
+    next: isHub ? posts[0] ?? null : posts[index + 1] ?? null,
+    isHub,
+    first: posts[0] ?? null,
+    total: posts.length,
+    position,
+    posts
+  };
 }
