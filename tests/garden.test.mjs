@@ -74,6 +74,6 @@ test('graphRule linked keeps only development notes with a public link, slipbox 
 });
 
 test('slug collisions fail the build with both paths named', async () => {
-  const vaultRoot = await makeVault({ ...files, '01_Slipbox/생각 a.md': '---\ncreated: 2026-09-07\n---\n# 생각 a\n중복 슬러그.' });
-  await assert.rejects(() => assembleGarden({ vaultRoot, config, basePath: '/obsidian' }), /생각 A\.md[\s\S]*생각 a\.md|생각 a\.md[\s\S]*생각 A\.md/);
+  const vaultRoot = await makeVault({ ...files, '01_Slipbox/다른 생각.md': '---\ncreated: 2026-09-07\nslug: 생각-a\n---\n# 다른 생각\n중복 슬러그.' });
+  await assert.rejects(() => assembleGarden({ vaultRoot, config, basePath: '/obsidian' }), /생각 A\.md[\s\S]*다른 생각\.md|다른 생각\.md[\s\S]*생각 A\.md/);
 });
