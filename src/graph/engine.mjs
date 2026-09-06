@@ -66,7 +66,7 @@ export { nodeRadius, topicColor };
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const LAYOUT = { width: 1000, height: 640 };
 
-export function createGraph(svg, { nodes, edges, positions, mode = 'map', onSelect = () => {}, onOpen = () => {}, onHover = () => {} }) {
+export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelAll = false, onSelect = () => {}, onOpen = () => {}, onHover = () => {} }) {
   const el = (name, attrs = {}) => { const node = document.createElementNS(SVG_NS, name); for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, String(v)); return node; };
   const size = () => ({ width: svg.clientWidth || LAYOUT.width, height: svg.clientHeight || LAYOUT.height });
   const byId = new Map(nodes.map((n) => [n.id, n]));
@@ -113,7 +113,8 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', onSele
   };
   const drawLabels = () => {
     labelLayer.replaceChildren();
-    for (const id of labelIds(nodes, edges, state)) {
+    const ids = labelAll ? nodes.map((node) => node.id) : labelIds(nodes, edges, state);
+    for (const id of ids) {
       const node = byId.get(id), p = positions.get(id);
       if (!node || !p) continue;
       const text = el('text', { class: `label${id === state.selected ? ' is-selected' : ''}${id === state.hovered ? ' is-hovered' : ''}`, x: p.x, y: (p.y + nodeRadius(node.degree ?? 0) + 18).toFixed(1), 'text-anchor': 'middle' });

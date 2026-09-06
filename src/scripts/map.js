@@ -88,7 +88,7 @@ function setFocus(rootId) {
   focusButton.setAttribute('aria-pressed', String(Boolean(rootId)));
   if (rootId) {
     const sub = graphNeighborhood(rootId, site.nodes, site.edges);
-    mount({ nodes: sub.nodes, edges: sub.edges, positions: layoutGraph(sub.nodes, sub.edges, { width: 1000, height: 640 }) });
+    mount({ nodes: sub.nodes, edges: sub.edges, positions: layoutGraph(sub.nodes, sub.edges, { width: 1000, height: 640 }), labelAll: true });
   } else mount(full);
   select(rootId ?? previousSelection, true);
 }
