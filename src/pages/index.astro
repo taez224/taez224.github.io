@@ -45,8 +45,8 @@ const firstSentence = (text) => text.match(/^.*?[.!?](?:\s|$)/)?.[0]?.trim() || 
   .recent li:last-child { border-bottom: 1px solid var(--line); }
   .recent li a { color: var(--ink); font-size: var(--t-list); line-height: 1.5; }
   .recent li .meta:last-child { text-align: right; }
-  @media (max-width: 1240px) { .hero-graph { left: auto; right: -60px; } .hero-about { left: 24px; } }
-  @media (max-width: 1000px) { .hero { height: 520px; } .hero-about { width: 360px; } .hero-graph { width: 820px; } }
+  @media (max-width: 1240px) { .hero-graph { left: 460px; width: calc(100% - 400px); } .hero-about { left: 24px; } }
+  @media (max-width: 1000px) { .hero { height: 520px; } .hero-about { width: 360px; } .hero-graph { left: 400px; width: calc(100% - 340px); } }
   @media (max-width: 720px) {
     .hero { height: auto; overflow: visible; }
     .hero-graph { position: static; width: 100%; height: 250px; margin-top: 10px; }
