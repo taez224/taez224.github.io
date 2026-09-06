@@ -111,13 +111,19 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
       nodeLayer.append(g); nodeEls.set(node.id, g);
     }
   };
+  // 모든 제목을 보일 때는 가장자리 노드의 제목을 안쪽으로 붙여 화면 밖으로 잘리지 않게 한다.
+  const xs = [...positions.values()].map((p) => p.x);
+  const xLo = Math.min(...xs), xThird = (Math.max(...xs) - xLo) / 3;
+  const anchorFor = (x) => (!labelAll ? 'middle' : x < xLo + xThird ? 'start' : x > xLo + 2 * xThird ? 'end' : 'middle');
   const drawLabels = () => {
     labelLayer.replaceChildren();
     const ids = labelAll ? nodes.map((node) => node.id) : labelIds(nodes, edges, state);
     for (const id of ids) {
       const node = byId.get(id), p = positions.get(id);
       if (!node || !p) continue;
-      const text = el('text', { class: `label${id === state.selected ? ' is-selected' : ''}${id === state.hovered ? ' is-hovered' : ''}`, x: p.x, y: (p.y + nodeRadius(node.degree ?? 0) + 18).toFixed(1), 'text-anchor': 'middle' });
+      const r = nodeRadius(node.degree ?? 0), anchor = anchorFor(p.x);
+      const x = anchor === 'start' ? p.x - r : anchor === 'end' ? p.x + r : p.x;
+      const text = el('text', { class: `label${id === state.selected ? ' is-selected' : ''}${id === state.hovered ? ' is-hovered' : ''}`, x: x.toFixed(1), y: (p.y + r + 18).toFixed(1), 'text-anchor': anchor });
       text.textContent = cleanTitle(node.displayTitle ?? node.title);
       labelLayer.append(text);
     }

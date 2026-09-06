@@ -31,7 +31,11 @@ if (!response.ok) throw new Error(`Map data: ${response.status}`);
 const site = await response.json();
 const notesByPath = new Map(site.notes.map((n) => [n.path, n]));
 const byMapKey = new Map(site.nodes.map((n) => [n.mapKey, n]));
-const full = { nodes: site.nodes, edges: site.edges, positions: layoutGraph(site.nodes, site.edges, { width: 1000, height: 640 }) };
+// 세로로 긴 화면(모바일)에서는 배치 상자도 세로로 두어 무대를 채운다.
+// SVG는 마운트 전까지 기본 크기(300×150)라서 CSS로 크기가 정해진 상자를 잰다.
+const rect = svg.parentElement.getBoundingClientRect();
+const box = rect.height > rect.width ? { width: 640, height: Math.round((640 * rect.height) / rect.width) } : { width: 1000, height: 640 };
+const full = { nodes: site.nodes, edges: site.edges, positions: layoutGraph(site.nodes, site.edges, box) };
 let graph = null;
 let focusRoot = null;
 
@@ -67,11 +71,12 @@ function mount(data) {
   applyTopics();
 }
 
-function select(id, pushUrl) {
+function select(id, pushUrl, { open = true } = {}) {
   graph.select(id);
-  focusButton.disabled = !id;
+  // 연결만 보기 중에는 선택을 풀어도 버튼을 살려 둔다. 그래야 모드를 끌 수 있다.
+  focusButton.disabled = !id && !focusRoot;
   const node = site.nodes.find((n) => n.id === id);
-  if (node) { renderPanel(panelModel(notesByPath.get(node.path) ?? node, notesByPath, site.noteEdges)); panel.dataset.open = ''; }
+  if (node) { renderPanel(panelModel(notesByPath.get(node.path) ?? node, notesByPath, site.noteEdges)); if (open) panel.dataset.open = ''; }
   else { body.innerHTML = emptyPanel; delete panel.dataset.open; }
   if (pushUrl) {
     const params = new URLSearchParams();
@@ -88,10 +93,14 @@ function setFocus(rootId) {
   focusButton.setAttribute('aria-pressed', String(Boolean(rootId)));
   if (rootId) {
     const sub = graphNeighborhood(rootId, site.nodes, site.edges);
-    mount({ nodes: sub.nodes, edges: sub.edges, positions: layoutGraph(sub.nodes, sub.edges, { width: 1000, height: 640 }), labelAll: true });
+    mount({ nodes: sub.nodes, edges: sub.edges, positions: layoutGraph(sub.nodes, sub.edges, box), labelAll: true });
   } else mount(full);
-  select(rootId ?? previousSelection, true);
+  // 모바일: 시트를 다시 띄우지 않는다. 방금 본 연결을 가리면 안 된다.
+  select(rootId ?? previousSelection, true, { open: false });
 }
+
+// 시트만 닫는다. 선택은 유지되어 "연결만 보기"를 누를 수 있다. 선택 해제는 빈 곳 탭.
+function closeSheet() { delete panel.dataset.open; syncSheet(); }
 
 const pressedTopics = () => new Set([...document.querySelectorAll('[data-topic][aria-pressed="true"]')].map((b) => b.dataset.topic));
 function applyTopics() { const set = pressedTopics(); graph.setTopics(set.size ? set : null); }
@@ -100,11 +109,11 @@ document.querySelector('[data-graph-zoom="in"]').addEventListener('click', () =>
 document.querySelector('[data-graph-zoom="out"]').addEventListener('click', () => graph.zoom(1 / 1.25));
 document.querySelector('[data-graph-zoom="fit"]').addEventListener('click', () => graph.fit());
 focusButton.addEventListener('click', () => setFocus(focusRoot ? null : graph.selected()));
-document.querySelector('[data-panel-close]')?.addEventListener('click', () => select(null, true));
+document.querySelector('[data-panel-close]')?.addEventListener('click', closeSheet);
 document.querySelector('[data-open-hubs]')?.addEventListener('click', () => { graph.select(null); focusButton.disabled = true; body.innerHTML = emptyPanel; panel.dataset.open = ''; syncSheet(); });
-backdrop?.addEventListener('click', () => select(null, true));
+backdrop?.addEventListener('click', closeSheet);
 narrow.addEventListener('change', syncSheet);
-document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && narrow.matches && 'open' in panel.dataset) select(null, true); });
+document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && narrow.matches && 'open' in panel.dataset) closeSheet(); });
 window.addEventListener('resize', () => graph.fit());
 
 mount(full);
