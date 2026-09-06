@@ -17,11 +17,14 @@ export function createRefreshCoordinator({
   load,
   debounceMs = 200,
   schedule = (fn, ms) => setTimeout(fn, ms),
-  cancel = (handle) => clearTimeout(handle)
+  cancel = (handle) => clearTimeout(handle),
+  logger
 } = {}) {
   const fillers = new Map();
   let timer = null;
   let tail = Promise.resolve();
+  let currentLogger = logger;
+  let pendingPath = null;
 
   function register(name, fill) {
     fillers.set(name, fill);
@@ -29,6 +32,23 @@ export function createRefreshCoordinator({
 
   function unregister(name) {
     fillers.delete(name);
+  }
+
+  // Astro's LoaderContext.logger is only available inside a loader's load(),
+  // not at module-import time when the coordinator singleton is built - so
+  // loaders call this once they have one.
+  function setLogger(nextLogger) {
+    currentLogger = nextLogger;
+  }
+
+  function reportError(error, triggeringPath) {
+    const detail = triggeringPath ? ` (triggered by ${triggeringPath})` : '';
+    const message = `Vault refresh failed${detail}: ${error?.message ?? error}`;
+    if (currentLogger && typeof currentLogger.error === 'function') {
+      currentLogger.error(message);
+    } else {
+      console.error(message, error);
+    }
   }
 
   async function runOnce() {
@@ -48,17 +68,25 @@ export function createRefreshCoordinator({
     return tail;
   }
 
-  function scheduleRefresh() {
+  function scheduleRefresh(triggeringPath) {
+    if (triggeringPath !== undefined) pendingPath = triggeringPath;
     if (timer !== null) cancel(timer);
     timer = schedule(() => {
       timer = null;
-      return run().catch(() => {
-        // Errors are surfaced to whoever calls run() directly; swallow here
-        // so one bad refresh doesn't take down the dev server's
-        // unhandled-rejection handler.
+      const path = pendingPath;
+      pendingPath = null;
+      // Errors are surfaced to whoever calls run() directly; here (the
+      // debounced fs-event path) we report through the logger instead of
+      // swallowing, so a bad refresh (e.g. invalid frontmatter mid-edit, a
+      // slug collision) doesn't leave the dev server silently serving stale
+      // content with zero diagnostic output. A later successful refresh
+      // still applies normally - run() re-invalidates and reloads from
+      // scratch every time, it doesn't get stuck on the failure.
+      return run().catch((error) => {
+        reportError(error, path);
       });
     }, debounceMs);
   }
 
-  return { register, unregister, run, scheduleRefresh };
+  return { register, unregister, run, scheduleRefresh, setLogger };
 }

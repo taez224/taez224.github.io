@@ -48,7 +48,7 @@ test('assembleGarden publishes reviewed notes with slug urls and no private stri
   assert.equal(byPath.get(`${dev}/Concepts/연결된 개념.md`).url, '/obsidian/dev/연결된-개념/');
   const a = byPath.get('01_Slipbox/생각 A.md');
   assert.match(a.bodyHtml, /href="\/obsidian\/notes\/생각-b\/"/);
-  assert.match(a.bodyHtml, /assets\/vault\/_attachments\/reviewed\.svg/);
+  assert.match(a.bodyHtml, /src="\/obsidian\/assets\/vault\/_attachments\/reviewed\.svg"/);
   assert.deepEqual(a.publicTags, ['AI']);
   assert.deepEqual(a.outgoing, ['01_Slipbox/생각 B.md']);
   assert.deepEqual(byPath.get('01_Slipbox/생각 B.md').incoming.sort(), ['01_Slipbox/생각 A.md']);

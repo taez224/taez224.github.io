@@ -78,7 +78,7 @@ function attachWatcher(watcher, config) {
   wiredWatchers.add(watcher);
   const { vaultRoot, projectRoot } = projectPaths();
   for (const watchedPath of watchPathsFor(config, { vaultRoot, projectRoot })) watcher.add(watchedPath);
-  const onFsEvent = () => coordinator.scheduleRefresh();
+  const onFsEvent = (changedPath) => coordinator.scheduleRefresh(changedPath);
   watcher.on('add', onFsEvent);
   watcher.on('change', onFsEvent);
   watcher.on('unlink', onFsEvent);
@@ -87,7 +87,8 @@ function attachWatcher(watcher, config) {
 export function vaultLoader({ garden = getGarden } = {}) {
   return {
     name: 'vault-notes',
-    async load({ store, parseData, watcher }) {
+    async load({ store, parseData, watcher, logger }) {
+      coordinator.setLogger(logger);
       const fill = fillNotesStore({ store, parseData });
       coordinator.register('notes', fill);
       const data = await garden();
@@ -100,7 +101,8 @@ export function vaultLoader({ garden = getGarden } = {}) {
 export function bookLoader({ garden = getGarden } = {}) {
   return {
     name: 'vault-books',
-    async load({ store, parseData, watcher }) {
+    async load({ store, parseData, watcher, logger }) {
+      coordinator.setLogger(logger);
       const fill = fillBooksStore({ store, parseData });
       coordinator.register('books', fill);
       const data = await garden();

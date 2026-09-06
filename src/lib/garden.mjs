@@ -509,7 +509,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
     if (!assetPath) return null;
     const destination = `assets/vault/${assetPath.split('/').map(encodeURIComponent).join('/')}`;
     assetCopies.set(assetPath, destination);
-    return { url: destination };
+    return { url: `${base}/${destination}` };
   }
 
   function resolvePublicNote(sourcePath, rawTarget, fragment = '') {

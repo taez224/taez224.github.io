@@ -92,6 +92,59 @@ test('refresh coordinator serializes overlapping refreshes so a slow older run c
   assert.deepEqual(applied.map(([, garden]) => garden), [1, 1, 2, 2]);
 });
 
+test('refresh coordinator reports a failed refresh through the logger, and a later successful refresh still applies', async () => {
+  const errors = [];
+  const fakeLogger = { error(message) { errors.push(message); }, warn() {} };
+  let loadCount = 0;
+  let scheduledFn = null;
+  const applied = [];
+  const coordinator = createRefreshCoordinator({
+    invalidate() {},
+    async load() {
+      loadCount += 1;
+      if (loadCount === 1) throw new Error('assembleGarden boom');
+      return loadCount;
+    },
+    schedule(fn) { scheduledFn = fn; return 'timer'; },
+    cancel() {},
+    logger: fakeLogger
+  });
+  coordinator.register('notes', async (garden) => { applied.push(garden); });
+
+  coordinator.scheduleRefresh('01_Slipbox/broken.md');
+  await scheduledFn();
+  assert.equal(errors.length, 1, 'the failed refresh must be reported, not swallowed silently');
+  assert.match(errors[0], /assembleGarden boom/);
+  assert.match(errors[0], /01_Slipbox\/broken\.md/);
+  assert.equal(applied.length, 0, 'a failed load must not fill the store with anything');
+
+  coordinator.scheduleRefresh('01_Slipbox/fixed.md');
+  await scheduledFn();
+  assert.deepEqual(applied, [2], 'a later successful refresh must still apply after a prior failure');
+  assert.equal(errors.length, 1, 'the successful run must not add another error');
+});
+
+test('refresh coordinator falls back to console.error when no logger is set', async () => {
+  const originalConsoleError = console.error;
+  const calls = [];
+  console.error = (...args) => calls.push(args);
+  try {
+    let scheduledFn = null;
+    const coordinator = createRefreshCoordinator({
+      invalidate() {},
+      async load() { throw new Error('no logger boom'); },
+      schedule(fn) { scheduledFn = fn; return 'timer'; },
+      cancel() {}
+    });
+    coordinator.scheduleRefresh('01_Slipbox/x.md');
+    await scheduledFn();
+    assert.equal(calls.length, 1);
+    assert.match(calls[0][0], /no logger boom/);
+  } finally {
+    console.error = originalConsoleError;
+  }
+});
+
 test('refresh coordinator debounces rapid scheduleRefresh calls into a single run', async () => {
   let runCount = 0;
   let scheduledFn = null;
