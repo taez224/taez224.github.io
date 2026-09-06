@@ -141,8 +141,10 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
   const drawEdges = () => {
     edgeLayer.replaceChildren();
     // 선택이 없으면 호버가 예고편이다. 호버한 노드의 간선만 방향 있게 켜고 나머지는 흐리지 않는다.
-    const preview = !state.selected && state.hovered;
-    for (const raw of classifyEdges(edges, state.selected ?? state.hovered)) {
+    // 호버 예고편(간선 방향 + 나머지 흐림)은 지도에서만. 홈 히어로는 호버해도 제목만 보인다.
+    const hoverRef = mode === 'map' ? state.hovered : null;
+    const preview = !state.selected && hoverRef;
+    for (const raw of classifyEdges(edges, state.selected ?? hoverRef)) {
       const edge = preview && raw.state === 'dim' ? { ...raw, state: 'faint' } : raw;
       const a = positions.get(edge.source), b = positions.get(edge.target);
       if (!a || !b) continue;
@@ -261,7 +263,7 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
     const neighbors = new Set();
     if (state.selected) for (const e of edges) { if (e.source === state.selected) neighbors.add(e.target); if (e.target === state.selected) neighbors.add(e.source); }
     // 선택이 없을 때 호버는 예고편: 호버한 노드와 이웃만 또렷하고 나머지는 살짝 흐려진다.
-    const previewId = !state.selected ? state.hovered : null;
+    const previewId = !state.selected && mode === 'map' ? state.hovered : null;
     const previewNear = new Set();
     if (previewId) { previewNear.add(previewId); for (const e of edges) { if (e.source === previewId) previewNear.add(e.target); if (e.target === previewId) previewNear.add(e.source); } }
     for (const [id, g] of nodeEls) {
