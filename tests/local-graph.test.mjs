@@ -14,6 +14,12 @@ test('localGraphLayout places the center in the middle and neighbors on a ring w
   for (const edge of layout.edges) assert.ok(edge.x1 >= 0 && edge.x2 <= 310 && edge.y1 >= 0 && edge.y2 <= 190);
 });
 
+test('localGraphLayout carries each node url so the reader graph can link', () => {
+  const layout = localGraphLayout({ path: 'c.md', displayTitle: 'C', topic: 'AI', kind: 'slipbox', url: '/obsidian/notes/c/' }, [{ path: 'a.md', displayTitle: 'A', topic: 'AI', kind: 'slipbox', url: '/obsidian/notes/a/' }], [], { width: 310, height: 190 });
+  assert.equal(layout.nodes[0].url, '/obsidian/notes/c/');
+  assert.equal(layout.nodes[1].url, '/obsidian/notes/a/');
+});
+
 test('localGraphLayout caps neighbors at eight and reports the remainder', () => {
   const many = Array.from({ length: 12 }, (_, i) => note(`n${i}`));
   const layout = localGraphLayout(note('c'), many, [], { width: 310, height: 190 });

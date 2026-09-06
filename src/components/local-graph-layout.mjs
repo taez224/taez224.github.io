@@ -8,12 +8,12 @@ export function localGraphLayout(center, outgoing, incoming, { width, height, ma
   const shown = all.slice(0, max);
   const cx = width / 2, cy = height / 2;
   const rx = width / 2 - 52, ry = height / 2 - 34;
-  const nodes = [{ id: center.path, x: cx, y: cy, title: center.displayTitle, color: topicColor(center.topic), kind: center.kind, current: true }];
+  const nodes = [{ id: center.path, x: cx, y: cy, title: center.displayTitle, url: center.url, color: topicColor(center.topic), kind: center.kind, current: true }];
   const edges = [];
   shown.forEach((n, index) => {
     const angle = -Math.PI / 2 + (index / shown.length) * Math.PI * 2;
     const x = +(cx + Math.cos(angle) * rx).toFixed(1), y = +(cy + Math.sin(angle) * ry).toFixed(1);
-    nodes.push({ id: n.path, x, y, title: n.displayTitle, color: topicColor(n.topic), kind: n.kind, current: false });
+    nodes.push({ id: n.path, x, y, title: n.displayTitle, url: n.url, color: topicColor(n.topic), kind: n.kind, current: false });
     const direction = outSet.has(n.path) && inSet.has(n.path) ? 'both' : outSet.has(n.path) ? 'out' : 'in';
     edges.push({ x1: cx, y1: cy, x2: x, y2: y, direction });
   });
