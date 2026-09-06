@@ -26,7 +26,7 @@ const topics = Object.keys(GRAPH_COLORS).map((t) => ({ name: t, color: GRAPH_COL
           <span class="legend-item"><svg width="24" height="8" viewBox="0 0 24 8" aria-hidden="true"><line x1="1" y1="4" x2="23" y2="4" stroke="#315b48" stroke-width="1.7" stroke-dasharray="5 4"></line></svg>역참조</span>
           <span class="legend-sep"></span>
           {topics.map((t) => <button type="button" class="legend-item" data-topic={t.name} aria-pressed="false"><i style={`width:10px;height:10px;border-radius:50%;background:${t.color}`}></i>{t.name}</button>)}
-          <span class="legend-item"><i style="width:10px;height:10px;border-radius:50%;border:1.2px solid #315b48"></i>허브</span>
+          <button type="button" class="legend-item" data-hub-filter aria-pressed="false"><i style="width:10px;height:10px;border-radius:50%;border:1.2px solid #315b48"></i>허브</button>
         </div>
       </div>
       <MapPanel hubs={hubs} />

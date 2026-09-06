@@ -15,8 +15,8 @@ test('panelModel builds meta, topic dots and reference lists from public edges o
   assert.deepEqual(model.topics.map((t) => t.name), ['AI', '소프트웨어공학']);
   assert.equal(model.topics[0].color, '#80698f');
   assert.equal(model.summary, '');
-  assert.deepEqual(model.outgoing, [{ title: 'B', url: '/obsidian/notes/b/' }]);
-  assert.deepEqual(model.incoming, [{ title: 'C', url: '/obsidian/dev/c/' }]);
+  assert.deepEqual(model.outgoing, [{ path: 'b.md', title: 'B', url: '/obsidian/notes/b/' }]);
+  assert.deepEqual(model.incoming, [{ path: 'c.md', title: 'C', url: '/obsidian/dev/c/' }]);
 });
 
 test('panelModel shows explicit summaries and category labels for development notes', () => {

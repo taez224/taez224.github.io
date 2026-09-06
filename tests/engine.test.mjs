@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyEdges, labelIds, fitTransform, offsetLine } from '../src/graph/engine.mjs';
+import { classifyEdges, labelIds, fitTransform, offsetLine, isFilteredOut } from '../src/graph/engine.mjs';
 
 const edges = [{ source: 'a', target: 'b' }, { source: 'b', target: 'a' }, { source: 'a', target: 'c' }, { source: 'd', target: 'e' }];
 const nodes = [
@@ -50,4 +50,15 @@ test('fitTransform brings every point inside the padded viewport and clamps scal
 test('offsetLine shifts a segment along its normal by the requested distance', () => {
   const { x1, y1, x2, y2 } = offsetLine({ x: 0, y: 0 }, { x: 10, y: 0 }, 1, 2.5);
   assert.deepEqual([x1, y1, x2, y2].map((v) => +v.toFixed(2)), [0, 2.5, 10, 2.5]);
+});
+
+test('isFilteredOut applies the topic set and the hubs-only switch together', () => {
+  const hub = { topic: 'AI', type: 'hub' }, leaf = { topic: '커리어', type: '' };
+  assert.equal(isFilteredOut(hub), false);
+  assert.equal(isFilteredOut(leaf, { topics: new Set(['AI']) }), true);
+  assert.equal(isFilteredOut(hub, { topics: new Set(['AI']) }), false);
+  assert.equal(isFilteredOut(leaf, { hubsOnly: true }), true);
+  assert.equal(isFilteredOut(hub, { hubsOnly: true }), false);
+  assert.equal(isFilteredOut(hub, { topics: new Set(['커리어']), hubsOnly: true }), true);
+  assert.equal(isFilteredOut(undefined, { hubsOnly: true }), false);
 });

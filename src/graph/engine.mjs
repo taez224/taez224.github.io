@@ -66,11 +66,21 @@ export { nodeRadius, topicColor };
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const LAYOUT = { width: 1000, height: 640 };
 
+// 범례 필터(주제 집합, 허브만)에 걸려 흐려질 노드인지. 선택된 노드는 호출 쪽에서 제외한다.
+export function isFilteredOut(node, { topics = null, hubsOnly = false } = {}) {
+  if (!node) return false;
+  if (topics && !topics.has(node.topic)) return true;
+  if (hubsOnly && node.type !== 'hub') return true;
+  return false;
+}
+
 export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelAll = false, labelLines = null, fitBounds = null, onSelect = () => {}, onOpen = () => {}, onHover = () => {} }) {
   const el = (name, attrs = {}) => { const node = document.createElementNS(SVG_NS, name); for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, String(v)); return node; };
   const size = () => ({ width: svg.clientWidth || LAYOUT.width, height: svg.clientHeight || LAYOUT.height });
   const byId = new Map(nodes.map((n) => [n.id, n]));
-  const state = { selected: null, hovered: null, topics: null, transform: { x: 0, y: 0, scale: 1 } };
+  const state = { selected: null, hovered: null, topics: null, hubsOnly: false, transform: { x: 0, y: 0, scale: 1 } };
+  // 필터는 선택된 노드를 흐리지 않는다. 선택 + 필터는 "이 노드의 연결 중 이 주제"를 뜻한다.
+  const outOfFilter = (id) => id !== state.selected && isFilteredOut(byId.get(id), state);
   const minScale = () => Math.min(MIN_SCALE, fitTransform(positions, size()).scale);
   const gesture = createGraphGesture({ getMinScale: minScale, maxScale: MAX_SCALE });
   const events = new AbortController();
@@ -94,7 +104,7 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
       const a = positions.get(edge.source), b = positions.get(edge.target);
       if (!a || !b) continue;
       const line = edge.offset ? offsetLine(a, b, edge.offset) : { x1: a.x, y1: a.y, x2: b.x, y2: b.y };
-      const topicDim = state.topics && (!state.topics.has(byId.get(edge.source)?.topic) || !state.topics.has(byId.get(edge.target)?.topic));
+      const topicDim = outOfFilter(edge.source) || outOfFilter(edge.target);
       edgeLayer.append(el('line', { class: `edge is-${edge.state}${topicDim ? ' is-topic-dim' : ''}`, x1: line.x1.toFixed(1), y1: line.y1.toFixed(1), x2: line.x2.toFixed(1), y2: line.y2.toFixed(1) }));
     }
   };
@@ -131,7 +141,7 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
       const labelY = multiLine
         ? (anchor === 'middle' ? p.y + r + 18 : p.y - ((lines.length - 1) * lineHeight) / 2 + 5)
         : p.y + r + 18;
-      const topicDim = state.topics && !state.topics.has(node.topic);
+      const topicDim = outOfFilter(id);
       const text = el('text', { class: `label${id === state.selected ? ' is-selected' : ''}${id === state.hovered ? ' is-hovered' : ''}${topicDim ? ' is-topic-dim' : ''}`, x: labelX.toFixed(1), y: labelY.toFixed(1), 'text-anchor': anchor });
       if (multiLine) lines.forEach((line, index) => { const tspan = el('tspan', { x: labelX.toFixed(1), dy: index === 0 ? 0 : lineHeight }); tspan.textContent = line; text.append(tspan); });
       else text.textContent = lines[0];
@@ -143,7 +153,7 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
     if (state.selected) for (const e of edges) { if (e.source === state.selected) neighbors.add(e.target); if (e.target === state.selected) neighbors.add(e.source); }
     for (const [id, g] of nodeEls) {
       const node = byId.get(id);
-      const topicOut = state.topics && !state.topics.has(node.topic);
+      const topicOut = outOfFilter(id);
       const dim = topicOut || (state.selected && id !== state.selected && !neighbors.has(id));
       g.classList.toggle('is-dim', Boolean(dim));
       g.classList.toggle('is-selected', id === state.selected);
@@ -181,7 +191,9 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
   const api = {
     select(id) { state.selected = id && byId.has(id) ? id : null; render(); },
     hover(id) { state.hovered = id; drawLabels(); },
-    setTopics(set) { state.topics = set; drawEdges(); refreshNodeStates(); drawLabels(); },
+    setFilter({ topics = state.topics, hubsOnly = state.hubsOnly } = {}) { state.topics = topics; state.hubsOnly = hubsOnly; drawEdges(); refreshNodeStates(); drawLabels(); },
+    setTopics(set) { api.setFilter({ topics: set }); },
+    has: (id) => byId.has(id),
     fit() { state.transform = fitBounds ? { ...fitBounds } : fitTransform(positions, size()); applyTransform(); },
     zoom(factor, center) {
       const { width, height } = size();
