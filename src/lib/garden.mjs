@@ -421,6 +421,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
       headings: headingsFor(note.body),
       url: siteUrl(relativePath),
       publishedUrl: kind === 'blog' ? publicUrl(note.meta.source, '') : '',
+      publication: String(note.meta.publication ?? ''),
       body: note.body
     };
   }
@@ -448,6 +449,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
       summaryIsExplicit: Boolean(book.note),
       headings: headingsFor(source?.body ?? ''),
       url: book.url,
+      publication: '',
       body: source?.body ?? ''
     });
   }

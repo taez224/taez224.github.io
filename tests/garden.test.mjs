@@ -58,6 +58,8 @@ test('assembleGarden publishes reviewed notes with slug urls and no private stri
   assert.equal(garden.assetCopies.get('_attachments/reviewed.svg'), 'assets/vault/_attachments/reviewed.svg');
   assert.equal(garden.home.about, '소개 문장');
   assert.equal(garden.books[0].url, '/obsidian/books/#book-좋은-책');
+  assert.equal(byPath.get('20_Projects/blog/공개 글.md').publication, 'Nextree');
+  assert.equal(byPath.get('01_Slipbox/생각 A.md').publication, '');
 });
 
 test('graphRule linked keeps only development notes with a public link, slipbox isolates stay', async () => {
