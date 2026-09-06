@@ -37,32 +37,16 @@ const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slic
         <div><span class="meta">공개된 글 {series.total}편</span><p>{series.first.title}</p></div>
         <a class="btn" href={series.first.url}>1편부터 읽기 <span aria-hidden="true">→</span></a>
       </nav>}
-      {series && series.total > 0 && <details class="series-index" open>
-        <summary>연재 목차 <span class="meta">{series.isHub ? `공개 ${series.total}편` : `현재 ${series.position} / ${series.total}편`}</span></summary>
-        <nav aria-label="연재 목차">
-          <p class="meta">{!series.isHub && series.url ? <a href={series.url}>{series.title} · 연재 안내</a> : series.title}</p>
-          <ol>{series.posts.map((post, index) => <li>
-            <a href={post.url} aria-current={post.path === note.path ? 'page' : undefined}>
-              <span class="series-order" aria-hidden="true">{index + 1}</span><span>{post.title}</span>
-              {post.path === note.path && <span class="reading-label">읽는 중</span>}
-            </a>
-          </li>)}</ol>
-        </nav>
-      </details>}
       <div class="body"><Content /></div>
       <nav class="note-end" aria-label="이어서 읽기">
-        {series && <div class="series-nav">
-          <div class="series-nav-heading"><h2>이어서 읽기</h2><span class="meta">{series.isHub ? `공개 ${series.total}편` : `${series.position} / ${series.total}편`}</span></div>
-          <div class="meta series-name">{!series.isHub && series.url ? <a href={series.url}>{series.title} · 연재 안내</a> : series.title}</div>
-          <div class:list={['series-links', { 'is-single': !series.prev || !series.next }]}>
-            {series.prev && <a class="series-link" href={series.prev.url}><span class="series-direction"><span aria-hidden="true">←</span> 이전 편</span><span class="series-title">{series.prev.title}</span></a>}
-            {series.next && <a class="series-link is-next" href={series.next.url}><span class="series-direction">{series.isHub ? '다음 · 1편부터 읽기' : '다음 편'} <span aria-hidden="true">→</span></span><span class="series-title">{series.next.title}</span></a>}
-          </div>
+        {series && (series.prev || series.next) && <div class:list={['series-links', { 'is-single': !series.prev || !series.next }]}>
+          {series.prev && <a class="series-link" href={series.prev.url}><span class="series-direction"><span aria-hidden="true">←</span> 이전 편</span><span class="series-title">{series.prev.title}</span></a>}
+          {series.next && <a class="series-link is-next" href={series.next.url}><span class="series-direction">{series.isHub ? '1편부터 읽기' : '다음 편'} <span aria-hidden="true">→</span></span><span class="series-title">{series.next.title}</span></a>}
         </div>}
         <a class="end-link" href={parentUrl}>{parent.listLabel}</a>
       </nav>
     </article>
-    <NoteSidebar note={note} headings={note.headings} outgoing={outgoing} incoming={incoming} mapUrl={mapUrl} />
+    <NoteSidebar note={note} headings={note.headings} outgoing={outgoing} incoming={incoming} mapUrl={mapUrl} series={series} />
   </div>
 </Shell>
 <style is:global>
@@ -74,29 +58,14 @@ const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slic
   .series-start { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin: -12px 0 36px; padding: 22px 24px; border-left: 3px solid var(--accent); background: var(--accent-soft); }
   .series-start p { margin: 4px 0 0; font-size: 16px; line-height: 1.5; }
   .series-start .btn { flex-shrink: 0; gap: 14px; }
-  .series-start + .series-index { margin-top: -16px; }
-  .series-index { margin: -12px 0 36px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); font-size: 15px; }
-  .series-index summary { padding: 14px 0; cursor: pointer; color: var(--accent); font-weight: 600; }
-  .series-index summary .meta { margin-left: 12px; font-weight: 400; }
-  .series-index nav { padding: 8px 0 16px; }
-  .series-index nav > p { margin: 0 0 12px; }
-  .series-index ol { list-style: none; padding: 0; margin: 0; max-height: 280px; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
-  .series-index li + li { margin-top: 4px; }
-  .series-index li a { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: baseline; gap: 10px; padding: 10px 12px; border-radius: 3px; color: var(--ink); line-height: 1.6; }
-  .series-index li a:hover { background: var(--accent-soft); text-decoration: none; }
-  .series-index li a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 650; }
-  .series-order { color: var(--muted); font-size: 13px; }
-  .reading-label { font-size: 12px; white-space: nowrap; }
-  .series-nav-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
-  .series-nav-heading h2 { margin: 0; font-family: var(--display); font-size: 24px; }
-  .series-name { margin-top: 6px; }
-  .series-links { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; margin-top: 20px; }
+  /* 이전·다음 편 카드: 화살표는 라벨 옆에 붙이고, 다음 편만 채워 강조한다. */
+  .series-links { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
   .series-links.is-single { grid-template-columns: 1fr; }
-  .series-link { display: flex; flex-direction: column; gap: 12px; padding: 22px 24px; border: 1px solid var(--line); border-radius: 4px; background: var(--paper-strong); color: var(--ink); }
+  .series-link { display: flex; flex-direction: column; gap: 8px; padding: 16px 20px; border: 1px solid var(--line); border-radius: 4px; background: var(--paper-strong); color: var(--ink); }
   .series-link:hover { border-color: var(--accent); text-decoration: none; }
-  .series-link.is-next { background: var(--accent-soft); border-color: var(--accent); }
-  .series-direction { display: flex; justify-content: space-between; gap: 16px; color: var(--accent); font-size: 14px; font-weight: 650; }
-  .series-title { font-family: var(--display); font-size: 19px; line-height: 1.55; letter-spacing: -.01em; }
+  .series-link.is-next { align-items: flex-end; text-align: right; background: var(--accent-soft); border-color: var(--accent); }
+  .series-direction { color: var(--accent); font-size: 14px; font-weight: 650; }
+  .series-title { font-family: var(--display); font-size: 18px; line-height: 1.5; letter-spacing: -.01em; }
   .end-link { align-self: flex-start; font-size: var(--t-side); }
   .note-title { margin: 0 0 40px; font-size: var(--t-h1); line-height: 1.3; letter-spacing: -.03em; }
   .body { font-size: var(--t-body); line-height: 1.85; }
@@ -135,9 +104,9 @@ const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slic
     .note-view { padding: 32px 0 64px; }
     .note-title { font-size: 32px; margin-bottom: 28px; }
     .note-end { margin-top: 40px; }
-    .series-links { grid-template-columns: 1fr; gap: 16px; }
+    .series-links { grid-template-columns: 1fr; gap: 12px; }
+    .series-link.is-next { align-items: flex-start; text-align: left; }
     .series-start { align-items: flex-start; flex-direction: column; gap: 16px; }
   }
 </style>
 <script src="../scripts/mermaid.js"></script>
-<script src="../scripts/series-index.js"></script>

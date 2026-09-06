@@ -177,6 +177,17 @@ function stripLeadingTitle(body) {
   return String(body ?? '').replace(/^\s*#\s+.+(?:\r?\n){1,2}/, '');
 }
 
+// 연재 글의 "연결된 노트" 절에서 "- [[…]] - 이전 글/다음 글" 줄을 뺀다. 리더가 연재 내비를 따로 그리므로 본문에서는 중복이다.
+// 간선은 원문에서 뽑으므로 로컬 그래프와 참조 목록에는 그대로 남는다. 줄을 빼서 절이 비면 제목도 뺀다.
+function stripSeriesLinks(body) {
+  const withoutLines = String(body ?? '').replace(/^[ \t]*[-*+][ \t]+.*(?:이전|다음) 글[ \t]*(?:\r?\n|(?![\s\S]))/gm, '');
+  return withoutLines.replace(/^#{1,6}[ \t]+연결된 노트[ \t]*(?:\r?\n[ \t]*)*(?=#{1,6}[ \t]|(?![\s\S]))/gm, '');
+}
+
+function publicBody(kind, body) {
+  return stripLeadingTitle(kind === 'blog' ? stripSeriesLinks(body) : body);
+}
+
 const imageExtensions = new Set(['.avif', '.gif', '.jpeg', '.jpg', '.png', '.svg', '.webp']);
 function isImagePath(value) {
   return imageExtensions.has(path.posix.extname(value).toLowerCase());
@@ -404,7 +415,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
       tags: Array.isArray(note.meta.tags) ? note.meta.tags : [],
       slug: slugByPath.get(relativePath),
       publicTags: publicTags(Array.isArray(note.meta.tags) ? note.meta.tags : []),
-      bodyText: plainText(stripLeadingTitle(note.body)),
+      bodyText: plainText(publicBody(kind, note.body)),
       topic: topicFor(Array.isArray(note.meta.tags) ? note.meta.tags : []),
       date: firstDate(note.meta),
       summary: kind === 'blog' && note.meta.type === 'series' ? seriesSummaryFor(note) : summaryFor(note),
@@ -538,7 +549,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
     .filter((entry) => entry.kind !== 'book')
     .map(({ body, ...entry }) => ({
       ...entry,
-      bodyHtml: renderMarkdown(entry.path, stripLeadingTitle(body)),
+      bodyHtml: renderMarkdown(entry.path, publicBody(entry.kind, body)),
       outgoing: outgoingByPath.get(entry.path) ?? [],
       incoming: incomingByPath.get(entry.path) ?? []
     }));

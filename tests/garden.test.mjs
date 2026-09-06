@@ -136,3 +136,20 @@ test('summary omits fenced code while body search preserves it', async () => {
   assert.match(note.bodyText, /CODE_ONLY_SENTINEL/);
   assert.match(note.bodyText, /TILDE_ONLY_SENTINEL/);
 });
+
+test('series posts drop the 이전·다음 글 lines from the public body but keep the edges', async () => {
+  const post = (order, extra) => `---\ncreated: 2026-09-0${order}\nstatus: published\nsource: https://example.com/s${order}\npublication: Brunch\nseries: 연재 S\nseries_order: ${order}\ntags:\n  - blog\n---\n# S${order}\n본문 ${order}.\n\n## 연결된 노트\n\n${extra}`;
+  const vaultRoot = await makeVault({ ...files,
+    '20_Projects/blog/S1.md': post(1, '- [[S2]] - 다음 글\n'),
+    '20_Projects/blog/S2.md': post(2, '- [[S1]] - 이전 글\n- [[생각 B]]\n')
+  });
+  const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
+  const s1 = garden.notes.find((note) => note.path === '20_Projects/blog/S1.md');
+  const s2 = garden.notes.find((note) => note.path === '20_Projects/blog/S2.md');
+  assert.doesNotMatch(s1.bodyHtml, /연결된 노트|다음 글/);
+  assert.doesNotMatch(s1.bodyText, /연결된 노트|다음 글/);
+  assert.ok(s1.outgoing.includes('20_Projects/blog/S2.md'));
+  assert.match(s2.bodyHtml, /연결된 노트/);
+  assert.doesNotMatch(s2.bodyHtml, /이전 글/);
+  assert.match(s2.bodyHtml, /생각 B/);
+});

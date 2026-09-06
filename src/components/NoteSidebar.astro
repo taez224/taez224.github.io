@@ -1,7 +1,7 @@
 ---
 import LocalGraph from './LocalGraph.astro';
 import Icon from './Icon.astro';
-const { note, headings, outgoing, incoming, mapUrl } = Astro.props;
+const { note, headings, outgoing, incoming, mapUrl, series = null } = Astro.props;
 const toc = headings.filter((h) => h.level === 2 || h.level === 3);
 const block = (label, icon, items) => ({ label, icon, items, long: items.length > 6 });
 const blocks = [block('참조', 'out', outgoing), block('역참조', 'in', incoming)].filter((b) => b.items.length);
@@ -10,6 +10,11 @@ const blocks = [block('참조', 'out', outgoing), block('역참조', 'in', incom
   {toc.length >= 2 && <nav class="rail" aria-label="목차">
     {toc.map((h) => <a href={`#${h.id}`} data-heading={h.id} class:list={[{ 'level-3': h.level === 3 }]}>{h.title}</a>)}
   </nav>}
+  {series && series.total > 0 && <section class="list-block series-block">
+    <div class="meta">연재<span class="count">{series.isHub ? series.total : `${series.position} / ${series.total}`}</span></div>
+    {!series.isHub && (series.url ? <a class="series-hub" href={series.url}>{series.title}</a> : <span class="series-hub">{series.title}</span>)}
+    <ol class="side-list series-list">{series.posts.map((post) => <li><a href={post.url} aria-current={post.path === note.path ? 'page' : undefined}>{post.title}</a></li>)}</ol>
+  </section>}
   <LocalGraph note={note} outgoing={outgoing} incoming={incoming} mapUrl={mapUrl} />
   {blocks.map((b) => <section class="list-block">
     <div class="meta"><Icon name={b.icon} />{b.label}<span class="count">{b.items.length}</span></div>
@@ -25,5 +30,10 @@ const blocks = [block('참조', 'out', outgoing), block('역참조', 'in', incom
   .rail a.level-3 { padding-left: 28px; font-size: var(--t-meta); }
   .rail a[aria-current="location"] { border-left-color: var(--accent); color: var(--ink); font-weight: 600; }
   .rail a:hover { color: var(--accent); text-decoration: none; }
+  /* 연재 블록: 접기·스크롤·서수 없이 편 목록 전체. 현재 편은 색과 굵기 하나로만 표시한다. */
+  .series-hub { display: block; margin: 4px 0 6px; color: var(--muted); font-size: var(--t-meta); }
+  .series-hub:hover { color: var(--accent); }
+  .series-list { margin: 0; padding: 0; list-style: none; }
+  .series-list a[aria-current="page"] { color: var(--accent); font-weight: 600; }
 </style>
 <script src="../scripts/toc.js"></script>
