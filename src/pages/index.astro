@@ -1,5 +1,6 @@
 ---
 import Shell from '../layouts/Shell.astro';
+import '../styles/graph.css';
 import About from '../components/About.astro';
 import { getGarden } from '../lib/get-garden.mjs';
 import { formatDate, kindLabel, withBase } from '../lib/format.mjs';
@@ -11,7 +12,7 @@ const firstSentence = (text) => text.match(/^.*?[.!?](?:\s|$)/)?.[0]?.trim() || 
 ---
 <Shell title="TaeZ" description={garden.home.about} path="/">
   <section class="hero" aria-label="소개와 노트 지도">
-    <div class="hero-graph" data-graph><img src={withBase('/assets/graph-snapshot.svg')} alt={`노트 지도. 노드 ${garden.stats.nodes}개와 연결 ${garden.stats.edges}개.`} width="1000" height="640" /></div>
+    <div class="hero-graph" data-graph data-site={withBase('/data/site.json')} data-map-url={withBase('/map/')}><img src={withBase('/assets/graph-snapshot.svg')} alt={`노트 지도. 노드 ${garden.stats.nodes}개와 연결 ${garden.stats.edges}개.`} width="1000" height="640" /></div>
     <div class="hero-fade" aria-hidden="true"></div>
     <div class="hero-about"><About about={garden.home.about} contacts={garden.home.contacts} mapUrl={withBase('/map/')} /></div>
   </section>
@@ -29,6 +30,8 @@ const firstSentence = (text) => text.match(/^.*?[.!?](?:\s|$)/)?.[0]?.trim() || 
   .hero { position: relative; height: 600px; overflow: hidden; }
   .hero-graph { position: absolute; top: 0; left: calc(50% - 720px + 440px); width: 1060px; height: 600px; }
   .hero-graph img, .hero-graph svg { display: block; width: 100%; height: 100%; }
+  .hero-graph .graph { cursor: pointer; }
+  .hero .graph .node.is-dim { opacity: 1; }
   .hero-fade { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, var(--paper) 0%, var(--paper) 30%, rgba(247,247,242,0) 54%); }
   .hero-about { position: absolute; left: calc(50% - 590px); top: 60px; width: 430px; }
   .featured { padding: 68px 0 64px; border-top: 1px solid var(--ink); }
@@ -57,3 +60,4 @@ const firstSentence = (text) => text.match(/^.*?[.!?](?:\s|$)/)?.[0]?.trim() || 
     .recent li .meta:last-child { text-align: left; }
   }
 </style>
+<script src="../scripts/hero.js"></script>

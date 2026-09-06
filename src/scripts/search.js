@@ -1,5 +1,5 @@
 import { matchRecord, normalizeQuery } from '../lib/search-match.mjs';
-import { searchShortcut } from '../../client/shortcuts.mjs';
+import { searchShortcut } from '../lib/shortcuts.mjs';
 
 const dialog = document.getElementById('search');
 const input = document.getElementById('search-input');

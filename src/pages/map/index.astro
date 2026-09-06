@@ -1,24 +1,61 @@
 ---
 import Shell from '../../layouts/Shell.astro';
+import MapPanel from '../../components/MapPanel.astro';
 import { getGarden } from '../../lib/get-garden.mjs';
-import { withBase } from '../../lib/format.mjs';
+import { withBase, GRAPH_COLORS } from '../../lib/format.mjs';
+import '../../styles/graph.css';
 const { nodes, stats } = await getGarden();
 const hubs = nodes.filter((n) => n.type === 'hub');
+const topics = Object.keys(GRAPH_COLORS).map((t) => ({ name: t, color: GRAPH_COLORS[t], count: nodes.filter((n) => n.topic === t).length })).filter((t) => t.count);
 ---
 <Shell title="노트 지도" description="노트를 고르고 연결된 생각을 따라가는 지도." path="/map/" active="map">
-  <div class="wrap map-page">
+  <div class="wrap map-page" data-site={withBase('/data/site.json')}>
     <div class="page-head"><h1 class="display">노트 지도</h1><span class="meta">노트 {stats.nodes} · 연결 {stats.edges}</span></div>
     <div class="map-layout">
-      <div class="map-stage" data-map><img src={withBase('/assets/graph-snapshot.svg')} alt="" width="1000" height="640" /></div>
-      <aside class="list-block"><div class="meta">시작점</div><ul class="side-list">{hubs.map((h) => <li><a href={h.url}>{h.displayTitle}</a></li>)}</ul></aside>
+      <div class="map-stage">
+        <div class="graph-controls">
+          <button type="button" data-graph-focus aria-pressed="false" disabled>연결만 보기</button>
+          <button type="button" data-graph-zoom="out" aria-label="축소">−</button>
+          <button type="button" data-graph-zoom="fit">맞춤</button>
+          <button type="button" data-graph-zoom="in" aria-label="확대">+</button>
+          <button type="button" data-open-hubs class="hubs-button">시작점</button>
+        </div>
+        <div class="graph-box"><svg data-map role="group" aria-label="노트 지도. 노드를 고르면 오른쪽에 정보가 나타납니다."></svg></div>
+        <div class="legend">
+          <span class="legend-item"><svg width="24" height="8" viewBox="0 0 24 8" aria-hidden="true"><line x1="1" y1="4" x2="23" y2="4" stroke="#315b48" stroke-width="2"></line></svg>참조</span>
+          <span class="legend-item"><svg width="24" height="8" viewBox="0 0 24 8" aria-hidden="true"><line x1="1" y1="4" x2="23" y2="4" stroke="#315b48" stroke-width="1.7" stroke-dasharray="5 4"></line></svg>역참조</span>
+          <span class="legend-sep"></span>
+          {topics.map((t) => <button type="button" class="legend-item" data-topic={t.name} aria-pressed="false"><i style={`width:10px;height:10px;border-radius:50%;background:${t.color}`}></i>{t.name}</button>)}
+          <span class="legend-item"><i style="width:10px;height:10px;border-radius:50%;border:1.2px solid #315b48"></i>허브</span>
+        </div>
+      </div>
+      <MapPanel hubs={hubs} />
     </div>
   </div>
 </Shell>
-<style>
-  .map-page { padding: 36px 0 64px; }
-  .page-head { display: flex; align-items: baseline; gap: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+<style is:global>
+  .map-page { padding: 24px 0 48px; }
+  .page-head { display: flex; align-items: baseline; gap: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
   .page-head h1 { margin: 0; font-size: 28px; }
-  .map-layout { display: grid; grid-template-columns: minmax(0, 1fr) 310px; gap: 40px; margin-top: 22px; align-items: start; }
-  .map-stage img { display: block; width: 100%; height: auto; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-  @media (max-width: 1000px) { .map-layout { grid-template-columns: 1fr; } }
+  .map-layout { display: grid; grid-template-columns: minmax(0, 1fr) 310px; gap: 40px; margin-top: 16px; align-items: stretch; }
+  .graph-box { height: calc(100dvh - 300px); min-height: 420px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .map-panel { max-height: calc(100dvh - 300px + 88px); }
+  .hubs-button { display: none; }
+  @media (max-width: 999.98px) {
+    .map-layout { grid-template-columns: 1fr; gap: 24px; }
+    .graph-box { height: 60vh; min-height: 360px; }
+    .map-panel { max-height: none; }
+    .map-panel .scroll-list.is-long .side-list { max-height: none; }
+    .map-panel .scroll-list.is-long::after { display: none; }
+  }
+  @media (max-width: 720px) {
+    .map-page { padding-top: 16px; }
+    .graph-box { width: 100vw; margin-left: calc(50% - 50vw); height: 60vh; }
+    .graph-controls { flex-wrap: wrap; }
+    .graph-controls button { min-width: 40px; min-height: 40px; }
+    .hubs-button { display: inline-flex; margin-left: auto; }
+    .legend { gap: 6px 14px; }
+    .legend-item { min-height: 36px; }
+  }
 </style>
+<script src="../../scripts/map.js"></script>

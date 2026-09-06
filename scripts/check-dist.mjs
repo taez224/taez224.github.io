@@ -64,6 +64,15 @@ checks.push(async () => {
   check(!/노트 \d+개 · 연결 \d+개/.test(home.replace(/alt="[^"]*"/g, '')), 'index: 히어로 집계 잔존');
   check((home.match(/<li>/g) || []).length === 8 || (home.match(/<li /g) || []).length === 8, 'index: 최근 기록이 8개가 아니다');
 });
+checks.push(async () => {
+  const map = await read('map/index.html');
+  check(map.includes('data-map') && map.includes('data-panel'), 'map: 그래프·패널 요소 없음');
+  check(!map.includes('marker-end'), 'map: 화살표 마커 잔존');
+  check(/노트 \d+ · 연결 \d+/.test(map), 'map: 집계 라벨 형식');
+  const home = await read('index.html');
+  check(home.includes('data-graph') && home.includes('data-map-url'), 'index: 히어로 그래프 마운트 지점 없음');
+  check(home.includes('graph-snapshot.svg'), 'index: 모바일용 스냅샷 없음');
+});
 // __MORE_CHECKS__ (뒤 Task가 이 자리에 검사를 추가한다)
 
 for (const run of checks) await run();

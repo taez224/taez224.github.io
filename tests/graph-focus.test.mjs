@@ -4,7 +4,7 @@ import {
   graphNeighborhood,
   layoutGraphFocus,
   visibleFixedLabels
-} from '../client/graph-focus.mjs';
+} from '../src/graph/focus.mjs';
 
 const boxFor = (position, item) => ({
   x: position.x - item.width / 2,
@@ -159,21 +159,10 @@ test('visibleFixedLabels ignores labels outside bounds without changing their co
 
 
 test('full titles wrap between words when possible', async () => {
-  const { graphTitleLines } = await import('../client/graph-focus.mjs');
+  const { graphTitleLines } = await import('../src/graph/focus.mjs');
   assert.deepEqual(graphTitleLines('가능해야 한다', 10), ['가능해야 한다']);
   const title = '산출물이 팀의 자산이 되려면 판단 추적 복구가 가능해야 한다';
   const lines = graphTitleLines(title, 16);
   assert.equal(lines.join(' '), title);
   assert.ok(lines.every(line => [...line].length <= 16));
-});
-
-
-test('edge arrows end outside the target node and preserve link direction', async () => {
-  const { graphEdgeEndpoints } = await import('../client/graph-focus.mjs');
-  const forward = graphEdgeEndpoints({ x: 0, y: 0 }, { x: 100, y: 0 }, 10, 20);
-  assert.deepEqual(forward, { x1: 13, y1: 0, x2: 77, y2: 0 });
-  const reverse = graphEdgeEndpoints({ x: 100, y: 0 }, { x: 0, y: 0 }, 20, 10);
-  assert.deepEqual(reverse, { x1: 77, y1: 0, x2: 13, y2: 0 });
-  const zero = graphEdgeEndpoints({ x: 5, y: 5 }, { x: 5, y: 5 }, 10, 10);
-  assert.ok(Object.values(zero).every(Number.isFinite));
 });

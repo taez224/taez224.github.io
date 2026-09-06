@@ -1,4 +1,4 @@
-export function createGraphGesture() {
+export function createGraphGesture({ getMinScale = () => .65, maxScale = 3.2 } = {}) {
   const pointers = new Map();
   let baseline = null;
   let current = null;
@@ -25,7 +25,7 @@ export function createGraphGesture() {
       const now = measure();
       const before = baseline.transform;
       if (pointers.size > 1) {
-        const scale = Math.max(.65, Math.min(3.2, before.scale * now.distance / baseline.distance));
+        const scale = Math.max(getMinScale(), Math.min(maxScale, before.scale * now.distance / baseline.distance));
         current = {
           scale,
           x: now.x - (baseline.x - before.x) / before.scale * scale,

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGraphGesture } from '../client/graph-gestures.mjs';
+import { createGraphGesture } from '../src/graph/gestures.mjs';
 const initial = { x: 0, y: 0, scale: 1 };
 const touch = (id, x, y = 100) => ({ id, x, y, touch: true, onNode: true });
 const near = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-8, `${actual} != ${expected}`);
@@ -59,4 +59,12 @@ test('cancelled pointers cannot keep moving the graph and the next tap starts cl
   assert.equal(g.move(touch(2, 200)), null);
   g.down(touch(3, 40), initial); g.end(3);
   assert.equal(g.shouldSuppressClick(), false);
+});
+
+test('pinch honours a fit scale below the default minimum instead of jumping to .65', () => {
+  const gesture = createGraphGesture({ getMinScale: () => .36 });
+  gesture.down({ id: 1, x: 0, y: 0, touch: true }, { x: 0, y: 0, scale: .36 });
+  gesture.down({ id: 2, x: 100, y: 0, touch: true }, { x: 0, y: 0, scale: .36 });
+  const next = gesture.move({ id: 2, x: 90, y: 0 });
+  assert.ok(Math.abs(next.scale - .36) < 1e-9, `scale ${next.scale}`);
 });

@@ -1,0 +1,32 @@
+---
+const { hubs } = Astro.props;
+---
+<div class="sheet-backdrop" data-sheet-backdrop hidden></div>
+<aside class="map-panel" data-panel aria-live="polite">
+  <button class="panel-close" type="button" data-panel-close aria-label="닫기">닫기</button>
+  <div data-panel-body>
+    <section class="list-block"><div class="meta">시작점</div><ul class="side-list">{hubs.map((h) => <li><a href={h.url}>{h.displayTitle}</a></li>)}</ul></section>
+  </div>
+</aside>
+<style is:global>
+  .map-panel { display: flex; flex-direction: column; min-height: 0; }
+  .panel-close { display: none; }
+  .panel-head { display: flex; flex-direction: column; gap: 12px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+  .panel-head h2 { margin: -6px 0 0; font-size: var(--t-h2); line-height: 1.45; }
+  .panel-topics { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: var(--t-meta); color: var(--muted); }
+  .panel-topics span { display: inline-flex; align-items: center; gap: 6px; }
+  .panel-topics i { width: 10px; height: 10px; border-radius: 50%; }
+  .panel-summary { display: -webkit-box; margin: 0; overflow: hidden; color: var(--muted); font-size: var(--t-side); line-height: 1.6; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+  .panel-lists { display: flex; flex-direction: column; min-height: 0; }
+  .panel-lists .list-block { display: flex; flex-direction: column; min-height: 0; flex: 0 1 auto; }
+  .sheet-backdrop { display: none; }
+  @media (max-width: 720px) {
+    .sheet-backdrop { display: block; position: fixed; inset: 0; z-index: 30; background: rgba(36,39,32,.25); }
+    .sheet-backdrop[hidden] { display: none; }
+    .map-panel { position: fixed; z-index: 31; right: 0; bottom: 0; left: 0; max-height: 55dvh; padding: 12px 20px 24px; border-top: 1px solid var(--line); border-radius: 0; background: var(--paper-strong); box-shadow: none; transform: translateY(100%); transition: transform .2s ease; overflow-y: auto; }
+    .map-panel[data-open] { transform: translateY(0); }
+    .panel-close { display: inline-flex; align-self: flex-end; min-height: 36px; padding: 0 8px; border: 0; background: transparent; color: var(--muted); font-size: var(--t-meta); }
+    .map-panel .scroll-list.is-long .side-list { max-height: none; }
+    .map-panel .scroll-list.is-long::after { display: none; }
+  }
+</style>
