@@ -8,6 +8,7 @@
   --t-meta: 13px; --t-side: 14px; --t-body: 17px; --t-list: 20px; --t-h2: 24px; --t-h1: 46px; --t-hero: 58px;
 }
 * { box-sizing: border-box; }
+:where([hidden]) { display: none !important; }
 html { scroll-behavior: smooth; scroll-padding-top: 100px; }
 body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: var(--t-body); line-height: 1.85; -webkit-font-smoothing: antialiased; word-break: keep-all; overflow-wrap: anywhere; }
 a { color: var(--accent); text-decoration: none; }

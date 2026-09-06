@@ -88,3 +88,51 @@ test('slug collisions fail the build with both paths named', async () => {
   const vaultRoot = await makeVault({ ...files, '01_Slipbox/다른 생각.md': '---\ncreated: 2026-09-07\nslug: 생각-a\n---\n# 다른 생각\n중복 슬러그.' });
   await assert.rejects(() => assembleGarden({ vaultRoot, config, basePath: '/obsidian' }), /생각 A\.md[\s\S]*다른 생각\.md|다른 생각\.md[\s\S]*생각 A\.md/);
 });
+
+test('summary fallback uses plain text without image or table markup', async () => {
+  const fallbackConfig = {
+    ...config,
+    include: [...config.include, {
+      path: `${dev}/Tools`, graph: false, files: [`${dev}/Tools/도구.md`]
+    }]
+  };
+  const vaultRoot = await makeVault({ ...files,
+    [`${dev}/Tools/도구.md`]: '---\ncreated: 2026-09-06\n---\n# 도구\n![](https://example.com/tool.png)\n\n| 명령 | 설명 |\n| --- | --- |\n| rg | 검색 |\n\n도구를 고르는 기준.'
+  });
+  const garden = await assembleGarden({ vaultRoot, config: fallbackConfig, basePath: '/obsidian' });
+  const tool = garden.development.tools.find((record) => record.path === `${dev}/Tools/도구.md`);
+  assert.equal(tool.summary, '명령 설명 rg 검색 도구를 고르는 기준.');
+  assert.doesNotMatch(tool.summary, /!\[|https?:\/\/|\|/);
+});
+
+test('short summary fallback preserves the final word', async () => {
+  const fallbackConfig = {
+    ...config,
+    include: [...config.include, {
+      path: `${dev}/Tools`, graph: false, files: [`${dev}/Tools/짧은 도구.md`]
+    }]
+  };
+  const vaultRoot = await makeVault({ ...files,
+    [`${dev}/Tools/짧은 도구.md`]: '---\ncreated: 2026-09-06\n---\n# 짧은 도구\n마지막 어절 보존.'
+  });
+  const garden = await assembleGarden({ vaultRoot, config: fallbackConfig, basePath: '/obsidian' });
+  const tool = garden.development.tools.find((record) => record.path === `${dev}/Tools/짧은 도구.md`);
+  assert.equal(tool.summary, '마지막 어절 보존.');
+});
+
+test('summary omits fenced code while body search preserves it', async () => {
+  const vaultRoot = await makeVault({ ...files,
+    '01_Slipbox/생각 B.md': [
+      '---', 'created: 2026-09-02', '---', '# 생각 B',
+      '명령의 목적을 설명한다.', '',
+      '```sh', 'brew install CODE_ONLY_SENTINEL', '```', '',
+      '~~~sh', 'TILDE_ONLY_SENTINEL', '~~~', '',
+      '본문의 `inline API`는 남긴다.'
+    ].join('\n')
+  });
+  const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
+  const note = garden.notes.find((note) => note.path === '01_Slipbox/생각 B.md');
+  assert.equal(note.summary, '명령의 목적을 설명한다. 본문의 inline API는 남긴다.');
+  assert.match(note.bodyText, /CODE_ONLY_SENTINEL/);
+  assert.match(note.bodyText, /TILDE_ONLY_SENTINEL/);
+});

@@ -1,6 +1,6 @@
 import { createGraph } from '../graph/engine.mjs';
 import { layoutGraph } from '../graph/layout.mjs';
-import { graphNeighborhood } from '../graph/focus.mjs';
+import { graphNeighborhood, layoutDesktopFocus } from '../graph/focus.mjs';
 import { panelModel } from '../lib/panel.mjs';
 
 const page = document.querySelector('[data-site]');
@@ -41,6 +41,7 @@ let focusRoot = null;
 
 const backdrop = document.querySelector('[data-sheet-backdrop]');
 const stage = document.querySelector('.map-stage');
+const graphBox = svg.parentElement;
 const header = document.querySelector('.site-header');
 const narrow = window.matchMedia('(max-width: 720px)');
 let lastFocus = null;
@@ -71,6 +72,14 @@ function mount(data) {
   applyTopics();
 }
 
+function focusData(sub, rootId) {
+  if (!window.matchMedia('(min-width: 1000px)').matches) return { nodes: sub.nodes, edges: sub.edges, positions: layoutGraph(sub.nodes, sub.edges, box), labelAll: true };
+  const width = Math.max(320, Math.round(graphBox.clientWidth || 1000));
+  const layout = layoutDesktopFocus(rootId, sub.nodes, width);
+  graphBox.style.height = `${Math.max(420, layout.height)}px`;
+  return { nodes: sub.nodes, edges: sub.edges, positions: layout.positions, labelAll: true, labelLines: layout.labelLines, fitBounds: { x: 0, y: 0, scale: 1 } };
+}
+
 function select(id, pushUrl, { open = true } = {}) {
   graph.select(id);
   // 연결만 보기 중에는 선택을 풀어도 버튼을 살려 둔다. 그래야 모드를 끌 수 있다.
@@ -89,14 +98,19 @@ function select(id, pushUrl, { open = true } = {}) {
 
 function setFocus(rootId) {
   const previousSelection = graph?.selected();
+  const previousFocusRoot = focusRoot;
   focusRoot = rootId;
   focusButton.setAttribute('aria-pressed', String(Boolean(rootId)));
   if (rootId) {
     const sub = graphNeighborhood(rootId, site.nodes, site.edges);
-    mount({ nodes: sub.nodes, edges: sub.edges, positions: layoutGraph(sub.nodes, sub.edges, box), labelAll: true });
-  } else mount(full);
+    mount(focusData(sub, rootId));
+  } else {
+    graphBox.style.height = '';
+    mount(full);
+  }
   // 모바일: 시트를 다시 띄우지 않는다. 방금 본 연결을 가리면 안 된다.
-  select(rootId ?? previousSelection, true, { open: false });
+  const selection = rootId && previousFocusRoot !== rootId ? rootId : previousSelection;
+  select(selection, true, { open: false });
 }
 
 // 시트만 닫는다. 선택은 유지되어 "연결만 보기"를 누를 수 있다. 선택 해제는 빈 곳 탭.
@@ -114,7 +128,10 @@ document.querySelector('[data-open-hubs]')?.addEventListener('click', () => { gr
 backdrop?.addEventListener('click', closeSheet);
 narrow.addEventListener('change', syncSheet);
 document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && narrow.matches && 'open' in panel.dataset) closeSheet(); });
-window.addEventListener('resize', () => graph.fit());
+window.addEventListener('resize', () => {
+  if (focusRoot && window.matchMedia('(min-width: 1000px)').matches) setFocus(focusRoot);
+  else graph.fit();
+});
 
 mount(full);
 const params = new URLSearchParams(window.location.search);

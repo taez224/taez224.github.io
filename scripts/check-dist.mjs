@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const config = JSON.parse(await fs.readFile(path.join(projectRoot, 'config.json'), 'utf8'));
-const dist = path.join(projectRoot, 'dist');
+const dist = path.resolve(process.env.GARDEN_DIST_DIR ?? path.join(projectRoot, 'dist'));
 const failures = [];
 const read = (file) => fs.readFile(path.join(dist, file), 'utf8');
 const exists = async (file) => fs.access(path.join(dist, file)).then(() => true, () => false);
@@ -16,6 +16,7 @@ export async function checkShell(file) {
   check(html.includes('property="og:title"'), `${file}: og:title 없음`);
   check(html.includes('rel="canonical"'), `${file}: canonical 없음`);
   check(html.includes('class="site-header"'), `${file}: 헤더 없음`);
+  check(html.includes('type="application/rss+xml"'), `${file}: RSS 구독 정보 없음`);
   return html;
 }
 
@@ -57,7 +58,7 @@ checks.push(async () => {
   check(search.every((r) => typeof r.text === 'string'), 'search.json 검색 텍스트 형식 오류');
 });
 checks.push(async () => {
-  for (const file of ['favicon.svg', 'og.png', 'apple-touch-icon.png', 'robots.txt', 'assets/graph-snapshot.svg', 'map/index.html', '404.html']) check(await exists(file), `${file} 없음`);
+  for (const file of ['rss.xml', 'feeds/posts.xml', 'feeds/notes.xml', 'favicon.svg', 'og.png', 'apple-touch-icon.png', 'robots.txt', 'assets/graph-snapshot.svg', 'map/index.html', '404.html']) check(await exists(file), `${file} 없음`);
   const home = await read('index.html');
   check(home.includes('노트 지도 열기'), 'index: 지도 버튼 없음');
   check(!home.includes('Velog'), 'index: Velog 링크 잔존');

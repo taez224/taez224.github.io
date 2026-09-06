@@ -81,19 +81,10 @@ function headingsFor(body) {
 }
 
 function excerpt(body) {
-  const cleaned = body
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/^#{1,6}\s+.+$/gm, ' ')
-    .replace(/^\s*>?\s*\[![^\]]+\]\s*/gm, ' ')
-    .replace(/^\s*>\s?/gm, ' ')
-    .replace(/^\s*[-*+]\s+/gm, ' ')
-    .replace(/^\s*\d+\.\s+/gm, ' ')
-    .replace(/!?(\[\[|\]\])/g, ' ')
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-    .replace(/[`*_>#|]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  return cleaned.slice(0, 220).replace(/\s+\S*$/, '') + (cleaned.length > 220 ? '…' : '');
+  const withoutHeadings = String(body ?? '').replace(/^#{1,6}\s+.+$/gm, ' ');
+  const cleaned = plainText(withoutHeadings, { includeCodeBlocks: false });
+  if (cleaned.length <= 220) return cleaned;
+  return `${cleaned.slice(0, 220).replace(/\s+\S*$/, '')}…`;
 }
 
 function summaryFor(note) {

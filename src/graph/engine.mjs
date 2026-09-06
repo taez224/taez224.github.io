@@ -66,7 +66,7 @@ export { nodeRadius, topicColor };
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const LAYOUT = { width: 1000, height: 640 };
 
-export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelAll = false, onSelect = () => {}, onOpen = () => {}, onHover = () => {} }) {
+export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelAll = false, labelLines = null, fitBounds = null, onSelect = () => {}, onOpen = () => {}, onHover = () => {} }) {
   const el = (name, attrs = {}) => { const node = document.createElementNS(SVG_NS, name); for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, String(v)); return node; };
   const size = () => ({ width: svg.clientWidth || LAYOUT.width, height: svg.clientHeight || LAYOUT.height });
   const byId = new Map(nodes.map((n) => [n.id, n]));
@@ -94,7 +94,8 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
       const a = positions.get(edge.source), b = positions.get(edge.target);
       if (!a || !b) continue;
       const line = edge.offset ? offsetLine(a, b, edge.offset) : { x1: a.x, y1: a.y, x2: b.x, y2: b.y };
-      edgeLayer.append(el('line', { class: `edge is-${edge.state}`, x1: line.x1.toFixed(1), y1: line.y1.toFixed(1), x2: line.x2.toFixed(1), y2: line.y2.toFixed(1) }));
+      const topicDim = state.topics && (!state.topics.has(byId.get(edge.source)?.topic) || !state.topics.has(byId.get(edge.target)?.topic));
+      edgeLayer.append(el('line', { class: `edge is-${edge.state}${topicDim ? ' is-topic-dim' : ''}`, x1: line.x1.toFixed(1), y1: line.y1.toFixed(1), x2: line.x2.toFixed(1), y2: line.y2.toFixed(1) }));
     }
   };
   const drawNodes = () => {
@@ -103,7 +104,7 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
       const p = positions.get(node.id);
       if (!p) continue;
       const r = nodeRadius(node.degree ?? 0);
-      const g = el('g', { class: 'node', 'data-id': node.id, tabindex: '0', role: 'button', 'aria-label': cleanTitle(node.displayTitle ?? node.title) });
+      const g = el('g', { class: 'node', 'data-id': node.id, tabindex: '0', role: 'button', 'aria-pressed': 'false', 'aria-label': cleanTitle(node.displayTitle ?? node.title) });
       if (node.type === 'hub') g.append(el('circle', { class: 'hub-ring', cx: p.x, cy: p.y, r: (r + 6).toFixed(1) }));
       g.append(el('circle', { class: 'hit', cx: p.x, cy: p.y, r: Math.max(22, r), fill: 'transparent' }));
       g.append(el('circle', { class: 'dot', cx: p.x, cy: p.y, r: r.toFixed(1), fill: topicColor(node.topic) }));
@@ -123,8 +124,17 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
       if (!node || !p) continue;
       const r = nodeRadius(node.degree ?? 0), anchor = anchorFor(p.x);
       const x = anchor === 'start' ? p.x - r : anchor === 'end' ? p.x + r : p.x;
-      const text = el('text', { class: `label${id === state.selected ? ' is-selected' : ''}${id === state.hovered ? ' is-hovered' : ''}`, x: x.toFixed(1), y: (p.y + r + 18).toFixed(1), 'text-anchor': anchor });
-      text.textContent = cleanTitle(node.displayTitle ?? node.title);
+      const lines = labelLines?.get(id) ?? [cleanTitle(node.displayTitle ?? node.title)];
+      const multiLine = Boolean(labelLines?.has(id));
+      const lineHeight = 18;
+      const labelX = multiLine ? (anchor === 'start' ? p.x + r + 8 : anchor === 'end' ? p.x - r - 8 : p.x) : x;
+      const labelY = multiLine
+        ? (anchor === 'middle' ? p.y + r + 18 : p.y - ((lines.length - 1) * lineHeight) / 2 + 5)
+        : p.y + r + 18;
+      const topicDim = state.topics && !state.topics.has(node.topic);
+      const text = el('text', { class: `label${id === state.selected ? ' is-selected' : ''}${id === state.hovered ? ' is-hovered' : ''}${topicDim ? ' is-topic-dim' : ''}`, x: labelX.toFixed(1), y: labelY.toFixed(1), 'text-anchor': anchor });
+      if (multiLine) lines.forEach((line, index) => { const tspan = el('tspan', { x: labelX.toFixed(1), dy: index === 0 ? 0 : lineHeight }); tspan.textContent = line; text.append(tspan); });
+      else text.textContent = lines[0];
       labelLayer.append(text);
     }
   };
@@ -138,6 +148,7 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
       g.classList.toggle('is-dim', Boolean(dim));
       g.classList.toggle('is-selected', id === state.selected);
       g.classList.toggle('is-neighbor', neighbors.has(id));
+      g.setAttribute('aria-pressed', String(id === state.selected));
     }
   };
   const render = () => { drawEdges(); refreshNodeStates(); drawLabels(); };
@@ -170,8 +181,8 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
   const api = {
     select(id) { state.selected = id && byId.has(id) ? id : null; render(); },
     hover(id) { state.hovered = id; drawLabels(); },
-    setTopics(set) { state.topics = set; refreshNodeStates(); },
-    fit() { state.transform = fitTransform(positions, size()); applyTransform(); },
+    setTopics(set) { state.topics = set; drawEdges(); refreshNodeStates(); drawLabels(); },
+    fit() { state.transform = fitBounds ? { ...fitBounds } : fitTransform(positions, size()); applyTransform(); },
     zoom(factor, center) {
       const { width, height } = size();
       const c = center ?? { x: width / 2, y: height / 2 };

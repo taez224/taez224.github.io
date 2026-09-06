@@ -29,6 +29,31 @@ export function graphTitleLines(title, limit) {
   return lines;
 }
 
+export function layoutDesktopFocus(root, nodes, width, { fontSize = 13, lineHeight = 18, minHeight = 420 } = {}) {
+  const safeWidth = Math.max(320, width);
+  const maxChars = Math.max(8, Math.min(22, Math.floor((safeWidth - 128 - 80) / 2 / fontSize)));
+  const labelLines = new Map(nodes.map((node) => [node.id, graphTitleLines(node.displayTitle ?? node.title, maxChars)]));
+  const items = nodes.map((node) => {
+    const lines = labelLines.get(node.id);
+    return { id: node.id, width: Math.max(...lines.map((line) => [...line].length)) * fontSize, height: lines.length * lineHeight };
+  });
+  const rootItem = items.find((item) => item.id === root);
+  if (!rootItem) return { positions: new Map(), labelLines, height: minHeight, maxChars };
+  const neighbors = items.filter((item) => item.id !== root);
+  const sides = [neighbors.filter((_, index) => index % 2 === 0), neighbors.filter((_, index) => index % 2 === 1)];
+  const slot = (item) => item.height + 22;
+  const sideHeight = (side) => side.reduce((sum, item) => sum + slot(item), 0);
+  const height = Math.max(minHeight, ...sides.map((side) => sideHeight(side) + 48), rootItem.height + 100);
+  const positions = new Map([[root, { x: safeWidth / 2, y: height / 2 }]]);
+  const maxSideWidth = Math.max(0, ...items.map((item) => item.width));
+  sides.forEach((side, index) => {
+    const x = index === 0 ? 36 : safeWidth - 36;
+    let y = (height - sideHeight(side)) / 2;
+    for (const item of side) { positions.set(item.id, { x, y: y + item.height / 2 }); y += slot(item); }
+  });
+  return { positions, labelLines, height, maxChars, maxSideWidth };
+}
+
 // Measured label sizes determine fixed slots. No layout changes on hover.
 export function layoutGraphFocus(root, items, width, pixelScale, minHeight = 0) {
   const padding = 24 / pixelScale, gap = 18 / pixelScale;

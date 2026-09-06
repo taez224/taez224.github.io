@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   graphNeighborhood,
+  layoutDesktopFocus,
   layoutGraphFocus,
   visibleFixedLabels
 } from '../src/graph/focus.mjs';
@@ -165,4 +166,19 @@ test('full titles wrap between words when possible', async () => {
   const lines = graphTitleLines(title, 16);
   assert.equal(lines.join(' '), title);
   assert.ok(lines.every(line => [...line].length <= 16));
+});
+
+test('layoutDesktopFocus keeps readable two-column slots at narrow desktop widths', () => {
+  const nodes = [
+    { id: 'root', displayTitle: '중앙 시작점' },
+    { id: 'left', displayTitle: '왼쪽에 놓이는 긴 제목과 설명' },
+    { id: 'right', displayTitle: '오른쪽에 놓이는 긴 제목과 설명' }
+  ];
+  const layout = layoutDesktopFocus('root', nodes, 626);
+  assert.equal(layout.maxChars, 16);
+  assert.deepEqual(layout.positions.get('root'), { x: 313, y: layout.height / 2 });
+  assert.equal(layout.positions.get('left').x, 36);
+  assert.equal(layout.positions.get('right').x, 590);
+  assert.ok([...layout.labelLines.values()].flat().every((line) => [...line].length <= 16));
+  assert.ok(layout.height >= 420);
 });
