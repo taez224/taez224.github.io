@@ -153,3 +153,26 @@ test('series posts drop the 이전·다음 글 lines from the public body but ke
   assert.doesNotMatch(s2.bodyHtml, /이전 글/);
   assert.match(s2.bodyHtml, /생각 B/);
 });
+
+test('folder publication picks up new development notes without publishing helper files', async () => {
+  const folderConfig = {
+    ...config,
+    include: config.include.map((rule) => rule.path === `${dev}/Concepts`
+      ? { path: rule.path, mode: 'all', graph: true, graphRule: 'linked' } : rule),
+    exclude: [`${dev}/Concepts/비공개 개념.md`]
+  };
+  const vaultRoot = await makeVault({ ...files,
+    [`${dev}/Concepts/새 개념.md`]: '---\ncreated: 2026-09-06\nsummary: 새 개념 요약\n---\n# 새 개념\n[[연결된 개념]]으로 연결한다.',
+    [`${dev}/Concepts/_index.md`]: '# 내부 운영 안내\nHELPER_SENTINEL',
+    [`${dev}/Concepts/_local/보류.md`]: '# 로컬 초안\nLOCAL_SENTINEL',
+    [`${dev}/Concepts/qmd-eval.json`]: '{"query":"EVAL_SENTINEL"}'
+  });
+  const garden = await assembleGarden({ vaultRoot, config: folderConfig, basePath: '/obsidian' });
+  const added = garden.notes.find((note) => note.path === `${dev}/Concepts/새 개념.md`);
+  assert.ok(added);
+  assert.match(added.bodyHtml, /href="\/obsidian\/dev\/연결된-개념\/"/);
+  for (const sentinel of ['HELPER_SENTINEL', 'LOCAL_SENTINEL', 'EVAL_SENTINEL', 'WITHHELD_SENTINEL']) {
+    assert.equal(JSON.stringify(garden).includes(sentinel), false);
+  }
+  assert.equal([...garden.assetCopies.keys()].some((asset) => asset.endsWith('qmd-eval.json')), false);
+});

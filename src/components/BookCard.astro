@@ -4,13 +4,18 @@ const { book } = Astro.props;
 const title = book.fileTitle || book.title;
 const review = String(book.note ?? '').trim();
 const hasReview = review && !/^한줄평\s*[.…]*$/.test(review);
+const credits = [book.author, book.publisher].filter(Boolean).join(' · ');
 ---
 <article class="book" id={`book-${book.slug}`} data-status={book.status}>
   <div class="cover">{book.coverUrl ? <img src={book.coverUrl} alt="" loading="lazy" width="88" height="128" /> : <div class="placeholder">{title}</div>}</div>
   <div class="content">
-    <div class="heading"><h3>{title}</h3>{book.rate ? <span class="rating"><span class="display value">{book.rate.toFixed(1)}</span><span class="meta">/ 5</span></span> : null}</div>
-    {hasReview && <p class="note">{review}</p>}
-    <div class="meta">{[book.author, book.publisher].filter(Boolean).join(' · ')}<br />{book.status}{book.finishDate && <> · {formatDate(book.finishDate)}</>}</div>
+    <h3>{title}</h3>
+    {credits && <div class="meta credits">{credits}</div>}
+    {(book.rate || hasReview) && <div class="assessment">
+      {book.rate ? <span class="rating" role="img" aria-label={`5점 만점에 ${book.rate.toFixed(1)}점`}><span class="star" aria-hidden="true">★</span><span class="value" aria-hidden="true">{book.rate.toFixed(1)}</span></span> : null}
+      {hasReview && <p class="note">{review}</p>}
+    </div>}
+    {(book.status || book.finishDate) && <div class="meta reading">{book.status}{book.status && book.finishDate && ' · '}{book.finishDate && formatDate(book.finishDate)}</div>}
   </div>
 </article>
 <style>
@@ -18,9 +23,13 @@ const hasReview = review && !/^한줄평\s*[.…]*$/.test(review);
   .cover { width: 88px; height: 128px; }
   .cover img { width: 100%; height: 100%; object-fit: contain; object-position: top; }
   .placeholder { display: flex; align-items: center; height: 100%; padding: 10px; border-left: 3px solid var(--line); background: var(--paper-strong); color: var(--muted); font-size: var(--t-meta); line-height: 1.5; }
-  .heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: baseline; margin-bottom: 10px; }
-  .heading h3 { margin: 0; font-size: 17px; font-weight: 600; line-height: 1.55; }
-  .rating .value { font-size: 22px; color: var(--accent); }
-  .note { margin: 16px 0 18px; font-family: var(--display); font-size: 17px; font-weight: 600; line-height: 1.8; letter-spacing: -.02em; }
+  .credits { margin-top: 5px; }
+  .assessment { display: flow-root; margin-top: 16px; }
+  h3 { margin: 0; font-size: 17px; font-weight: 600; line-height: 1.55; }
+  .rating { float: right; display: inline-flex; align-items: center; gap: 4px; margin: 4px 0 0 12px; color: var(--accent); line-height: 1.4; white-space: nowrap; }
+  .rating .star { font-size: 12px; }
+  .rating .value { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .note { margin: 0; font-size: 16px; line-height: 1.75; }
+  .reading { margin-top: 14px; }
   @media (max-width: 480px) { .book { grid-template-columns: 68px minmax(0, 1fr); gap: 14px; } .cover { width: 68px; height: 100px; } }
 </style>

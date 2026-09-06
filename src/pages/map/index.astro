@@ -13,21 +13,24 @@ const topics = Object.keys(GRAPH_COLORS).map((t) => ({ name: t, color: GRAPH_COL
     <div class="page-head"><h1 class="display">노트 지도</h1><span class="meta">노트 {stats.nodes} · 연결 {stats.edges}</span></div>
     <div class="map-layout">
       <div class="map-stage">
-        <div class="graph-controls">
-          <button type="button" data-graph-focus aria-pressed="false" disabled>연결만 보기</button>
-          <button type="button" data-graph-zoom="out" aria-label="축소">−</button>
-          <button type="button" data-graph-zoom="fit">맞춤</button>
-          <button type="button" data-graph-zoom="in" aria-label="확대">+</button>
-          <button type="button" data-open-hubs class="hubs-button">시작점</button>
+        <div class="map-toolbar">
+          <div class="graph-controls">
+            <button type="button" data-graph-focus aria-pressed="false" disabled>연결만 보기</button>
+            <button type="button" data-graph-zoom="out" aria-label="축소">−</button>
+            <button type="button" data-graph-zoom="fit">맞춤</button>
+            <button type="button" data-graph-zoom="in" aria-label="확대">+</button>
+            <button type="button" data-open-hubs class="hubs-button">시작점</button>
+          </div>
+          <div class="legend relation-legend">
+            <span class="legend-item"><svg width="24" height="8" viewBox="0 0 24 8" aria-hidden="true"><line x1="1" y1="4" x2="23" y2="4" stroke="#315b48" stroke-width="2"></line></svg>참조</span>
+            <span class="legend-item"><svg width="24" height="8" viewBox="0 0 24 8" aria-hidden="true"><line x1="1" y1="4" x2="23" y2="4" stroke="#315b48" stroke-width="1.7" stroke-dasharray="5 4"></line></svg>역참조</span>
+          </div>
+          <div class="legend topic-legend">
+            {topics.map((t) => <button type="button" class="legend-item" data-topic={t.name} aria-pressed="false"><i style={`width:10px;height:10px;border-radius:50%;background:${t.color}`}></i>{t.name}</button>)}
+            <button type="button" class="legend-item" data-hub-filter aria-pressed="false"><i style="width:10px;height:10px;border-radius:50%;border:1.2px solid #315b48"></i>허브</button>
+          </div>
         </div>
         <div class="graph-box"><svg data-map role="group" aria-label="노트 지도. 노드를 고르면 오른쪽에 정보가 나타납니다."></svg></div>
-        <div class="legend">
-          <span class="legend-item"><svg width="24" height="8" viewBox="0 0 24 8" aria-hidden="true"><line x1="1" y1="4" x2="23" y2="4" stroke="#315b48" stroke-width="2"></line></svg>참조</span>
-          <span class="legend-item"><svg width="24" height="8" viewBox="0 0 24 8" aria-hidden="true"><line x1="1" y1="4" x2="23" y2="4" stroke="#315b48" stroke-width="1.7" stroke-dasharray="5 4"></line></svg>역참조</span>
-          <span class="legend-sep"></span>
-          {topics.map((t) => <button type="button" class="legend-item" data-topic={t.name} aria-pressed="false"><i style={`width:10px;height:10px;border-radius:50%;background:${t.color}`}></i>{t.name}</button>)}
-          <button type="button" class="legend-item" data-hub-filter aria-pressed="false"><i style="width:10px;height:10px;border-radius:50%;border:1.2px solid #315b48"></i>허브</button>
-        </div>
       </div>
       <MapPanel hubs={hubs} />
     </div>
@@ -40,6 +43,12 @@ const topics = Object.keys(GRAPH_COLORS).map((t) => ({ name: t, color: GRAPH_COL
   .map-layout { display: grid; grid-template-columns: minmax(0, 1fr) 310px; gap: 40px; margin-top: 16px; align-items: stretch; }
   .graph-box { height: calc(100dvh - 300px); min-height: 420px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
   .map-panel { max-height: calc(100dvh - 300px + 88px); }
+  .map-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; margin-bottom: 10px; }
+  .map-toolbar .graph-controls { flex: 0 0 auto; margin-bottom: 0; }
+  .map-toolbar .legend { gap: 4px 8px; margin-top: 0; min-width: 0; }
+  .map-toolbar .relation-legend { margin-left: auto; flex-wrap: nowrap; }
+  .map-toolbar .topic-legend { flex-basis: 100%; justify-content: flex-start; }
+  .map-toolbar .legend-item { gap: 4px; padding: 4px 2px; white-space: nowrap; }
   .hubs-button { display: none; }
   @media (max-width: 999.98px) {
     .map-layout { grid-template-columns: 1fr; gap: 24px; }
@@ -54,11 +63,9 @@ const topics = Object.keys(GRAPH_COLORS).map((t) => ({ name: t, color: GRAPH_COL
     .graph-controls { flex-wrap: wrap; }
     .graph-controls button { min-width: 40px; min-height: 40px; }
     .hubs-button { display: inline-flex; margin-left: auto; }
-    /* 범례는 접지 않고 한 줄 가로 스크롤. 화면 폭 전체를 쓰고 오른쪽 끝을 흐려 더 있음을 알린다. */
-    .map-stage .legend { flex-wrap: nowrap; gap: 10px; width: 100vw; margin-left: calc(50% - 50vw); padding: 0 40px 0 24px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent); }
-    .map-stage .legend::-webkit-scrollbar { display: none; }
-    .map-stage .legend-item { flex: 0 0 auto; min-height: 36px; white-space: nowrap; }
-    .map-stage .legend-sep { flex: 0 0 auto; }
+    .map-toolbar .graph-controls { flex-basis: 100%; }
+    .map-toolbar .legend-item { min-height: 36px; }
+
   }
 </style>
 <script src="../../scripts/map.js"></script>

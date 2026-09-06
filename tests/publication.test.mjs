@@ -9,7 +9,7 @@ const config = {
   exclude: [], paths: [], seeds: [], depth: 0
 };
 
-test('development publication is explicit, even for notes marked published', () => {
+test('development file-list mode still requires explicit selection', () => {
   validatePublicationConfig(config);
   assert.equal(isIncluded(config, approved), true);
   assert.equal(isIncluded(config, `${root}/Concepts/draft.md`, { status: 'published', type: 'series' }), false);
@@ -21,6 +21,23 @@ test('development publication is explicit, even for notes marked published', () 
     { path: `${root}/Concepts`, statuses: ['published'], files: [] },
     { path: `${root}/Concepts`, files: [`${root}/Concepts/../DevLog/private.md`] }
   ]) assert.throws(() => validatePublicationConfig({ include: [rule] }));
+});
+
+test('development folder mode includes ordinary Markdown and honors exclusions', () => {
+  const folders = {
+    include: ['Concepts', 'Troubleshooting', 'Tools'].map((category) => ({ path: `${root}/${category}`, mode: 'all' })),
+    exclude: [`${root}/Concepts/withheld.md`]
+  };
+  validatePublicationConfig(folders);
+  for (const category of ['Concepts', 'Troubleshooting', 'Tools']) {
+    assert.equal(isIncluded(folders, `${root}/${category}/new.md`), true);
+    assert.equal(isIncluded(folders, `${root}/${category}/nested/new.md`), true);
+    for (const suffix of ['_index.md', '.hidden.md', '_local/private.md', '.local/private.md', '../DevLog/private.md', 'qmd-eval.json']) {
+      assert.equal(isIncluded(folders, `${root}/${category}/${suffix}`), false, suffix);
+    }
+  }
+  assert.equal(isIncluded(folders, `${root}/Concepts/withheld.md`), false);
+  assert.equal(isIncluded(folders, `${root}/DevLog/private.md`), false);
 });
 
 test('private areas stay excluded even if a broad future include would match', () => {

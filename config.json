@@ -51,35 +51,19 @@
       "path": "30_Resources/Development/Concepts",
       "graph": true,
       "graphRule": "linked",
-      "files": [
-        "30_Resources/Development/Concepts/멀티테넌시에서 무엇을 격리해야 하는가.md"
-      ]
+      "mode": "all"
     },
     {
       "path": "30_Resources/Development/Troubleshooting",
       "graph": true,
       "graphRule": "linked",
-      "files": [
-        "30_Resources/Development/Troubleshooting/ApplicationContextException_REGISTER_BEAN.md",
-        "30_Resources/Development/Troubleshooting/ArgoCD ServiceAccount 미생성 - CRB까지 한 세트.md",
-        "30_Resources/Development/Troubleshooting/DataBuffer 해제 책임은 최종 소비자가 정한다.md",
-        "30_Resources/Development/Troubleshooting/Flyway 히스토리 분기 - outOfOrder 대신 버전 리네임.md",
-        "30_Resources/Development/Troubleshooting/K8s envFrom Secret은 Pod 재기동 없이 갱신되지 않는다.md",
-        "30_Resources/Development/Troubleshooting/Spring 6 동일 타입 다중 빈 기동 실패 - parameters 플래그.md",
-        "30_Resources/Development/Troubleshooting/Spring Async 스레드풀 기아 - 완료되지 않는 CompletableFuture.md",
-        "30_Resources/Development/Troubleshooting/스트림으로 받은 ZIP은 엔트리 크기를 모른다.md",
-        "30_Resources/Development/Troubleshooting/식별자가 K8s label 규칙을 어길 때 - 투영값 SSOT.md",
-        "30_Resources/Development/Troubleshooting/인메모리 SSE 팬아웃 유실 - 이벤트 처리 인스턴스와 연결 보유 인스턴스가 다르다.md"
-      ]
+      "mode": "all"
     },
     {
       "path": "30_Resources/Development/Tools",
       "graph": true,
       "graphRule": "linked",
-      "files": [
-        "30_Resources/Development/Tools/Mac Terminal Tool 추천.md",
-        "30_Resources/Development/Tools/로컬 plugin marketplace로 push 없는 dogfooding.md"
-      ]
+      "mode": "all"
     }
   ],
   "exclude": [
