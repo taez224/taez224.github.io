@@ -28,11 +28,11 @@ const firstSentence = (text) => text.match(/^.*?[.!?](?:\s|$)/)?.[0]?.trim() || 
 </Shell>
 <style>
   .hero { position: relative; height: 600px; overflow: hidden; }
-  .hero-graph { position: absolute; top: 0; left: calc(50% - 720px + 440px); width: 1060px; height: 600px; }
+  .hero-graph { position: absolute; top: 0; left: calc(50% - 160px); width: 940px; height: 600px; }
   .hero-graph img, .hero-graph svg { display: block; width: 100%; height: 100%; }
   .hero-graph .graph { cursor: pointer; }
   .hero .graph .node.is-dim { opacity: 1; }
-  .hero-fade { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, var(--paper) 0%, var(--paper) 30%, rgba(247,247,242,0) 54%); }
+  .hero-fade { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, var(--paper) 0%, var(--paper) 36%, rgba(247,247,242,0) 58%); }
   .hero-about { position: absolute; left: calc(50% - 590px); top: 60px; width: 430px; }
   .featured { padding: 68px 0 64px; border-top: 1px solid var(--ink); }
   .featured h2 { margin: 20px 0; font-size: var(--t-hero); line-height: 1.25; letter-spacing: -.03em; max-width: 960px; }
@@ -46,7 +46,7 @@ const firstSentence = (text) => text.match(/^.*?[.!?](?:\s|$)/)?.[0]?.trim() || 
   .recent li a { color: var(--ink); font-size: var(--t-list); line-height: 1.5; }
   .recent li .meta:last-child { text-align: right; }
   @media (max-width: 1240px) { .hero-graph { left: auto; right: -60px; } .hero-about { left: 24px; } }
-  @media (max-width: 1000px) { .hero { height: 520px; } .hero-about { width: 360px; } .hero-graph { width: 900px; } }
+  @media (max-width: 1000px) { .hero { height: 520px; } .hero-about { width: 360px; } .hero-graph { width: 820px; } }
   @media (max-width: 720px) {
     .hero { height: auto; overflow: visible; }
     .hero-graph { position: static; width: 100%; height: 250px; margin-top: 10px; }
