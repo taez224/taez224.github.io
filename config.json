@@ -49,14 +49,16 @@
     },
     {
       "path": "30_Resources/Development/Concepts",
+      "graph": true,
+      "graphRule": "linked",
       "files": [
         "30_Resources/Development/Concepts/멀티테넌시에서 무엇을 격리해야 하는가.md"
-      ],
-      "graph": false
+      ]
     },
     {
       "path": "30_Resources/Development/Troubleshooting",
-      "graph": false,
+      "graph": true,
+      "graphRule": "linked",
       "files": [
         "30_Resources/Development/Troubleshooting/ApplicationContextException_REGISTER_BEAN.md",
         "30_Resources/Development/Troubleshooting/ArgoCD ServiceAccount 미생성 - CRB까지 한 세트.md",
@@ -72,7 +74,8 @@
     },
     {
       "path": "30_Resources/Development/Tools",
-      "graph": false,
+      "graph": true,
+      "graphRule": "linked",
       "files": [
         "30_Resources/Development/Tools/Mac Terminal Tool 추천.md",
         "30_Resources/Development/Tools/로컬 plugin marketplace로 push 없는 dogfooding.md"
