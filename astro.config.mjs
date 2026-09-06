@@ -1,5 +1,6 @@
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
+import vaultAssets from './src/integrations/vault-assets.mjs';
 import config from './config.json' with { type: 'json' };
 
 export default defineConfig({
@@ -8,5 +9,5 @@ export default defineConfig({
   output: 'static',
   trailingSlash: 'always',
   build: { format: 'directory' },
-  integrations: [sitemap()]
+  integrations: [sitemap(), vaultAssets()]
 });

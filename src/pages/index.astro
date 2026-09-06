@@ -1,7 +1,6 @@
 ---
-const title = 'TaeZ';
+import { getCollection } from 'astro:content';
+const notes = await getCollection('notes');
 ---
-<html lang="ko">
-  <head><meta charset="utf-8" /><title>{title}</title></head>
-  <body><h1>{title}</h1></body>
-</html>
+<html lang="ko"><head><meta charset="utf-8" /><title>TaeZ</title></head>
+<body><h1>TaeZ</h1><p data-note-count={notes.length}>{notes.length}개 노트</p></body></html>
