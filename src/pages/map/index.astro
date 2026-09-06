@@ -54,8 +54,11 @@ const topics = Object.keys(GRAPH_COLORS).map((t) => ({ name: t, color: GRAPH_COL
     .graph-controls { flex-wrap: wrap; }
     .graph-controls button { min-width: 40px; min-height: 40px; }
     .hubs-button { display: inline-flex; margin-left: auto; }
-    .legend { gap: 6px 14px; }
-    .legend-item { min-height: 36px; }
+    /* 범례는 접지 않고 한 줄 가로 스크롤. 화면 폭 전체를 쓰고 오른쪽 끝을 흐려 더 있음을 알린다. */
+    .map-stage .legend { flex-wrap: nowrap; gap: 10px; width: 100vw; margin-left: calc(50% - 50vw); padding: 0 40px 0 24px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent); }
+    .map-stage .legend::-webkit-scrollbar { display: none; }
+    .map-stage .legend-item { flex: 0 0 auto; min-height: 36px; white-space: nowrap; }
+    .map-stage .legend-sep { flex: 0 0 auto; }
   }
 </style>
 <script src="../../scripts/map.js"></script>
