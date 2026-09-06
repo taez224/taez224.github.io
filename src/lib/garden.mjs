@@ -590,11 +590,24 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
       .sort((left, right) => (degree.get(right) ?? 0) - (degree.get(left) ?? 0));
     selectedPaths = [...required, ...optional.slice(0, config.maxGraphNodes - required.size)];
   }
+  // graphRule "linked": a note from such a folder joins the map only when it is connected, through public graph
+  // notes, to the thought map itself (a node outside any linked-only folder). Pairs that only cite each other stay out.
   const linkedOnlyRoots = config.include.filter((rule) => rule.graphRule === 'linked').map((rule) => rule.path);
-  selectedPaths = selectedPaths.filter((item) => {
-    const linkedOnly = linkedOnlyRoots.some((root) => pathMatches(item, root));
-    return !linkedOnly || (degree.get(item) ?? 0) > 0;
-  });
+  const isLinkedOnly = (item) => linkedOnlyRoots.some((root) => pathMatches(item, root));
+  const selectedNow = new Set(selectedPaths);
+  const adjacency = new Map();
+  for (const edge of allEdges) {
+    if (!selectedNow.has(edge.source) || !selectedNow.has(edge.target)) continue;
+    adjacency.set(edge.source, [...(adjacency.get(edge.source) ?? []), edge.target]);
+    adjacency.set(edge.target, [...(adjacency.get(edge.target) ?? []), edge.source]);
+  }
+  const reached = new Set(selectedPaths.filter((item) => !isLinkedOnly(item)));
+  const queue = [...reached];
+  while (queue.length) {
+    const current = queue.pop();
+    for (const next of adjacency.get(current) ?? []) if (!reached.has(next)) { reached.add(next); queue.push(next); }
+  }
+  selectedPaths = selectedPaths.filter((item) => !isLinkedOnly(item) || reached.has(item));
   const selectedSet = new Set(selectedPaths);
 
   const nodes = selectedPaths.map((relativePath) => {

@@ -62,8 +62,17 @@ test('assembleGarden publishes reviewed notes with slug urls and no private stri
   assert.equal(byPath.get('01_Slipbox/생각 A.md').publication, '');
 });
 
-test('graphRule linked keeps only development notes with a public link, slipbox isolates stay', async () => {
-  const vaultRoot = await makeVault({ ...files, '01_Slipbox/외톨이.md': '---\ncreated: 2026-09-06\n---\n# 외톨이\n링크 없음.' });
+test('graphRule linked keeps only development notes connected to the thought map, slipbox isolates stay', async () => {
+  const pairConfig = { ...config, include: config.include.map((rule) => rule.graphRule ? { ...rule, files: [...rule.files, `${dev}/Concepts/짝 A.md`, `${dev}/Concepts/짝 B.md`] } : rule) };
+  const vaultRoot = await makeVault({ ...files,
+    '01_Slipbox/외톨이.md': '---\ncreated: 2026-09-06\n---\n# 외톨이\n링크 없음.',
+    [`${dev}/Concepts/짝 A.md`]: '---\ncreated: 2026-09-06\nsummary: 짝 A\n---\n# 짝 A\n[[짝 B]]만 참조.',
+    [`${dev}/Concepts/짝 B.md`]: '---\ncreated: 2026-09-06\nsummary: 짝 B\n---\n# 짝 B\n[[짝 A]]만 참조.'
+  });
+  const paired = await assembleGarden({ vaultRoot, config: pairConfig, basePath: '/obsidian' });
+  const pairedIds = paired.nodes.map((node) => node.id);
+  assert.ok(!pairedIds.includes(`${dev}/Concepts/짝 A.md`) && !pairedIds.includes(`${dev}/Concepts/짝 B.md`), '서로만 참조하는 개발 노트 쌍은 지도에 들어오지 않는다');
+  assert.ok(paired.development.concepts.some((record) => record.path === `${dev}/Concepts/짝 A.md`), '목록에는 남는다');
   const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
   const ids = garden.nodes.map((node) => node.id).sort();
   assert.ok(ids.includes(`${dev}/Concepts/연결된 개념.md`));
