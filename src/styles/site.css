@@ -52,10 +52,10 @@ main { min-height: 60vh; }
 @media (max-width: 720px) {
   .wrap { width: calc(100% - 40px); }
   body { font-size: 16px; }
-  .site-header .wrap { display: grid; grid-template-columns: 1fr auto; height: auto; }
-  .wordmark { font-size: 20px; padding: 18px 0; }
-  .search-trigger { margin-right: -12px; }
-  .site-nav { grid-column: 1 / -1; justify-content: flex-end; gap: 22px; height: 46px; margin-left: 0; }
+  .site-header .wrap { display: grid; grid-template-columns: 1fr auto; height: auto; align-items: center; }
+  .wordmark { grid-row: 1; grid-column: 1; font-size: 20px; padding: 18px 0; }
+  .search-trigger { grid-row: 1; grid-column: 2; margin-right: -12px; }
+  .site-nav { grid-row: 2; grid-column: 1 / -1; justify-content: flex-end; gap: 22px; height: 46px; margin-left: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
