@@ -37,6 +37,18 @@ const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slic
         <div><span class="meta">공개된 글 {series.total}편</span><p>{series.first.title}</p></div>
         <a class="btn" href={series.first.url}>1편부터 읽기 <span aria-hidden="true">→</span></a>
       </nav>}
+      {series && series.total > 0 && <details class="series-index">
+        <summary>연재 목차 <span class="meta">{series.isHub ? `공개 ${series.total}편` : `현재 ${series.position} / ${series.total}편`}</span></summary>
+        <nav aria-label="연재 목차">
+          <p class="meta">{!series.isHub && series.url ? <a href={series.url}>{series.title} · 연재 안내</a> : series.title}</p>
+          <ol>{series.posts.map((post, index) => <li>
+            <a href={post.url} aria-current={post.path === note.path ? 'page' : undefined}>
+              <span class="series-order" aria-hidden="true">{index + 1}</span><span>{post.title}</span>
+              {post.path === note.path && <span class="reading-label">읽는 중</span>}
+            </a>
+          </li>)}</ol>
+        </nav>
+      </details>}
       <div class="body"><Content /></div>
       <nav class="note-end" aria-label="이어서 읽기">
         {series && <div class="series-nav">
@@ -62,6 +74,19 @@ const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slic
   .series-start { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin: -12px 0 36px; padding: 22px 24px; border-left: 3px solid var(--accent); background: var(--accent-soft); }
   .series-start p { margin: 4px 0 0; font-size: 16px; line-height: 1.5; }
   .series-start .btn { flex-shrink: 0; gap: 14px; }
+  .series-start + .series-index { margin-top: -16px; }
+  .series-index { margin: -12px 0 36px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); font-size: 15px; }
+  .series-index summary { padding: 14px 0; cursor: pointer; color: var(--accent); font-weight: 600; }
+  .series-index summary .meta { margin-left: 12px; font-weight: 400; }
+  .series-index nav { padding: 8px 0 16px; }
+  .series-index nav > p { margin: 0 0 12px; }
+  .series-index ol { list-style: none; padding: 0; margin: 0; }
+  .series-index li + li { margin-top: 4px; }
+  .series-index li a { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: baseline; gap: 10px; padding: 10px 12px; border-radius: 3px; color: var(--ink); line-height: 1.6; }
+  .series-index li a:hover { background: var(--accent-soft); text-decoration: none; }
+  .series-index li a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 650; }
+  .series-order { color: var(--muted); font-size: 13px; }
+  .reading-label { font-size: 12px; white-space: nowrap; }
   .series-nav-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
   .series-nav-heading h2 { margin: 0; font-family: var(--display); font-size: 24px; }
   .series-name { margin-top: 6px; }
