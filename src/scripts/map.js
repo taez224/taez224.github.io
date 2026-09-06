@@ -1,7 +1,7 @@
 import { createGraph } from '../graph/engine.mjs';
 import { layoutGraph, relaxLabels, labelOverlaps, nodeRadius } from '../graph/layout.mjs';
 import { graphNeighborhood, layoutDesktopFocus } from '../graph/focus.mjs';
-import { wrapLabel } from '../graph/engine.mjs';
+import { wrapLabel, estimateTextWidth } from '../graph/engine.mjs';
 import { cleanTitle } from '../lib/format.mjs';
 import { panelModel } from '../lib/panel.mjs';
 
@@ -43,6 +43,7 @@ const stageSize = { width: Math.round(rect.width), height: Math.round(rect.heigh
 const full = { nodes: site.nodes, edges: site.edges, positions: layoutGraph(site.nodes, site.edges, { ...stageSize, pad: 40 }) };
 let graph = null;
 let focusRoot = null;
+let viewBeforeSelect = null; // 선택 전 시점. 선택을 풀면 여기로 돌아간다.
 
 const backdrop = document.querySelector('[data-sheet-backdrop]');
 const stage = document.querySelector('.map-stage');
@@ -68,6 +69,7 @@ function syncSheet() {
 
 function mount(data) {
   graph?.destroy();
+  viewBeforeSelect = null;
   graph = createGraph(svg, {
     ...data,
     mode: 'map',
@@ -79,7 +81,7 @@ function mount(data) {
 }
 
 // 노드 아래 제목 상자(노드 원 + 제목 두 줄까지)를 픽셀 단위로 어림한다.
-const textWidth = (line) => [...line].reduce((sum, ch) => sum + (/[\u3131-\uD79D]/.test(ch) ? 12.5 : /[A-Za-z0-9]/.test(ch) ? 7.2 : 4.5), 0);
+const textWidth = (line) => estimateTextWidth(line);
 const labelBoxes = (nodes) => new Map(nodes.map((n) => {
   const r = nodeRadius(n.degree ?? 0, 0.85), lines = wrapLabel(cleanTitle(n.displayTitle ?? n.title));
   const w = Math.max(2 * r, Math.max(...lines.map(textWidth)) + 8);
@@ -108,7 +110,14 @@ function focusData(sub, rootId) {
 }
 
 function select(id, pushUrl, { open = true } = {}) {
+  const hadSelection = Boolean(graph.selected());
   graph.select(id);
+  // 고른 노드로 부드럽게 다가가며 살짝 확대해 이웃 제목이 드러나게 한다. 연결만 보기는 자기 배치를 쓰므로 제외.
+  // 처음 고를 때의 시점을 기억해 두고, 빈 곳을 눌러 선택을 풀면 그 시점으로 돌아간다.
+  if (!focusRoot) {
+    if (id) { if (!hadSelection) viewBeforeSelect = graph.view(); graph.focusOn(id, { zoom: narrow.matches ? 1.7 : 1.4 }); }
+    else if (viewBeforeSelect) { graph.moveTo(viewBeforeSelect); viewBeforeSelect = null; }
+  }
   // 연결만 보기 중에는 선택을 풀어도 버튼을 살려 둔다. 그래야 모드를 끌 수 있다.
   focusButton.disabled = !id && !focusRoot;
   const node = site.nodes.find((n) => n.id === id);
@@ -159,7 +168,7 @@ panel.addEventListener('click', (event) => {
 });
 document.querySelector('[data-graph-zoom="in"]').addEventListener('click', () => graph.zoom(1.25));
 document.querySelector('[data-graph-zoom="out"]').addEventListener('click', () => graph.zoom(1 / 1.25));
-document.querySelector('[data-graph-zoom="fit"]').addEventListener('click', () => graph.fit(true));
+document.querySelector('[data-graph-zoom="fit"]').addEventListener('click', () => { viewBeforeSelect = null; graph.fit(true); });
 focusButton.addEventListener('click', () => setFocus(focusRoot ? null : graph.selected()));
 document.querySelector('[data-panel-close]')?.addEventListener('click', closeSheet);
 document.querySelector('[data-open-hubs]')?.addEventListener('click', () => { graph.select(null); focusButton.disabled = true; body.innerHTML = emptyPanel; panel.dataset.open = ''; syncSheet(); });

@@ -39,7 +39,7 @@ h1, h2, h3, p { margin-top: 0; }
 .scroll-list.is-long::after { position: absolute; right: 0; bottom: 0; left: 0; height: 36px; pointer-events: none; background: linear-gradient(180deg, rgba(247,247,242,0) 0%, var(--paper) 100%); content: ""; }
 
 .site-header { position: sticky; z-index: 20; top: 0; background: var(--paper); border-bottom: 1px solid var(--line); }
-.site-header .wrap { display: flex; align-items: center; height: 80px; }
+.site-header .wrap { display: flex; align-items: center; height: 72px; }
 .wordmark { font-size: 22px; line-height: 1; color: var(--ink); }
 .wordmark:hover { color: var(--accent); text-decoration: none; }
 .site-nav { margin-left: auto; display: flex; align-items: center; gap: 28px; font-size: 15px; }

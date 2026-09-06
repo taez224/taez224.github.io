@@ -75,6 +75,13 @@ export function isFilteredOut(node, { topics = null, hubsOnly = false } = {}) {
   return false;
 }
 
+// 13px 기준 글자 폭 어림. 한글 12.5, 영숫자 7.2, 그 외 4.5.
+export function estimateTextWidth(line, fontSize = 13) {
+  return [...line].reduce((sum, ch) => sum + (/[\u3131-\uD79D]/.test(ch) ? 12.5 : /[A-Za-z0-9]/.test(ch) ? 7.2 : 4.5), 0) * (fontSize / 13);
+}
+// 이 배율부터는 자리가 나는 만큼 제목을 더 보인다(허브 → 연결 많은 순, 겹치지 않는 것만).
+export const LABEL_REVEAL_SCALE = 1.2;
+
 // 20자를 넘는 제목은 두 줄로 접는다. 줄 길이를 절반 근처로 잡아 두 줄이 비슷하게 나뉘게 한다.
 export function wrapLabel(title, maxChars = 20) {
   const chars = [...title];
@@ -121,10 +128,13 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
     };
     animation = requestAnimationFrame(step);
   };
+  // 제목은 확대해도 화면에서 같은 크기를 유지한다. 배율이 바뀌면 제목만 다시 그린다.
+  let labelScale = 1;
   const applyTransform = () => {
     const { width, height } = size();
     svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
     scene.setAttribute('transform', `translate(${state.transform.x.toFixed(1)} ${state.transform.y.toFixed(1)}) scale(${state.transform.scale.toFixed(3)})`);
+    if (Math.abs(state.transform.scale - labelScale) > 0.005) { labelScale = state.transform.scale; drawLabels(); }
   };
   const drawEdges = () => {
     edgeLayer.replaceChildren();
@@ -154,9 +164,68 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
   const xs = [...positions.values()].map((p) => p.x);
   const xLo = Math.min(...xs), xThird = (Math.max(...xs) - xLo) / 3;
   const anchorFor = (x) => (!labelAll || labelAnchor === 'middle' ? 'middle' : x < xLo + xThird ? 'start' : x > xLo + 2 * xThird ? 'end' : 'middle');
+  // 제목 배치 계획. 우선순위(선택 → 호버 → 허브 → 연결 많은 순)대로 아래·위·오른쪽·왼쪽 네 자리를 시도해
+  // 이미 놓인 제목이나 노드 원과 겹치지 않는 첫 자리를 준다. 기본 집합(선택·호버·허브)은 자리가 없어도 아래에 둔다.
+  // 나머지는 1.2배 이상 확대했거나 선택 상태일 때, 자리가 날 때만 보인다. 흐려진 노드는 제외.
+  const PLACEMENTS = ['below', 'above', 'right', 'left'];
+  const labelGeometry = (node, p, lines, placement, u) => {
+    const r = radius(node), lh = 18 * u, gap = 8 * u;
+    const w = Math.max(...lines.map((line) => estimateTextWidth(line))) * u, h = lines.length * lh;
+    const mid = p.y - ((lines.length - 1) * lh) / 2 + 5 * u;
+    if (placement === 'above') return { x: p.x, y: p.y - r - gap - (lines.length - 1) * lh, anchor: 'middle', box: { left: p.x - w / 2, right: p.x + w / 2, top: p.y - r - gap - h + 4 * u, bottom: p.y - r - gap + 4 * u } };
+    if (placement === 'right') return { x: p.x + r + gap, y: mid, anchor: 'start', box: { left: p.x + r + gap, right: p.x + r + gap + w, top: p.y - h / 2, bottom: p.y + h / 2 } };
+    if (placement === 'left') return { x: p.x - r - gap, y: mid, anchor: 'end', box: { left: p.x - r - gap - w, right: p.x - r - gap, top: p.y - h / 2, bottom: p.y + h / 2 } };
+    return { x: p.x, y: p.y + r + 18 * u, anchor: 'middle', box: { left: p.x - w / 2, right: p.x + w / 2, top: p.y + r + 5 * u, bottom: p.y + r + 5 * u + h } };
+  };
+  const planLabels = (u) => {
+    // 호버는 계획에서 뺀다. 호버할 때마다 우선순위가 바뀌어 남의 제목까지 움직이면 안 된다.
+    const base = [...labelIds(nodes, edges, { selected: state.selected, hovered: null })];
+    const scale = state.transform.scale || 1;
+    const neighbors = new Set();
+    if (state.selected) for (const e of edges) { if (e.source === state.selected) neighbors.add(e.target); if (e.target === state.selected) neighbors.add(e.source); }
+    const dimmed = (id) => outOfFilter(id) || Boolean(state.selected && id !== state.selected && !neighbors.has(id));
+    const overlaps = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+    // 흐려지지 않은 노드 원도 장애물이다. 제목이 다른 노드 위에 얹히지 않게.
+    const obstacles = nodes.filter((node) => !dimmed(node.id) && positions.has(node.id)).map((node) => { const p = positions.get(node.id), r = radius(node) + 2 * u; return { left: p.x - r, right: p.x + r, top: p.y - r, bottom: p.y + r }; });
+    const placed = [], plan = new Map();
+    const tryPlace = (node, mustPlace) => {
+      const p = positions.get(node.id); if (!p) return;
+      const lines = wrapLabel(cleanTitle(node.displayTitle ?? node.title));
+      for (const placement of PLACEMENTS) {
+        const g = labelGeometry(node, p, lines, placement, u);
+        if (placed.some((b) => overlaps(b, g.box)) || obstacles.some((b) => overlaps(b, g.box))) continue;
+        placed.push(g.box); plan.set(node.id, placement); return;
+      }
+      if (mustPlace) { placed.push(labelGeometry(node, p, lines, 'below', u).box); plan.set(node.id, 'below'); }
+    };
+    const priority = (id) => (id === state.selected ? 0 : 1);
+    for (const id of base.sort((a, b) => priority(a) - priority(b))) { const node = byId.get(id); if (node) tryPlace(node, true); }
+    if (scale >= LABEL_REVEAL_SCALE || state.selected) {
+      const rest = nodes.filter((node) => !plan.has(node.id) && !dimmed(node.id)).sort((a, b) => (b.degree ?? 0) - (a.degree ?? 0));
+      for (const node of rest) tryPlace(node, false);
+    }
+    // 호버한 노드는 이미 자리가 있으면 그대로 두고, 숨어 있던 노드면 그때만 빈자리(없으면 아래)에 얹는다. 맨 위에 그려지므로 겹쳐도 읽힌다.
+    if (state.hovered && !plan.has(state.hovered)) { const node = byId.get(state.hovered); if (node) tryPlace(node, true); }
+    return plan;
+  };
   const drawLabels = () => {
     labelLayer.replaceChildren();
-    const ids = labelAll ? nodes.map((node) => node.id) : labelIds(nodes, edges, state);
+    // u = 화면 1px에 해당하는 장면 좌표. 글자 크기·줄 간격·노드와의 간격을 화면 기준으로 고정한다.
+    const u = 1 / (state.transform.scale || 1);
+    labelLayer.style.fontSize = `${(13 * u).toFixed(2)}px`;
+    labelLayer.style.strokeWidth = `${(4.5 * u).toFixed(2)}px`;
+    if (!labelAll) {
+      for (const [id, placement] of planLabels(u)) {
+        const node = byId.get(id), p = positions.get(id);
+        const lines = wrapLabel(cleanTitle(node.displayTitle ?? node.title));
+        const g = labelGeometry(node, p, lines, placement, u);
+        const topicDim = outOfFilter(id);
+        const text = el('text', { class: `label${id === state.selected ? ' is-selected' : ''}${id === state.hovered ? ' is-hovered' : ''}${topicDim ? ' is-topic-dim' : ''}`, 'data-for': id, x: g.x.toFixed(1), y: g.y.toFixed(1), 'text-anchor': g.anchor });
+        lines.forEach((line, index) => { const tspan = el('tspan', { x: g.x.toFixed(1), dy: index === 0 ? 0 : (18 * u).toFixed(1) }); tspan.textContent = line; text.append(tspan); });
+        labelLayer.append(text);
+      }
+    }
+    const ids = labelAll ? nodes.map((node) => node.id) : [];
     for (const id of ids) {
       const node = byId.get(id), p = positions.get(id);
       if (!node || !p) continue;
@@ -164,17 +233,19 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
       const x = anchor === 'start' ? p.x - r : anchor === 'end' ? p.x + r : p.x;
       const lines = labelLines?.get(id) ?? wrapLabel(cleanTitle(node.displayTitle ?? node.title));
       const multiLine = lines.length > 1 || Boolean(labelLines?.has(id));
-      const lineHeight = 18;
-      const labelX = multiLine ? (anchor === 'start' ? p.x + r + 8 : anchor === 'end' ? p.x - r - 8 : p.x) : x;
+      const lineHeight = 18 * u;
+      const labelX = multiLine ? (anchor === 'start' ? p.x + r + 8 * u : anchor === 'end' ? p.x - r - 8 * u : p.x) : x;
       const labelY = multiLine
-        ? (anchor === 'middle' ? p.y + r + 18 : p.y - ((lines.length - 1) * lineHeight) / 2 + 5)
-        : p.y + r + 18;
+        ? (anchor === 'middle' ? p.y + r + 18 * u : p.y - ((lines.length - 1) * lineHeight) / 2 + 5 * u)
+        : p.y + r + 18 * u;
       const topicDim = outOfFilter(id);
-      const text = el('text', { class: `label${id === state.selected ? ' is-selected' : ''}${id === state.hovered ? ' is-hovered' : ''}${topicDim ? ' is-topic-dim' : ''}`, x: labelX.toFixed(1), y: labelY.toFixed(1), 'text-anchor': anchor });
-      if (multiLine) lines.forEach((line, index) => { const tspan = el('tspan', { x: labelX.toFixed(1), dy: index === 0 ? 0 : lineHeight }); tspan.textContent = line; text.append(tspan); });
+      const text = el('text', { class: `label${id === state.selected ? ' is-selected' : ''}${id === state.hovered ? ' is-hovered' : ''}${topicDim ? ' is-topic-dim' : ''}`, 'data-for': id, x: labelX.toFixed(1), y: labelY.toFixed(1), 'text-anchor': anchor });
+      if (multiLine) lines.forEach((line, index) => { const tspan = el('tspan', { x: labelX.toFixed(1), dy: index === 0 ? 0 : lineHeight.toFixed(1) }); tspan.textContent = line; text.append(tspan); });
       else text.textContent = lines[0];
       labelLayer.append(text);
     }
+    // 호버·선택한 제목은 다른 제목의 테두리에 가리지 않게 맨 위로 올린다.
+    for (const id of [state.selected, state.hovered]) { const text = id && labelLayer.querySelector(`[data-for="${CSS.escape(id)}"]`); if (text) labelLayer.append(text); }
   };
   const refreshNodeStates = () => {
     const neighbors = new Set();
@@ -222,6 +293,8 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
     setFilter({ topics = state.topics, hubsOnly = state.hubsOnly } = {}) { state.topics = topics; state.hubsOnly = hubsOnly; drawEdges(); refreshNodeStates(); drawLabels(); },
     setTopics(set) { api.setFilter({ topics: set }); },
     has: (id) => byId.has(id),
+    view: () => ({ ...state.transform }),
+    moveTo(target) { animateTo(target); },
     fit(animate = false) { const target = fitBounds ? { ...fitBounds } : fitTransform(positions, size()); if (animate) animateTo(target); else { stopAnimation(); state.transform = target; applyTransform(); } },
     // 노드를 무대 가운데로 옮기고, 맞춤 배율의 zoom배까지 키운다(이미 더 크면 유지).
     focusOn(id, { zoom = 1.35 } = {}) {
