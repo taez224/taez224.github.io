@@ -1,0 +1,78 @@
+---
+import { render } from 'astro:content';
+import Shell from '../layouts/Shell.astro';
+import NoteSidebar from './NoteSidebar.astro';
+import { getGarden } from '../lib/get-garden.mjs';
+import { kindLabel, formatDate, displayTag, withBase } from '../lib/format.mjs';
+const { entry } = Astro.props;
+const note = entry.data;
+const { Content } = await render(entry);
+const garden = await getGarden();
+const byPath = new Map(garden.notes.map((n) => [n.path, n]));
+const resolve = (paths) => paths.map((p) => byPath.get(p)).filter(Boolean);
+const outgoing = resolve(note.outgoing);
+const incoming = resolve(note.incoming);
+const mapNode = garden.nodes.find((node) => node.path === note.path);
+const mapUrl = mapNode ? withBase(`/map/?node=${encodeURIComponent(mapNode.mapKey)}`) : '';
+const topics = note.publicTags.slice(0, 2).map(displayTag);
+const siteBase = String(garden.config.basePath ?? '').replace(/\/$/, '');
+const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slice(siteBase.length) : note.url;
+---
+<Shell title={note.title} description={note.summary} path={sitePath} active={note.kind === 'blog' ? 'posts' : note.kind === 'development' ? 'dev' : 'map'} ogType="article">
+  <div class="wrap note-view">
+    <article class="note-article">
+      <div class="meta note-meta">
+        <span>{kindLabel(note)}</span>
+        {note.date && <><span>·</span><time datetime={note.date}>{formatDate(note.date)}</time></>}
+        {topics.map((t) => <><span>·</span><span>{t}</span></>)}
+        {note.publishedUrl && <><span>·</span><a href={note.publishedUrl} target="_blank" rel="noreferrer">{note.publication || '원문'}에 발행 ↗</a></>}
+      </div>
+      <h1 class="display note-title">{note.title}</h1>
+      <div class="body"><Content /></div>
+    </article>
+    <NoteSidebar note={note} headings={note.headings} outgoing={outgoing} incoming={incoming} mapUrl={mapUrl} />
+  </div>
+</Shell>
+<style is:global>
+  .note-view { display: grid; grid-template-columns: minmax(0, 720px) 310px; justify-content: space-between; gap: 40px; align-items: start; padding: 56px 0 96px; }
+  .note-side { position: sticky; top: 100px; max-height: calc(100dvh - 120px); overflow-y: auto; padding-top: 82px; scrollbar-gutter: stable; }
+  .note-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .note-title { margin: 0 0 40px; font-size: var(--t-h1); line-height: 1.3; letter-spacing: -.03em; }
+  .body { font-size: var(--t-body); line-height: 1.85; }
+  .body p { margin: 0 0 22px; }
+  .body h2, .body h3, .body h4 { font-family: var(--display); font-weight: 700; letter-spacing: -.02em; scroll-margin-top: 110px; }
+  .body h2 { margin: 44px 0 14px; font-size: 26px; line-height: 1.4; }
+  .body h3 { margin: 32px 0 10px; font-size: 21px; }
+  .body h4 { margin: 24px 0 8px; font-size: 17px; }
+  .body ul, .body ol { margin: 0 0 22px; padding-left: 22px; }
+  .body li { margin: 6px 0; }
+  .body blockquote { margin: 18px 0; padding: 4px 16px; border-left: 3px solid var(--line); color: var(--muted); }
+  .body pre { overflow-x: auto; margin: 18px 0; padding: 14px 16px; border: 1px solid var(--line); background: var(--paper-strong); font-size: 14px; line-height: 1.6; }
+  .body code { padding: 1px 4px; background: rgba(36,39,32,.08); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .88em; }
+  .body pre code { padding: 0; background: transparent; }
+  .body table { display: block; overflow-x: auto; width: 100%; margin: 18px 0; border-collapse: collapse; font-size: 14px; }
+  .body th, .body td { min-width: 100px; padding: 7px 10px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
+  .body th { background: var(--paper-strong); font-weight: 650; }
+  .body img { display: block; max-width: 100%; height: auto; margin: 18px auto; }
+  .body hr { margin: 30px 0; border: 0; border-top: 1px solid var(--line); }
+  .body mark { padding: 0 3px; background: #e7d99b; }
+  .body .mermaid { overflow-x: auto; margin: 22px 0; padding: 12px; border: 1px solid var(--line); background: var(--paper-strong); text-align: center; }
+  .body .callout { margin: 18px 0; padding: 13px 16px; border-left: 3px solid var(--accent); background: var(--accent-soft); }
+  .body .callout + .callout { margin-top: 12px; }
+  .body .callout summary, .body .callout-title { color: var(--accent); font-size: var(--t-meta); font-weight: 600; }
+  .body .callout-body { margin-top: 7px; }
+  .body .callout-body > :first-child { margin-top: 0; }
+  .body .callout-body > :last-child { margin-bottom: 0; }
+  .body .callout-warning, .body .callout-danger, .body .callout-failure { border-left-color: #a66a38; background: #f3e9db; }
+  .body .callout-bug { border-left-color: #9c6e6e; background: #f3e3e2; }
+  @media (max-width: 1000px) {
+    .note-view { grid-template-columns: minmax(0, 720px); }
+    .note-side { position: static; max-height: none; overflow: visible; border-top: 1px solid var(--line); padding-top: 28px; }
+    .note-side .rail { display: none; }
+  }
+  @media (max-width: 720px) {
+    .note-view { padding: 32px 0 64px; }
+    .note-title { font-size: 32px; margin-bottom: 28px; }
+  }
+</style>
+<script src="../scripts/mermaid.js"></script>

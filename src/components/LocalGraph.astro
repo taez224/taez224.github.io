@@ -1,0 +1,48 @@
+---
+import { localGraphLayout } from './local-graph-layout.mjs';
+const { note, outgoing, incoming, mapUrl } = Astro.props;
+const width = 310, height = 190;
+const layout = localGraphLayout(note, outgoing, incoming, { width, height });
+const short = (title) => ([...title].length > 12 ? [...title].slice(0, 11).join('') + '…' : title);
+const offset = (edge, sign) => {
+  const dx = edge.x2 - edge.x1, dy = edge.y2 - edge.y1, d = Math.hypot(dx, dy) || 1;
+  return { x: (-dy / d) * 2.5 * sign, y: (dx / d) * 2.5 * sign };
+};
+---
+<div class="local-graph">
+  <svg data-local-graph viewBox={`0 0 ${width} ${height}`} role="group" aria-label="이 노트의 연결">
+    <g data-scene>
+      {layout.edges.map((edge) => edge.direction === 'both'
+        ? <>
+            <line class="edge is-out" x1={edge.x1 + offset(edge, 1).x} y1={edge.y1 + offset(edge, 1).y} x2={edge.x2 + offset(edge, 1).x} y2={edge.y2 + offset(edge, 1).y} />
+            <line class="edge is-in" x1={edge.x1 + offset(edge, -1).x} y1={edge.y1 + offset(edge, -1).y} x2={edge.x2 + offset(edge, -1).x} y2={edge.y2 + offset(edge, -1).y} />
+          </>
+        : <line class={`edge is-${edge.direction}`} x1={edge.x1} y1={edge.y1} x2={edge.x2} y2={edge.y2} />)}
+      {layout.nodes.map((node) => <g class:list={['node', { 'is-current': node.current }]}>
+        {node.current && <circle cx={node.x} cy={node.y} r="16" class="ring" />}
+        <circle cx={node.x} cy={node.y} r={node.current ? 9 : 6} fill={node.color} />
+        <text x={node.x} y={node.y + (node.current ? 29 : 22)} text-anchor="middle">{node.current ? '이 노트' : short(node.title)}</text>
+      </g>)}
+    </g>
+  </svg>
+  <div class="local-graph-tools">
+    <button type="button" data-local-zoom="out" aria-label="축소">−</button>
+    <button type="button" data-local-zoom="reset" aria-label="배율 초기화">100%</button>
+    <button type="button" data-local-zoom="in" aria-label="확대">＋</button>
+    {mapUrl && <a href={mapUrl}>큰 지도로</a>}
+  </div>
+  {layout.hidden > 0 && <p class="meta">가까운 연결 {layout.nodes.length - 1}개만 그렸습니다. 전체는 아래 목록에 있습니다.</p>}
+</div>
+<style>
+  .local-graph svg { display: block; width: 100%; height: 190px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .edge { stroke: var(--accent); stroke-width: 1.2; stroke-opacity: .75; }
+  .edge.is-in { stroke-dasharray: 5 4; }
+  .node circle { stroke: var(--paper); stroke-width: 2.5; }
+  .node .ring { fill: none; stroke: var(--accent); stroke-width: 1.2; stroke-opacity: .65; }
+  .node text { font-family: var(--sans); font-size: 11px; fill: var(--ink); paint-order: stroke; stroke: var(--paper); stroke-width: 3.5px; stroke-linejoin: round; pointer-events: none; }
+  .node.is-current text { font-weight: 600; }
+  .local-graph-tools { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
+  .local-graph-tools button { min-width: 36px; min-height: 36px; padding: 3px 7px; border: 1px solid var(--line); border-radius: 3px; background: transparent; color: var(--accent); font-size: 13px; }
+  .local-graph-tools a { margin-left: auto; font-size: var(--t-meta); }
+</style>
+<script src="../scripts/local-graph.js"></script>

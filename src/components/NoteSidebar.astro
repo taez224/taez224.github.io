@@ -1,0 +1,29 @@
+---
+import LocalGraph from './LocalGraph.astro';
+import Icon from './Icon.astro';
+const { note, headings, outgoing, incoming, mapUrl } = Astro.props;
+const toc = headings.filter((h) => h.level === 2 || h.level === 3);
+const block = (label, icon, items) => ({ label, icon, items, long: items.length > 6 });
+const blocks = [block('참조', 'out', outgoing), block('역참조', 'in', incoming)].filter((b) => b.items.length);
+---
+<aside class="note-side">
+  {toc.length >= 2 && <nav class="rail" aria-label="목차">
+    {toc.map((h) => <a href={`#${h.id}`} data-heading={h.id} class:list={[{ 'level-3': h.level === 3 }]}>{h.title}</a>)}
+  </nav>}
+  <LocalGraph note={note} outgoing={outgoing} incoming={incoming} mapUrl={mapUrl} />
+  {blocks.map((b) => <section class="list-block">
+    <div class="meta"><Icon name={b.icon} />{b.label}<span class="count">{b.items.length}</span></div>
+    <div class:list={['scroll-list', { 'is-long': b.long }]}>
+      <ul class="side-list">{b.items.map((n) => <li><a href={n.url}>{n.displayTitle}</a></li>)}</ul>
+    </div>
+  </section>)}
+</aside>
+<style>
+  .note-side { display: flex; flex-direction: column; gap: 34px; }
+  .rail { display: flex; flex-direction: column; border-left: 2px solid var(--line); }
+  .rail a { display: block; margin-left: -2px; padding: 5px 0 5px 16px; border-left: 2px solid transparent; color: var(--muted); font-size: var(--t-side); line-height: 1.5; }
+  .rail a.level-3 { padding-left: 28px; font-size: var(--t-meta); }
+  .rail a[aria-current="location"] { border-left-color: var(--accent); color: var(--ink); font-weight: 600; }
+  .rail a:hover { color: var(--accent); text-decoration: none; }
+</style>
+<script src="../scripts/toc.js"></script>
