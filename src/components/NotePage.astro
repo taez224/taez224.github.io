@@ -37,7 +37,7 @@ const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slic
         <div><span class="meta">공개된 글 {series.total}편</span><p>{series.first.title}</p></div>
         <a class="btn" href={series.first.url}>1편부터 읽기 <span aria-hidden="true">→</span></a>
       </nav>}
-      {series && series.total > 0 && <details class="series-index">
+      {series && series.total > 0 && <details class="series-index" open={series.total <= 5}>
         <summary>연재 목차 <span class="meta">{series.isHub ? `공개 ${series.total}편` : `현재 ${series.position} / ${series.total}편`}</span></summary>
         <nav aria-label="연재 목차">
           <p class="meta">{!series.isHub && series.url ? <a href={series.url}>{series.title} · 연재 안내</a> : series.title}</p>
