@@ -2,11 +2,13 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createMarkdownRenderer, slugifyHeading } from './markdown.mjs';
+import { developmentCategory, pathMatches, isExcluded as excludedByPolicy, isIncluded as includedByPolicy, validatePublicationConfig } from './publication.mjs';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, '..');
 const vaultRoot = path.resolve(projectRoot, '../..');
 const config = JSON.parse(await fs.readFile(path.join(projectRoot, 'config.json'), 'utf8'));
+validatePublicationConfig(config);
 
 const toPosix = (value) => value.split(path.sep).join('/');
 const normalize = (value) => toPosix(value).replace(/^\.\//, '').replace(/\\/g, '/');
@@ -176,22 +178,12 @@ function blogRecord(relativePath, note) {
   };
 }
 
-function pathMatches(relativePath, configuredPath) {
-  const pathValue = normalize(configuredPath).replace(/\/$/, '');
-  return relativePath === pathValue || relativePath.startsWith(`${pathValue}/`);
-}
-
 function isExcluded(relativePath) {
-  return config.exclude.some((entry) => pathMatches(relativePath, entry));
+  return excludedByPolicy(config, relativePath);
 }
 
 function isIncluded(relativePath, meta) {
-  if (isExcluded(relativePath)) return false;
-  const rule = config.include.find((entry) => pathMatches(relativePath, entry.path));
-  if (!rule) return false;
-  if ((rule.files ?? []).includes(relativePath)) return true;
-  if (rule.mode === 'all') return true;
-  return (rule.statuses ?? []).includes(meta.status) || (rule.types ?? []).includes(meta.type);
+  return includedByPolicy(config, relativePath, meta);
 }
 
 function siteUrl(relativePath, fragment = '') {
@@ -321,7 +313,7 @@ const developmentRecords = [...candidateFiles]
     fileTitle: path.posix.basename(relativePath, '.md'),
     title: firstHeading(note.body, path.posix.basename(relativePath, '.md')),
     url: siteUrl(relativePath),
-    category: relativePath.includes('/Troubleshooting/') ? 'Troubleshooting' : 'Tools',
+    category: developmentCategory(relativePath),
     summary: summaryFor(note),
     summaryIsExplicit: Boolean(String(note.meta.summary ?? '').trim()),
     tags: Array.isArray(note.meta.tags) ? note.meta.tags : [],
@@ -330,6 +322,7 @@ const developmentRecords = [...candidateFiles]
   .sort((left, right) => right.date.localeCompare(left.date) || left.title.localeCompare(right.title, 'ko'));
 
 const development = {
+  concepts: developmentRecords.filter((record) => record.category === 'Concepts'),
   troubleshooting: developmentRecords.filter((record) => record.category === 'Troubleshooting'),
   tools: developmentRecords.filter((record) => record.category === 'Tools')
 };
@@ -396,6 +389,7 @@ function publicEntry(relativePath, note) {
     title,
     displayTitle: displayTitleFor(relativePath, title),
     kind,
+    category: kind === 'development' ? developmentCategory(relativePath) : null,
     status: String(note.meta.status ?? ''),
     type: String(note.meta.type ?? ''),
     tags: Array.isArray(note.meta.tags) ? note.meta.tags : [],
@@ -601,9 +595,9 @@ const paths = config.paths.map((readingPath) => ({
     const entry = pathEntries.get(normalized);
     return entry
       ? { label: entry.displayTitle ?? entry.title, path: entry.path, url: entry.url, kind: entry.kind }
-      : { label: path.posix.basename(normalized, '.md'), path: normalized, missing: true };
-  })
-}));
+      : null;
+  }).filter(Boolean)
+})).filter((readingPath) => readingPath.items.length);
 
 const data = {
   home: { featured: (config.home?.featured || []).filter((notePath) => notes.some((note) => note.path === notePath)), contacts: config.home?.contacts || [] },
@@ -638,6 +632,8 @@ const output = template
   .replace('__GARDEN_STYLES__', () => styles)
   .replace('__GARDEN_SCRIPT__', () => `${shortcuts}\n${graphGestures}\n${graphFocus}\n${script.replace('__GARDEN_PAYLOAD__', () => payload)}`);
 const outputDirectory = path.join(projectRoot, 'dist');
+// A removed publication must not survive as an old generated asset.
+await fs.rm(outputDirectory, { recursive: true, force: true });
 await fs.mkdir(outputDirectory, { recursive: true });
 await fs.writeFile(path.join(outputDirectory, 'index.html'), output);
 await fs.cp(path.join(projectRoot, 'assets/social'), path.join(outputDirectory, 'assets/social'), { recursive: true });

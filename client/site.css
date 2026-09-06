@@ -364,7 +364,7 @@ main { flex: 1; padding: 32px 0 48px; min-height: 480px; }
 .note-summary { display: -webkit-box; overflow: hidden; color: var(--muted); line-height: 1.45; text-overflow: ellipsis; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .note-role { color: var(--muted); font-size: .75rem; }
 .note-role.hub { color: var(--accent); font-weight: 650; }
-/* Problem records put the symptom next to the title and reveal the cause on demand. */
+/* Development notes share a title, category and readable summary. */
 .problem-head h1 { margin: 0; font-size: 1.75rem; line-height: 1.4; letter-spacing: -.04em; font-weight: 650; }
 .problem-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 16px 0 18px; }
 .problem-filters { display: flex; flex-wrap: wrap; gap: 6px 20px; }
@@ -381,28 +381,10 @@ main { flex: 1; padding: 32px 0 48px; min-height: 480px; }
 .problem-meta > span { color: var(--accent); }
 .problem-meta time { font-variant-numeric: tabular-nums; }
 .problem-context { min-width: 0; }
-.problem-section-label { display: block; margin: 0 0 8px; color: var(--muted); font-size: .75rem; }
-.problem-excerpt, .problem-cause-body, .problem-tool-intro { font-size: .9375rem; line-height: 1.8; color: var(--ink); word-break: keep-all; overflow-wrap: anywhere; }
-.problem-excerpt p, .problem-cause-body p, .problem-tool-intro p { margin: 0 0 10px; }
-.problem-excerpt p:last-child, .problem-cause-body p:last-child { margin-bottom: 0; }
-.problem-context code, .problem-tool code { padding: 1px 4px; border-radius: 2px; background: var(--accent-soft); font: .88em/1.65 ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
-.problem-excerpt strong, .problem-cause-body strong { font-weight: 600; }
-.problem-cause { margin-top: 13px; }
-.problem-cause summary { display: inline-flex; min-height: 40px; align-items: center; gap: 16px; padding: 4px 0; color: var(--accent); cursor: pointer; list-style: none; font-size: .8125rem; }
-.problem-cause summary::-webkit-details-marker { display: none; }
-.problem-cause summary > :last-child { display: inline-block; transition: transform .15s; }
-.problem-cause[open] summary > :last-child { transform: rotate(45deg); }
-.problem-cause-body { margin: 6px 0 10px; padding: 3px 0 3px 14px; border-left: 2px solid var(--line); color: var(--muted); }
-.problem-read { display: inline-flex; align-items: center; min-height: 36px; gap: 14px; padding: 3px 0; font-size: .8125rem; }
-.problem-tools { margin-top: 28px; padding-bottom: 12px; }
-.problem-tools-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--ink); }
-.problem-tools-heading h2 { margin: 0; font-size: 1rem; font-weight: 600; letter-spacing: -.02em; }
-.problem-tools-heading > span { color: var(--muted); font-size: .75rem; }
-.problem-tools-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 36px; }
-.problem-tool { min-width: 0; padding: 24px 0; }
-.problem-tool h3 { margin: 0 0 12px; font-size: 1.125rem; font-weight: 550; line-height: 1.6; word-break: keep-all; }
-.problem-tool h3 a { display: block; color: var(--ink); }
-.problem-tool-intro { color: var(--muted); }
+.development-summary { margin: 0 0 12px; font-size: 1rem; line-height: 1.8; color: var(--muted); word-break: keep-all; overflow-wrap: anywhere; }
+.development-categories { padding: 16px 0 10px; border-bottom: 1px solid var(--line); }
+.development-category-count { margin-left: 5px; font-variant-numeric: tabular-nums; }
+.problem-read { display: inline-flex; align-items: center; min-height: 36px; gap: 14px; padding: 3px 0; font-size: .875rem; }
 @media (max-width: 780px) {
   .problem-record { grid-template-columns: 24px minmax(0, 1fr); gap: 12px; padding: 24px 0; }
   .problem-heading h2 { font-size: 1.1875rem; margin-bottom: 12px; }
@@ -410,7 +392,6 @@ main { flex: 1; padding: 32px 0 48px; min-height: 480px; }
   .problem-toolbar { align-items: flex-start; gap: 12px; }
   .problem-result-count { padding-top: 10px; }
   .problem-filters { gap: 4px 16px; }
-  .problem-tools-grid { grid-template-columns: 1fr; gap: 0; }
 }
 
 .note-status { color: var(--muted); font-size: .75rem; }

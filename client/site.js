@@ -1,5 +1,5 @@
 const DATA = __GARDEN_PAYLOAD__;
-const viewLabels = { home: '홈', notes: '노트 지도', blog: '글과 연재', development: '문제 해결', books: '책장' };
+const viewLabels = { home: '홈', notes: '노트 지도', blog: '글과 연재', development: '개발 노트', books: '책장' };
 function readNotePath() { return new URLSearchParams(window.location.search).get('note') || ''; }
 function readView() {
   const view = new URLSearchParams(window.location.search).get('view');
@@ -14,7 +14,7 @@ function readGraphNode() {
 function graphNodeUrl(id) { return `?view=notes&node=${encodeURIComponent(id)}${state.graphMode === 'focus' ? '&focus=1' : ''}`; }
 function readGraphMode() { return readGraphNode() && new URLSearchParams(window.location.search).get('focus') === '1' ? 'focus' : 'overview'; }
 function viewUrl(view) { return view === 'home' ? window.location.pathname : `?view=${view}`; }
-const state = { view: readView(), notePath: readNotePath(), noteOriginView: readView(), graphMode: readGraphMode(), focusRoot: readGraphMode() === 'focus' ? readGraphNode() : null, overviewSnapshot: null, restoreOverview: null, graphBounds: { width: 1200, height: 700 }, topic: 'all', problemTag: 'all', bookStatus: 'all', bookFocusPath: '', selected: readGraphNode(), positions: new Map(), graphTransform: { x: 0, y: 0, scale: 1 } };
+const state = { view: readView(), notePath: readNotePath(), noteOriginView: readView(), graphMode: readGraphMode(), focusRoot: readGraphMode() === 'focus' ? readGraphNode() : null, overviewSnapshot: null, restoreOverview: null, graphBounds: { width: 1200, height: 700 }, topic: 'all', developmentCategory: 'all', developmentTag: 'all', bookStatus: 'all', bookFocusPath: '', selected: readGraphNode(), positions: new Map(), graphTransform: { x: 0, y: 0, scale: 1 } };
 const app = document.querySelector('#app');
 let graphAnimationFrame = null;
 let graphResizeObserver = null;
@@ -40,19 +40,19 @@ function noteByPath(notePath) {
   return DATA.notes.find((note) => note.path === notePath);
 }
 
-function isToolRecord(note) {
-  return note?.category === 'Tools' || DATA.development.tools.some((record) => record.path === note?.path);
+function developmentCategoryLabel(category) {
+  return ({ Concepts: '개념·설계', Troubleshooting: '문제 해결', Tools: '도구·워크플로' })[category] || '개발 노트';
 }
 
 function noteKindLabel(note) {
-  if (note?.kind === 'development') return isToolRecord(note) ? '도구·워크플로' : '문제 해결';
+  if (note?.kind === 'development') return developmentCategoryLabel(note.category);
   return ({ slipbox: '노트', blog: '글', book: '독서 기록' })[note?.kind] || '노트';
 }
 
 function noteSectionLabel(note) {
   if (note?.kind === 'slipbox') return 'Slipbox';
   if (note?.kind === 'blog') return note.series || '단독 글';
-  if (note?.kind === 'development') return isToolRecord(note) ? '도구·워크플로' : '문제 해결';
+  if (note?.kind === 'development') return developmentCategoryLabel(note.category);
   if (note?.kind === 'book') return '독서 기록';
   return '공개 노트';
 }
@@ -288,7 +288,7 @@ function renderHome() {
   const book = [...DATA.books].filter((item) => item.note && item.rate).sort((left, right) => right.rate - left.rate)[0];
   const homeTitle = (note) => escapeHtml(nodeDisplayTitle(note).replace(/^🗺\s*/, ''));
   app.innerHTML = `
-    <section class="home-about" aria-label="소개"><p><strong>소프트웨어 개발자 TaeZ입니다.</strong> 개발 중 해결한 문제와 AI를 쓰며 생긴 질문을 기록합니다. <br>발행한 글과 계속 다듬는 노트를 함께 두었습니다.</p><nav class="home-contacts" aria-label="TaeZ 프로필과 연락처">${(DATA.home.contacts || []).map((contact) => `<a href="${safeUrl(contact.url)}" target="_blank" rel="noreferrer" aria-label="${escapeHtml(contact.name)} 프로필 (새 탭)" title="${escapeHtml(contact.name)}"><img src="assets/social/${escapeHtml(contact.icon)}" alt="" aria-hidden="true" width="20" height="20" /></a>`).join('')}</nav></section>
+    <section class="home-about" aria-label="소개"><p><strong>소프트웨어 개발자 TaeZ입니다.</strong> 개발하며 배운 개념과 해결한 문제, AI를 쓰며 생긴 질문을 기록합니다. <br>발행한 글과 계속 다듬는 노트를 함께 두었습니다.</p><nav class="home-contacts" aria-label="TaeZ 프로필과 연락처">${(DATA.home.contacts || []).map((contact) => `<a href="${safeUrl(contact.url)}" target="_blank" rel="noreferrer" aria-label="${escapeHtml(contact.name)} 프로필 (새 탭)" title="${escapeHtml(contact.name)}"><img src="assets/social/${escapeHtml(contact.icon)}" alt="" aria-hidden="true" width="20" height="20" /></a>`).join('')}</nav></section>
     <section class="home-featured" aria-label="대표 기록">
       <div class="featured-grid">${featured.map((note, index) => {
         const excerpt = index === 0 && note.summaryIsExplicit ? note.summary.match(/^.*?[.!?](?:\s|$)/)?.[0]?.trim() || note.summary : '';
@@ -1176,63 +1176,52 @@ function renderBooks() {
   }
 }
 
-const problemPreviewCache = new Map();
-function developmentPreview(record) {
-  if (problemPreviewCache.has(record.path)) return problemPreviewCache.get(record.path);
-  const template = document.createElement('template');
-  // bodyHtml is already sanitized by the shared publication renderer.
-  template.innerHTML = noteByPath(record.path)?.bodyHtml || '';
-  const paragraphs = (element, limit) => [...(element?.children || [])]
-    .filter((child) => child.tagName === 'P' && child.textContent.trim())
-    .slice(0, limit).map((child) => child.outerHTML).join('');
-  const section = (title, limit) => {
-    const callout = [...template.content.querySelectorAll('.callout')].find((element) =>
-      element.querySelector('.callout-title, summary')?.textContent.trim() === title);
-    return paragraphs(callout?.querySelector('.callout-body'), limit);
-  };
-  const preview = { problem: section('문제', 2), cause: section('원인', 1), introduction: paragraphs(template.content, 1) };
-  problemPreviewCache.set(record.path, preview);
-  return preview;
-}
-
 function displayDevelopmentTags(record) {
   return (record.tags || []).filter((tag) => tag.startsWith('개발/') && !['개발/트러블슈팅', '개발/도구'].includes(tag))
     .map((tag) => tag.slice(3));
 }
 
-function renderProblemRecord(record, index) {
-  const preview = developmentPreview(record);
+function selectDevelopmentRecords(records, category, tag) {
+  return records.filter((record) => (category === 'all' || record.category === category)
+    && (tag === 'all' || displayDevelopmentTags(record).includes(tag)));
+}
+
+function renderDevelopmentRecord(record, index) {
   const tags = displayDevelopmentTags(record);
-  return `<article class="problem-record" data-problem-path="${escapeHtml(record.path)}">
+  return `<article class="problem-record" data-development-path="${escapeHtml(record.path)}">
     <span class="problem-number" aria-hidden="true">${String(index + 1).padStart(2, '0')}</span>
     <div class="problem-heading"><h2><a class="internal-note-link" href="${safeUrl(record.url)}">${escapeHtml(record.title || record.fileTitle)}</a></h2>
-      <div class="problem-meta">${tags.length ? `<span>${tags.map(escapeHtml).join(' · ')}</span>` : ''}${record.date ? `<time datetime="${escapeHtml(record.date)}">${escapeHtml(record.date.replaceAll('-', '.'))}</time>` : ''}</div>
+      <div class="problem-meta"><span>${escapeHtml(developmentCategoryLabel(record.category))}</span>${tags.length ? `<span>${tags.map(escapeHtml).join(' · ')}</span>` : ''}${record.date ? `<time datetime="${escapeHtml(record.date)}">${escapeHtml(record.date.replaceAll('-', '.'))}</time>` : ''}</div>
     </div>
     <div class="problem-context">
-      ${preview.problem ? `<div class="problem-excerpt"><span class="problem-section-label">증상</span>${preview.problem}</div>` : ''}
-      ${preview.cause ? `<details class="problem-cause"><summary><span>원인 보기</span><span aria-hidden="true">＋</span></summary><div class="problem-cause-body">${preview.cause}</div><a class="problem-read internal-note-link" href="${safeUrl(record.url)}">전체 기록 읽기 <span aria-hidden="true">→</span></a></details>` : `<a class="problem-read internal-note-link" href="${safeUrl(record.url)}">전체 기록 읽기 →</a>`}
+      ${record.summary ? `<p class="development-summary">${escapeHtml(record.summary)}</p>` : ''}
+      <a class="problem-read internal-note-link" href="${safeUrl(record.url)}">노트 읽기 <span aria-hidden="true">→</span></a>
     </div>
   </article>`;
 }
 
 function renderDevelopment() {
-  const problems = DATA.development.troubleshooting;
-  const tools = DATA.development.tools;
-  const tags = [...new Set(problems.flatMap((record) => displayDevelopmentTags(record)))].sort((a, b) => a.localeCompare(b, 'ko'));
-  const visible = state.problemTag === 'all' ? problems : problems.filter((record) => displayDevelopmentTags(record).includes(state.problemTag));
+  const records = [...DATA.development.concepts, ...DATA.development.troubleshooting, ...DATA.development.tools]
+    .sort((left, right) => right.date.localeCompare(left.date) || left.title.localeCompare(right.title, 'ko'));
+  const categories = ['all', 'Concepts', 'Troubleshooting', 'Tools'];
+  const categoryRecords = selectDevelopmentRecords(records, state.developmentCategory, 'all');
+  const tags = [...new Set(categoryRecords.flatMap(displayDevelopmentTags))].sort((a, b) => a.localeCompare(b, 'ko'));
+  const visible = selectDevelopmentRecords(records, state.developmentCategory, state.developmentTag);
   app.innerHTML = `
-    <div class="view-head problem-head"><h1>문제 해결</h1><span class="count">${problems.length}개 문제${tools.length ? ` · <a href="#problem-tools-heading">도구 ${tools.length}개 ↓</a>` : ''}</span></div>
-    <div class="problem-toolbar"><div class="problem-filters" role="group" aria-label="문제 기록 기술 필터">${['all', ...tags].map((tag) => `<button type="button" class="problem-filter" data-problem-tag="${escapeHtml(tag)}" aria-pressed="${state.problemTag === tag}">${tag === 'all' ? '전체' : escapeHtml(tag)}</button>`).join('')}</div><span class="problem-result-count" aria-live="polite" aria-atomic="true">${visible.length}개 기록</span></div>
-    <section class="problem-records" aria-label="트러블슈팅 기록">${visible.length ? visible.map(renderProblemRecord).join('') : '<p class="empty-state">해당 기술의 문제 기록이 없습니다.</p>'}</section>
-    ${tools.length ? `<section class="problem-tools" aria-labelledby="problem-tools-heading"><div class="problem-tools-heading"><h2 id="problem-tools-heading">도구·워크플로</h2><span>${tools.length}개</span></div><div class="problem-tools-grid">${tools.map((record) => {
-      const preview = developmentPreview(record);
-      return `<article class="problem-tool"><h3><a class="internal-note-link" href="${safeUrl(record.url)}">${escapeHtml(record.title || record.fileTitle)}</a></h3>${preview.introduction ? `<div class="problem-tool-intro">${preview.introduction}</div>` : ''}<a class="problem-read internal-note-link" href="${safeUrl(record.url)}">기록 읽기 →</a></article>`;
-    }).join('')}</div></section>` : ''}`;
-  document.querySelectorAll('[data-problem-tag]').forEach((button) => button.addEventListener('click', () => {
-    const tag = button.dataset.problemTag;
-    state.problemTag = tag;
+    <div class="view-head problem-head"><h1>개발 노트</h1><span class="count">${records.length}개 노트</span></div>
+    <div class="development-categories problem-filters" role="group" aria-label="개발 노트 분류">${categories.map((category) => `<button type="button" class="problem-filter" data-development-category="${category}" aria-pressed="${state.developmentCategory === category}">${category === 'all' ? '전체' : developmentCategoryLabel(category)} <span class="development-category-count">${selectDevelopmentRecords(records, category, 'all').length}</span></button>`).join('')}</div>
+    <div class="problem-toolbar"><div class="problem-filters" role="group" aria-label="개발 노트 기술 필터">${tags.length ? ['all', ...tags].map((tag) => `<button type="button" class="problem-filter" data-development-tag="${escapeHtml(tag)}" aria-pressed="${state.developmentTag === tag}">${tag === 'all' ? '모든 기술' : escapeHtml(tag)}</button>`).join('') : ''}</div><span class="problem-result-count" aria-live="polite" aria-atomic="true">${visible.length}개 노트</span></div>
+    <section class="problem-records" aria-label="개발 노트 목록">${visible.length ? visible.map(renderDevelopmentRecord).join('') : '<p class="empty-state">이 분류에 공개된 노트가 아직 없습니다.</p>'}</section>`;
+  document.querySelectorAll('[data-development-category]').forEach((button) => button.addEventListener('click', () => {
+    state.developmentCategory = button.dataset.developmentCategory;
+    state.developmentTag = 'all';
     renderDevelopment();
-    [...document.querySelectorAll('[data-problem-tag]')].find((element) => element.dataset.problemTag === tag)?.focus({ preventScroll: true });
+    [...document.querySelectorAll('[data-development-category]')].find((element) => element.dataset.developmentCategory === state.developmentCategory)?.focus({ preventScroll: true });
+  }));
+  document.querySelectorAll('[data-development-tag]').forEach((button) => button.addEventListener('click', () => {
+    state.developmentTag = button.dataset.developmentTag;
+    renderDevelopment();
+    [...document.querySelectorAll('[data-development-tag]')].find((element) => element.dataset.developmentTag === state.developmentTag)?.focus({ preventScroll: true });
   }));
   bindInternalNoteLinks();
 }

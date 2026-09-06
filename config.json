@@ -46,14 +46,24 @@
       "graph": false
     },
     {
-      "path": "30_Resources/Development/Troubleshooting",
-      "mode": "all",
+      "path": "30_Resources/Development/Concepts",
+      "files": [
+        "30_Resources/Development/Concepts/멀티테넌시에서 무엇을 격리해야 하는가.md"
+      ],
       "graph": false
     },
     {
+      "path": "30_Resources/Development/Troubleshooting",
+      "graph": false,
+      "files": []
+    },
+    {
       "path": "30_Resources/Development/Tools",
-      "mode": "all",
-      "graph": false
+      "graph": false,
+      "files": [
+        "30_Resources/Development/Tools/Mac Terminal Tool 추천.md",
+        "30_Resources/Development/Tools/로컬 plugin marketplace로 push 없는 dogfooding.md"
+      ]
     }
   ],
   "exclude": [
@@ -62,7 +72,9 @@
     "20_Projects/job-search-2026",
     "30_Resources/References",
     "40_Archive",
-    "99_Templates"
+    "99_Templates",
+    "30_Resources/Development/DevLog",
+    "_workspace"
   ],
   "seeds": [
     "01_Slipbox/생각의 정원.md",
@@ -105,17 +117,6 @@
         "01_Slipbox/세컨드 브레인은 퍼스트 브레인의 사고를 보조해야 한다.md",
         "01_Slipbox/포착과 영구 노트 승격은 분리해야 한다.md",
         "20_Projects/blog/AI로 만든 보고서, 사람이 남긴 생각.md"
-      ]
-    },
-    {
-      "id": "failure-and-recovery",
-      "title": "실패를 이해하고 복구 경로를 남기기",
-      "description": "작은 문제를 재현 가능한 설명과 대응 방법으로 바꾸는 개발 기록",
-      "items": [
-        "30_Resources/Development/Troubleshooting/DataBuffer 해제 책임은 최종 소비자가 정한다.md",
-        "30_Resources/Development/Troubleshooting/스트림으로 받은 ZIP은 엔트리 크기를 모른다.md",
-        "30_Resources/Development/Troubleshooting/인메모리 SSE 팬아웃 유실 - 이벤트 처리 인스턴스와 연결 보유 인스턴스가 다르다.md",
-        "30_Resources/Development/Troubleshooting/Spring Async 스레드풀 기아 - 완료되지 않는 CompletableFuture.md"
       ]
     }
   ]
