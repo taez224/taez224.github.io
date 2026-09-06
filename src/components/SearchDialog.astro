@@ -1,0 +1,13 @@
+---
+import { withBase } from '../lib/format.mjs';
+---
+<dialog id="search" class="search" aria-labelledby="search-title" data-index={withBase('/data/search.json')}>
+  <form method="dialog" class="search-head">
+    <h2 id="search-title" class="visually-hidden">전체 검색</h2>
+    <input id="search-input" type="search" placeholder="노트·글·개발·책 검색" autocomplete="off" />
+    <kbd data-search-hint hidden></kbd>
+    <button type="submit" class="search-close">닫기</button>
+  </form>
+  <div id="search-results" class="search-results" aria-live="polite"></div>
+</dialog>
+<script src="../scripts/search.js"></script>

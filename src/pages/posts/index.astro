@@ -1,0 +1,59 @@
+---
+import Shell from '../../layouts/Shell.astro';
+import ReadingPaths from '../../components/ReadingPaths.astro';
+import { getGarden } from '../../lib/get-garden.mjs';
+import { formatDate } from '../../lib/format.mjs';
+const { blog, paths } = await getGarden();
+const standalone = blog.publications.flatMap((group) => group.posts).sort((a, b) => b.published.localeCompare(a.published));
+---
+<Shell title="글" description="TaeZ가 발행한 글과 연재." path="/posts/" active="posts">
+  <div class="wrap posts-page">
+    <div class="page-head"><h1 class="display">글</h1><span class="meta">{blog.stats.posts}편 · 연재 {blog.stats.series}개</span></div>
+    <div class="posts-layout">
+      <section aria-labelledby="standalone-heading">
+        <div class="section-head"><h2 id="standalone-heading">단독 글</h2><span class="meta">최신순</span></div>
+        <ol class="post-list">{standalone.map((post) => <li class="post">
+          <div class="meta post-meta"><time datetime={post.published}>{formatDate(post.published)}</time>{post.publishedUrl && <a href={post.publishedUrl} target="_blank" rel="noreferrer">{post.publication || '원문'} ↗</a>}</div>
+          <h3><a href={post.url}>{post.title}</a></h3>
+          {post.summary && <p class="excerpt">{post.summary}</p>}
+        </li>)}</ol>
+      </section>
+      <aside aria-labelledby="series-heading">
+        <div class="section-head"><h2 id="series-heading">연재</h2><span class="meta">{blog.series.length}개</span></div>
+        {blog.series.map((series) => <article class="series">
+          <div class="meta">{series.posts.length}편 · {series.ended ? '완결' : '진행 중'}</div>
+          <h3 class="display">{series.noteUrl ? <a href={series.noteUrl}>{series.title}</a> : series.title}</h3>
+          <a class="series-start" href={series.posts[0].url}>1편부터 읽기</a>
+          <details class="series-toc"><summary>목차<span aria-hidden="true">+</span></summary>
+            <ol>{series.posts.map((post) => <li><a href={post.url}>{post.title}</a></li>)}</ol>
+          </details>
+        </article>)}
+      </aside>
+    </div>
+    <ReadingPaths paths={paths} />
+  </div>
+</Shell>
+<style>
+  .posts-page { padding: 36px 0 96px; }
+  .page-head { display: flex; align-items: baseline; gap: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+  .page-head h1 { margin: 0; font-size: 28px; line-height: 1.4; }
+  .posts-layout { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); gap: 64px; align-items: start; margin-top: 30px; }
+  .section-head { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 14px; border-bottom: 1px solid var(--ink); }
+  .section-head h2 { margin: 0; font-size: 16px; font-weight: 600; }
+  .post-list { list-style: none; margin: 0; padding: 0; }
+  .post { padding: 26px 0 28px; border-bottom: 1px solid var(--line); }
+  .post-meta { display: flex; gap: 18px; margin-bottom: 10px; }
+  .post h3 { margin: 0 0 12px; font-size: var(--t-list); font-weight: 600; line-height: 1.5; }
+  .post h3 a { color: var(--ink); }
+  .excerpt { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.8; }
+  .series { padding: 22px 0 20px; border-bottom: 1px solid var(--line); }
+  .series h3 { margin: 6px 0 12px; font-size: 20px; line-height: 1.5; }
+  .series h3 a { color: var(--ink); }
+  .series-start { display: inline-flex; min-height: 36px; align-items: center; font-size: 14px; }
+  .series-toc { margin-top: 8px; }
+  .series-toc summary { display: flex; justify-content: space-between; min-height: 40px; align-items: center; cursor: pointer; color: var(--muted); font-size: var(--t-meta); list-style: none; }
+  .series-toc summary::-webkit-details-marker { display: none; }
+  .series-toc ol { margin: 6px 0 0; padding-left: 24px; font-size: 14px; }
+  .series-toc li { padding: 8px 0; border-top: 1px solid var(--line); }
+  @media (max-width: 1000px) { .posts-layout { grid-template-columns: 1fr; gap: 34px; } .posts-layout aside { order: -1; } }
+</style>

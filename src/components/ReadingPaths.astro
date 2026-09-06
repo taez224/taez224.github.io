@@ -1,0 +1,27 @@
+---
+const { paths } = Astro.props;
+---
+{paths.length > 0 && <section class="reading-paths" aria-labelledby="paths-heading">
+  <h2 id="paths-heading" class="display">묶어서 읽기</h2>
+  <div class="reading-grid">
+    {paths.map((p) => <details class="reading-path">
+      <summary><span class="reading-title">{p.title}</span><span class="meta">{p.items.length}개 기록<span class="reading-toggle" aria-hidden="true">+</span></span></summary>
+      <p class="meta">{p.description}</p>
+      <ol>{p.items.map((item) => <li>{item.external ? <a href={item.url} target="_blank" rel="noreferrer">{item.label} ↗</a> : <a href={item.url}>{item.label}</a>}</li>)}</ol>
+    </details>)}
+  </div>
+</section>}
+<style>
+  .reading-paths { margin-top: 64px; padding-top: 18px; border-top: 1px solid var(--ink); }
+  .reading-paths h2 { margin: 0 0 8px; font-size: var(--t-h2); }
+  .reading-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 44px; }
+  .reading-path { border-bottom: 1px solid var(--line); }
+  .reading-path summary { display: flex; justify-content: space-between; gap: 12px; padding: 17px 0; cursor: pointer; list-style: none; }
+  .reading-path summary::-webkit-details-marker { display: none; }
+  .reading-title { font-size: var(--t-body); font-weight: 550; }
+  .reading-toggle { display: inline-block; margin-left: 7px; transition: transform .15s; }
+  .reading-path[open] .reading-toggle { transform: rotate(45deg); }
+  .reading-path ol { margin: 0 0 18px; padding-left: 22px; font-size: 15px; }
+  .reading-path li { padding: 4px 0; }
+  @media (max-width: 720px) { .reading-grid { grid-template-columns: 1fr; } }
+</style>

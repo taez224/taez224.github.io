@@ -1,0 +1,52 @@
+---
+import Shell from '../../layouts/Shell.astro';
+import { getGarden } from '../../lib/get-garden.mjs';
+import { technologyTags, selectDevelopmentRecords } from '../../lib/development.mjs';
+import { developmentCategoryLabel, formatDate } from '../../lib/format.mjs';
+const { development } = await getGarden();
+const records = selectDevelopmentRecords([...development.concepts, ...development.troubleshooting, ...development.tools]);
+const categories = ['Concepts', 'Troubleshooting', 'Tools'].map((c) => ({ id: c, label: developmentCategoryLabel(c), count: records.filter((r) => r.category === c).length })).filter((c) => c.count);
+const tags = [...new Set(records.flatMap((r) => technologyTags(r.tags)))].sort((a, b) => a.localeCompare(b, 'ko'));
+---
+<Shell title="개발 노트" description="개발하며 배운 개념과 해결한 문제, 도구 기록." path="/dev/" active="dev">
+  <div class="wrap dev-page">
+    <div class="page-head"><h1 class="display">개발 노트</h1><span class="meta">{records.length}개</span></div>
+    <div class="filters" role="group" aria-label="분류">
+      <button type="button" data-category-filter="all" aria-pressed="true">전체 <span class="count">{records.length}</span></button>
+      {categories.map((c) => <button type="button" data-category-filter={c.id} aria-pressed="false">{c.label} <span class="count">{c.count}</span></button>)}
+    </div>
+    <div class="filters tags" role="group" aria-label="기술">
+      <button type="button" data-tag-filter="all" aria-pressed="true">모든 기술</button>
+      {tags.map((t) => <button type="button" data-tag-filter={t} aria-pressed="false">{t}</button>)}
+      <span class="meta" data-result-count aria-live="polite">{records.length}개</span>
+    </div>
+    <section aria-label="개발 노트 목록">
+      {records.map((r) => <article class="record" data-category={r.category} data-tags={technologyTags(r.tags).join('|')}>
+        <div>
+          <h2><a href={r.url}>{r.title}</a></h2>
+          <div class="meta record-meta"><span class="cat">{developmentCategoryLabel(r.category)}</span>{technologyTags(r.tags).length > 0 && <span>{technologyTags(r.tags).join(' · ')}</span>}{r.date && <time datetime={r.date}>{formatDate(r.date)}</time>}</div>
+        </div>
+        <p class="summary">{r.summary}</p>
+      </article>)}
+      <p class="meta empty" hidden data-empty>이 조건에 공개된 노트가 아직 없습니다.</p>
+    </section>
+  </div>
+</Shell>
+<style>
+  .dev-page { padding: 36px 0 96px; }
+  .page-head { display: flex; align-items: baseline; gap: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+  .page-head h1 { margin: 0; font-size: 28px; line-height: 1.4; }
+  .filters { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 20px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .filters.tags { border-bottom: 0; }
+  .filters button { padding: 8px 0; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--muted); font-size: 15px; }
+  .filters button[aria-pressed="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+  .filters [data-result-count] { margin-left: auto; }
+  .record { display: grid; grid-template-columns: minmax(0, .86fr) minmax(0, 1.14fr); gap: 24px; padding: 28px 0; border-top: 1px solid var(--line); }
+  .record h2 { margin: 0 0 14px; font-size: 22px; font-weight: 600; line-height: 1.5; }
+  .record h2 a { color: var(--ink); }
+  .record-meta { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+  .record-meta .cat { color: var(--accent); }
+  .summary { margin: 0; color: var(--muted); font-size: 16px; line-height: 1.8; }
+  @media (max-width: 720px) { .record { grid-template-columns: 1fr; gap: 10px; padding: 22px 0; } .record h2 { font-size: 19px; } }
+</style>
+<script src="../../scripts/dev-filters.js"></script>

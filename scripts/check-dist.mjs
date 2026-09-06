@@ -39,6 +39,23 @@ checks.push(async () => {
     check(!/\b(published|slipbox|blog)\b|프로젝트\//.test(meta.replace(/<[^>]+>/g, ' ')), `${file}: UI 메타 영역에 내부 값 노출`);
   }
 });
+checks.push(async () => {
+  for (const file of ['posts/index.html', 'dev/index.html', 'books/index.html']) {
+    const html = await checkShell(file);
+    check(!/\b0[1-9]\s*<\/span>/.test(html), `${file}: 서수 라벨 잔존`);
+    check(!html.includes('노트 읽기 →'), `${file}: "노트 읽기 →" 잔존`);
+  }
+  const posts = await read('posts/index.html');
+  check(posts.includes('묶어서 읽기'), 'posts: 읽기 경로 섹션 없음');
+});
+checks.push(async () => {
+  const site = JSON.parse(await read('data/site.json'));
+  check(!JSON.stringify(site).includes('bodyHtml'), 'site.json에 본문이 들어 있다');
+  check(site.nodes.length > 0 && site.edges.length > 0, 'site.json 그래프가 비어 있다');
+  const search = JSON.parse(await read('data/search.json'));
+  check(search.length >= site.notes.length, 'search.json 레코드 수 부족');
+  check(search.every((r) => typeof r.text === 'string'), 'search.json 검색 텍스트 형식 오류');
+});
 // __MORE_CHECKS__ (뒤 Task가 이 자리에 검사를 추가한다)
 
 for (const run of checks) await run();

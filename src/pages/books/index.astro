@@ -1,0 +1,32 @@
+---
+import Shell from '../../layouts/Shell.astro';
+import BookCard from '../../components/BookCard.astro';
+import { getGarden } from '../../lib/get-garden.mjs';
+const { books } = await getGarden();
+const tiers = ['S', 'A', 'B', 'C', 'D', '미분류'].map((tier) => ({ tier, books: books.filter((b) => b.tier === tier) })).filter((t) => t.books.length);
+const statuses = [...new Set(books.map((b) => b.status).filter(Boolean))];
+---
+<Shell title="책장" description="읽은 책과 한 줄 평." path="/books/" active="books">
+  <div class="wrap books-page">
+    <div class="page-head"><h1 class="display">책장</h1>
+      <label class="meta">읽기 상태 <select data-book-status><option value="all">전체</option>{statuses.map((s) => <option value={s}>{s}</option>)}</select></label>
+      <span class="meta" data-book-count>{books.length}권</span>
+    </div>
+    {tiers.map((t) => <section class="tier">
+      <div class="tier-head"><h2 class="display">{t.tier}</h2><span class="meta">{t.books.length}권</span></div>
+      <div class="grid">{t.books.map((book) => <BookCard book={book} />)}</div>
+    </section>)}
+  </div>
+</Shell>
+<style>
+  .books-page { padding: 36px 0 96px; }
+  .page-head { display: flex; align-items: baseline; gap: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+  .page-head h1 { margin: 0; font-size: 28px; line-height: 1.4; }
+  .page-head label { margin-left: auto; }
+  select { min-height: 40px; padding: 5px 24px 5px 10px; border: 1px solid var(--line); border-radius: 3px; background: var(--paper); color: var(--ink); font-size: 15px; }
+  .tier { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 24px; margin-top: 28px; padding-bottom: 28px; border-bottom: 1px solid var(--line); }
+  .tier-head h2 { margin: 0; color: var(--accent); font-size: 40px; font-weight: 600; line-height: 1; }
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px 40px; }
+  @media (max-width: 720px) { .tier { grid-template-columns: 32px minmax(0, 1fr); gap: 16px; } .tier-head h2 { font-size: 30px; } .grid { grid-template-columns: 1fr; } }
+</style>
+<script src="../../scripts/books.js"></script>
