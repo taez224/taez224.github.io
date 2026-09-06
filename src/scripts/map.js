@@ -1,8 +1,5 @@
 import { createGraph } from '../graph/engine.mjs';
-import { layoutGraph, relaxLabels, labelOverlaps, nodeRadius } from '../graph/layout.mjs';
-import { graphNeighborhood, layoutDesktopFocus } from '../graph/focus.mjs';
-import { wrapLabel, estimateTextWidth } from '../graph/engine.mjs';
-import { cleanTitle } from '../lib/format.mjs';
+import { layoutGraph } from '../graph/layout.mjs';
 import { panelModel } from '../lib/panel.mjs';
 
 const page = document.querySelector('[data-site]');
@@ -10,7 +7,6 @@ const svg = document.querySelector('svg[data-map]');
 const panel = document.querySelector('[data-panel]');
 const body = document.querySelector('[data-panel-body]');
 const emptyPanel = body.innerHTML;
-const focusButton = document.querySelector('[data-graph-focus]');
 const escape = (v) => String(v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const OUT = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="4" cy="7" r="2"></circle><path d="M6 7h6m-2.5-2.5L12 7l-2.5 2.5"></path></svg>';
 const IN = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="7" r="2"></circle><path d="M8 7H2m2.5-2.5L2 7l2.5 2.5"></path></svg>';
@@ -40,14 +36,10 @@ const byMapKey = new Map(site.nodes.map((n) => [n.mapKey, n]));
 const rect = svg.parentElement.getBoundingClientRect();
 // 무대 픽셀 크기로 배치한다. 맞춤 배율이 1이 되어 제목이 13px 그대로 보인다(pad는 fitTransform의 여백과 같은 40).
 const stageSize = { width: Math.round(rect.width), height: Math.round(rect.height) };
-const full = { nodes: site.nodes, edges: site.edges, positions: layoutGraph(site.nodes, site.edges, { ...stageSize, pad: 40 }) };
 let graph = null;
-let focusRoot = null;
-let viewBeforeSelect = null; // 선택 전 시점. 선택을 풀면 여기로 돌아간다.
 
 const backdrop = document.querySelector('[data-sheet-backdrop]');
 const stage = document.querySelector('.map-stage');
-const graphBox = svg.parentElement;
 const header = document.querySelector('.site-header');
 const narrow = window.matchMedia('(max-width: 720px)');
 let lastFocus = null;
@@ -67,89 +59,31 @@ function syncSheet() {
   }
 }
 
-function mount(data) {
-  graph?.destroy();
-  viewBeforeSelect = null;
-  graph = createGraph(svg, {
-    ...data,
-    mode: 'map',
-    nodeScale: 0.85,
-    onSelect: (id) => select(id, true),
-    onOpen: (id) => { const node = site.nodes.find((n) => n.id === id); if (node) window.location.href = node.url; }
-  });
-  applyFilter();
-}
-
-// 노드 아래 제목 상자(노드 원 + 제목 두 줄까지)를 픽셀 단위로 어림한다.
-const textWidth = (line) => estimateTextWidth(line);
-const labelBoxes = (nodes) => new Map(nodes.map((n) => {
-  const r = nodeRadius(n.degree ?? 0, 0.85), lines = wrapLabel(cleanTitle(n.displayTitle ?? n.title));
-  const w = Math.max(2 * r, Math.max(...lines.map(textWidth)) + 8);
-  return [n.id, { w, h: 2 * r + 6 + lines.length * 18 + 4, top: r, left: w / 2 }];
-}));
-
-function focusData(sub, rootId) {
-  if (!window.matchMedia('(min-width: 1000px)').matches) {
-    // 좁은 화면: 무대 픽셀 크기로 배치하고(배율 1) 제목은 모두 노드 아래 두 줄까지. 제목 상자가 겹치면 밀어내고,
-    // 그래도 겹치면 무대를 단계적으로 키운다.
-    const width = Math.round(rect.width), boxes = labelBoxes(sub.nodes);
-    let height = Math.round(rect.height), positions = null;
-    for (const factor of [1, 1.25, 1.5, 1.8, 2.2]) {
-      height = Math.round(Math.max(rect.height, sub.nodes.length * 34) * factor);
-      const base = layoutGraph(sub.nodes, sub.edges, { width, height, pad: 44 });
-      positions = relaxLabels(base, boxes, { width, height, pad: 8 });
-      if (labelOverlaps(positions, boxes) === 0) break;
-    }
-    graphBox.style.height = `${height}px`;
-    return { nodes: sub.nodes, edges: sub.edges, positions, labelAll: true, labelAnchor: 'middle', fitBounds: { x: 0, y: 0, scale: 1 } };
-  }
-  const width = Math.max(320, Math.round(graphBox.clientWidth || 1000));
-  const layout = layoutDesktopFocus(rootId, sub.nodes, width);
-  graphBox.style.height = `${Math.max(420, layout.height)}px`;
-  return { nodes: sub.nodes, edges: sub.edges, positions: layout.positions, labelAll: true, labelLines: layout.labelLines, fitBounds: { x: 0, y: 0, scale: 1 } };
-}
+graph = createGraph(svg, {
+  nodes: site.nodes,
+  edges: site.edges,
+  positions: layoutGraph(site.nodes, site.edges, { ...stageSize, pad: 40 }),
+  mode: 'map',
+  nodeScale: 0.85,
+  onSelect: (id) => select(id, true),
+  onOpen: (id) => { const node = site.nodes.find((n) => n.id === id); if (node) window.location.href = node.url; }
+});
 
 function select(id, pushUrl, { open = true } = {}) {
-  const hadSelection = Boolean(graph.selected());
+  // 선택해도 시점은 그대로 둔다. 이웃 제목은 자리가 나는 만큼 그 자리에서 보인다.
   graph.select(id);
-  // 고른 노드로 부드럽게 다가가며 살짝 확대해 이웃 제목이 드러나게 한다. 연결만 보기는 자기 배치를 쓰므로 제외.
-  // 처음 고를 때의 시점을 기억해 두고, 빈 곳을 눌러 선택을 풀면 그 시점으로 돌아간다.
-  if (!focusRoot) {
-    if (id) { if (!hadSelection) viewBeforeSelect = graph.view(); graph.focusOn(id, { zoom: narrow.matches ? 1.7 : 1.4 }); }
-    else if (viewBeforeSelect) { graph.moveTo(viewBeforeSelect); viewBeforeSelect = null; }
-  }
-  // 연결만 보기 중에는 선택을 풀어도 버튼을 살려 둔다. 그래야 모드를 끌 수 있다.
-  focusButton.disabled = !id && !focusRoot;
   const node = site.nodes.find((n) => n.id === id);
   if (node) { renderPanel(withNodeIds(panelModel(notesByPath.get(node.path) ?? node, notesByPath, site.noteEdges))); if (open) panel.dataset.open = ''; }
   else { body.innerHTML = emptyPanel; delete panel.dataset.open; }
   if (pushUrl) {
     const params = new URLSearchParams();
     if (node) params.set('node', node.mapKey);
-    if (focusRoot) params.set('focus', '1');
     window.history.replaceState(null, '', `${window.location.pathname}${params.size ? `?${params}` : ''}`);
   }
   syncSheet();
 }
 
-function setFocus(rootId) {
-  const previousSelection = graph?.selected();
-  const previousFocusRoot = focusRoot;
-  focusRoot = rootId;
-  focusButton.setAttribute('aria-pressed', String(Boolean(rootId)));
-  if (rootId) {
-    const sub = graphNeighborhood(rootId, site.nodes, site.edges);
-    mount(focusData(sub, rootId));
-  } else {
-    graphBox.style.height = '';
-    mount(full);
-  }
-  // 모바일: 시트를 다시 띄우지 않는다. 방금 본 연결을 가리면 안 된다.
-  const selection = rootId && previousFocusRoot !== rootId ? rootId : previousSelection;
-  select(selection, true, { open: false });
-}
-
-// 시트만 닫는다. 선택은 유지되어 "연결만 보기"를 누를 수 있다. 선택 해제는 빈 곳 탭.
+// 시트만 닫는다. 선택은 유지된다. 선택 해제는 빈 곳 탭.
 function closeSheet() { delete panel.dataset.open; syncSheet(); }
 
 const pressedTopics = () => new Set([...document.querySelectorAll('[data-topic][aria-pressed="true"]')].map((b) => b.dataset.topic));
@@ -158,33 +92,27 @@ function applyFilter() { const set = pressedTopics(); graph.setFilter({ topics: 
 const toggle = (button) => { button.setAttribute('aria-pressed', String(button.getAttribute('aria-pressed') !== 'true')); applyFilter(); };
 for (const button of document.querySelectorAll('[data-topic]')) button.addEventListener('click', () => toggle(button));
 hubFilter?.addEventListener('click', () => toggle(hubFilter));
-// 패널의 시작점·참조·역참조 링크는 페이지로 가지 않고 지도에서 그 노드를 고른다. 연결만 보기 중에 범위 밖 노드면 그 노드로 다시 좁힌다.
+// 패널의 시작점·참조·역참조 링크는 페이지로 가지 않고 지도에서 그 노드를 고른다.
 panel.addEventListener('click', (event) => {
   const link = event.target.closest('a[data-node]');
   if (!link) return;
   event.preventDefault();
-  const id = link.dataset.node;
-  if (focusRoot && !graph.has(id)) setFocus(id); else select(id, true);
+  select(link.dataset.node, true);
 });
 document.querySelector('[data-graph-zoom="in"]').addEventListener('click', () => graph.zoom(1.25));
 document.querySelector('[data-graph-zoom="out"]').addEventListener('click', () => graph.zoom(1 / 1.25));
-document.querySelector('[data-graph-zoom="fit"]').addEventListener('click', () => { viewBeforeSelect = null; graph.fit(true); });
-focusButton.addEventListener('click', () => setFocus(focusRoot ? null : graph.selected()));
+document.querySelector('[data-graph-zoom="fit"]').addEventListener('click', () => graph.fit(true));
 document.querySelector('[data-panel-close]')?.addEventListener('click', closeSheet);
-document.querySelector('[data-open-hubs]')?.addEventListener('click', () => { graph.select(null); focusButton.disabled = true; body.innerHTML = emptyPanel; panel.dataset.open = ''; syncSheet(); });
+document.querySelector('[data-open-hubs]')?.addEventListener('click', () => { graph.select(null); body.innerHTML = emptyPanel; panel.dataset.open = ''; syncSheet(); });
 backdrop?.addEventListener('click', closeSheet);
 narrow.addEventListener('change', syncSheet);
 document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && narrow.matches && 'open' in panel.dataset) closeSheet(); });
-window.addEventListener('resize', () => {
-  if (focusRoot && window.matchMedia('(min-width: 1000px)').matches) setFocus(focusRoot);
-  else graph.fit();
-});
+window.addEventListener('resize', () => graph.fit());
 
-mount(full);
-const params = new URLSearchParams(window.location.search);
-const initial = byMapKey.get(params.get('node') ?? '');
-if (initial && params.get('focus') === '1') { graph.select(initial.id); setFocus(initial.id); }
-else if (initial) select(initial.id, false);
+applyFilter();
+graph.fit();
+const initial = byMapKey.get(new URLSearchParams(window.location.search).get('node') ?? '');
+if (initial) select(initial.id, false);
 } catch (error) {
   const message = document.createElement('p');
   message.setAttribute('role', 'status');

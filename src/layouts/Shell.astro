@@ -4,11 +4,13 @@ import Header from '../components/Header.astro';
 import SearchDialog from '../components/SearchDialog.astro';
 import { withBase } from '../lib/format.mjs';
 import { SITE_TITLE } from '../lib/site-meta.mjs';
-const { title, description, path, active = '', ogType = 'website' } = Astro.props;
+import siteConfig from '../../config.json';
+const umami = siteConfig.analytics?.umami?.websiteId ? siteConfig.analytics.umami : null;
+const { title, description, path, active = '', ogType = 'website', ogImage: ogImagePath = null } = Astro.props;
 const siteName = 'TaeZ';
 const fullTitle = path === '/' ? SITE_TITLE : `${title} · ${siteName}`;
 const canonical = new URL(withBase(path), Astro.site).href;
-const ogImage = new URL(withBase('/og.png'), Astro.site).href;
+const ogImage = new URL(ogImagePath ?? withBase('/og.png'), Astro.site).href;
 ---
 <!doctype html>
 <html lang="ko">
@@ -33,6 +35,9 @@ const ogImage = new URL(withBase('/og.png'), Astro.site).href;
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    {umami && <script is:inline defer src={umami.src} data-website-id={umami.websiteId} data-domains={(umami.domains ?? []).join(',')}></script>}
+    {umami && <script is:inline>{`/* 주소에 ?stats=off 를 붙여 열면 이 브라우저의 방문은 통계에서 뺀다(?stats=on 으로 되돌림). */
+(function(){try{var v=new URLSearchParams(location.search).get('stats');if(v==='off')localStorage.setItem('umami.disabled','1');if(v==='on')localStorage.removeItem('umami.disabled');}catch(e){}})();`}</script>}
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
   </head>

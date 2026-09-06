@@ -14,23 +14,23 @@ const topics = Object.keys(GRAPH_COLORS).map((t) => ({ name: t, color: GRAPH_COL
     <div class="map-layout">
       <div class="map-stage">
         <div class="map-toolbar">
-          <div class="graph-controls">
-            <button type="button" data-graph-focus aria-pressed="false" disabled>연결만 보기</button>
-            <button type="button" data-graph-zoom="out" aria-label="축소">−</button>
-            <button type="button" data-graph-zoom="fit">맞춤</button>
-            <button type="button" data-graph-zoom="in" aria-label="확대">+</button>
-            <button type="button" data-open-hubs class="hubs-button">시작점</button>
-          </div>
-          <div class="legend relation-legend">
+          <div class="legend">
             <span class="legend-item"><svg width="24" height="8" viewBox="0 0 24 8" aria-hidden="true"><line x1="1" y1="4" x2="23" y2="4" stroke="#315b48" stroke-width="2"></line></svg>참조</span>
             <span class="legend-item"><svg width="24" height="8" viewBox="0 0 24 8" aria-hidden="true"><line x1="1" y1="4" x2="23" y2="4" stroke="#315b48" stroke-width="1.7" stroke-dasharray="5 4"></line></svg>역참조</span>
-          </div>
-          <div class="legend topic-legend">
+            <span class="legend-sep"></span>
             {topics.map((t) => <button type="button" class="legend-item" data-topic={t.name} aria-pressed="false"><i style={`width:10px;height:10px;border-radius:50%;background:${t.color}`}></i>{t.name}</button>)}
             <button type="button" class="legend-item" data-hub-filter aria-pressed="false"><i style="width:10px;height:10px;border-radius:50%;border:1.2px solid #315b48"></i>허브</button>
           </div>
+          <button type="button" data-open-hubs class="hubs-button">시작점</button>
         </div>
-        <div class="graph-box"><svg data-map role="group" aria-label="노트 지도. 노드를 고르면 오른쪽에 정보가 나타납니다."></svg></div>
+        <div class="graph-box">
+          <svg data-map role="group" aria-label="노트 지도. 노드를 고르면 오른쪽에 정보가 나타납니다."></svg>
+          <div class="graph-controls" aria-label="확대·축소">
+            <button type="button" data-graph-zoom="out" aria-label="축소">−</button>
+            <button type="button" data-graph-zoom="fit">맞춤</button>
+            <button type="button" data-graph-zoom="in" aria-label="확대">+</button>
+          </div>
+        </div>
       </div>
       <MapPanel hubs={hubs} />
     </div>
@@ -43,12 +43,13 @@ const topics = Object.keys(GRAPH_COLORS).map((t) => ({ name: t, color: GRAPH_COL
   .map-layout { display: grid; grid-template-columns: minmax(0, 1fr) 310px; gap: 40px; margin-top: 16px; align-items: stretch; }
   .graph-box { height: calc(100dvh - 270px); min-height: 420px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
   .map-panel { max-height: calc(100dvh - 270px + 88px); }
-  .map-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; margin-bottom: 10px; }
-  .map-toolbar .graph-controls { flex: 0 0 auto; margin-bottom: 0; }
-  .map-toolbar .legend { gap: 4px 8px; margin-top: 0; min-width: 0; }
-  .map-toolbar .relation-legend { margin-left: auto; flex-wrap: nowrap; }
-  .map-toolbar .topic-legend { flex-basis: 100%; justify-content: flex-start; }
-  .map-toolbar .legend-item { gap: 4px; padding: 4px 2px; white-space: nowrap; }
+  /* 범례는 위 한 줄, 확대 컨트롤은 지도 앱처럼 무대 오른쪽 아래에 띄운다. */
+  .map-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .map-toolbar .legend { flex: 1 1 auto; gap: 4px 12px; margin-top: 0; min-width: 0; }
+  .map-toolbar .legend-item { gap: 5px; padding: 4px 4px; white-space: nowrap; }
+  .graph-box { position: relative; }
+  .graph-controls { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper-strong); }
+  .graph-controls button { border: 0; }
   .hubs-button { display: none; }
   @media (max-width: 999.98px) {
     .map-layout { grid-template-columns: 1fr; gap: 24px; }
@@ -60,10 +61,9 @@ const topics = Object.keys(GRAPH_COLORS).map((t) => ({ name: t, color: GRAPH_COL
   @media (max-width: 720px) {
     .map-page { padding-top: 16px; }
     .graph-box { width: 100vw; margin-left: calc(50% - 50vw); height: 60vh; }
-    .graph-controls { flex-wrap: wrap; }
     .graph-controls button { min-width: 40px; min-height: 40px; }
-    .hubs-button { display: inline-flex; margin-left: auto; }
-    .map-toolbar .graph-controls { flex-basis: 100%; }
+    .hubs-button { display: inline-flex; flex: 0 0 auto; }
+    .map-toolbar { align-items: flex-start; }
     .map-toolbar .legend-item { min-height: 36px; }
 
   }

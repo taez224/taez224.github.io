@@ -176,3 +176,11 @@ test('folder publication picks up new development notes without publishing helpe
   }
   assert.equal([...garden.assetCopies.keys()].some((asset) => asset.endsWith('qmd-eval.json')), false);
 });
+
+test('public notes carry a reading time of at least one minute', async () => {
+  const vaultRoot = await makeVault(files);
+  const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
+  const short = garden.notes.find((note) => note.path === '01_Slipbox/생각 B.md');
+  assert.equal(short.readingMinutes, 1);
+  for (const note of garden.notes) assert.ok(Number.isInteger(note.readingMinutes) && note.readingMinutes >= 1, note.path);
+});

@@ -121,9 +121,10 @@ function replaceStandardLinks(source, context) {
   result = result.replace(/\[([^\]]+)\]\(([^)\s]+\.md(?:#[^)]*)?)(?:\s+"[^"]*")?\)/gi, (whole, label, rawTarget) => {
     const { target, fragment } = splitWikiTarget(rawTarget);
     const note = context.resolveNote?.(context.sourcePath, target, fragment);
+    // 공개되지 않은 노트로 가는 링크는 죽은 링크 대신 평문으로 둔다(위키링크와 같은 규칙).
     return note
       ? `<a class="internal-note-link" href="${escapeHtml(note.url)}">${escapeHtml(label)}</a>`
-      : whole;
+      : label;
   });
   return result;
 }

@@ -133,5 +133,14 @@
   ],
   "assets": [
     "_attachments/sse-fanout-instance-mismatch.svg"
-  ]
+  ],
+  "analytics": {
+    "umami": {
+      "src": "https://cloud.umami.is/script.js",
+      "websiteId": "fbfc8b7d-f94c-49bf-bc70-20337fc6578c",
+      "domains": [
+        "taez224.github.io"
+      ]
+    }
+  }
 }

@@ -13,14 +13,16 @@ export function classifyEdges(edges, selected) {
   const seenPair = new Set();
   for (const edge of edges) {
     const mutual = set.has(key(edge.target, edge.source));
-    if (!selected) {
+    const touches = Boolean(selected) && (edge.source === selected || edge.target === selected);
+    // 기준 노드에 닿지 않는 상호 참조 쌍은 선 하나로 합친다. 벌려 그리는 건 방향을 보여 줄 때뿐이다.
+    if (!touches) {
       const pair = JSON.stringify([edge.source, edge.target].sort());
       if (mutual && seenPair.has(pair)) continue;
       seenPair.add(pair);
-      result.push({ source: edge.source, target: edge.target, state: 'idle', mutual, offset: 0 });
+      result.push({ source: edge.source, target: edge.target, state: selected ? 'dim' : 'idle', mutual, offset: 0 });
       continue;
     }
-    const state = edge.source === selected ? 'out' : edge.target === selected ? 'in' : 'dim';
+    const state = edge.source === selected ? 'out' : 'in';
     result.push({ source: edge.source, target: edge.target, state, mutual, offset: mutual ? 1 : 0 });
   }
   return result;
@@ -138,7 +140,10 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
   };
   const drawEdges = () => {
     edgeLayer.replaceChildren();
-    for (const edge of classifyEdges(edges, state.selected)) {
+    // 선택이 없으면 호버가 예고편이다. 호버한 노드의 간선만 방향 있게 켜고 나머지는 흐리지 않는다.
+    const preview = !state.selected && state.hovered;
+    for (const raw of classifyEdges(edges, state.selected ?? state.hovered)) {
+      const edge = preview && raw.state === 'dim' ? { ...raw, state: 'faint' } : raw;
       const a = positions.get(edge.source), b = positions.get(edge.target);
       if (!a || !b) continue;
       const line = edge.offset ? offsetLine(a, b, edge.offset) : { x1: a.x, y1: a.y, x2: b.x, y2: b.y };
@@ -187,20 +192,25 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
     const overlaps = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
     // 흐려지지 않은 노드 원도 장애물이다. 제목이 다른 노드 위에 얹히지 않게.
     const obstacles = nodes.filter((node) => !dimmed(node.id) && positions.has(node.id)).map((node) => { const p = positions.get(node.id), r = radius(node) + 2 * u; return { left: p.x - r, right: p.x + r, top: p.y - r, bottom: p.y + r }; });
+    // 화면 밖으로 나가는 자리는 쓰지 않는다(장면 좌표로 환산한 무대 범위).
+    const { width: vw, height: vh } = size();
+    const view = { left: -state.transform.x * u, top: -state.transform.y * u, right: (vw - state.transform.x) * u, bottom: (vh - state.transform.y) * u };
+    const inside = (b) => b.left >= view.left && b.right <= view.right && b.top >= view.top && b.bottom <= view.bottom;
     const placed = [], plan = new Map();
     const tryPlace = (node, mustPlace) => {
       const p = positions.get(node.id); if (!p) return;
       const lines = wrapLabel(cleanTitle(node.displayTitle ?? node.title));
       for (const placement of PLACEMENTS) {
         const g = labelGeometry(node, p, lines, placement, u);
-        if (placed.some((b) => overlaps(b, g.box)) || obstacles.some((b) => overlaps(b, g.box))) continue;
+        if (!inside(g.box) || placed.some((b) => overlaps(b, g.box)) || obstacles.some((b) => overlaps(b, g.box))) continue;
         placed.push(g.box); plan.set(node.id, placement); return;
       }
       if (mustPlace) { placed.push(labelGeometry(node, p, lines, 'below', u).box); plan.set(node.id, 'below'); }
     };
     const priority = (id) => (id === state.selected ? 0 : 1);
     for (const id of base.sort((a, b) => priority(a) - priority(b))) { const node = byId.get(id); if (node) tryPlace(node, true); }
-    if (scale >= LABEL_REVEAL_SCALE || state.selected) {
+    // 홈 히어로(hero 모드)는 허브·호버만 보인다. 자리 채우기는 지도에서만.
+    if (mode === 'map' && (scale >= LABEL_REVEAL_SCALE || state.selected)) {
       const rest = nodes.filter((node) => !plan.has(node.id) && !dimmed(node.id)).sort((a, b) => (b.degree ?? 0) - (a.degree ?? 0));
       for (const node of rest) tryPlace(node, false);
     }
@@ -250,10 +260,15 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
   const refreshNodeStates = () => {
     const neighbors = new Set();
     if (state.selected) for (const e of edges) { if (e.source === state.selected) neighbors.add(e.target); if (e.target === state.selected) neighbors.add(e.source); }
+    // 선택이 없을 때 호버는 예고편: 호버한 노드와 이웃만 또렷하고 나머지는 살짝 흐려진다.
+    const previewId = !state.selected ? state.hovered : null;
+    const previewNear = new Set();
+    if (previewId) { previewNear.add(previewId); for (const e of edges) { if (e.source === previewId) previewNear.add(e.target); if (e.target === previewId) previewNear.add(e.source); } }
     for (const [id, g] of nodeEls) {
       const node = byId.get(id);
       const topicOut = outOfFilter(id);
       const dim = topicOut || (state.selected && id !== state.selected && !neighbors.has(id));
+      g.classList.toggle('is-faint', Boolean(previewId && !previewNear.has(id)));
       g.classList.toggle('is-dim', Boolean(dim));
       g.classList.toggle('is-selected', id === state.selected);
       g.classList.toggle('is-neighbor', neighbors.has(id));
@@ -281,15 +296,16 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
     if (event.key === 'Enter') { event.preventDefault(); onOpen(g.dataset.id); }
     if (event.key === ' ') { event.preventDefault(); onSelect(g.dataset.id); }
   });
-  listen('pointerover', (event) => { const g = event.target.closest('.node'); const id = g ? g.dataset.id : null; if (id !== state.hovered) { state.hovered = id; drawLabels(); onHover(id); } });
-  listen('pointerleave', () => { if (state.hovered) { state.hovered = null; drawLabels(); onHover(null); } });
+  const hoverChanged = () => { if (!state.selected) { drawEdges(); refreshNodeStates(); } drawLabels(); };
+  listen('pointerover', (event) => { const g = event.target.closest('.node'); const id = g ? g.dataset.id : null; if (id !== state.hovered) { state.hovered = id; hoverChanged(); onHover(id); } });
+  listen('pointerleave', () => { if (state.hovered) { state.hovered = null; hoverChanged(); onHover(null); } });
   if (mode === 'map') listen('wheel', (event) => { event.preventDefault(); api.zoom(event.deltaY < 0 ? 1.12 : 1 / 1.12, point(event)); }, { passive: false });
-  listen('focusin', (event) => { const g = event.target.closest('.node'); if (g) { state.hovered = g.dataset.id; drawLabels(); } });
-  listen('focusout', () => { state.hovered = null; drawLabels(); });
+  listen('focusin', (event) => { const g = event.target.closest('.node'); if (g) { state.hovered = g.dataset.id; hoverChanged(); } });
+  listen('focusout', () => { state.hovered = null; hoverChanged(); });
 
   const api = {
     select(id) { state.selected = id && byId.has(id) ? id : null; render(); },
-    hover(id) { state.hovered = id; drawLabels(); },
+    hover(id) { state.hovered = id; hoverChanged(); },
     setFilter({ topics = state.topics, hubsOnly = state.hubsOnly } = {}) { state.topics = topics; state.hubsOnly = hubsOnly; drawEdges(); refreshNodeStates(); drawLabels(); },
     setTopics(set) { api.setFilter({ topics: set }); },
     has: (id) => byId.has(id),

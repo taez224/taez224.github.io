@@ -416,6 +416,8 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
       slug: slugByPath.get(relativePath),
       publicTags: publicTags(Array.isArray(note.meta.tags) ? note.meta.tags : []),
       bodyText: plainText(publicBody(kind, note.body)),
+      // 한국어 평균 읽기 속도 분당 600자 기준. 리더 메타 줄의 "N분".
+      readingMinutes: Math.max(1, Math.round([...plainText(publicBody(kind, note.body))].length / 600)),
       topic: topicFor(Array.isArray(note.meta.tags) ? note.meta.tags : []),
       date: firstDate(note.meta),
       summary: kind === 'blog' && note.meta.type === 'series' ? seriesSummaryFor(note) : summaryFor(note),

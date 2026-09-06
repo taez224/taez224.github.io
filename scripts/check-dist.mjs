@@ -17,6 +17,7 @@ export async function checkShell(file) {
   check(html.includes('rel="canonical"'), `${file}: canonical 없음`);
   check(html.includes('class="site-header"'), `${file}: 헤더 없음`);
   check(html.includes('type="application/rss+xml"'), `${file}: RSS 구독 정보 없음`);
+  if (config.analytics?.umami?.websiteId) check(html.includes(`data-website-id="${config.analytics.umami.websiteId}"`), `${file}: 방문 통계 스크립트 없음`);
   return html;
 }
 
@@ -56,6 +57,12 @@ checks.push(async () => {
   const search = JSON.parse(await read('data/search.json'));
   check(search.length >= site.notes.length, 'search.json 레코드 수 부족');
   check(search.every((r) => typeof r.text === 'string'), 'search.json 검색 텍스트 형식 오류');
+});
+checks.push(async () => {
+  // 노트마다 공유 카드 이미지가 있어야 한다.
+  const site = JSON.parse(await read('data/site.json'));
+  const prefixes = { blog: 'posts', slipbox: 'notes', development: 'dev' };
+  for (const note of site.notes) check(await exists(`og/${prefixes[note.kind]}/${note.slug}.png`), `og 이미지 없음: ${note.slug}`);
 });
 checks.push(async () => {
   for (const file of ['rss.xml', 'feeds/posts.xml', 'feeds/notes.xml', 'favicon.svg', 'og.png', 'apple-touch-icon.png', 'robots.txt', 'assets/graph-snapshot.svg', 'map/index.html', '404.html']) check(await exists(file), `${file} 없음`);

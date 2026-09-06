@@ -5,6 +5,7 @@ import NoteSidebar from './NoteSidebar.astro';
 import { getGarden } from '../lib/get-garden.mjs';
 import { formatDate, displayTag, withBase, cleanTitle } from '../lib/format.mjs';
 import { parentLink, seriesNeighbors } from '../lib/note-nav.mjs';
+import { kindPrefix } from '../lib/slug.mjs';
 const { entry } = Astro.props;
 const note = entry.data;
 const title = cleanTitle(note.title); // 허브 노트의 🗺 같은 이모지는 리더 제목·문서 제목에서 뺀다
@@ -23,12 +24,13 @@ const series = note.kind === 'blog' ? seriesNeighbors(note, garden.blog.series) 
 const siteBase = String(garden.config.basePath ?? '').replace(/\/$/, '');
 const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slice(siteBase.length) : note.url;
 ---
-<Shell title={title} description={note.summary} path={sitePath} active={note.kind === 'blog' ? 'posts' : note.kind === 'development' ? 'dev' : 'map'} ogType="article">
+<Shell title={title} description={note.summary} path={sitePath} ogImage={withBase(`/og/${kindPrefix(note.kind)}/${note.slug}.png`)} active={note.kind === 'blog' ? 'posts' : note.kind === 'development' ? 'dev' : 'map'} ogType="article">
   <div class="wrap note-view">
     <article class="note-article">
       <div class="meta note-meta">
         <a class="kicker" href={parentUrl}>{parent.label}</a>
         {note.date && <><span>·</span><time datetime={note.date}>{formatDate(note.date)}</time></>}
+        {note.readingMinutes > 0 && <><span>·</span><span>{note.readingMinutes}분</span></>}
         {topics.map((t) => <><span>·</span><span>{t}</span></>)}
         {note.publishedUrl && <><span>·</span><a href={note.publishedUrl} target="_blank" rel="noreferrer">{note.publication || '원문'}에 발행 ↗</a></>}
       </div>
