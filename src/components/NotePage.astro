@@ -3,9 +3,11 @@ import { render } from 'astro:content';
 import Shell from '../layouts/Shell.astro';
 import NoteSidebar from './NoteSidebar.astro';
 import { getGarden } from '../lib/get-garden.mjs';
-import { kindLabel, formatDate, displayTag, withBase } from '../lib/format.mjs';
+import { formatDate, displayTag, withBase, cleanTitle } from '../lib/format.mjs';
+import { parentLink, seriesNeighbors } from '../lib/note-nav.mjs';
 const { entry } = Astro.props;
 const note = entry.data;
+const title = cleanTitle(note.title); // 허브 노트의 🗺 같은 이모지는 리더 제목·문서 제목에서 뺀다
 const { Content } = await render(entry);
 const garden = await getGarden();
 const byPath = new Map(garden.notes.map((n) => [n.path, n]));
@@ -15,20 +17,33 @@ const incoming = resolve(note.incoming);
 const mapNode = garden.nodes.find((node) => node.path === note.path);
 const mapUrl = mapNode ? withBase(`/map/?node=${encodeURIComponent(mapNode.mapKey)}`) : '';
 const topics = note.publicTags.slice(0, 2).map(displayTag);
+const parent = parentLink(note, mapNode?.mapKey);
+const parentUrl = withBase(parent.path);
+const series = note.kind === 'blog' ? seriesNeighbors(note, garden.blog.series) : null;
 const siteBase = String(garden.config.basePath ?? '').replace(/\/$/, '');
 const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slice(siteBase.length) : note.url;
 ---
-<Shell title={note.title} description={note.summary} path={sitePath} active={note.kind === 'blog' ? 'posts' : note.kind === 'development' ? 'dev' : 'map'} ogType="article">
+<Shell title={title} description={note.summary} path={sitePath} active={note.kind === 'blog' ? 'posts' : note.kind === 'development' ? 'dev' : 'map'} ogType="article">
   <div class="wrap note-view">
     <article class="note-article">
       <div class="meta note-meta">
-        <span>{kindLabel(note)}</span>
+        <a class="kicker" href={parentUrl}>{parent.label}</a>
         {note.date && <><span>·</span><time datetime={note.date}>{formatDate(note.date)}</time></>}
         {topics.map((t) => <><span>·</span><span>{t}</span></>)}
         {note.publishedUrl && <><span>·</span><a href={note.publishedUrl} target="_blank" rel="noreferrer">{note.publication || '원문'}에 발행 ↗</a></>}
       </div>
-      <h1 class="display note-title">{note.title}</h1>
+      <h1 class="display note-title">{title}</h1>
       <div class="body"><Content /></div>
+      <nav class="note-end" aria-label="이어서 읽기">
+        {series && <div class="series-nav">
+          <div class="meta">연재 · {series.url ? <a href={series.url}>{series.title}</a> : series.title}</div>
+          <div class="series-links">
+            {series.prev && <a class="series-link" href={series.prev.url}><span class="meta">이전 편</span><span class="series-title">{series.prev.title}</span></a>}
+            {series.next && <a class="series-link is-next" href={series.next.url}><span class="meta">다음 편</span><span class="series-title">{series.next.title}</span></a>}
+          </div>
+        </div>}
+        <a class="end-link" href={parentUrl}>{parent.listLabel}</a>
+      </nav>
     </article>
     <NoteSidebar note={note} headings={note.headings} outgoing={outgoing} incoming={incoming} mapUrl={mapUrl} />
   </div>
@@ -37,6 +52,15 @@ const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slic
   .note-view { display: grid; grid-template-columns: minmax(0, 720px) 310px; justify-content: space-between; gap: 40px; align-items: start; padding: 56px 0 96px; }
   .note-side { position: sticky; top: 100px; max-height: calc(100dvh - 120px); overflow-y: auto; padding-top: 82px; scrollbar-gutter: stable; }
   .note-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .note-meta .kicker { color: var(--accent); }
+  .note-end { display: flex; flex-direction: column; gap: 22px; margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--line); }
+  .series-links { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 10px; }
+  .series-link { display: flex; flex-direction: column; gap: 4px; color: var(--ink); }
+  .series-link:hover { text-decoration: none; }
+  .series-link:hover .series-title { color: var(--accent); }
+  .series-link.is-next { grid-column: 2; align-items: flex-end; text-align: right; }
+  .series-title { font-family: var(--display); font-size: 18px; line-height: 1.4; letter-spacing: -.01em; }
+  .end-link { align-self: flex-start; font-size: var(--t-side); }
   .note-title { margin: 0 0 40px; font-size: var(--t-h1); line-height: 1.3; letter-spacing: -.03em; }
   .body { font-size: var(--t-body); line-height: 1.85; }
   .body p { margin: 0 0 22px; }
@@ -73,6 +97,9 @@ const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slic
   @media (max-width: 720px) {
     .note-view { padding: 32px 0 64px; }
     .note-title { font-size: 32px; margin-bottom: 28px; }
+    .note-end { margin-top: 40px; }
+    .series-links { grid-template-columns: 1fr; gap: 16px; }
+    .series-link.is-next { grid-column: auto; align-items: flex-start; text-align: left; }
   }
 </style>
 <script src="../scripts/mermaid.js"></script>
