@@ -44,10 +44,10 @@ const topics = Object.keys(GRAPH_COLORS).map((t) => ({ name: t, color: GRAPH_COL
   @media (max-width: 999.98px) {
     .map-layout { grid-template-columns: 1fr; gap: 24px; }
     .graph-box { height: 60vh; min-height: 360px; }
-    .map-panel { max-height: none; }
     .map-panel .scroll-list.is-long .side-list { max-height: none; }
     .map-panel .scroll-list.is-long::after { display: none; }
   }
+  @media (min-width: 720.02px) and (max-width: 999.98px) { .map-panel { max-height: none; } }
   @media (max-width: 720px) {
     .map-page { padding-top: 16px; }
     .graph-box { width: 100vw; margin-left: calc(50% - 50vw); height: 60vh; }
