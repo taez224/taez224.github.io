@@ -436,6 +436,12 @@ for (const relativePath of publicEntries.keys()) {
 }
 
 const publicAssetPaths = new Set();
+// General vault attachments are available only after explicit review.
+for (const asset of config.assets ?? []) {
+  const info = await fs.stat(path.join(vaultRoot, asset));
+  if (!info.isFile()) throw new Error(`Reviewed asset is not a file: ${asset}`);
+  publicAssetPaths.add(asset);
+}
 for (const include of config.include) {
   const absoluteDirectory = path.join(vaultRoot, include.path);
   try {

@@ -35,6 +35,13 @@ test('private areas stay excluded even if a broad future include would match', (
   assert.equal(isIncluded(broad, `${root}/Concepts/draft.md`), false);
 });
 
+test('reviewed image assets cannot select private notes or escape the vault', () => {
+  validatePublicationConfig({ ...config, assets: ['_attachments/diagram.svg'] });
+  for (const asset of ['../outside.svg', '/tmp/outside.svg', `${root}/DevLog/private.svg`, '_workspace/private.svg', '_attachments/private.md']) {
+    assert.throws(() => validatePublicationConfig({ ...config, assets: [asset] }));
+  }
+});
+
 test('build emits only reviewed development notes and removes old generated assets', async () => {
   const workspace = await fs.mkdtemp(path.join(os.tmpdir(), 'garden-publication-'));
   const project = path.join(workspace, '20_Projects/obsidian-garden');
@@ -47,9 +54,13 @@ test('build emits only reviewed development notes and removes old generated asse
     await fs.writeFile(path.join(project, 'package.json'), '{"type":"module"}');
     await fs.symlink(path.join(original, 'node_modules'), path.join(project, 'node_modules'), 'dir');
     const withheld = `${root}/Concepts/withheld.md`;
-    await fs.writeFile(path.join(project, 'config.json'), JSON.stringify({ ...config, paths: [{ id: 'withheld-path', title: 'Hidden', items: [withheld] }] }));
+    const diagram = '_attachments/reviewed.svg';
+    await fs.mkdir(path.join(workspace, '_attachments'), { recursive: true });
+    await fs.writeFile(path.join(workspace, diagram), '<svg xmlns="http://www.w3.org/2000/svg"><text>PUBLIC_DIAGRAM</text></svg>');
+    await fs.writeFile(path.join(workspace, '_attachments/unreviewed.svg'), '<svg>PRIVATE_IMAGE_SENTINEL</svg>');
+    await fs.writeFile(path.join(project, 'config.json'), JSON.stringify({ ...config, assets: [diagram], paths: [{ id: 'withheld-path', title: 'Hidden', items: [withheld] }] }));
     for (const [file, content] of [
-      [approved, '---\ncreated: 2026-09-06\nsummary: Public summary\n---\n# Public concept\nPublic explanation.'],
+      [approved, '---\ncreated: 2026-09-06\nsummary: Public summary\n---\n# Public concept\nPublic explanation.\n\n![[reviewed.svg]]'],
       [withheld, '---\nstatus: published\n---\n# WITHHELD_TITLE\nPRIVATE_CONTENT_SENTINEL'],
       [`${root}/DevLog/daily/private.md`, '# PRIVATE_LOG_TITLE\nPRIVATE_LOG_SENTINEL']
     ]) {
@@ -66,6 +77,9 @@ test('build emits only reviewed development notes and removes old generated asse
     assert.equal(payload.development.concepts[0].summary, 'Public summary');
     assert.equal(payload.stats.developmentNotes, 1);
     assert.deepEqual(payload.paths, []);
+    assert.match(payload.notes[0].bodyHtml, /assets\/vault\/_attachments\/reviewed.svg/);
+    assert.match(await fs.readFile(path.join(project, 'dist/assets/vault', diagram), 'utf8'), /PUBLIC_DIAGRAM/);
+    await assert.rejects(fs.access(path.join(project, 'dist/assets/vault/_attachments/unreviewed.svg')));
     assert.doesNotMatch(html, /PRIVATE_CONTENT_SENTINEL|PRIVATE_LOG_SENTINEL|WITHHELD_TITLE|withheld\.md/);
     await assert.rejects(fs.access(path.join(project, 'dist/assets/removed.svg')));
   } finally {

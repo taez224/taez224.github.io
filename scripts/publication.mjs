@@ -16,6 +16,11 @@ export function developmentCategory(relativePath) {
 }
 
 export function validatePublicationConfig(config) {
+  for (const asset of config.assets ?? []) {
+    if (typeof asset !== 'string' || asset.startsWith('/') || asset.includes('\\') || asset.split('/').some((part) => part === '..' || part === '.') || isExcluded(config, asset) || !/\.(avif|gif|jpe?g|png|svg|webp)$/i.test(asset)) {
+      throw new Error(`Invalid reviewed image asset: ${asset}`);
+    }
+  }
   for (const rule of config.include) {
     if (!pathMatches(rule.path, developmentRoot)) continue;
     if (!developmentFolders.has(rule.path) || !Array.isArray(rule.files) || rule.mode || rule.statuses || rule.types) {
