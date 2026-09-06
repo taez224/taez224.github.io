@@ -27,7 +27,7 @@ test('XML escapes untrusted titles and summaries; full text is not published', (
 test('default feed identity matches the site title and About description', () => {
  const xml = renderFeed([note()], options);
  assert.ok(xml.includes('<title>TaeZ’s Thinking Garden</title>'));
- assert.ok(xml.includes('<description>AI 시대에 개발자로 일하며 배운 개념과 기술, 그 과정에서 든 생각을 적어 두는 개인 위키입니다. 쓴 글과 읽은 책도 함께 둡니다.</description>'));
+ assert.ok(xml.includes('<description>AI 시대에 개발자로 일하며 배운 개념과 기술, 그 과정에서 든 생각, 발행한 글과 읽은 책을 적어 두는 개인 위키입니다.</description>'));
 });
 test('only notes present in public garden selection are enriched', () => {
  const garden = { notes: [note({path:'a'})], blog: { series: [{posts:[{path:'a',published:'2026-09-02'}]}], publications:[{posts:[{path:'private',published:'2026-09-03'}]}] } };
