@@ -1,6 +1,8 @@
 import { createGraph } from '../graph/engine.mjs';
-import { layoutGraph } from '../graph/layout.mjs';
+import { layoutGraph, relaxLabels, labelOverlaps, nodeRadius } from '../graph/layout.mjs';
 import { graphNeighborhood, layoutDesktopFocus } from '../graph/focus.mjs';
+import { wrapLabel } from '../graph/engine.mjs';
+import { cleanTitle } from '../lib/format.mjs';
 import { panelModel } from '../lib/panel.mjs';
 
 const page = document.querySelector('[data-site]');
@@ -34,11 +36,11 @@ const notesByPath = new Map(site.notes.map((n) => [n.path, n]));
 const nodeByPath = new Map(site.nodes.map((n) => [n.path, n]));
 const withNodeIds = (model) => ({ ...model, outgoing: model.outgoing.map((i) => ({ ...i, nodeId: nodeByPath.get(i.path)?.id })), incoming: model.incoming.map((i) => ({ ...i, nodeId: nodeByPath.get(i.path)?.id })) });
 const byMapKey = new Map(site.nodes.map((n) => [n.mapKey, n]));
-// 세로로 긴 화면(모바일)에서는 배치 상자도 세로로 두어 무대를 채운다.
 // SVG는 마운트 전까지 기본 크기(300×150)라서 CSS로 크기가 정해진 상자를 잰다.
 const rect = svg.parentElement.getBoundingClientRect();
-const box = rect.height > rect.width ? { width: 640, height: Math.round((640 * rect.height) / rect.width) } : { width: 1000, height: 640 };
-const full = { nodes: site.nodes, edges: site.edges, positions: layoutGraph(site.nodes, site.edges, box) };
+// 무대 픽셀 크기로 배치한다. 맞춤 배율이 1이 되어 제목이 13px 그대로 보인다(pad는 fitTransform의 여백과 같은 40).
+const stageSize = { width: Math.round(rect.width), height: Math.round(rect.height) };
+const full = { nodes: site.nodes, edges: site.edges, positions: layoutGraph(site.nodes, site.edges, { ...stageSize, pad: 40 }) };
 let graph = null;
 let focusRoot = null;
 
@@ -75,8 +77,29 @@ function mount(data) {
   applyFilter();
 }
 
+// 노드 아래 제목 상자(노드 원 + 제목 두 줄까지)를 픽셀 단위로 어림한다.
+const textWidth = (line) => [...line].reduce((sum, ch) => sum + (/[\u3131-\uD79D]/.test(ch) ? 12.5 : /[A-Za-z0-9]/.test(ch) ? 7.2 : 4.5), 0);
+const labelBoxes = (nodes) => new Map(nodes.map((n) => {
+  const r = nodeRadius(n.degree ?? 0), lines = wrapLabel(cleanTitle(n.displayTitle ?? n.title));
+  const w = Math.max(2 * r, Math.max(...lines.map(textWidth)) + 8);
+  return [n.id, { w, h: 2 * r + 6 + lines.length * 18 + 4, top: r, left: w / 2 }];
+}));
+
 function focusData(sub, rootId) {
-  if (!window.matchMedia('(min-width: 1000px)').matches) return { nodes: sub.nodes, edges: sub.edges, positions: layoutGraph(sub.nodes, sub.edges, box), labelAll: true };
+  if (!window.matchMedia('(min-width: 1000px)').matches) {
+    // 좁은 화면: 무대 픽셀 크기로 배치하고(배율 1) 제목은 모두 노드 아래 두 줄까지. 제목 상자가 겹치면 밀어내고,
+    // 그래도 겹치면 무대를 단계적으로 키운다.
+    const width = Math.round(rect.width), boxes = labelBoxes(sub.nodes);
+    let height = Math.round(rect.height), positions = null;
+    for (const factor of [1, 1.25, 1.5, 1.8, 2.2]) {
+      height = Math.round(Math.max(rect.height, sub.nodes.length * 34) * factor);
+      const base = layoutGraph(sub.nodes, sub.edges, { width, height, pad: 44 });
+      positions = relaxLabels(base, boxes, { width, height, pad: 8 });
+      if (labelOverlaps(positions, boxes) === 0) break;
+    }
+    graphBox.style.height = `${height}px`;
+    return { nodes: sub.nodes, edges: sub.edges, positions, labelAll: true, labelAnchor: 'middle', fitBounds: { x: 0, y: 0, scale: 1 } };
+  }
   const width = Math.max(320, Math.round(graphBox.clientWidth || 1000));
   const layout = layoutDesktopFocus(rootId, sub.nodes, width);
   graphBox.style.height = `${Math.max(420, layout.height)}px`;
@@ -135,7 +158,7 @@ panel.addEventListener('click', (event) => {
 });
 document.querySelector('[data-graph-zoom="in"]').addEventListener('click', () => graph.zoom(1.25));
 document.querySelector('[data-graph-zoom="out"]').addEventListener('click', () => graph.zoom(1 / 1.25));
-document.querySelector('[data-graph-zoom="fit"]').addEventListener('click', () => graph.fit());
+document.querySelector('[data-graph-zoom="fit"]').addEventListener('click', () => graph.fit(true));
 focusButton.addEventListener('click', () => setFocus(focusRoot ? null : graph.selected()));
 document.querySelector('[data-panel-close]')?.addEventListener('click', closeSheet);
 document.querySelector('[data-open-hubs]')?.addEventListener('click', () => { graph.select(null); focusButton.disabled = true; body.innerHTML = emptyPanel; panel.dataset.open = ''; syncSheet(); });

@@ -1,6 +1,7 @@
 import { nodeRadius } from './layout.mjs';
 import { topicColor, cleanTitle } from '../lib/format.mjs';
 import { createGraphGesture } from './gestures.mjs';
+import { graphTitleLines } from './focus.mjs';
 
 export const MIN_SCALE = 0.65;
 export const MAX_SCALE = 3.2;
@@ -74,7 +75,17 @@ export function isFilteredOut(node, { topics = null, hubsOnly = false } = {}) {
   return false;
 }
 
-export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelAll = false, labelLines = null, fitBounds = null, onSelect = () => {}, onOpen = () => {}, onHover = () => {} }) {
+// 20자를 넘는 제목은 두 줄로 접는다. 줄 길이를 절반 근처로 잡아 두 줄이 비슷하게 나뉘게 한다.
+export function wrapLabel(title, maxChars = 20) {
+  const chars = [...title];
+  if (chars.length <= maxChars) return [title];
+  let limit = Math.ceil(chars.length / 2) + 2;
+  let lines = graphTitleLines(title, limit);
+  while (lines.length > 2 && limit < chars.length) { limit += 3; lines = graphTitleLines(title, limit); }
+  return lines;
+}
+
+export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelAll = false, labelLines = null, labelAnchor = 'auto', fitBounds = null, onSelect = () => {}, onOpen = () => {}, onHover = () => {} }) {
   const el = (name, attrs = {}) => { const node = document.createElementNS(SVG_NS, name); for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, String(v)); return node; };
   const size = () => ({ width: svg.clientWidth || LAYOUT.width, height: svg.clientHeight || LAYOUT.height });
   const byId = new Map(nodes.map((n) => [n.id, n]));
@@ -93,6 +104,21 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
   scene.append(edgeLayer, nodeLayer, labelLayer);
   svg.append(scene);
 
+  // 선택한 노드로 부드럽게 이동·확대. 드래그가 시작되면 애니메이션을 끊는다.
+  let animation = null;
+  const stopAnimation = () => { if (animation) cancelAnimationFrame(animation); animation = null; };
+  const animateTo = (target, duration = 320) => {
+    stopAnimation();
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { state.transform = target; applyTransform(); return; }
+    const from = { ...state.transform }, start = performance.now();
+    const step = (now) => {
+      const k = Math.min(1, (now - start) / duration), e = 1 - (1 - k) ** 3;
+      state.transform = { x: from.x + (target.x - from.x) * e, y: from.y + (target.y - from.y) * e, scale: from.scale + (target.scale - from.scale) * e };
+      applyTransform();
+      animation = k < 1 ? requestAnimationFrame(step) : null;
+    };
+    animation = requestAnimationFrame(step);
+  };
   const applyTransform = () => {
     const { width, height } = size();
     svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
@@ -125,7 +151,7 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
   // 모든 제목을 보일 때는 가장자리 노드의 제목을 안쪽으로 붙여 화면 밖으로 잘리지 않게 한다.
   const xs = [...positions.values()].map((p) => p.x);
   const xLo = Math.min(...xs), xThird = (Math.max(...xs) - xLo) / 3;
-  const anchorFor = (x) => (!labelAll ? 'middle' : x < xLo + xThird ? 'start' : x > xLo + 2 * xThird ? 'end' : 'middle');
+  const anchorFor = (x) => (!labelAll || labelAnchor === 'middle' ? 'middle' : x < xLo + xThird ? 'start' : x > xLo + 2 * xThird ? 'end' : 'middle');
   const drawLabels = () => {
     labelLayer.replaceChildren();
     const ids = labelAll ? nodes.map((node) => node.id) : labelIds(nodes, edges, state);
@@ -134,8 +160,8 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
       if (!node || !p) continue;
       const r = nodeRadius(node.degree ?? 0), anchor = anchorFor(p.x);
       const x = anchor === 'start' ? p.x - r : anchor === 'end' ? p.x + r : p.x;
-      const lines = labelLines?.get(id) ?? [cleanTitle(node.displayTitle ?? node.title)];
-      const multiLine = Boolean(labelLines?.has(id));
+      const lines = labelLines?.get(id) ?? wrapLabel(cleanTitle(node.displayTitle ?? node.title));
+      const multiLine = lines.length > 1 || Boolean(labelLines?.has(id));
       const lineHeight = 18;
       const labelX = multiLine ? (anchor === 'start' ? p.x + r + 8 : anchor === 'end' ? p.x - r - 8 : p.x) : x;
       const labelY = multiLine
@@ -165,7 +191,7 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
 
   const point = (event) => { const rect = svg.getBoundingClientRect(); return { x: event.clientX - rect.left, y: event.clientY - rect.top }; };
   const pointer = (event) => ({ id: event.pointerId, ...point(event), touch: event.pointerType === 'touch', onNode: Boolean(event.target.closest('.node')) });
-  listen('pointerdown', (event) => { if (gesture.down(pointer(event), state.transform)) { svg.setPointerCapture?.(event.pointerId); svg.classList.add('is-panning'); } });
+  listen('pointerdown', (event) => { stopAnimation(); if (gesture.down(pointer(event), state.transform)) { svg.setPointerCapture?.(event.pointerId); svg.classList.add('is-panning'); } });
   listen('pointermove', (event) => { const next = gesture.move(pointer(event)); if (next) { state.transform = next; applyTransform(); } });
   const endPointer = (event) => { gesture.end(event.pointerId); if (!gesture.active()) svg.classList.remove('is-panning'); };
   listen('pointerup', endPointer);
@@ -194,7 +220,15 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
     setFilter({ topics = state.topics, hubsOnly = state.hubsOnly } = {}) { state.topics = topics; state.hubsOnly = hubsOnly; drawEdges(); refreshNodeStates(); drawLabels(); },
     setTopics(set) { api.setFilter({ topics: set }); },
     has: (id) => byId.has(id),
-    fit() { state.transform = fitBounds ? { ...fitBounds } : fitTransform(positions, size()); applyTransform(); },
+    fit(animate = false) { const target = fitBounds ? { ...fitBounds } : fitTransform(positions, size()); if (animate) animateTo(target); else { stopAnimation(); state.transform = target; applyTransform(); } },
+    // 노드를 무대 가운데로 옮기고, 맞춤 배율의 zoom배까지 키운다(이미 더 크면 유지).
+    focusOn(id, { zoom = 1.35 } = {}) {
+      const p = positions.get(id); if (!p) return;
+      const { width, height } = size();
+      const fitScale = fitBounds ? fitBounds.scale : fitTransform(positions, size()).scale;
+      const scale = Math.min(MAX_SCALE, Math.max(state.transform.scale, fitScale * zoom));
+      animateTo({ scale, x: width / 2 - p.x * scale, y: height / 2 - p.y * scale });
+    },
     zoom(factor, center) {
       const { width, height } = size();
       const c = center ?? { x: width / 2, y: height / 2 };
@@ -206,6 +240,7 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
     },
     selected: () => state.selected,
     destroy() {
+      stopAnimation();
       events.abort();
       for (const id of gesture.ids()) { if (svg.hasPointerCapture?.(id)) svg.releasePointerCapture(id); gesture.end(id); }
       svg.replaceChildren(); svg.classList.remove('graph', mode, 'is-panning');
