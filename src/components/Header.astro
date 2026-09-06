@@ -1,0 +1,16 @@
+---
+import { withBase } from '../lib/format.mjs';
+const { active = '' } = Astro.props;
+const items = [['map', '/map/', '지도'], ['posts', '/posts/', '글'], ['dev', '/dev/', '개발 노트'], ['books', '/books/', '책장']];
+---
+<header class="site-header">
+  <div class="wrap">
+    <a class="wordmark display" href={withBase('/')} aria-label="TaeZ 홈">TaeZ</a>
+    <nav class="site-nav" aria-label="공개 기록">
+      {items.map(([id, href, label]) => <a href={withBase(href)} aria-current={active === id ? 'page' : undefined}>{label}</a>)}
+    </nav>
+    <button class="search-trigger" type="button" data-search-open aria-label="검색" title="검색">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg>
+    </button>
+  </div>
+</header>

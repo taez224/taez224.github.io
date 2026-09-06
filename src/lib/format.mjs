@@ -11,3 +11,7 @@ export function kindLabel(note) {
   if (note.kind === 'development') return developmentCategoryLabel(note.category);
   return note.kind === 'blog' ? '글' : '노트';
 }
+export function withBase(path) {
+  const base = String(import.meta.env?.BASE_URL ?? '').replace(/\/$/, '');
+  return `${base}${path}`;
+}
