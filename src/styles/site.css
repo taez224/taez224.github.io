@@ -27,7 +27,8 @@ h1, h2, h3, p { margin-top: 0; }
 .meta { font-size: var(--t-meta); line-height: 1.6; color: var(--muted); font-variant-numeric: tabular-nums; }
 .count { color: var(--faint); }
 /* 허브 표시: 지도 범례·허브 노드의 링과 같은 기호. 제목 앞에 둔다(이모지 대신). */
-.hub-mark { display: inline-block; width: 10px; height: 10px; margin-right: 8px; border: 1.5px solid var(--accent); border-radius: 50%; vertical-align: 1px; }
+.hub-mark { position: relative; display: inline-block; width: 11px; height: 11px; margin-right: 8px; border: 1.5px solid var(--accent); border-radius: 50%; vertical-align: 0; }
+.hub-mark::after { content: ""; position: absolute; inset: 2px; border-radius: 50%; background: var(--accent); } /* 지도의 허브 노드처럼 링 안에 점. 빈 링만으로는 눈에 안 띈다. */
 .topic-dot { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 50%; vertical-align: 0; }
 .btn { display: inline-flex; align-items: center; height: 44px; padding: 0 20px; border: 0; border-radius: 4px; background: var(--accent); color: var(--paper-strong); font-size: 15px; font-weight: 600; }
 .btn:hover { background: var(--muted); color: var(--paper-strong); text-decoration: none; }
@@ -38,6 +39,29 @@ h1, h2, h3, p { margin-top: 0; }
 .list-block { padding: 18px 0; border-bottom: 1px solid var(--line); }
 .list-block .meta { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
 .list-block .meta svg { width: 14px; height: 14px; }
+/* 장부(ledger): 왼쪽 여백에 큰 라벨(연도·분류)과 개수, 오른쪽에 행. 책장의 등급 표시와 같은 장치. */
+.ledger-group { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 24px; margin-top: 28px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+.ledger-group.is-year { grid-template-columns: 130px minmax(0, 1fr); }
+.ledger-group.is-word { grid-template-columns: 104px minmax(0, 1fr); }
+.ledger-head h2 { margin: 0; color: var(--accent); font-size: 40px; font-weight: 700; line-height: 1; }
+.ledger-group.is-word .ledger-head h2 { font-size: 18px; line-height: 1.4; }
+.ledger-head .meta { display: block; margin-top: 6px; }
+.ledger-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 36px; align-items: start; padding: 18px 0; border-top: 1px solid var(--line); }
+.ledger-row:first-child { padding-top: 4px; border-top: 0; }
+.ledger-row h3 { margin: 0 0 6px; font-size: var(--t-list); font-weight: 600; line-height: 1.45; }
+.ledger-row h3 a { color: var(--ink); }
+.ledger-row .meta { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.ledger-row .summary { display: -webkit-box; margin: 0; overflow: hidden; color: var(--muted); font-size: 16px; line-height: 1.75; -webkit-box-orient: vertical; -webkit-line-clamp: 3; } /* 목록에서는 세 줄까지. 긴 요약은 노트 안에서 읽는다. */
+@media (max-width: 720px) {
+  .ledger-group, .ledger-group.is-year, .ledger-group.is-word { grid-template-columns: 1fr; gap: 12px; margin-top: 22px; }
+  .ledger-head { display: flex; align-items: baseline; gap: 10px; }
+  .ledger-head h2 { font-size: 30px; }
+  .ledger-group.is-word .ledger-head h2 { font-size: 17px; }
+  .ledger-head .meta { margin-top: 0; }
+  .ledger-row { grid-template-columns: 1fr; gap: 8px; padding: 16px 0; }
+  .ledger-row h3 { font-size: 18px; }
+  .ledger-row .summary { font-size: 15px; }
+}
 .scroll-list { position: relative; }
 .scroll-list.is-long .side-list { max-height: 236px; overflow-y: auto; padding-right: 6px; scrollbar-gutter: stable; }
 .scroll-list.is-long::after { position: absolute; right: 0; bottom: 0; left: 0; height: 36px; pointer-events: none; background: linear-gradient(180deg, rgba(247,247,242,0) 0%, var(--paper) 100%); content: ""; }
