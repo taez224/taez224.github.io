@@ -21,6 +21,9 @@ const topics = note.publicTags.slice(0, 2).map(displayTag);
 const parent = parentLink(note, mapNode?.mapKey);
 const parentUrl = withBase(parent.path);
 const series = note.kind === 'blog' ? seriesNeighbors(note, garden.blog.series) : null;
+const hasSeriesNav = Boolean(series && (series.prev || series.next));
+// 노트(Slipbox)는 사이드바의 "생각 지도에서 보기"가 같은 곳으로 가므로 본문 끝에 목록 링크를 두지 않는다.
+const endLink = note.kind === 'slipbox' ? null : parent.listLabel;
 const siteBase = String(garden.config.basePath ?? '').replace(/\/$/, '');
 const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slice(siteBase.length) : note.url;
 ---
@@ -40,13 +43,13 @@ const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slic
         <a class="btn" href={series.first.url}>1편부터 읽기 <span aria-hidden="true">→</span></a>
       </nav>}
       <div class="body"><Content /></div>
-      <nav class="note-end" aria-label="이어서 읽기">
-        {series && (series.prev || series.next) && <div class:list={['series-links', { 'is-single': !series.prev || !series.next }]}>
+      {(hasSeriesNav || endLink) && <nav class="note-end" aria-label="이어서 읽기">
+        {hasSeriesNav && <div class:list={['series-links', { 'is-single': !series.prev || !series.next }]}>
           {series.prev && <a class="series-link" href={series.prev.url}><span class="series-direction"><span aria-hidden="true">←</span> 이전 편</span><span class="series-title">{series.prev.title}</span></a>}
           {series.next && <a class="series-link is-next" href={series.next.url}><span class="series-direction">{series.isHub ? '1편부터 읽기' : '다음 편'} <span aria-hidden="true">→</span></span><span class="series-title">{series.next.title}</span></a>}
         </div>}
-        <a class="end-link" href={parentUrl}>{parent.listLabel}</a>
-      </nav>
+        {endLink && <a class="end-link" href={parentUrl}>{endLink}</a>}
+      </nav>}
     </article>
     <NoteSidebar note={note} headings={note.headings} outgoing={outgoing} incoming={incoming} mapUrl={mapUrl} series={series} />
   </div>
@@ -60,14 +63,16 @@ const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slic
   .series-start { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin: -12px 0 36px; padding: 22px 24px; border-left: 3px solid var(--accent); background: var(--accent-soft); }
   .series-start p { margin: 4px 0 0; font-size: 16px; line-height: 1.5; }
   .series-start .btn { flex-shrink: 0; gap: 14px; }
-  /* 이전·다음 편 카드: 화살표는 라벨 옆에 붙이고, 다음 편만 채워 강조한다. */
+  /* 이전·다음 편 카드: 둘 다 얇은 선과 종이색만 쓴다. 채움이나 강조 테두리는 호버·포커스에서만 나타나 카드가 본문 톤에서 튀지 않는다. */
   .series-links { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
   .series-links.is-single { grid-template-columns: 1fr; }
-  .series-link { display: flex; flex-direction: column; gap: 8px; padding: 16px 20px; border: 1px solid var(--line); border-radius: 4px; background: var(--paper-strong); color: var(--ink); }
-  .series-link:hover { border-color: var(--accent); text-decoration: none; }
-  .series-link.is-next { align-items: flex-end; text-align: right; background: var(--accent-soft); border-color: var(--accent); }
-  .series-direction { color: var(--accent); font-size: 14px; font-weight: 650; }
-  .series-title { font-family: var(--display); font-size: 18px; line-height: 1.5; letter-spacing: -.01em; }
+  .series-link { display: flex; flex-direction: column; gap: 6px; padding: 14px 18px; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--ink); transition: border-color .15s ease, background-color .15s ease; }
+  .series-link:hover, .series-link:focus-visible { border-color: var(--accent); background: var(--accent-soft); text-decoration: none; outline: none; }
+  .series-link:hover .series-title, .series-link:focus-visible .series-title { color: var(--accent); }
+  .series-link.is-next { align-items: flex-end; text-align: right; }
+  .series-direction { color: var(--muted); font-size: var(--t-meta); font-weight: 500; }
+  /* 제목은 소제목이 아니라 내비게이션이므로 사이드바 목록과 같은 고딕 15px */
+  .series-title { font-size: 15px; font-weight: 600; line-height: 1.5; transition: color .15s ease; }
   .end-link { align-self: flex-start; font-size: var(--t-side); }
   .note-title { margin: 0 0 40px; font-size: var(--t-h1); line-height: 1.3; letter-spacing: -.03em; }
   .body { font-size: var(--t-body); line-height: 1.85; }
@@ -100,8 +105,8 @@ const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slic
   .body .callout-warning, .body .callout-danger, .body .callout-failure { border-left-color: #a66a38; background: #f3e9db; }
   .body .callout-bug { border-left-color: #9c6e6e; background: #f3e3e2; }
   @media (max-width: 1000px) {
-    .note-view { grid-template-columns: minmax(0, 720px); }
-    .note-side { position: static; max-height: none; overflow: visible; border-top: 1px solid var(--line); padding-top: 28px; }
+    .note-view { grid-template-columns: minmax(0, 720px); gap: 20px; }
+    .note-side { position: static; max-height: none; overflow: visible; padding-top: 0; } /* 경계선은 로컬 그래프의 위 테두리가 맡고, 간격은 첫 블록의 위 여백이 맡는다 */
     .note-side .rail { display: none; }
   }
   @media (max-width: 720px) {
