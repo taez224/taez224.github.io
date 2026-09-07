@@ -53,10 +53,12 @@ main { min-height: 60vh; }
 @media (max-width: 720px) {
   .wrap { width: calc(100% - 40px); }
   body { font-size: 16px; }
-  .site-header .wrap { display: grid; grid-template-columns: 1fr auto; height: auto; align-items: center; }
-  .wordmark { grid-row: 1; grid-column: 1; font-size: 20px; padding: 18px 0; }
-  .search-trigger { grid-row: 1; grid-column: 2; margin-right: -12px; }
-  .site-nav { grid-row: 2; grid-column: 1 / -1; justify-content: flex-end; gap: 22px; height: 46px; margin-left: 0; }
+  /* 헤더는 한 줄. 워드마크·내비·검색이 320px 폭에서도 줄바꿈 없이 들어간다. */
+  .site-header .wrap { height: 56px; }
+  .wordmark { font-size: 20px; }
+  .site-nav { gap: 14px; font-size: 14px; }
+  .site-nav a { white-space: nowrap; }
+  .search-trigger { margin-left: 6px; margin-right: -12px; }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

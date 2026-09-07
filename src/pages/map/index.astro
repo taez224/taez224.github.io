@@ -48,6 +48,7 @@ const topics = Object.keys(GRAPH_COLORS).map((t) => ({ name: t, color: GRAPH_COL
   .map-toolbar .legend { flex: 1 1 auto; gap: 4px 12px; margin-top: 0; min-width: 0; }
   .map-toolbar .legend-item { gap: 5px; padding: 4px 4px; white-space: nowrap; }
   .graph-box { position: relative; }
+  .map-stage { min-width: 0; } /* 그리드 아이템이 범례의 min-content 폭으로 늘어나 페이지가 넘치지 않게 */
   .graph-controls { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper-strong); }
   .graph-controls button { border: 0; }
   .hubs-button { display: none; }
@@ -63,9 +64,13 @@ const topics = Object.keys(GRAPH_COLORS).map((t) => ({ name: t, color: GRAPH_COL
     .graph-box { width: 100vw; margin-left: calc(50% - 50vw); height: 60vh; }
     .graph-controls button { min-width: 40px; min-height: 40px; }
     .hubs-button { display: inline-flex; flex: 0 0 auto; }
-    .map-toolbar { align-items: flex-start; }
-    .map-toolbar .legend-item { min-height: 36px; }
-
+    /* 범례는 한 줄 가로 스크롤. 참조·역참조 선 범례는 빼고 오른쪽 끝을 옅게 해 더 있음을 알린다. */
+    .map-toolbar { align-items: center; gap: 8px; }
+    .map-toolbar .legend { flex-wrap: nowrap; gap: 4px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); }
+    .map-toolbar .legend::-webkit-scrollbar { display: none; }
+    .map-toolbar .legend::after { flex: 0 0 24px; content: ""; }
+    .map-toolbar span.legend-item, .map-toolbar .legend-sep { display: none; }
+    .map-toolbar .legend-item { flex: 0 0 auto; min-height: 36px; }
   }
 </style>
 <script src="../../scripts/map.js"></script>
