@@ -11,9 +11,11 @@ const groups = ['Concepts', 'Troubleshooting', 'Tools'].map((id) => ({ id, label
 <Shell title="개발 노트" description="개발하며 배운 개념과 해결한 문제, 도구 기록." path="/dev/" active="dev">
   <div class="wrap dev-page">
     <div class="page-head"><h1 class="display">개발 노트</h1><span class="meta">{records.length}개</span></div>
-    {groups.map((g) => <section class="ledger-group is-word" aria-label={g.label}>
+    <!-- 페이지의 지도: 첫 화면에서 세 분류가 다 보이고, 누르면 그 장부로 내려간다. 아래 분류가 두 화면 밑으로 밀리는 문제를 푼다. -->
+    <nav class="cat-index meta" aria-label="분류">{groups.map((g, i) => <>{i > 0 && <span class="sep">·</span>}<a href={`#${g.id.toLowerCase()}`}>{g.label} <span class="count">{g.records.length}</span></a></>)}</nav>
+    {groups.map((g) => <section class="ledger-group is-word" id={g.id.toLowerCase()} aria-label={g.label}>
       <div class="ledger-head"><h2 class="display">{g.label}</h2><span class="meta">{g.records.length}개</span></div>
-      <div class="ledger-rows">{g.records.map((r) => <article class="ledger-row">
+      <div class="ledger-rows">{g.records.map((r) => <article class="ledger-row is-compact">
         <div>
           <h3><a href={r.url}>{r.title}</a></h3>
           <div class="meta">{technologyTags(r.tags).length > 0 && <span>{technologyTags(r.tags).join(' · ')}</span>}{r.date && <time datetime={r.date}>{formatDate(r.date)}</time>}</div>
@@ -27,4 +29,8 @@ const groups = ['Concepts', 'Troubleshooting', 'Tools'].map((id) => ({ id, label
   .dev-page { padding: 36px 0 96px; }
   .page-head { display: flex; align-items: baseline; gap: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
   .page-head h1 { margin: 0; font-size: 28px; line-height: 1.4; }
+  .cat-index { display: flex; flex-wrap: wrap; gap: 6px 10px; padding: 14px 0 0; }
+  .cat-index a { color: var(--ink); }
+  .cat-index .sep { color: var(--faint); }
+  .ledger-group { scroll-margin-top: 96px; }
 </style>
