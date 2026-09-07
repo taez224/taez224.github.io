@@ -80,7 +80,9 @@ checks.push(async () => {
   check(home.includes('생각의 정원으로'), 'index: 생각의 정원 버튼 없음');
   check(!home.includes('Velog'), 'index: Velog 링크 잔존');
   check(!/노트 \d+개 · 연결 \d+개/.test(home.replace(/alt="[^"]*"/g, '')), 'index: 히어로 집계 잔존');
-  check((home.match(/<li>/g) || []).length === 8 || (home.match(/<li /g) || []).length === 8, 'index: 최근 기록이 8개가 아니다');
+  const recentRows = (home.match(/<li>/g) || []).length + (home.match(/<li /g) || []).length;
+  check(recentRows === 3, `index: 최근 기록은 종류별 한 편(3개)이어야 하는데 ${recentRows}개`);
+  for (const label of ['>노트</a>', '>개발 노트</a>', '>글</a>']) check(home.includes(label), `index: 최근 기록에 ${label.slice(1, -4)} 링크 없음`);
 });
 checks.push(async () => {
   const map = await read('map/index.html');
