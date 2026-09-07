@@ -119,6 +119,11 @@ function numberValue(value) {
   return Number.isFinite(number) ? number : 0;
 }
 
+function stringList(value) {
+  const values = Array.isArray(value) ? value : value ? [value] : [];
+  return values.map((item) => String(item).trim()).filter(Boolean);
+}
+
 function bookTier(rate) {
   return ({ 5: 'S', 4: 'A', 3: 'B', 2: 'C', 1: 'D' })[Math.floor(rate)] ?? '미분류';
 }
@@ -135,7 +140,7 @@ function kindFor(relativePath) {
 }
 
 function displayTitleFor(relativePath, title) {
-  return relativePath === '01_Slipbox/생각의 정원.md' ? '시작점' : title;
+  return title;
 }
 
 function publicUrl(value, fallback) {
@@ -410,9 +415,11 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
       displayTitle: displayTitleFor(relativePath, title),
       kind,
       category: kind === 'development' ? developmentCategory(relativePath) : null,
+      isEntry: relativePath === config.entry,
       status: String(note.meta.status ?? ''),
       type: String(note.meta.type ?? ''),
       tags: Array.isArray(note.meta.tags) ? note.meta.tags : [],
+      aliases: stringList(note.meta.aliases),
       slug: slugByPath.get(relativePath),
       publicTags: publicTags(Array.isArray(note.meta.tags) ? note.meta.tags : []),
       bodyText: plainText(publicBody(kind, note.body)),
@@ -627,6 +634,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
       kind: entry.kind,
       status: entry.status,
       type: entry.type,
+      isEntry: Boolean(entry.isEntry),
       tags: entry.tags,
       topic: entry.topic,
       date: entry.date,

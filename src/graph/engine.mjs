@@ -159,8 +159,9 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
       const p = positions.get(node.id);
       if (!p) continue;
       const r = radius(node);
-      const g = el('g', { class: 'node', 'data-id': node.id, tabindex: '0', role: 'button', 'aria-pressed': 'false', 'aria-label': cleanTitle(node.displayTitle ?? node.title) });
-      if (node.type === 'hub') g.append(el('circle', { class: 'hub-ring', cx: p.x, cy: p.y, r: (r + 6).toFixed(1) }));
+      const g = el('g', { class: `node${node.isEntry ? ' is-entry' : ''}`, 'data-id': node.id, tabindex: '0', role: 'button', 'aria-pressed': 'false', 'aria-label': cleanTitle(node.displayTitle ?? node.title) });
+      if (node.isEntry) g.append(el('circle', { class: 'entry-halo', cx: p.x, cy: p.y, r: (r + 11).toFixed(1) }));
+      if (node.type === 'hub') g.append(el('circle', { class: 'hub-ring', cx: p.x, cy: p.y, r: (r + 7).toFixed(1) }));
       g.append(el('circle', { class: 'hit', cx: p.x, cy: p.y, r: Math.max(22, r), fill: 'transparent' }));
       g.append(el('circle', { class: 'dot', cx: p.x, cy: p.y, r: r.toFixed(1), fill: topicColor(node.topic) }));
       g.append(el('circle', { class: 'select-ring', cx: p.x, cy: p.y, r: (r + 8).toFixed(1) }));
@@ -232,7 +233,7 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
         const lines = wrapLabel(cleanTitle(node.displayTitle ?? node.title));
         const g = labelGeometry(node, p, lines, placement, u);
         const topicDim = outOfFilter(id);
-        const text = el('text', { class: `label${id === state.selected ? ' is-selected' : ''}${id === state.hovered ? ' is-hovered' : ''}${topicDim ? ' is-topic-dim' : ''}`, 'data-for': id, x: g.x.toFixed(1), y: g.y.toFixed(1), 'text-anchor': g.anchor });
+        const text = el('text', { class: `label${node.isEntry ? ' is-entry' : ''}${id === state.selected ? ' is-selected' : ''}${id === state.hovered ? ' is-hovered' : ''}${topicDim ? ' is-topic-dim' : ''}`, 'data-for': id, x: g.x.toFixed(1), y: g.y.toFixed(1), 'text-anchor': g.anchor });
         lines.forEach((line, index) => { const tspan = el('tspan', { x: g.x.toFixed(1), dy: index === 0 ? 0 : (18 * u).toFixed(1) }); tspan.textContent = line; text.append(tspan); });
         labelLayer.append(text);
       }
@@ -251,7 +252,7 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
         ? (anchor === 'middle' ? p.y + r + 18 * u : p.y - ((lines.length - 1) * lineHeight) / 2 + 5 * u)
         : p.y + r + 18 * u;
       const topicDim = outOfFilter(id);
-      const text = el('text', { class: `label${id === state.selected ? ' is-selected' : ''}${id === state.hovered ? ' is-hovered' : ''}${topicDim ? ' is-topic-dim' : ''}`, 'data-for': id, x: labelX.toFixed(1), y: labelY.toFixed(1), 'text-anchor': anchor });
+      const text = el('text', { class: `label${node.isEntry ? ' is-entry' : ''}${id === state.selected ? ' is-selected' : ''}${id === state.hovered ? ' is-hovered' : ''}${topicDim ? ' is-topic-dim' : ''}`, 'data-for': id, x: labelX.toFixed(1), y: labelY.toFixed(1), 'text-anchor': anchor });
       if (multiLine) lines.forEach((line, index) => { const tspan = el('tspan', { x: labelX.toFixed(1), dy: index === 0 ? 0 : lineHeight.toFixed(1) }); tspan.textContent = line; text.append(tspan); });
       else text.textContent = lines[0];
       labelLayer.append(text);

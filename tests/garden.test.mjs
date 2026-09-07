@@ -25,7 +25,7 @@ const config = {
 };
 const files = {
   '01_Slipbox/생각 A.md': '---\ncreated: 2026-09-01\ntags:\n  - AI\n  - slipbox\n  - 프로젝트/비공개\n---\n# 생각 A\n본문 A는 [[생각 B]]를 참조한다.\n\n![[reviewed.svg]]',
-  '01_Slipbox/생각 B.md': '---\ncreated: 2026-09-02\nsummary: B 요약\n---\n# 생각 B\n혼자 있는 문장 UNIQUE_BODY_WORD.',
+  '01_Slipbox/생각 B.md': '---\ncreated: 2026-09-02\nsummary: B 요약\naliases:\n  - 별칭 B\n---\n# 생각 B\n혼자 있는 문장 UNIQUE_BODY_WORD.',
   '20_Projects/blog/공개 글.md': '---\ncreated: 2026-09-03\nstatus: published\nsource: https://example.com/post\npublication: Nextree\nsummary: 글 요약\ntags:\n  - blog\n  - AI/에이전트\n---\n# 공개 글\n[[생각 A]]를 인용한다.',
   '20_Projects/blog/초안.md': '---\nstatus: draft\n---\n# 초안\nDRAFT_SENTINEL',
   [`${dev}/Concepts/연결된 개념.md`]: '---\ncreated: 2026-09-04\nsummary: 개념 요약\ntags:\n  - 개발/설계\n---\n# 연결된 개념\n[[생각 A]]에서 출발.',
@@ -53,6 +53,7 @@ test('assembleGarden publishes reviewed notes with slug urls and no private stri
   assert.deepEqual(a.outgoing, ['01_Slipbox/생각 B.md']);
   assert.deepEqual(byPath.get('01_Slipbox/생각 B.md').incoming.sort(), ['01_Slipbox/생각 A.md']);
   assert.match(byPath.get('01_Slipbox/생각 B.md').bodyText, /UNIQUE_BODY_WORD/);
+  assert.deepEqual(byPath.get('01_Slipbox/생각 B.md').aliases, ['별칭 B']);
   assert.equal(JSON.stringify(garden).includes('DRAFT_SENTINEL'), false);
   assert.equal(JSON.stringify(garden).includes('WITHHELD_SENTINEL'), false);
   assert.equal(garden.assetCopies.get('_attachments/reviewed.svg'), 'assets/vault/_attachments/reviewed.svg');

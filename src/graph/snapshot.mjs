@@ -5,7 +5,7 @@ const escape = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': 
 
 export function renderSnapshotSvg(nodes, edges, positions, { width, height, font = 14, strokeWidth = 1.1, radiusScale = 1 } = {}) {
   const at = (id) => positions.get(id);
-  let out = `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="노트 지도"><g stroke="#9aab9d" stroke-width="${strokeWidth}" stroke-opacity=".55">`;
+  let out = `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="생각 지도"><g stroke="#9aab9d" stroke-width="${strokeWidth}" stroke-opacity=".55">`;
   for (const edge of edges) { const a = at(edge.source), b = at(edge.target); if (a && b) out += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"></line>`; }
   out += '</g><g>';
   for (const node of nodes) {

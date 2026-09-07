@@ -10,6 +10,15 @@ const read = (file) => fs.readFile(path.join(dist, file), 'utf8');
 const exists = async (file) => fs.access(path.join(dist, file)).then(() => true, () => false);
 function check(condition, message) { if (!condition) failures.push(message); }
 
+// 공유 카드는 1200×630 PNG여야 한다. 잘린 파일이나 빈 파일은 서명·IHDR에서 걸린다.
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+async function checkCard(file) {
+  const buffer = await fs.readFile(path.join(dist, file)).catch(() => null);
+  if (!buffer) { failures.push(`og 이미지 없음: ${file}`); return; }
+  const png = buffer.length >= 24 && buffer.subarray(0, 8).equals(PNG_SIGNATURE) && buffer.toString('ascii', 12, 16) === 'IHDR';
+  check(png && buffer.readUInt32BE(16) === 1200 && buffer.readUInt32BE(20) === 630, `og 이미지 손상(1200×630 PNG 아님): ${file}`);
+}
+
 export async function checkShell(file) {
   const html = await read(file);
   check(/<title>[^<]+<\/title>/.test(html), `${file}: <title> 없음`);
@@ -62,12 +71,13 @@ checks.push(async () => {
   // 노트마다 공유 카드 이미지가 있어야 한다.
   const site = JSON.parse(await read('data/site.json'));
   const prefixes = { blog: 'posts', slipbox: 'notes', development: 'dev' };
-  for (const note of site.notes) check(await exists(`og/${prefixes[note.kind]}/${note.slug}.png`), `og 이미지 없음: ${note.slug}`);
+  for (const note of site.notes) await checkCard(`og/${prefixes[note.kind]}/${note.slug}.png`);
+  await checkCard('og/site.png');
 });
 checks.push(async () => {
   for (const file of ['rss.xml', 'feeds/posts.xml', 'feeds/notes.xml', 'favicon.svg', 'og/site.png', 'apple-touch-icon.png', 'robots.txt', 'assets/graph-snapshot.svg', 'map/index.html', '404.html']) check(await exists(file), `${file} 없음`);
   const home = await read('index.html');
-  check(home.includes('노트 지도 열기'), 'index: 지도 버튼 없음');
+  check(home.includes('생각의 정원으로'), 'index: 생각의 정원 버튼 없음');
   check(!home.includes('Velog'), 'index: Velog 링크 잔존');
   check(!/노트 \d+개 · 연결 \d+개/.test(home.replace(/alt="[^"]*"/g, '')), 'index: 히어로 집계 잔존');
   check((home.match(/<li>/g) || []).length === 8 || (home.match(/<li /g) || []).length === 8, 'index: 최근 기록이 8개가 아니다');

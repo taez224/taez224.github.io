@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parentLink, seriesNeighbors } from '../src/lib/note-nav.mjs';
 
-test('parentLink: 글은 글 목록, 개발 노트는 개발 노트 목록, 노트는 지도(이 노트 선택)로 간다', () => {
+test('parentLink: 글은 글 목록, 개발 노트는 개발 노트 목록, 노트는 생각 지도(이 노트 선택)로 간다', () => {
   assert.deepEqual(parentLink({ kind: 'blog' }), { label: '글', path: '/posts/', listLabel: '글 목록' });
   assert.deepEqual(parentLink({ kind: 'development', category: 'Concepts' }), { label: '개념·설계', path: '/dev/', listLabel: '개발 노트 목록' });
-  assert.deepEqual(parentLink({ kind: 'slipbox' }, 'notes/ai-활용'), { label: '노트', path: '/map/?node=notes%2Fai-%ED%99%9C%EC%9A%A9', listLabel: '노트 지도' });
+  assert.deepEqual(parentLink({ kind: 'slipbox' }, 'notes/ai-활용'), { label: '노트', path: '/map/?node=notes%2Fai-%ED%99%9C%EC%9A%A9', listLabel: '생각 지도' });
   assert.equal(parentLink({ kind: 'slipbox' }).path, '/map/');
 });
 

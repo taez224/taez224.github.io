@@ -6,18 +6,40 @@ export function matchRecord(record, terms) {
   if (!terms.length) return null;
   const fields = {
     title: record.title.toLowerCase(),
+    aliases: (record.aliases ?? []).join(' ').toLowerCase(),
     summary: (record.summary ?? '').toLowerCase(),
     tags: (record.tags ?? []).join(' ').toLowerCase(),
     headings: (record.headings ?? []).join(' ').toLowerCase(),
     text: (record.text ?? '').toLowerCase()
   };
+  const priorities = [
+    ['title', 8],
+    ['aliases', 6],
+    ['summary', 4],
+    ['headings', 4],
+    ['tags', 3],
+    ['text', 1]
+  ];
+  const phraseBonuses = {
+    title: 10,
+    aliases: 8,
+    summary: 6,
+    headings: 6,
+    tags: 4,
+    text: 2
+  };
   let score = 0;
   let firstBodyIndex = -1;
   for (const term of terms) {
-    if (fields.title.includes(term)) score += 3;
-    else if (fields.summary.includes(term) || fields.tags.includes(term) || fields.headings.includes(term)) score += 2;
-    else if (fields.text.includes(term)) { score += 1; if (firstBodyIndex < 0) firstBodyIndex = fields.text.indexOf(term); }
-    else return null;
+    const match = priorities.find(([field]) => fields[field].includes(term));
+    if (!match) return null;
+    score += match[1];
+    if (match[0] === 'text' && firstBodyIndex < 0) firstBodyIndex = fields.text.indexOf(term);
+  }
+  if (terms.length > 1) {
+    const phrase = terms.join(' ');
+    const phraseMatch = priorities.find(([field]) => fields[field].includes(phrase));
+    if (phraseMatch) score += phraseBonuses[phraseMatch[0]];
   }
   let snippet = '';
   if (firstBodyIndex >= 0) {

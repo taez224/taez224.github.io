@@ -5,12 +5,12 @@ import { getGarden } from '../../lib/get-garden.mjs';
 import { withBase, GRAPH_COLORS } from '../../lib/format.mjs';
 import '../../styles/graph.css';
 const { nodes, stats } = await getGarden();
-const hubs = nodes.filter((n) => n.type === 'hub');
+const startpoints = nodes.filter((n) => n.isEntry);
 const topics = Object.keys(GRAPH_COLORS).map((t) => ({ name: t, color: GRAPH_COLORS[t], count: nodes.filter((n) => n.topic === t).length })).filter((t) => t.count);
 ---
-<Shell title="노트 지도" description="노트를 고르고 연결된 생각을 따라가는 지도." path="/map/" active="map">
+<Shell title="생각 지도" description="노트를 고르고 연결된 생각을 따라가는 지도." path="/map/" active="map">
   <div class="wrap map-page" data-site={withBase('/data/site.json')}>
-    <div class="page-head"><h1 class="display">노트 지도</h1><span class="meta">노트 {stats.nodes} · 연결 {stats.edges}</span></div>
+    <div class="page-head"><h1 class="display">생각 지도</h1><span class="meta">노트 {stats.nodes} · 연결 {stats.edges}</span></div>
     <div class="map-layout">
       <div class="map-stage">
         <div class="map-toolbar">
@@ -21,10 +21,9 @@ const topics = Object.keys(GRAPH_COLORS).map((t) => ({ name: t, color: GRAPH_COL
             {topics.map((t) => <button type="button" class="legend-item" data-topic={t.name} aria-pressed="false"><i style={`width:10px;height:10px;border-radius:50%;background:${t.color}`}></i>{t.name}</button>)}
             <button type="button" class="legend-item" data-hub-filter aria-pressed="false"><i style="width:10px;height:10px;border-radius:50%;border:1.2px solid #315b48"></i>허브</button>
           </div>
-          <button type="button" data-open-hubs class="hubs-button">시작점</button>
         </div>
         <div class="graph-box">
-          <svg data-map role="group" aria-label="노트 지도. 노드를 고르면 오른쪽에 정보가 나타납니다."></svg>
+          <svg data-map role="group" aria-label="생각 지도. 노드를 고르면 오른쪽에 정보가 나타납니다."></svg>
           <div class="graph-controls" aria-label="확대·축소">
             <button type="button" data-graph-zoom="out" aria-label="축소">−</button>
             <button type="button" data-graph-zoom="fit">맞춤</button>
@@ -32,7 +31,7 @@ const topics = Object.keys(GRAPH_COLORS).map((t) => ({ name: t, color: GRAPH_COL
           </div>
         </div>
       </div>
-      <MapPanel hubs={hubs} />
+      <MapPanel hubs={startpoints} />
     </div>
   </div>
 </Shell>
@@ -51,7 +50,6 @@ const topics = Object.keys(GRAPH_COLORS).map((t) => ({ name: t, color: GRAPH_COL
   .map-stage { min-width: 0; } /* 그리드 아이템이 범례의 min-content 폭으로 늘어나 페이지가 넘치지 않게 */
   .graph-controls { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper-strong); }
   .graph-controls button { border: 0; }
-  .hubs-button { display: none; }
   @media (max-width: 999.98px) {
     .map-layout { grid-template-columns: 1fr; gap: 24px; }
     .graph-box { height: 60vh; min-height: 360px; }
@@ -63,7 +61,6 @@ const topics = Object.keys(GRAPH_COLORS).map((t) => ({ name: t, color: GRAPH_COL
     .map-page { padding-top: 16px; }
     .graph-box { width: 100vw; margin-left: calc(50% - 50vw); height: 60vh; }
     .graph-controls button { min-width: 40px; min-height: 40px; }
-    .hubs-button { display: inline-flex; flex: 0 0 auto; }
     /* 범례는 한 줄 가로 스크롤. 참조·역참조 선 범례는 빼고 오른쪽 끝을 옅게 해 더 있음을 알린다. */
     .map-toolbar { align-items: center; gap: 8px; }
     .map-toolbar .legend { flex-wrap: nowrap; gap: 4px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); }

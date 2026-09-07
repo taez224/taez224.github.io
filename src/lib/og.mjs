@@ -1,3 +1,6 @@
+import { createHash } from 'node:crypto';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { Resvg } from '@resvg/resvg-js';
 import { kindLabel, formatDate, cleanTitle } from './format.mjs';
 import { estimateTextWidth } from '../graph/engine.mjs';
@@ -5,9 +8,85 @@ import { localGraphLayout } from '../components/local-graph-layout.mjs';
 import { layoutGraph, nodeRadius } from '../graph/layout.mjs';
 import { topicColor } from './format.mjs';
 import { ensureOgFonts } from './og-fonts.mjs';
+import { projectPaths } from './get-garden.mjs';
 
 const PAPER = '#f7f7f2', INK = '#252e29', MUTED = '#626d64', FAINT = '#747c73', ACCENT = '#315b48', LINE = '#9aab9d';
 const esc = (value) => String(value).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+// ---- PNG 캐시 ----
+// 키는 최종 SVG 문자열 + 폰트 파일 정체 + resvg 버전에서 계산한다. 카드를 바꾸는 코드(템플릿·제목 접기·색상표·배치)는
+// 전부 SVG에 드러나므로 수동 버전 상수가 필요 없다. 폰트가 없어 시스템 폰트로 그린 폴백은 저장하지 않는다.
+const CARD = { width: 1200, height: 630 };
+const RENDER_OPTIONS = { fitTo: { mode: 'width', value: CARD.width } };
+const CACHE_MAX_AGE_DAYS = 14;
+const ogCacheDir = process.env.GARDEN_OG_CACHE_DIR || path.join(projectPaths().projectRoot, 'node_modules', '.cache', 'garden-og-images');
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+const digest = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
+
+// PNG 서명과 IHDR의 폭·높이. PNG가 아니거나 잘렸으면 null.
+export function pngDimensions(buffer) {
+  if (!buffer || buffer.length < 24 || !buffer.subarray(0, 8).equals(PNG_SIGNATURE) || buffer.toString('ascii', 12, 16) !== 'IHDR') return null;
+  return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
+}
+const isCard = (png) => { const d = pngDimensions(png); return Boolean(d && d.width === CARD.width && d.height === CARD.height); };
+
+// 빌드마다 처음 한 번, 오래 안 쓴 항목과 남은 임시 파일을 지운다. 적중한 파일은 mtime을 갱신하므로 계속 쓰는 카드는 남는다.
+export async function pruneOgCache({ dir = ogCacheDir, maxAgeDays = CACHE_MAX_AGE_DAYS } = {}) {
+  const cutoff = Date.now() - maxAgeDays * 86_400_000;
+  const names = await fs.readdir(dir).catch(() => []);
+  let removed = 0;
+  await Promise.all(names.map(async (name) => {
+    const file = path.join(dir, name);
+    const stat = await fs.stat(file).catch(() => null);
+    if (stat && (name.endsWith('.tmp') || stat.mtimeMs < cutoff)) { await fs.rm(file, { force: true }); removed++; }
+  }));
+  return removed;
+}
+
+let prunePromise = null;
+export async function cachedPng(key, render) {
+  await fs.mkdir(ogCacheDir, { recursive: true });
+  await (prunePromise ??= pruneOgCache());
+  const target = path.join(ogCacheDir, `${key}.png`);
+  try {
+    const png = await fs.readFile(target);
+    if (isCard(png)) { const now = new Date(); await fs.utimes(target, now, now).catch(() => {}); return png; }
+    await fs.rm(target, { force: true }); // 잘렸거나 PNG가 아니다. 다시 그린다.
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
+  const png = await render();
+  const tmp = `${target}.${process.pid}.tmp`;
+  await fs.writeFile(tmp, png);
+  await fs.rename(tmp, target);
+  return png;
+}
+
+let resvgVersionPromise = null;
+const resvgVersion = () => (resvgVersionPromise ??= fs.readFile(path.join(projectPaths().projectRoot, 'node_modules', '@resvg', 'resvg-js', 'package.json'), 'utf8')
+  .then((text) => JSON.parse(text).version).catch(() => 'unknown'));
+
+let fontsPromise = null;
+// 폰트 파일 경로와 정체(이름·크기). 없으면 null(로컬 폴백).
+const fonts = () => (fontsPromise ??= ensureOgFonts().then(async (files) => files
+  ? { files, meta: await Promise.all(files.map(async (file) => ({ name: path.basename(file), size: (await fs.stat(file)).size }))) }
+  : null));
+
+function renderPng(svg, fontFiles) {
+  const resvg = new Resvg(svg, {
+    ...RENDER_OPTIONS,
+    font: fontFiles ? { fontFiles, loadSystemFonts: false, defaultFontFamily: 'Pretendard' } : { loadSystemFonts: true, defaultFontFamily: 'Apple SD Gothic Neo' }
+  });
+  return resvg.render().asPng();
+}
+
+async function renderCard(svg) {
+  const font = await fonts();
+  if (!font) return renderPng(svg, null);
+  const key = digest({ svg, render: RENDER_OPTIONS, fonts: font.meta, resvg: await resvgVersion() });
+  return cachedPng(key, () => renderPng(svg, font.files));
+}
 
 // 단어 단위로 접되, 한 단어가 폭을 넘으면 글자 단위로 자른다.
 function wrapToWidth(text, fontSize, maxWidth) {
@@ -63,20 +142,12 @@ ${lines.map((line, index) => `<text x="72" y="${firstBaseline + index * lineHeig
 </svg>`;
 }
 
-let fontsPromise = null;
 export async function renderOgPng(garden, notePath, { siteLabel }) {
   const byPath = new Map(garden.notes.map((n) => [n.path, n]));
   const note = byPath.get(notePath);
   if (!note) throw new Error(`OG: unknown note ${notePath}`);
   const resolve = (paths) => paths.map((p) => byPath.get(p)).filter(Boolean);
-  const svg = ogSvg({ note, outgoing: resolve(note.outgoing), incoming: resolve(note.incoming), siteLabel });
-  fontsPromise ??= ensureOgFonts();
-  const fontFiles = await fontsPromise;
-  const resvg = new Resvg(svg, {
-    fitTo: { mode: 'width', value: 1200 },
-    font: fontFiles ? { fontFiles, loadSystemFonts: false, defaultFontFamily: 'Pretendard' } : { loadSystemFonts: true, defaultFontFamily: 'Apple SD Gothic Neo' }
-  });
-  return resvg.render().asPng();
+  return renderCard(ogSvg({ note, outgoing: resolve(note.outgoing), incoming: resolve(note.incoming), siteLabel }));
 }
 
 // 사이트 카드: 홈·목록·지도처럼 노트가 아닌 페이지에 쓴다. 오른쪽에 전체 노트 지도를 얹는다.
@@ -100,12 +171,5 @@ ${lines.map((line, index) => `<text x="72" y="${firstBaseline + index * lineHeig
 }
 
 export async function renderSiteOgPng(garden, { title, siteLabel }) {
-  const svg = siteSvg({ garden, title, siteLabel });
-  fontsPromise ??= ensureOgFonts();
-  const fontFiles = await fontsPromise;
-  const resvg = new Resvg(svg, {
-    fitTo: { mode: 'width', value: 1200 },
-    font: fontFiles ? { fontFiles, loadSystemFonts: false, defaultFontFamily: 'Pretendard' } : { loadSystemFonts: true, defaultFontFamily: 'Apple SD Gothic Neo' }
-  });
-  return resvg.render().asPng();
+  return renderCard(siteSvg({ garden, title, siteLabel }));
 }

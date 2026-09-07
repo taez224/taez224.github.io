@@ -2,6 +2,7 @@
   "basePath": "/obsidian",
   "depth": 2,
   "maxGraphNodes": 80,
+  "entry": "01_Slipbox/생각의 정원.md",
   "home": {
     "about": "AI 시대에 개발자로 일하며 배운 개념과 기술, 그 과정에서 든 생각, 발행한 글과 읽은 책을 적어 두는 개인 위키입니다.",
     "featured": [
@@ -79,7 +80,7 @@
   "seeds": [
     "01_Slipbox/생각의 정원.md",
     "01_Slipbox/AI 활용.md",
-    "01_Slipbox/나의 일하는 방식.md"
+    "01_Slipbox/나를 이해하기.md"
   ],
   "paths": [
     {

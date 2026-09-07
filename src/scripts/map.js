@@ -46,6 +46,8 @@ let lastFocus = null;
 function syncSheet() {
   const open = narrow.matches && 'open' in panel.dataset;
   if (backdrop) backdrop.hidden = !open;
+  // 닫힌 시트는 화면 밖으로 밀려 있을 뿐이라 inert로 포커스·접근성 트리에서도 뺀다. 데스크톱 패널은 항상 보이므로 그대로.
+  panel.toggleAttribute('inert', narrow.matches && !open);
   if (open && !panel.hasAttribute('role')) {
     lastFocus = document.activeElement;
     panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-modal', 'true'); panel.setAttribute('aria-label', '노트 정보');
@@ -103,13 +105,13 @@ document.querySelector('[data-graph-zoom="in"]').addEventListener('click', () =>
 document.querySelector('[data-graph-zoom="out"]').addEventListener('click', () => graph.zoom(1 / 1.25));
 document.querySelector('[data-graph-zoom="fit"]').addEventListener('click', () => graph.fit(true));
 document.querySelector('[data-panel-close]')?.addEventListener('click', closeSheet);
-document.querySelector('[data-open-hubs]')?.addEventListener('click', () => { graph.select(null); body.innerHTML = emptyPanel; panel.dataset.open = ''; syncSheet(); });
 backdrop?.addEventListener('click', closeSheet);
 narrow.addEventListener('change', syncSheet);
 document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && narrow.matches && 'open' in panel.dataset) closeSheet(); });
 window.addEventListener('resize', () => graph.fit());
 
 applyFilter();
+syncSheet();
 graph.fit();
 const initial = byMapKey.get(new URLSearchParams(window.location.search).get('node') ?? '');
 if (initial) select(initial.id, false);

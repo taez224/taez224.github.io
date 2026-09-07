@@ -72,6 +72,8 @@ const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slic
   .note-title { margin: 0 0 40px; font-size: var(--t-h1); line-height: 1.3; letter-spacing: -.03em; }
   .body { font-size: var(--t-body); line-height: 1.85; }
   .body p { margin: 0 0 22px; }
+  /* 본문의 외부 링크는 사이트 다른 곳(발행처·출처)과 같이 ↗를 붙여 노트 링크와 구분한다. */
+  .body a[href^="http"]::after { content: "↗"; margin-left: .15em; font-size: .78em; vertical-align: .1em; }
   .body h2, .body h3, .body h4 { font-family: var(--display); font-weight: 700; letter-spacing: -.02em; scroll-margin-top: 110px; }
   .body h2 { margin: 44px 0 14px; font-size: 26px; line-height: 1.4; }
   .body h3 { margin: 32px 0 10px; font-size: 21px; }
