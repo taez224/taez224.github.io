@@ -29,8 +29,10 @@ const groups = ['Concepts', 'Troubleshooting', 'Tools'].map((id) => ({ id, label
   .dev-page { padding: 36px 0 96px; }
   .page-head { display: flex; align-items: baseline; gap: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
   .page-head h1 { margin: 0; font-size: 28px; line-height: 1.4; }
-  .cat-index { display: flex; flex-wrap: wrap; gap: 6px 10px; padding: 14px 0 0; }
-  .cat-index a { color: var(--ink); }
-  .cat-index .sep { color: var(--faint); }
+  .cat-index { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 14px 0 2px; }
+  .cat-index a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--line); text-decoration-thickness: 1px; text-underline-offset: 4px; transition: text-decoration-color .15s ease; }
+  .cat-index a:hover, .cat-index a:focus-visible { text-decoration-color: var(--ink); }
+  .cat-index .count { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .cat-index .sep { color: var(--line); }
   .ledger-group { scroll-margin-top: 96px; }
 </style>
