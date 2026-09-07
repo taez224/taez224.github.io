@@ -10,7 +10,7 @@ import { topicColor } from './format.mjs';
 import { ensureOgFonts } from './og-fonts.mjs';
 import { projectPaths } from './get-garden.mjs';
 
-const PAPER = '#f7f7f2', INK = '#252e29', MUTED = '#626d64', FAINT = '#747c73', ACCENT = '#315b48', LINE = '#9aab9d';
+const PAPER = '#f7f7f2', INK = '#252e29', MUTED = '#626d64', FAINT = '#747c73', ACCENT = '#252e29', LINE = '#9aab9d';
 const esc = (value) => String(value).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
 // ---- PNG 캐시 ----
@@ -134,9 +134,9 @@ export function ogSvg({ note, outgoing, incoming, siteLabel }) {
     : `<circle cx="${n.x}" cy="${n.y}" r="9" fill="${n.color}" stroke="${PAPER}" stroke-width="3"/>`).join('');
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
 <rect width="1200" height="630" fill="${PAPER}"/>
-<text x="72" y="94" font-family="Noto Serif KR" font-weight="700" font-size="34" fill="${INK}">TaeZ</text>
+<text x="72" y="94" font-family="Gowun Batang" font-weight="700" font-size="34" fill="${INK}">TaeZ</text>
 <g transform="translate(740 115)">${edges}${nodes}</g>
-${lines.map((line, index) => `<text x="72" y="${firstBaseline + index * lineHeight}" font-family="Noto Serif KR" font-weight="700" font-size="${size}" letter-spacing="-1.5" fill="${INK}">${esc(line)}</text>`).join('\n')}
+${lines.map((line, index) => `<text x="72" y="${firstBaseline + index * lineHeight}" font-family="Gowun Batang" font-weight="700" font-size="${size}" letter-spacing="-1.5" fill="${INK}">${esc(line)}</text>`).join('\n')}
 <text x="72" y="560" font-family="Pretendard" font-size="26" fill="${MUTED}">${esc(meta)}</text>
 <text x="1128" y="560" text-anchor="end" font-family="Pretendard" font-size="22" fill="${FAINT}">${esc(siteLabel)}</text>
 </svg>`;
@@ -163,9 +163,9 @@ export function siteSvg({ garden, title, siteLabel }) {
   const firstBaseline = Math.round((630 - blockHeight) / 2 + size * 0.9);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
 <rect width="1200" height="630" fill="${PAPER}"/>
-<text x="72" y="94" font-family="Noto Serif KR" font-weight="700" font-size="34" fill="${INK}">TaeZ</text>
+<text x="72" y="94" font-family="Gowun Batang" font-weight="700" font-size="34" fill="${INK}">TaeZ</text>
 <g transform="translate(700 95)">${edges}${nodes}</g>
-${lines.map((line, index) => `<text x="72" y="${firstBaseline + index * lineHeight}" font-family="Noto Serif KR" font-weight="700" font-size="${size}" letter-spacing="-2" fill="${INK}">${esc(line)}</text>`).join('\n')}
+${lines.map((line, index) => `<text x="72" y="${firstBaseline + index * lineHeight}" font-family="Gowun Batang" font-weight="700" font-size="${size}" letter-spacing="-2" fill="${INK}">${esc(line)}</text>`).join('\n')}
 <text x="1128" y="560" text-anchor="end" font-family="Pretendard" font-size="22" fill="${FAINT}">${esc(siteLabel)}</text>
 </svg>`;
 }

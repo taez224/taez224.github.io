@@ -19,7 +19,7 @@ const blocks = [block('참조', 'out', outgoing), block('역참조', 'in', incom
   {blocks.map((b) => <section class="list-block">
     <div class="meta"><Icon name={b.icon} />{b.label}<span class="count">{b.items.length}</span></div>
     <div class:list={['scroll-list', { 'is-long': b.long }]}>
-      <ul class="side-list">{b.items.map((n) => <li><a href={n.url}>{n.displayTitle}</a></li>)}</ul>
+      <ul class="side-list">{b.items.map((n) => <li><a href={n.url}>{n.type === 'hub' && <i class="hub-mark" aria-hidden="true"></i>}{n.displayTitle}</a></li>)}</ul>
     </div>
   </section>)}
 </aside>
@@ -28,7 +28,8 @@ const blocks = [block('참조', 'out', outgoing), block('역참조', 'in', incom
   .rail { display: flex; flex-direction: column; border-left: 2px solid var(--line); }
   .rail a { display: block; margin-left: -2px; padding: 5px 0 5px 16px; border-left: 2px solid transparent; color: var(--muted); font-size: var(--t-side); line-height: 1.5; }
   .rail a.level-3 { padding-left: 28px; font-size: var(--t-meta); }
-  .rail a[aria-current="location"] { border-left-color: var(--accent); color: var(--ink); font-weight: 600; }
+  /* 현재 위치 레일은 이 노트의 주제색(NotePage가 --topic으로 준다). */
+  .rail a[aria-current="location"] { border-left-color: var(--topic, var(--accent)); color: var(--ink); font-weight: 600; }
   .rail a:hover { color: var(--accent); text-decoration: none; }
   /* 연재 블록: 접기·스크롤·서수 없이 편 목록 전체. 현재 편은 색과 굵기 하나로만 표시한다. */
   .series-hub { display: block; margin: 4px 0 6px; color: var(--muted); font-size: var(--t-meta); }

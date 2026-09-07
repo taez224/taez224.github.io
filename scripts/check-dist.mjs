@@ -75,7 +75,7 @@ checks.push(async () => {
   await checkCard('og/site.png');
 });
 checks.push(async () => {
-  for (const file of ['rss.xml', 'feeds/posts.xml', 'feeds/notes.xml', 'favicon.svg', 'og/site.png', 'apple-touch-icon.png', 'robots.txt', 'assets/graph-snapshot.svg', 'map/index.html', '404.html']) check(await exists(file), `${file} 없음`);
+  for (const file of ['rss.xml', 'feeds/posts.xml', 'feeds/notes.xml', 'favicon.svg', 'og/site.png', 'apple-touch-icon.png', 'robots.txt', 'map/index.html', '404.html']) check(await exists(file), `${file} 없음`);
   const home = await read('index.html');
   check(home.includes('생각의 정원으로'), 'index: 생각의 정원 버튼 없음');
   check(!home.includes('Velog'), 'index: Velog 링크 잔존');
@@ -89,10 +89,12 @@ checks.push(async () => {
   check(map.includes('data-map') && map.includes('data-panel'), 'map: 그래프·패널 요소 없음');
   check(!map.includes('marker-end'), 'map: 화살표 마커 잔존');
   check(/노트 \d+ · 연결 \d+/.test(map), 'map: 집계 라벨 형식');
-  check(map.includes('>허브</div>') && map.includes('data-sheet-grip'), 'map: 빈 패널 허브 목록 또는 시트 손잡이 없음');
+  check(map.includes('>허브</div>') && map.includes('data-sheet-grip') && map.includes('hub-mark'), 'map: 빈 패널 허브 목록, 시트 손잡이 또는 허브 링 없음');
   const home = await read('index.html');
   check(home.includes('data-graph') && home.includes('class="hero-snapshot"'), 'index: 히어로 그래프 마운트 지점 또는 스냅샷 링크 없음');
-  check(home.includes('graph-snapshot.svg'), 'index: 모바일용 스냅샷 없음');
+  check(home.includes('family=Gowun+Batang'), 'index: Gowun Batang 폰트 링크 없음');
+  check(!/🗺|🌱/.test(home), 'index: 허브 이모지 잔존');
+  check(home.includes('class="snap"') && home.includes('data-regions'), 'index: 인라인 스냅샷 또는 주제 영역 없음');
 });
 // __MORE_CHECKS__ (뒤 Task가 이 자리에 검사를 추가한다)
 

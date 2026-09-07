@@ -16,6 +16,18 @@ test('layoutGraph is deterministic and keeps nodes inside the padded box', () =>
   assert.equal(layoutGraph([], [], { width: 100, height: 100 }).size, 0);
 });
 
+test('topicGravity pulls same-topic nodes together', () => {
+  const many = Array.from({ length: 12 }, (_, i) => ({ id: `n${i}`, degree: 1, topic: i % 2 ? 'AI' : '개발' }));
+  const spread = (positions) => {
+    let sum = 0, count = 0;
+    for (const a of many) for (const b of many) { if (a.id < b.id && a.topic === b.topic) { const p = positions.get(a.id), q = positions.get(b.id); sum += Math.hypot(p.x - q.x, p.y - q.y); count += 1; } }
+    return sum / count;
+  };
+  const plain = spread(layoutGraph(many, [], { width: 1000, height: 640 }));
+  const atlas = spread(layoutGraph(many, [], { width: 1000, height: 640, topicGravity: 0.12, crossRepel: 1.6 }));
+  assert.ok(atlas < plain * 0.8, `${atlas} vs ${plain}`);
+});
+
 test('renderSnapshotSvg labels hubs only and colors by topic', () => {
   const svg = renderSnapshotSvg(nodes, edges, layoutGraph(nodes, edges, { width: 1000, height: 640 }), { width: 1000, height: 640 });
   assert.match(svg, /^<svg viewBox="0 0 1000 640"/);

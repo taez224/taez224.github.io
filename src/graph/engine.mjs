@@ -1,7 +1,9 @@
 import { nodeRadius } from './layout.mjs';
 import { topicColor, cleanTitle } from '../lib/format.mjs';
 import { createGraphGesture } from './gestures.mjs';
-import { graphTitleLines } from './focus.mjs';
+import { graphTitleLines, estimateTextWidth } from './focus.mjs';
+import { topicRegions, regionPath, placeRegionLabels, regionLabelBox } from './regions.mjs';
+export { estimateTextWidth };
 
 export const MIN_SCALE = 0.65;
 export const MAX_SCALE = 3.2;
@@ -77,10 +79,6 @@ export function isFilteredOut(node, { topics = null, hubsOnly = false } = {}) {
   return false;
 }
 
-// 13px 기준 글자 폭 어림. 한글 12.5, 영숫자 7.2, 그 외 4.5.
-export function estimateTextWidth(line, fontSize = 13) {
-  return [...line].reduce((sum, ch) => sum + (/[\u3131-\uD79D]/.test(ch) ? 12.5 : /[A-Za-z0-9]/.test(ch) ? 7.2 : 4.5), 0) * (fontSize / 13);
-}
 // 이 배율부터는 자리가 나는 만큼 제목을 더 보인다(허브 → 연결 많은 순, 겹치지 않는 것만).
 export const LABEL_REVEAL_SCALE = 1.2;
 // 평소 배율에서도 연결 많은 순으로 이만큼은 자리가 나면 제목을 보인다. 허브만 남기면 가장 연결 많은 노트가 점으로만 보인다.
@@ -96,7 +94,7 @@ export function wrapLabel(title, maxChars = 20) {
   return lines;
 }
 
-export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelAll = false, labelLines = null, labelAnchor = 'auto', fitBounds = null, nodeScale = 1, focusable = true, onSelect = () => {}, onOpen = () => {}, onHover = () => {} }) {
+export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelAll = false, labelLines = null, labelAnchor = 'auto', fitBounds = null, nodeScale = 1, focusable = true, regions = true, onSelect = () => {}, onOpen = () => {}, onHover = () => {} }) {
   // nodeScale: 노드 원 크기 배율. 지도는 무대가 좁아 0.85로 그려 홈과 밀도를 맞춘다.
   const radius = (node) => nodeRadius(node.degree ?? 0, nodeScale);
   const el = (name, attrs = {}) => { const node = document.createElementNS(SVG_NS, name); for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, String(v)); return node; };
@@ -113,8 +111,18 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
   svg.classList.add('graph', mode);
   svg.replaceChildren();
   const scene = el('g', { 'data-scene': '' });
+  const regionLayer = el('g', { 'data-regions': '' }), regionLabelLayer = el('g', { 'data-region-labels': '' });
   const edgeLayer = el('g', { 'data-edges': '' }), nodeLayer = el('g', { 'data-nodes': '' }), labelLayer = el('g', { 'data-labels': '' });
-  scene.append(edgeLayer, nodeLayer, labelLayer);
+  scene.append(regionLayer, regionLabelLayer, edgeLayer, nodeLayer, labelLayer);
+  // 주제 영역은 배치가 정해지면 고정이다. 색면은 장면 좌표(확대하면 같이 커짐), 이름은 제목처럼 화면 크기 고정.
+  const regionList = regions ? topicRegions(nodes, positions) : [];
+  // 영역 이름 자리는 배치 때 한 번 정한다. 노드 원을 피하고 무대 안에 둔다. 노드 제목은 planLabels가 영역 이름을 장애물로 보고 피한다.
+  const regionLabelAt = placeRegionLabels(regionList, nodes.filter((node) => positions.has(node.id)).map((node) => ({ ...positions.get(node.id), r: radius(node) + 4 })), { fontSize: 15, measure: estimateTextWidth, bounds: size() });
+  const regionLabelBoxes = (u) => regionList.map((region) => regionLabelBox(regionLabelAt.get(region.topic), region.topic, { fontSize: 15, measure: estimateTextWidth, scale: u }));
+  const drawRegions = () => {
+    regionLayer.replaceChildren();
+    for (const region of regionList) regionLayer.append(el('path', { class: 'region', d: regionPath(region.hull), fill: topicColor(region.topic), stroke: topicColor(region.topic) }));
+  };
   svg.append(scene);
 
   // 선택한 노드로 부드럽게 이동·확대. 드래그가 시작되면 애니메이션을 끊는다.
@@ -207,6 +215,7 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
     const overlaps = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
     // 흐려지지 않은 노드 원도 장애물이다. 제목이 다른 노드 위에 얹히지 않게.
     const obstacles = nodes.filter((node) => !dimmed(node.id) && positions.has(node.id)).map((node) => { const p = positions.get(node.id), r = radius(node) + 2 * u; return { left: p.x - r, right: p.x + r, top: p.y - r, bottom: p.y + r }; });
+    obstacles.push(...regionLabelBoxes(u)); // 영역 이름 위에 노드 제목을 얹지 않는다.
     // 화면 밖으로 나가는 자리는 쓰지 않는다(장면 좌표로 환산한 무대 범위).
     const { width: vw, height: vh } = size();
     const view = { left: -state.transform.x * u, top: -state.transform.y * u, right: (vw - state.transform.x) * u, bottom: (vh - state.transform.y) * u };
@@ -240,6 +249,14 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
     const u = 1 / (state.transform.scale || 1);
     labelLayer.style.fontSize = `${(13 * u).toFixed(2)}px`;
     labelLayer.style.strokeWidth = `${(4.5 * u).toFixed(2)}px`;
+    regionLabelLayer.replaceChildren();
+    regionLabelLayer.style.fontSize = `${(15 * u).toFixed(2)}px`;
+    regionLabelLayer.style.strokeWidth = `${(3.5 * u).toFixed(2)}px`;
+    for (const region of regionList) {
+      const at = regionLabelAt.get(region.topic);
+      const text = el('text', { class: 'region-label', x: at.x.toFixed(1), y: at.y.toFixed(1), 'text-anchor': at.anchor, fill: topicColor(region.topic) });
+      text.textContent = region.topic; regionLabelLayer.append(text);
+    }
     if (!labelAll) {
       for (const [id, placement] of planLabels(u)) {
         const node = byId.get(id), p = positions.get(id);
@@ -353,6 +370,6 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
       svg.replaceChildren(); svg.classList.remove('graph', mode, 'is-panning');
     }
   };
-  drawNodes(); render(); api.fit();
+  drawRegions(); drawNodes(); render(); api.fit();
   return api;
 }

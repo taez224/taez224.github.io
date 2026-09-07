@@ -1,5 +1,5 @@
 import { createGraph, isFilteredOut } from '../graph/engine.mjs';
-import { layoutGraph } from '../graph/layout.mjs';
+import { layoutGraph, ATLAS_LAYOUT } from '../graph/layout.mjs';
 import { panelModel } from '../lib/panel.mjs';
 
 const page = document.querySelector('[data-site]');
@@ -14,11 +14,11 @@ const OUT = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke=
 const IN = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="7" r="2"></circle><path d="M8 7H2m2.5-2.5L2 7l2.5 2.5"></path></svg>';
 
 // 그래프 노드인 항목은 data-node를 달아 지도 안에서 선택되게 한다(그래프 밖 노트만 페이지로 이동).
-const list = (icon, label, items) => items.length ? `<section class="list-block"><div class="meta">${icon}${label}<span class="count">${items.length}</span></div><div class="scroll-list${items.length > 6 ? ' is-long' : ''}"><ul class="side-list">${items.map((i) => `<li><a href="${escape(i.url)}"${i.nodeId ? ` data-node="${escape(i.nodeId)}"` : ''}>${escape(i.title)}</a></li>`).join('')}</ul></div></section>` : '';
+const list = (icon, label, items) => items.length ? `<section class="list-block"><div class="meta">${icon}${label}<span class="count">${items.length}</span></div><div class="scroll-list${items.length > 6 ? ' is-long' : ''}"><ul class="side-list">${items.map((i) => `<li><a href="${escape(i.url)}"${i.nodeId ? ` data-node="${escape(i.nodeId)}"` : ''}>${i.isHub ? '<i class="hub-mark" aria-hidden="true"></i>' : ''}${escape(i.title)}</a></li>`).join('')}</ul></div></section>` : '';
 
 function renderPanel(model) {
   body.innerHTML = `<div class="panel-head">
-    <div class="meta">${escape(model.kind)}${model.isHub ? ' · 허브' : ''}${model.date ? ` · ${model.date}` : ''}</div>
+    <div class="meta">${escape(model.kind)}${model.isHub ? ' · <i class="hub-mark" aria-hidden="true"></i>허브' : ''}${model.date ? ` · ${model.date}` : ''}</div>
     <h2 class="display">${escape(model.title)}</h2>
     ${model.topics.length ? `<div class="panel-topics">${model.topics.map((t) => `<span><i style="background:${t.color}"></i>${escape(t.name)}</span>`).join('')}</div>` : ''}
     ${model.summary ? `<p class="panel-summary">${escape(model.summary)}</p>` : ''}
@@ -32,7 +32,8 @@ if (!response.ok) throw new Error(`Map data: ${response.status}`);
 const site = await response.json();
 const notesByPath = new Map(site.notes.map((n) => [n.path, n]));
 const nodeByPath = new Map(site.nodes.map((n) => [n.path, n]));
-const withNodeIds = (model) => ({ ...model, outgoing: model.outgoing.map((i) => ({ ...i, nodeId: nodeByPath.get(i.path)?.id })), incoming: model.incoming.map((i) => ({ ...i, nodeId: nodeByPath.get(i.path)?.id })) });
+const decorate = (i) => { const node = nodeByPath.get(i.path); return { ...i, nodeId: node?.id, isHub: node?.type === 'hub' }; };
+const withNodeIds = (model) => ({ ...model, outgoing: model.outgoing.map(decorate), incoming: model.incoming.map(decorate) });
 const byMapKey = new Map(site.nodes.map((n) => [n.mapKey, n]));
 // SVG는 마운트 전까지 기본 크기(300×150)라서 CSS로 크기가 정해진 상자를 잰다.
 const rect = svg.parentElement.getBoundingClientRect();
@@ -63,13 +64,13 @@ function syncSheet() {
   }
 }
 
-const positions = layoutGraph(site.nodes, site.edges, { ...stageSize, pad: 40 });
+const positions = layoutGraph(site.nodes, site.edges, { ...stageSize, pad: 40, ...ATLAS_LAYOUT });
 graph = createGraph(svg, {
   nodes: site.nodes,
   edges: site.edges,
   positions,
   mode: 'map',
-  nodeScale: 0.85,
+  nodeScale: 0.6,
   onSelect: (id) => select(id, true),
   onOpen: (id) => { const node = site.nodes.find((n) => n.id === id); if (node) window.location.href = node.url; }
 });
@@ -92,7 +93,8 @@ function select(id, pushUrl, { open = true } = {}) {
   // 선택해도 시점은 그대로 둔다. 이웃 제목은 자리가 나는 만큼 그 자리에서 보인다.
   graph.select(id);
   const node = site.nodes.find((n) => n.id === id);
-  if (node) { renderPanel(withNodeIds(panelModel(notesByPath.get(node.path) ?? node, notesByPath, site.noteEdges))); if (open) panel.dataset.open = ''; }
+  // 공개 노트 레코드에는 type이 없어 허브 여부는 그래프 노드에서 가져온다.
+  if (node) { renderPanel({ ...withNodeIds(panelModel(notesByPath.get(node.path) ?? node, notesByPath, site.noteEdges)), isHub: node.type === 'hub' }); if (open) panel.dataset.open = ''; }
   else { body.innerHTML = emptyPanel; delete panel.dataset.open; }
   if (pushUrl) {
     const params = new URLSearchParams();

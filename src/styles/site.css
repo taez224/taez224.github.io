@@ -1,9 +1,10 @@
 :root {
   color-scheme: light;
   --paper: #f7f7f2; --paper-strong: #fdfdfa; --ink: #252e29; --muted: #626d64; --faint: #747c73;
-  --line: #d8ded4; --accent: #315b48; --accent-soft: #e3ece5;
+  /* UI는 먹색 하나. 색은 주제색(GRAPH_COLORS)으로만 들어온다. accent 토큰은 이름만 남기고 값은 먹색이다(2026-09-07). */
+  --line: #d8ded4; --accent: #252e29; --accent-soft: #e7e9e3;
   --slipbox: #3d7158; --blog: #a66a38; --development: #5f8184;
-  --display: 'Noto Serif KR', 'Apple Myungjo', 'Nanum Myeongjo', serif;
+  --display: 'Gowun Batang', 'Apple Myungjo', 'Nanum Myeongjo', serif;
   --sans: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
   --t-meta: 13px; --t-side: 14px; --t-body: 17px; --t-list: 20px; --t-h2: 24px; --t-h1: 46px; --t-hero: 58px;
 }
@@ -25,8 +26,11 @@ h1, h2, h3, p { margin-top: 0; }
 .display { font-family: var(--display); font-weight: 700; letter-spacing: -.02em; }
 .meta { font-size: var(--t-meta); line-height: 1.6; color: var(--muted); font-variant-numeric: tabular-nums; }
 .count { color: var(--faint); }
+/* 허브 표시: 지도 범례·허브 노드의 링과 같은 기호. 제목 앞에 둔다(이모지 대신). */
+.hub-mark { display: inline-block; width: 10px; height: 10px; margin-right: 8px; border: 1.5px solid var(--accent); border-radius: 50%; vertical-align: 1px; }
+.topic-dot { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 50%; vertical-align: 0; }
 .btn { display: inline-flex; align-items: center; height: 44px; padding: 0 20px; border: 0; border-radius: 4px; background: var(--accent); color: var(--paper-strong); font-size: 15px; font-weight: 600; }
-.btn:hover { background: var(--ink); color: var(--paper-strong); text-decoration: none; }
+.btn:hover { background: var(--muted); color: var(--paper-strong); text-decoration: none; }
 .btn.small { height: 40px; padding: 0 18px; font-size: 14px; }
 .side-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .side-list a { display: block; color: var(--ink); font-size: var(--t-side); line-height: 1.5; }

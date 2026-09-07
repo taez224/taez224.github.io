@@ -5,6 +5,8 @@ import About from '../components/About.astro';
 import { getGarden } from '../lib/get-garden.mjs';
 import { formatDate, withBase } from '../lib/format.mjs';
 import { parentLink } from '../lib/note-nav.mjs';
+import { layoutGraph, ATLAS_LAYOUT } from '../graph/layout.mjs';
+import { renderSnapshotSvg } from '../graph/snapshot.mjs';
 const garden = await getGarden();
 const byPath = new Map(garden.notes.map((n) => [n.path, n]));
 const entry = byPath.get(garden.config.entry);
@@ -14,10 +16,12 @@ const HOME_KINDS = [['slipbox', '노트'], ['development', '개발 노트'], ['b
 const dated = garden.notes.filter((n) => n.date && n.type !== 'series' && n.path !== featured?.path).sort((a, b) => b.date.localeCompare(a.date) || a.title.localeCompare(b.title, 'ko'));
 const recent = HOME_KINDS.map(([kind, label]) => { const note = dated.find((n) => n.kind === kind); return note && { note, label, listUrl: withBase(parentLink(note).path) }; }).filter(Boolean).sort((a, b) => b.note.date.localeCompare(a.note.date));
 const firstSentence = (text) => text.match(/^.*?[.!?](?:\s|$)/)?.[0]?.trim() || text;
+// 모바일 홈의 정적 지도. <img>가 아니라 인라인이라 영역 이름에 페이지 서체가 적용된다. 데스크톱은 hero.js가 살아 있는 지도로 바꾼다.
+const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, layoutGraph(garden.nodes, garden.edges, { width: 1000, height: 640, ...ATLAS_LAYOUT }), { width: 1000, height: 640, font: 26, regionFont: 30, strokeWidth: 2, label: `생각 지도. 노드 ${garden.stats.nodes}개와 연결 ${garden.stats.edges}개.` });
 ---
 <Shell title="TaeZ" description={garden.home.about} path="/">
   <section class="hero" aria-label="소개와 생각 지도">
-    <div class="hero-graph" data-graph data-site={withBase('/data/site.json')}><a class="hero-snapshot" href={withBase('/map/')} aria-label="생각 지도 열기"><img src={withBase('/assets/graph-snapshot.svg')} alt={`생각 지도. 노드 ${garden.stats.nodes}개와 연결 ${garden.stats.edges}개.`} width="1000" height="640" /></a></div>
+    <div class="hero-graph" data-graph data-site={withBase('/data/site.json')}><a class="hero-snapshot" href={withBase('/map/')} aria-label="생각 지도 열기"><Fragment set:html={snapshot} /></a></div>
     <div class="hero-fade" aria-hidden="true"></div>
     <div class="hero-about"><About about={garden.home.about} contacts={garden.home.contacts} entryUrl={entry?.url ?? withBase('/map/')} /></div>
   </section>
@@ -28,14 +32,14 @@ const firstSentence = (text) => text.match(/^.*?[.!?](?:\s|$)/)?.[0]?.trim() || 
   </section>}
   <section class="wrap recent" aria-labelledby="recent-heading">
     <h2 id="recent-heading" class="display">최근 기록</h2>
-    <ol>{recent.map(({ note, label, listUrl }) => <li><time class="meta" datetime={note.date}>{formatDate(note.date)}</time><a href={note.url}>{note.title}</a><a class="meta kind" href={listUrl}>{label}</a></li>)}</ol>
+    <ol>{recent.map(({ note, label, listUrl }) => <li><time class="meta" datetime={note.date}>{formatDate(note.date)}</time><a href={note.url}>{note.type === 'hub' && <i class="hub-mark" aria-hidden="true"></i>}{note.title}</a><a class="meta kind" href={listUrl}>{label}</a></li>)}</ol>
   </section>
 </Shell>
 <style>
   .hero { position: relative; height: 600px; overflow: hidden; }
   /* 그래프 상자는 뷰포트 안에 다 들어온다. 1600px 미만에서는 오른쪽 끝까지, 그 이상은 940px. 맞춤 배율이 상자에 맞춘다. */
   .hero-graph { position: absolute; top: 0; left: calc(50% - 160px); width: min(940px, 50% + 160px); height: 600px; }
-  .hero-graph img, .hero-graph svg, .hero-snapshot { display: block; width: 100%; height: 100%; }
+  .hero-graph svg, .hero-snapshot { display: block; width: 100%; height: 100%; }
   .hero-graph .graph { cursor: pointer; }
   .hero .graph .node.is-dim { opacity: 1; }
   /* 종이색은 소개 블록(오른쪽 끝 50% - 160px)보다 조금 더 가서 끝난다. 퍼센트로 두면 1280px에서 소개문 옆에 반투명 점이 걸친다. */
@@ -51,7 +55,7 @@ const firstSentence = (text) => text.match(/^.*?[.!?](?:\s|$)/)?.[0]?.trim() || 
   .recent li { display: grid; grid-template-columns: 110px minmax(0, 1fr) 64px; gap: 28px; align-items: baseline; padding: 19px 0; border-top: 1px solid var(--line); }
   .recent li:last-child { border-bottom: 1px solid var(--line); }
   .recent li a { color: var(--ink); font-size: var(--t-list); line-height: 1.5; }
-  .recent li a.kind { font-size: var(--t-meta); color: var(--accent); text-align: right; }
+  .recent li a.kind { font-size: var(--t-meta); color: var(--muted); text-align: right; }
   @media (max-width: 1240px) { .hero-graph { left: 460px; width: calc(100% - 460px); } .hero-about { left: 24px; } }
   @media (max-width: 1000px) { .hero { height: 520px; } .hero-about { width: 360px; } .hero-graph { left: 400px; width: calc(100% - 400px); } }
   @media (max-width: 720px) {

@@ -3,7 +3,7 @@ import { render } from 'astro:content';
 import Shell from '../layouts/Shell.astro';
 import NoteSidebar from './NoteSidebar.astro';
 import { getGarden } from '../lib/get-garden.mjs';
-import { formatDate, displayTag, withBase, cleanTitle } from '../lib/format.mjs';
+import { formatDate, displayTag, withBase, cleanTitle, topicColor } from '../lib/format.mjs';
 import { parentLink, seriesNeighbors } from '../lib/note-nav.mjs';
 import { kindPrefix } from '../lib/slug.mjs';
 const { entry } = Astro.props;
@@ -17,7 +17,7 @@ const outgoing = resolve(note.outgoing);
 const incoming = resolve(note.incoming);
 const mapNode = garden.nodes.find((node) => node.path === note.path);
 const mapUrl = mapNode ? withBase(`/map/?node=${encodeURIComponent(mapNode.mapKey)}`) : '';
-const topics = note.publicTags.slice(0, 2).map(displayTag);
+const topics = note.publicTags.slice(0, 2).map((tag) => ({ label: displayTag(tag), color: topicColor(tag.split('/')[0]) }));
 const parent = parentLink(note, mapNode?.mapKey);
 const parentUrl = withBase(parent.path);
 const series = note.kind === 'blog' ? seriesNeighbors(note, garden.blog.series) : null;
@@ -28,13 +28,14 @@ const siteBase = String(garden.config.basePath ?? '').replace(/\/$/, '');
 const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slice(siteBase.length) : note.url;
 ---
 <Shell title={title} description={note.summary} path={sitePath} ogImage={withBase(`/og/${kindPrefix(note.kind)}/${note.slug}.png`)} active={note.kind === 'blog' ? 'posts' : note.kind === 'development' ? 'dev' : 'map'} ogType="article">
-  <div class="wrap note-view">
+  <div class="wrap note-view" style={`--topic:${topicColor(note.topic)}`}>
     <article class="note-article">
       <div class="meta note-meta">
         <a class="kicker" href={parentUrl}>{parent.label}</a>
+        {note.type === 'hub' && <><span>·</span><span><i class="hub-mark" aria-hidden="true"></i>허브</span></>}
         {note.date && <><span>·</span><time datetime={note.date}>{formatDate(note.date)}</time></>}
         {note.readingMinutes > 0 && <><span>·</span><span>{note.readingMinutes}분</span></>}
-        {topics.map((t) => <><span>·</span><span>{t}</span></>)}
+        {topics.map((t) => <><span>·</span><span><i class="topic-dot" style={`background:${t.color}`} aria-hidden="true"></i>{t.label}</span></>)}
         {note.publishedUrl && <><span>·</span><a href={note.publishedUrl} target="_blank" rel="noreferrer">{note.publication || '원문'}에 발행 ↗</a></>}
       </div>
       <h1 class="display note-title">{title}</h1>
@@ -78,6 +79,9 @@ const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slic
   .body { font-size: var(--t-body); line-height: 1.85; }
   .body p { margin: 0 0 22px; }
   /* 본문의 외부 링크는 사이트 다른 곳(발행처·출처)과 같이 ↗를 붙여 노트 링크와 구분한다. */
+  /* 링크 색이 먹색이라 본문 링크는 밑줄로 구분한다. */
+  .body a { text-decoration: underline; text-decoration-color: rgba(37,46,41,.35); text-decoration-thickness: 1px; text-underline-offset: .18em; }
+  .body a:hover { text-decoration-color: var(--ink); }
   .body a[href^="http"]::after { content: "↗"; margin-left: .15em; font-size: .78em; vertical-align: .1em; }
   .body h2, .body h3, .body h4 { font-family: var(--display); font-weight: 700; letter-spacing: -.02em; scroll-margin-top: 110px; }
   .body h2 { margin: 44px 0 14px; font-size: 26px; line-height: 1.4; }

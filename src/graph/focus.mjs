@@ -15,6 +15,11 @@ export function graphEdgeEndpoints(source, target, sourceRadius, targetRadius) {
     x2: target.x - dx / distance * to, y2: target.y - dy / distance * to };
 }
 
+// 13px 기준 글자 폭 어림. 한글 12.5, 영숫자 7.2, 그 외 4.5.
+export function estimateTextWidth(line, fontSize = 13) {
+  return [...line].reduce((sum, ch) => sum + (/[\u3131-\uD79D]/.test(ch) ? 12.5 : /[A-Za-z0-9]/.test(ch) ? 7.2 : 4.5), 0) * (fontSize / 13);
+}
+
 export function graphTitleLines(title, limit) {
   const lines = [];
   let line = '';

@@ -2,13 +2,19 @@
 .graph.is-panning { cursor: grabbing; }
 /* Chrome은 <svg>를 마우스로 클릭하면 포커스를 준다. 탭 순서에 없는 무대라 테두리는 노드에만 남긴다. */
 .graph:focus, .graph:focus-visible { outline: none; }
-.graph .edge { stroke: #9aab9d; stroke-width: 1.1; stroke-opacity: .55; transition: stroke-opacity .15s ease; }
+/* 간선은 평소에 거의 안 보인다. 선택·호버에서만 방향과 함께 드러난다(지도가 그래프 뷰처럼 보이지 않게). */
+.graph .edge { stroke: #9aab9d; stroke-width: 1.1; stroke-opacity: .16; transition: stroke-opacity .15s ease; }
 .graph .edge.is-out { stroke: var(--accent); stroke-width: 2; stroke-opacity: .9; }
 .graph .edge.is-in { stroke: var(--accent); stroke-width: 1.7; stroke-opacity: .8; stroke-dasharray: 5 4; }
 .graph .edge.is-dim { stroke-opacity: .08; }
-.graph .edge.is-faint { stroke-opacity: .2; }
+.graph .edge.is-faint { stroke-opacity: .08; }
 .graph .node.is-faint { opacity: .45; }
 .graph .edge.is-topic-dim { stroke-opacity: .08; }
+/* 주제 영역: 같은 주제 노드의 껍질을 옅은 색면으로. 이름은 자간 넓힌 명조, 화면 크기 고정(엔진이 인라인 지정). */
+.graph [data-regions] { opacity: .045; pointer-events: none; }
+.graph .region { stroke-width: 90; stroke-linejoin: round; }
+.graph [data-region-labels] { pointer-events: none; }
+.graph .region-label { font-family: var(--display); font-weight: 700; letter-spacing: .16em; opacity: .85; paint-order: stroke; stroke: var(--paper); stroke-linejoin: round; }
 .graph .node { cursor: pointer; outline: none; transition: opacity .15s ease; }
 .graph .node.is-dim { opacity: .22; }
 .graph .node .dot { stroke: var(--paper); stroke-width: 2; }

@@ -2,9 +2,10 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { projectPaths } from './get-garden.mjs';
 
-// OG 이미지용 정적 폰트. 빌드 때 한 번 받아 node_modules/.cache에 둔다(저장소에 넣기엔 9MB라 크다).
+// OG 이미지용 정적 폰트. 빌드 때 한 번 받아 node_modules/.cache에 둔다(저장소에 넣기엔 10MB라 크다).
+// Gowun Batang은 정적 Bold가 있어 사이트 제목과 같은 굵기로 그려진다(가변 폰트는 resvg가 굵기 축을 무시한다).
 const FONTS = [
-  { file: 'NotoSerifKR-Bold.otf', url: 'https://github.com/notofonts/noto-cjk/raw/main/Serif/SubsetOTF/KR/NotoSerifKR-Bold.otf' },
+  { file: 'GowunBatang-Bold.ttf', url: 'https://raw.githubusercontent.com/google/fonts/main/ofl/gowunbatang/GowunBatang-Bold.ttf' },
   { file: 'Pretendard-Medium.otf', url: 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/public/static/Pretendard-Medium.otf' }
 ];
 // 빌드 번들 위치가 아니라 프로젝트 루트 기준으로 캐시한다.
