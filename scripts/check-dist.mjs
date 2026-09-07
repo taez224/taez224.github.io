@@ -91,7 +91,7 @@ checks.push(async () => {
   check(/노트 \d+ · 연결 \d+/.test(map), 'map: 집계 라벨 형식');
   check(map.includes('>허브</div>') && map.includes('data-sheet-grip'), 'map: 빈 패널 허브 목록 또는 시트 손잡이 없음');
   const home = await read('index.html');
-  check(home.includes('data-graph') && home.includes('data-map-url'), 'index: 히어로 그래프 마운트 지점 없음');
+  check(home.includes('data-graph') && home.includes('class="hero-snapshot"'), 'index: 히어로 그래프 마운트 지점 또는 스냅샷 링크 없음');
   check(home.includes('graph-snapshot.svg'), 'index: 모바일용 스냅샷 없음');
 });
 // __MORE_CHECKS__ (뒤 Task가 이 자리에 검사를 추가한다)

@@ -96,7 +96,7 @@ export function wrapLabel(title, maxChars = 20) {
   return lines;
 }
 
-export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelAll = false, labelLines = null, labelAnchor = 'auto', fitBounds = null, nodeScale = 1, onSelect = () => {}, onOpen = () => {}, onHover = () => {} }) {
+export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelAll = false, labelLines = null, labelAnchor = 'auto', fitBounds = null, nodeScale = 1, focusable = true, onSelect = () => {}, onOpen = () => {}, onHover = () => {} }) {
   // nodeScale: 노드 원 크기 배율. 지도는 무대가 좁아 0.85로 그려 홈과 밀도를 맞춘다.
   const radius = (node) => nodeRadius(node.degree ?? 0, nodeScale);
   const el = (name, attrs = {}) => { const node = document.createElementNS(SVG_NS, name); for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, String(v)); return node; };
@@ -161,7 +161,7 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
       const p = positions.get(node.id);
       if (!p) continue;
       const r = radius(node);
-      const g = el('g', { class: `node${node.isEntry ? ' is-entry' : ''}`, 'data-id': node.id, tabindex: '0', role: 'button', 'aria-pressed': 'false', 'aria-label': cleanTitle(node.displayTitle ?? node.title) });
+      const g = el('g', { class: `node${node.isEntry ? ' is-entry' : ''}`, 'data-id': node.id, tabindex: focusable ? '0' : '-1', role: 'button', 'aria-pressed': 'false', 'aria-label': cleanTitle(node.displayTitle ?? node.title) });
       if (node.isEntry) g.append(el('circle', { class: 'entry-halo', cx: p.x, cy: p.y, r: (r + 11).toFixed(1) }));
       if (node.type === 'hub') g.append(el('circle', { class: 'hub-ring', cx: p.x, cy: p.y, r: (r + 7).toFixed(1) }));
       g.append(el('circle', { class: 'hit', cx: p.x, cy: p.y, r: Math.max(22, r), fill: 'transparent' }));
