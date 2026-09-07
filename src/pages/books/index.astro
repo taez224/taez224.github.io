@@ -16,12 +16,15 @@ const statuses = [...new Set(books.map((b) => b.status).filter(Boolean))];
       <div class="tier-head"><h2 class:list={['display', { 'unrated': t.tier === '미분류' }]}>{t.tier}</h2><span class="meta" data-tier-count>{t.books.length}권</span></div>
       <div class="grid">{t.books.map((book) => <BookCard book={book} />)}</div>
     </section>)}
+    <p class="book-source meta">도서 정보·표지 출처: <a href="https://www.yes24.com" target="_blank" rel="noreferrer">YES24 ↗</a></p>
   </div>
 </Shell>
 <style>
   .books-page { padding: 36px 0 96px; }
   .page-head { display: flex; align-items: baseline; gap: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
   .page-head h1 { margin: 0; font-size: 28px; line-height: 1.4; }
+  .book-source { margin: 20px 0 0; color: var(--muted); text-align: right; }
+  .book-source a { color: inherit; text-underline-offset: 3px; }
   /* 제목 줄의 셀렉트는 옆 메타 글자(13px)에 맞춘 높이와 크기로 둔다. */
   .page-head label { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; }
   select { height: 32px; padding: 0 26px 0 10px; border: 1px solid var(--line); border-radius: 3px; background: var(--paper); color: var(--ink); font-size: var(--t-meta); line-height: 1; }
@@ -30,5 +33,6 @@ const statuses = [...new Set(books.map((b) => b.status).filter(Boolean))];
   .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px 40px; }
   @media (min-width: 1000px) { .tier-head h2.unrated { font-size: 18px; line-height: 1.4; white-space: nowrap; } }
   @media (max-width: 720px) { .tier { grid-template-columns: 32px minmax(0, 1fr); gap: 16px; } .tier-head h2 { font-size: 30px; } .grid { grid-template-columns: 1fr; } }
+  @media (max-width: 480px) { .page-head { gap: 12px; } .book-source { font-size: 12px; } }
 </style>
 <script src="../../scripts/books.js"></script>
