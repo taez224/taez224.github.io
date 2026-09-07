@@ -63,6 +63,18 @@ test('assembleGarden publishes reviewed notes with slug urls and no private stri
   assert.equal(byPath.get('01_Slipbox/생각 A.md').publication, '');
 });
 
+test('graphRule linked stops at the first development note: a dev note linked only from another dev note stays out', async () => {
+  const chainConfig = { ...config, include: config.include.map((rule) => rule.graphRule ? { ...rule, files: [...rule.files, `${dev}/Concepts/사슬.md`] } : rule) };
+  const vaultRoot = await makeVault({ ...files,
+    [`${dev}/Concepts/사슬.md`]: '---\ncreated: 2026-09-06\nsummary: 사슬\n---\n# 사슬\n[[연결된 개념]]에서만 이어진다.'
+  });
+  const garden = await assembleGarden({ vaultRoot, config: chainConfig, basePath: '/obsidian' });
+  const ids = garden.nodes.map((node) => node.id);
+  assert.ok(ids.includes(`${dev}/Concepts/연결된 개념.md`), '생각 노트가 직접 링크한 개발 노트는 지도에 있다');
+  assert.ok(!ids.includes(`${dev}/Concepts/사슬.md`), '개발 노트를 거쳐서만 이어진 개발 노트는 지도에 없다');
+  assert.ok(garden.development.concepts.some((record) => record.path === `${dev}/Concepts/사슬.md`), '목록에는 남는다');
+});
+
 test('graphRule linked keeps only development notes connected to the thought map, slipbox isolates stay', async () => {
   const pairConfig = { ...config, include: config.include.map((rule) => rule.graphRule ? { ...rule, files: [...rule.files, `${dev}/Concepts/짝 A.md`, `${dev}/Concepts/짝 B.md`] } : rule) };
   const vaultRoot = await makeVault({ ...files,

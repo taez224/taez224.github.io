@@ -601,8 +601,9 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
       .sort((left, right) => (degree.get(right) ?? 0) - (degree.get(left) ?? 0));
     selectedPaths = [...required, ...optional.slice(0, config.maxGraphNodes - required.size)];
   }
-  // graphRule "linked": a note from such a folder joins the map only when it is connected, through public graph
-  // notes, to the thought map itself (a node outside any linked-only folder). Pairs that only cite each other stay out.
+  // graphRule "linked": a note from such a folder joins the map only when a thought-map node (one outside any
+  // linked-only folder) links it directly. Linked-only nodes are endpoints: a chain of development notes citing each
+  // other does not pull the rest in, and pairs that only cite each other stay out.
   const linkedOnlyRoots = config.include.filter((rule) => rule.graphRule === 'linked').map((rule) => rule.path);
   const isLinkedOnly = (item) => linkedOnlyRoots.some((root) => pathMatches(item, root));
   const selectedNow = new Set(selectedPaths);
@@ -616,6 +617,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
   const queue = [...reached];
   while (queue.length) {
     const current = queue.pop();
+    if (isLinkedOnly(current)) continue; // 개발 노트는 종점. 여기서 더 뻗지 않는다.
     for (const next of adjacency.get(current) ?? []) if (!reached.has(next)) { reached.add(next); queue.push(next); }
   }
   selectedPaths = selectedPaths.filter((item) => !isLinkedOnly(item) || reached.has(item));
