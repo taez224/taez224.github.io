@@ -70,7 +70,7 @@ graph = createGraph(svg, {
   edges: site.edges,
   positions,
   mode: 'map',
-  nodeScale: 0.6,
+  nodeScale: 0.7,
   onSelect: (id) => select(id, true),
   onOpen: (id) => { const node = site.nodes.find((n) => n.id === id); if (node) window.location.href = node.url; }
 });

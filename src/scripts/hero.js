@@ -16,7 +16,7 @@ if (box && window.matchMedia('(min-width: 721px)').matches) {
     const snapshot = box.firstElementChild;
     box.append(svg);
     // 홈에서는 노드를 탭 순서에서 뺀다(36개를 지나야 대표 글에 닿는다). 키보드 탐색은 지도 페이지가 맡는다.
-    createGraph(svg, { nodes: site.nodes, edges: site.edges, positions, mode: 'hero', focusable: false, nodeScale: 0.6, onSelect: (id) => { if (id) open(id); }, onOpen: open });
+    createGraph(svg, { nodes: site.nodes, edges: site.edges, positions, mode: 'hero', focusable: false, nodeScale: 0.9, onSelect: (id) => { if (id) open(id); }, onOpen: open });
     snapshot?.remove();
   } catch (error) {
     box.querySelector('svg')?.remove();
