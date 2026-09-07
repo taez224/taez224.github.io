@@ -12,7 +12,8 @@ export const GET: APIRoute = async () => {
     noteEdges: garden.noteEdges,
     paths: garden.paths,
     books: garden.books.map(({ slug, url, title, author, rate, tier, status, note }) => ({ slug, url, title, author, rate, tier, status, note })),
-    stats: garden.stats
+    stats: garden.stats,
+    topicFold: garden.topicFold
   };
   return new Response(JSON.stringify(body), { headers: { 'Content-Type': 'application/json; charset=utf-8' } });
 };

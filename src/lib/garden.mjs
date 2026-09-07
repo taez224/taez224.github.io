@@ -109,6 +109,9 @@ function seriesSummaryFor(note) {
   return summary || sectionExcerpt(note.body, ['연재 목적', '시리즈 소개']) || excerpt(note.body);
 }
 
+// 지도에서 노드가 이보다 적은 주제는 색과 영역을 기타로 접는다. 범례가 길어지고 팔레트가 바닥나는 걸 막는다. 원래 주제는 topicTag에 남는다.
+export const MIN_TOPIC_NODES = 3;
+
 function topicFor(tags) {
   const topic = tags.find((tag) => tag !== 'slipbox');
   return topic ? topic.split('/')[0] : '기타';
@@ -649,6 +652,13 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
   }).sort((left, right) => left.title.localeCompare(right.title, 'ko'));
 
   const edges = allEdges.filter((edge) => selectedSet.has(edge.source) && selectedSet.has(edge.target));
+  // 주제 접기: 지도 노드 수 기준. 노트(리더의 점·레일)도 같은 규칙을 따라 사이트 어디서든 한 노트의 색이 하나다.
+  const minTopicNodes = Number(config.minTopicNodes ?? MIN_TOPIC_NODES);
+  const topicCounts = new Map();
+  for (const node of nodes) topicCounts.set(node.topic, (topicCounts.get(node.topic) ?? 0) + 1);
+  const topicFold = Object.fromEntries([...topicCounts].filter(([topic, count]) => topic !== '기타' && count < minTopicNodes).map(([topic]) => [topic, '기타']));
+  for (const node of nodes) { node.topicTag = node.topic; node.topic = topicFold[node.topic] ?? node.topic; }
+  for (const note of notes) { note.topicTag = note.topic; note.topic = topicFold[note.topic] ?? note.topic; }
   const nodeByPath = new Map(nodes.map((node) => [node.path, node]));
   const blogByPath = new Map(publishedBlogPosts.map((post) => [post.path, { ...post, kind: 'blog' }]));
   const developmentByPath = new Map(developmentRecords.map((record) => [record.path, { ...record, kind: 'development' }]));
@@ -671,7 +681,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
       contacts: config.home?.contacts || [],
       about: String(config.home?.about ?? '')
     },
-    notes, nodes, edges, noteEdges: allPublicEdges, paths, blog, development, books,
+    notes, nodes, edges, noteEdges: allPublicEdges, paths, blog, development, books, topicFold,
     stats: {
       candidates: graphCandidateFiles.size, nodes: nodes.length, edges: edges.length,
       blogPosts: blog.stats.posts, blogSeries: blog.stats.series, developmentNotes: developmentRecords.length

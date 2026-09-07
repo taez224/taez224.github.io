@@ -45,3 +45,9 @@ test('placeRegionLabels keeps names inside the given bounds', () => {
   const at = placeRegionLabels([{ topic: 'AI', count: 3, hull, label: { x: 100, y: 20 } }], [], { bounds: { width: 300, height: 130 } });
   assert.equal(at.get('AI').anchor, 'end', '위는 무대 밖, 아래도 밖이면 왼쪽');
 });
+
+test('topicRegions never draws a territory for 기타', () => {
+  const nodes = [{ id: 'x1', topic: '기타' }, { id: 'x2', topic: '기타' }, { id: 'x3', topic: '기타' }, { id: 'x4', topic: '기타' }];
+  const positions = new Map(nodes.map((n, i) => [n.id, { x: 100 + i * 40, y: 100 + (i % 2) * 40 }]));
+  assert.equal(topicRegions(nodes, positions).length, 0);
+});

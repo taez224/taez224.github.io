@@ -1,4 +1,5 @@
-export const GRAPH_COLORS = { AI: '#80698f', 소프트웨어공학: '#5d7897', 커리어: '#9a7852', 지식관리: '#5c806c', 글쓰기: '#9c6e6e', 철학: '#9b8a45', 개발: '#5f8184', 기타: '#817f72' };
+// 개발은 옛 소프트웨어공학의 파란색을 물려받는다(2026-09-07 태그 통합). 청록 #5f8184는 지식관리 초록과 구분이 안 됐다. 소프트웨어공학은 남은 태그를 위한 별칭.
+export const GRAPH_COLORS = { AI: '#80698f', 개발: '#5d7897', 커리어: '#9a7852', 지식관리: '#5c806c', 글쓰기: '#9c6e6e', 철학: '#9b8a45', 소프트웨어공학: '#5d7897', 기타: '#817f72' };
 const HIDDEN_TAGS = new Set(['slipbox', 'blog', 'inbox', 'clippings']);
 
 export function topicColor(topic) { return GRAPH_COLORS[topic] ?? GRAPH_COLORS.기타; }

@@ -10,12 +10,12 @@ export function convexHull(points) {
   return lower.slice(0, -1).concat(upper.slice(0, -1));
 }
 
-// 노드 minNodes개 이상인 주제만 영역이 된다. label은 껍질의 맨 위 점(이름은 그 위에 얹는다).
-export function topicRegions(nodes, positions, { minNodes = 3, trim = 1.7 } = {}) {
+// 노드 minNodes개 이상인 주제만 영역이 된다. 기타는 나머지를 모은 색이라 영토가 아니다. label은 껍질의 맨 위 점(이름은 그 위에 얹는다).
+export function topicRegions(nodes, positions, { minNodes = 3, trim = 1.7, skip = ['기타'] } = {}) {
   const byTopic = new Map();
   for (const node of nodes) {
     const p = positions.get(node.id);
-    if (!p || !node.topic) continue;
+    if (!p || !node.topic || skip.includes(node.topic)) continue;
     if (!byTopic.has(node.topic)) byTopic.set(node.topic, []);
     byTopic.get(node.topic).push({ x: p.x, y: p.y });
   }

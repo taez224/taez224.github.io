@@ -17,7 +17,9 @@ const outgoing = resolve(note.outgoing);
 const incoming = resolve(note.incoming);
 const mapNode = garden.nodes.find((node) => node.path === note.path);
 const mapUrl = mapNode ? withBase(`/map/?node=${encodeURIComponent(mapNode.mapKey)}`) : '';
-const topics = note.publicTags.slice(0, 2).map((tag) => ({ label: displayTag(tag), color: topicColor(tag.split('/')[0]) }));
+// 주제 점 색은 지도와 같다. 노드가 적어 기타로 접힌 주제는 여기서도 기타 색(garden.topicFold).
+const topicFold = garden.topicFold ?? {};
+const topics = note.publicTags.slice(0, 2).map((tag) => { const head = tag.split('/')[0]; return { label: displayTag(tag), color: topicColor(topicFold[head] ?? head) }; });
 const parent = parentLink(note, mapNode?.mapKey);
 const parentUrl = withBase(parent.path);
 const series = note.kind === 'blog' ? seriesNeighbors(note, garden.blog.series) : null;

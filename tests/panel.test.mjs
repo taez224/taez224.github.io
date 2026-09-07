@@ -14,6 +14,8 @@ test('panelModel builds meta, topic dots and reference lists from public edges o
   assert.deepEqual([model.kind, model.date, model.isHub, model.title, model.url], ['노트', '2026.07.12', true, 'A', '/obsidian/notes/a/']);
   assert.deepEqual(model.topics.map((t) => t.name), ['AI', '소프트웨어공학']);
   assert.equal(model.topics[0].color, '#80698f');
+  const folded = panelModel(notes.get('a.md'), notes, edges, { 소프트웨어공학: '기타' });
+  assert.equal(folded.topics[1].color, '#817f72', '접힌 주제의 점은 기타 색');
   assert.equal(model.summary, '');
   assert.deepEqual(model.outgoing, [{ path: 'b.md', title: 'B', url: '/obsidian/notes/b/' }]);
   assert.deepEqual(model.incoming, [{ path: 'c.md', title: 'C', url: '/obsidian/dev/c/' }]);

@@ -34,6 +34,6 @@ test('renderSnapshotSvg labels hubs only and colors by topic', () => {
   assert.match(svg, />A<\/text>/);
   assert.doesNotMatch(svg, /아주 긴 제목/);
   assert.match(svg, /fill="#80698f"/);
-  assert.match(svg, /fill="#5f8184"/);
+  assert.match(svg, /fill="#5d7897"/); // 개발 = 옛 소프트웨어공학의 파란색
   assert.equal((svg.match(/<line /g) || []).length, 2);
 });

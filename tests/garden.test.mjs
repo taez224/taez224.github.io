@@ -93,7 +93,9 @@ test('graphRule linked keeps only development notes connected to the thought map
   assert.ok(ids.includes('01_Slipbox/외톨이.md'));
   assert.ok(garden.development.concepts.some((record) => record.path === `${dev}/Concepts/고립된 개념.md`), '고립 노트는 목록에는 남는다');
   const devNode = garden.nodes.find((node) => node.id === `${dev}/Concepts/연결된 개념.md`);
-  assert.equal(devNode.topic, '개발');
+  assert.equal(devNode.topicTag, '개발');
+  assert.equal(devNode.topic, '기타', '지도 노드가 3개 미만인 주제는 색이 기타로 접힌다');
+  assert.equal(garden.topicFold['개발'], '기타');
   assert.ok(garden.edges.some((edge) => edge.source === devNode.id && edge.target === '01_Slipbox/생각 A.md'));
 });
 

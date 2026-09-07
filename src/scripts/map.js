@@ -94,7 +94,7 @@ function select(id, pushUrl, { open = true } = {}) {
   graph.select(id);
   const node = site.nodes.find((n) => n.id === id);
   // 공개 노트 레코드에는 type이 없어 허브 여부는 그래프 노드에서 가져온다.
-  if (node) { renderPanel({ ...withNodeIds(panelModel(notesByPath.get(node.path) ?? node, notesByPath, site.noteEdges)), isHub: node.type === 'hub' }); if (open) panel.dataset.open = ''; }
+  if (node) { renderPanel({ ...withNodeIds(panelModel(notesByPath.get(node.path) ?? node, notesByPath, site.noteEdges, site.topicFold ?? {})), isHub: node.type === 'hub' }); if (open) panel.dataset.open = ''; }
   else { body.innerHTML = emptyPanel; delete panel.dataset.open; }
   if (pushUrl) {
     const params = new URLSearchParams();
