@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { createMarkdownRenderer, slugifyHeading } from './markdown.mjs';
+import { createMarkdownRenderer, slugifyHeading, stripInlineMarkup } from './markdown.mjs';
 import { developmentCategory, pathMatches, isExcluded as excludedByPolicy, isIncluded as includedByPolicy, validatePublicationConfig } from './publication.mjs';
 import { slugFor, slugify, kindPrefix, noteUrl, assertUniqueSlugs } from './slug.mjs';
 import { plainText } from './text.mjs';
@@ -67,17 +67,17 @@ function firstHeading(body, fallback) {
   return heading ? heading[1].trim() : fallback;
 }
 
-function headingsFor(body) {
+// 목차·검색용 헤딩. 개수 제한은 두지 않는다(사이드바가 스크롤한다). 제목의 굵게·코드·위키링크 표시는 지운다.
+export function headingsFor(body) {
   const headingIds = new Map();
   return [...String(body ?? '').matchAll(/^(#{2,4})\s+(.+)$/gm)]
     .map((match) => {
-      const title = match[2].trim();
+      const title = stripInlineMarkup(match[2].trim());
       const baseId = slugifyHeading(title);
       const count = (headingIds.get(baseId) ?? 0) + 1;
       headingIds.set(baseId, count);
       return { id: count === 1 ? baseId : `${baseId}-${count}`, level: match[1].length, title };
-    })
-    .slice(0, 8);
+    });
 }
 
 function excerpt(body) {

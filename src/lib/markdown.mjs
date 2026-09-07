@@ -59,7 +59,7 @@ function escapeHtml(value) {
   }[character]));
 }
 
-function stripInlineMarkup(value) {
+export function stripInlineMarkup(value) {
   return String(value ?? '')
     .replace(/!?(\[\[|\]\])/g, '')
     .replace(/[`*_~]/g, '')
@@ -129,10 +129,14 @@ function replaceStandardLinks(source, context) {
   return result;
 }
 
+// Obsidian 전용 문법을 걷어낸다. 주석(%% %%), 하이라이트(== ==), 그리고 블록 ID(문단 끝이나 단독 줄의 ^id).
+// 블록 ID는 링크 앵커용이라 독자에게 보여서는 안 된다. 코드 블록 안의 ^는 줄 끝 단어 형태가 아니면 건드리지 않는다.
 function replaceObsidianFormatting(source) {
   return source
     .replace(/%%[\s\S]*?%%/g, '')
-    .replace(/==([^=\n]+)==/g, '<mark>$1</mark>');
+    .replace(/==([^=\n]+)==/g, '<mark>$1</mark>')
+    .replace(/^\^[A-Za-z0-9-]+[ \t]*$\n?/gm, '')
+    .replace(/[ \t]+\^[A-Za-z0-9-]+[ \t]*$/gm, '');
 }
 
 function renderCallouts(source, renderCore, depth = 0) {

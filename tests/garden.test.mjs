@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { assembleGarden } from '../src/lib/garden.mjs';
+import { headingsFor, assembleGarden } from '../src/lib/garden.mjs';
 
 const dev = '30_Resources/Development';
 async function makeVault(files) {
@@ -198,4 +198,12 @@ test('public notes carry a reading time of at least one minute', async () => {
   const short = garden.notes.find((note) => note.path === '01_Slipbox/생각 B.md');
   assert.equal(short.readingMinutes, 1);
   for (const note of garden.notes) assert.ok(Number.isInteger(note.readingMinutes) && note.readingMinutes >= 1, note.path);
+});
+
+test('headingsFor keeps every heading, strips inline markup and suffixes duplicate ids', () => {
+  const body = Array.from({ length: 12 }, (_, i) => `## ${i + 1}. 절`).join('\n\n') + '\n\n## 3. **DX와 DevRel** 그리고 `AX`\n\n### 절\n\n### 절';
+  const headings = headingsFor(body);
+  assert.equal(headings.length, 15);
+  assert.equal(headings[12].title, '3. DX와 DevRel 그리고 AX');
+  assert.deepEqual(headings.slice(13).map((h) => h.id), ['절', '절-2']);
 });

@@ -40,6 +40,8 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, layoutGraph(garde
   /* 그래프 상자는 뷰포트 안에 다 들어온다. 1600px 미만에서는 오른쪽 끝까지, 그 이상은 940px. 맞춤 배율이 상자에 맞춘다. */
   .hero-graph { position: absolute; top: 0; left: calc(50% - 160px); width: min(940px, 50% + 160px); height: 600px; }
   .hero-graph svg, .hero-snapshot { display: block; width: 100%; height: 100%; }
+  /* 오른쪽·위·아래 가장자리를 옅게. 색면과 간선이 헤더 선·대표 글 선에 닿거나 화면 끝에서 뚝 잘리지 않게 한다. 왼쪽은 종이색 그라데이션이 맡는다. */
+  .hero-graph { -webkit-mask-image: linear-gradient(90deg, #000 0, #000 84%, transparent 100%), linear-gradient(180deg, transparent 0, #000 10%, #000 90%, transparent 100%); mask-image: linear-gradient(90deg, #000 0, #000 84%, transparent 100%), linear-gradient(180deg, transparent 0, #000 10%, #000 90%, transparent 100%); -webkit-mask-composite: source-in; mask-composite: intersect; }
   .hero-graph .graph { cursor: pointer; }
   .hero .graph .node.is-dim { opacity: 1; }
   /* 종이색은 소개 블록(오른쪽 끝 50% - 160px)보다 조금 더 가서 끝난다. 퍼센트로 두면 1280px에서 소개문 옆에 반투명 점이 걸친다. */
@@ -57,12 +59,16 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, layoutGraph(garde
   .recent li a { color: var(--ink); font-size: var(--t-list); line-height: 1.5; }
   .recent li a.kind { font-size: var(--t-meta); color: var(--muted); text-align: right; }
   @media (max-width: 1240px) { .hero-graph { left: 460px; width: calc(100% - 460px); } .hero-about { left: 24px; } }
-  @media (max-width: 1000px) { .hero { height: 520px; } .hero-about { width: 360px; } .hero-graph { left: 400px; width: calc(100% - 400px); } }
-  @media (max-width: 720px) {
+  /* 720~1000px: 소개 옆 남는 폭(370px 안팎)에 지도를 넣으면 너무 작다. 지도를 전폭으로 위에, 소개를 아래에 쌓는다(살아 있는 지도 그대로). */
+  @media (max-width: 1000px) {
     .hero { height: auto; overflow: visible; }
-    .hero-graph { position: static; width: 100%; height: 250px; margin-top: 10px; }
+    .hero-graph { position: static; width: 100%; height: 420px; -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 8%, #000 92%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0, #000 8%, #000 92%, transparent 100%); }
     .hero-fade { display: none; }
-    .hero-about { position: static; width: calc(100% - 40px); margin: 14px auto 36px; }
+    .hero-about { position: static; width: calc(100% - 48px); max-width: 640px; margin: 8px auto 40px; }
+  }
+  @media (max-width: 720px) {
+    .hero-graph { height: 250px; margin-top: 10px; -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 8%, #000 92%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0, #000 8%, #000 92%, transparent 100%); }
+    .hero-about { width: calc(100% - 40px); margin: 14px auto 36px; }
     .featured { padding: 32px 0 36px; }
     .featured h2 { font-size: 24px; }
     .featured p { font-size: 16px; }

@@ -2,14 +2,16 @@
 import LocalGraph from './LocalGraph.astro';
 import Icon from './Icon.astro';
 const { note, headings, outgoing, incoming, mapUrl, series = null } = Astro.props;
-const toc = headings.filter((h) => h.level === 2 || h.level === 3);
+// 목차는 h2·h3. h3에는 자기 h2의 id를 달아 두고, 스크립트가 읽고 있는 절의 h3만 펼친다(JS 없이는 전부 보인다).
+let section = '';
+const toc = headings.filter((h) => h.level === 2 || h.level === 3).map((h) => { if (h.level === 2) section = h.id; return { ...h, parent: h.level === 3 ? section : '' }; });
 const block = (label, icon, items) => ({ label, icon, items, long: items.length > 6 });
 const blocks = [block('참조', 'out', outgoing), block('역참조', 'in', incoming)].filter((b) => b.items.length);
 ---
 <aside class="note-side">
-  {toc.length >= 2 && <nav class="rail" aria-label="목차">
-    {toc.map((h) => <a href={`#${h.id}`} data-heading={h.id} class:list={[{ 'level-3': h.level === 3 }]}>{h.title}</a>)}
-  </nav>}
+  {toc.length >= 2 && <div class:list={['rail-scroll', { 'is-long': toc.length > 10 }]}><nav class="rail" aria-label="목차">
+    {toc.map((h) => <a href={`#${h.id}`} data-heading={h.id} data-parent={h.parent || undefined} class:list={[{ 'level-3': h.level === 3 }]}>{h.title}</a>)}
+  </nav></div>}
   {series && series.total > 0 && <section class="list-block series-block">
     <div class="meta">연재<span class="count">{series.isHub ? series.total : `${series.position} / ${series.total}`}</span></div>
     {!series.isHub && (series.url ? <a class="series-hub" href={series.url}>{series.title}</a> : <span class="series-hub">{series.title}</span>)}
@@ -26,6 +28,12 @@ const blocks = [block('참조', 'out', outgoing), block('역참조', 'in', incom
 <style>
   .note-side { display: flex; flex-direction: column; gap: 34px; }
   .rail { display: flex; flex-direction: column; border-left: 2px solid var(--line); }
+  /* 목차가 길면(11개 이상) 목차만 안에서 스크롤한다. 로컬 그래프와 참조 목록은 그 아래에 그대로 보인다. 끝까지 내리면 페이드를 걷는다. */
+  .rail-scroll { position: relative; }
+  .rail-scroll.is-long .rail { max-height: 340px; overflow-y: auto; padding-right: 8px; scrollbar-width: thin; scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { .rail-scroll.is-long .rail { scroll-behavior: auto; } }
+  .rail-scroll.is-long::after { position: absolute; right: 0; bottom: 0; left: 0; height: 36px; pointer-events: none; background: linear-gradient(180deg, rgba(247,247,242,0) 0%, var(--paper) 100%); content: ""; }
+  .rail-scroll.is-long[data-at-end]::after { display: none; }
   .rail a { display: block; margin-left: -2px; padding: 5px 0 5px 16px; border-left: 2px solid transparent; color: var(--muted); font-size: var(--t-side); line-height: 1.5; }
   .rail a.level-3 { padding-left: 28px; font-size: var(--t-meta); }
   /* 현재 위치 레일은 이 노트의 주제색(NotePage가 --topic으로 준다). */

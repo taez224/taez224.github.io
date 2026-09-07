@@ -15,9 +15,9 @@
 /* 주제 영역: 같은 주제 노드의 껍질을 옅은 색면으로. 이름은 자간 넓힌 명조, 화면 크기 고정(엔진이 인라인 지정). */
 .graph [data-regions] { opacity: .06; pointer-events: none; }
 .graph.hero [data-regions] { opacity: .07; }
-.graph .region { stroke-width: 90; stroke-linejoin: round; }
+.graph .region { stroke-width: 64; stroke-linejoin: round; } /* 색면 여백 32px. 45px는 경계처럼 오해된다는 사용자 피드백 */
 .graph [data-region-labels] { pointer-events: none; }
-.graph .region-label { font-family: var(--display); font-weight: 700; letter-spacing: .16em; opacity: .85; paint-order: stroke; stroke: var(--paper); stroke-linejoin: round; }
+.graph .region-label { font-family: var(--display); font-weight: 700; letter-spacing: .16em; opacity: .95; paint-order: stroke; stroke: var(--paper); stroke-linejoin: round; }
 .graph .node { cursor: pointer; outline: none; transition: opacity .15s ease; }
 .graph .node.is-dim { opacity: .22; }
 .graph .node .dot { stroke: var(--paper); stroke-width: 2; }
