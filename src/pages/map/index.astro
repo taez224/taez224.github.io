@@ -6,11 +6,12 @@ import { withBase, GRAPH_COLORS } from '../../lib/format.mjs';
 import '../../styles/graph.css';
 const { nodes, stats } = await getGarden();
 const startpoints = nodes.filter((n) => n.isEntry);
+const hubs = nodes.filter((n) => n.type === 'hub' && !n.isEntry).sort((a, b) => (b.degree ?? 0) - (a.degree ?? 0));
 const topics = Object.keys(GRAPH_COLORS).map((t) => ({ name: t, color: GRAPH_COLORS[t], count: nodes.filter((n) => n.topic === t).length })).filter((t) => t.count);
 ---
 <Shell title="생각 지도" description="노트를 고르고 연결된 생각을 따라가는 지도." path="/map/" active="map">
   <div class="wrap map-page" data-site={withBase('/data/site.json')}>
-    <div class="page-head"><h1 class="display">생각 지도</h1><span class="meta">노트 {stats.nodes} · 연결 {stats.edges}</span></div>
+    <div class="page-head"><h1 class="display">생각 지도</h1><span class="meta" data-map-count>노트 {stats.nodes} · 연결 {stats.edges}</span></div>
     <div class="map-layout">
       <div class="map-stage">
         <div class="map-toolbar">
@@ -31,7 +32,7 @@ const topics = Object.keys(GRAPH_COLORS).map((t) => ({ name: t, color: GRAPH_COL
           </div>
         </div>
       </div>
-      <MapPanel hubs={startpoints} />
+      <MapPanel startpoints={startpoints} hubs={hubs} />
     </div>
   </div>
 </Shell>

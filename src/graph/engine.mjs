@@ -83,6 +83,8 @@ export function estimateTextWidth(line, fontSize = 13) {
 }
 // 이 배율부터는 자리가 나는 만큼 제목을 더 보인다(허브 → 연결 많은 순, 겹치지 않는 것만).
 export const LABEL_REVEAL_SCALE = 1.2;
+// 평소 배율에서도 연결 많은 순으로 이만큼은 자리가 나면 제목을 보인다. 허브만 남기면 가장 연결 많은 노트가 점으로만 보인다.
+export const RESTING_LABEL_LIMIT = 6;
 
 // 20자를 넘는 제목은 두 줄로 접는다. 줄 길이를 절반 근처로 잡아 두 줄이 비슷하게 나뉘게 한다.
 export function wrapLabel(title, maxChars = 20) {
@@ -172,14 +174,24 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
   const xs = [...positions.values()].map((p) => p.x);
   const xLo = Math.min(...xs), xThird = (Math.max(...xs) - xLo) / 3;
   const anchorFor = (x) => (!labelAll || labelAnchor === 'middle' ? 'middle' : x < xLo + xThird ? 'start' : x > xLo + 2 * xThird ? 'end' : 'middle');
-  // 제목 배치 계획. 우선순위(선택 → 호버 → 허브 → 연결 많은 순)대로 아래·위·오른쪽·왼쪽 네 자리를 시도해
+  // 제목 배치 계획. 우선순위(선택 → 호버 → 허브 → 연결 많은 순)대로 아래·위·오른쪽·왼쪽, 그다음 대각선 네 자리를 시도해
   // 이미 놓인 제목이나 노드 원과 겹치지 않는 첫 자리를 준다. 기본 집합(선택·호버·허브)은 자리가 없어도 아래에 둔다.
   // 나머지는 1.2배 이상 확대했거나 선택 상태일 때, 자리가 날 때만 보인다. 흐려진 노드는 제외.
-  const PLACEMENTS = ['below', 'above', 'right', 'left'];
+  const PLACEMENTS = ['below', 'above', 'right', 'left', 'below-right', 'below-left', 'above-right', 'above-left'];
   const labelGeometry = (node, p, lines, placement, u) => {
     const r = radius(node), lh = 18 * u, gap = 8 * u;
     const w = Math.max(...lines.map((line) => estimateTextWidth(line))) * u, h = lines.length * lh;
     const mid = p.y - ((lines.length - 1) * lh) / 2 + 5 * u;
+    // 대각선 자리: 원 테두리에서 45도 방향으로 살짝 떨어진 모서리에 제목의 안쪽 모서리를 맞춘다. 밀집 구간에서 상하좌우가 다 막혔을 때 쓴다.
+    if (placement.includes('-')) {
+      const [vertical, side] = placement.split('-');
+      const d = (r + gap) * 0.75;
+      const ax = side === 'right' ? p.x + d : p.x - d, anchor = side === 'right' ? 'start' : 'end';
+      const left = side === 'right' ? ax : ax - w, right = left + w;
+      if (vertical === 'below') { const top = p.y + d; return { x: ax, y: top + 13 * u, anchor, box: { left, right, top, bottom: top + h } }; }
+      const bottom = p.y - d + 4 * u;
+      return { x: ax, y: p.y - d - (lines.length - 1) * lh, anchor, box: { left, right, top: bottom - h, bottom } };
+    }
     if (placement === 'above') return { x: p.x, y: p.y - r - gap - (lines.length - 1) * lh, anchor: 'middle', box: { left: p.x - w / 2, right: p.x + w / 2, top: p.y - r - gap - h + 4 * u, bottom: p.y - r - gap + 4 * u } };
     if (placement === 'right') return { x: p.x + r + gap, y: mid, anchor: 'start', box: { left: p.x + r + gap, right: p.x + r + gap + w, top: p.y - h / 2, bottom: p.y + h / 2 } };
     if (placement === 'left') return { x: p.x - r - gap, y: mid, anchor: 'end', box: { left: p.x - r - gap - w, right: p.x - r - gap, top: p.y - h / 2, bottom: p.y + h / 2 } };
@@ -212,10 +224,11 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
     };
     const priority = (id) => (id === state.selected ? 0 : 1);
     for (const id of base.sort((a, b) => priority(a) - priority(b))) { const node = byId.get(id); if (node) tryPlace(node, true); }
-    // 홈 히어로(hero 모드)는 허브·호버만 보인다. 자리 채우기는 지도에서만.
-    if (mode === 'map' && (scale >= LABEL_REVEAL_SCALE || state.selected)) {
+    // 홈 히어로(hero 모드)는 허브·호버만 보인다. 자리 채우기는 지도에서만: 평소에는 연결 많은 순으로 몇 개, 확대하거나 선택하면 자리가 나는 만큼 전부.
+    if (mode === 'map') {
       const rest = nodes.filter((node) => !plan.has(node.id) && !dimmed(node.id)).sort((a, b) => (b.degree ?? 0) - (a.degree ?? 0));
-      for (const node of rest) tryPlace(node, false);
+      const reveal = scale >= LABEL_REVEAL_SCALE || state.selected;
+      for (const node of reveal ? rest : rest.slice(0, RESTING_LABEL_LIMIT)) tryPlace(node, false);
     }
     // 호버한 노드는 이미 자리가 있으면 그대로 두고, 숨어 있던 노드면 그때만 빈자리(없으면 아래)에 얹는다. 맨 위에 그려지므로 겹쳐도 읽힌다.
     if (state.hovered && !plan.has(state.hovered)) { const node = byId.get(state.hovered); if (node) tryPlace(node, true); }

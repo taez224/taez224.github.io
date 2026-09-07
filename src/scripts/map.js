@@ -1,4 +1,4 @@
-import { createGraph } from '../graph/engine.mjs';
+import { createGraph, isFilteredOut } from '../graph/engine.mjs';
 import { layoutGraph } from '../graph/layout.mjs';
 import { panelModel } from '../lib/panel.mjs';
 
@@ -7,6 +7,8 @@ const svg = document.querySelector('svg[data-map]');
 const panel = document.querySelector('[data-panel]');
 const body = document.querySelector('[data-panel-body]');
 const emptyPanel = body.innerHTML;
+const countEl = document.querySelector('[data-map-count]');
+const totalCount = countEl?.textContent ?? '';
 const escape = (v) => String(v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const OUT = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="4" cy="7" r="2"></circle><path d="M6 7h6m-2.5-2.5L12 7l-2.5 2.5"></path></svg>';
 const IN = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="7" r="2"></circle><path d="M8 7H2m2.5-2.5L2 7l2.5 2.5"></path></svg>';
@@ -61,15 +63,30 @@ function syncSheet() {
   }
 }
 
+const positions = layoutGraph(site.nodes, site.edges, { ...stageSize, pad: 40 });
 graph = createGraph(svg, {
   nodes: site.nodes,
   edges: site.edges,
-  positions: layoutGraph(site.nodes, site.edges, { ...stageSize, pad: 40 }),
+  positions,
   mode: 'map',
   nodeScale: 0.85,
   onSelect: (id) => select(id, true),
   onOpen: (id) => { const node = site.nodes.find((n) => n.id === id); if (node) window.location.href = node.url; }
 });
+
+// 모바일 시트가 고른 노드를 덮을 때만 배율은 그대로 두고 노드가 시트 위 띠 안에 오도록 세로로 민다.
+function keepNodeAboveSheet(id) {
+  const p = positions.get(id);
+  if (!p || !narrow.matches) return;
+  const view = graph.view();
+  const svgTop = svg.getBoundingClientRect().top;
+  const nodeY = svgTop + view.y + p.y * view.scale;
+  const margin = 56; // 노드 반지름과 아래 제목 한 줄
+  const limit = window.innerHeight - panel.offsetHeight - margin;
+  if (nodeY <= limit) return;
+  const top = Math.max(svgTop, header?.getBoundingClientRect().bottom ?? 0) + margin;
+  graph.moveTo({ ...view, y: view.y + Math.max(top, limit) - nodeY });
+}
 
 function select(id, pushUrl, { open = true } = {}) {
   // 선택해도 시점은 그대로 둔다. 이웃 제목은 자리가 나는 만큼 그 자리에서 보인다.
@@ -83,6 +100,8 @@ function select(id, pushUrl, { open = true } = {}) {
     window.history.replaceState(null, '', `${window.location.pathname}${params.size ? `?${params}` : ''}`);
   }
   syncSheet();
+  if (node && open) keepNodeAboveSheet(node.id);
+  updateCount();
 }
 
 // 시트만 닫는다. 선택은 유지된다. 선택 해제는 빈 곳 탭.
@@ -90,7 +109,18 @@ function closeSheet() { delete panel.dataset.open; syncSheet(); }
 
 const pressedTopics = () => new Set([...document.querySelectorAll('[data-topic][aria-pressed="true"]')].map((b) => b.dataset.topic));
 const hubFilter = document.querySelector('[data-hub-filter]');
-function applyFilter() { const set = pressedTopics(); graph.setFilter({ topics: set.size ? set : null, hubsOnly: hubFilter?.getAttribute('aria-pressed') === 'true' }); }
+const currentFilter = () => { const set = pressedTopics(); return { topics: set.size ? set : null, hubsOnly: hubFilter?.getAttribute('aria-pressed') === 'true' }; };
+// 필터가 켜지면 제목 옆 집계가 걸러진 수로 바뀐다. 선택된 노드는 엔진과 같이 흐려지지 않으므로 센다.
+function updateCount() {
+  if (!countEl) return;
+  const filter = currentFilter();
+  if (!filter.topics && !filter.hubsOnly) { countEl.textContent = totalCount; return; }
+  const selected = graph.selected();
+  const shown = new Set(site.nodes.filter((n) => n.id === selected || !isFilteredOut(n, filter)).map((n) => n.id));
+  const links = site.edges.filter((e) => shown.has(e.source) && shown.has(e.target)).length;
+  countEl.textContent = `노트 ${shown.size} · 연결 ${links}`;
+}
+function applyFilter() { graph.setFilter(currentFilter()); updateCount(); }
 const toggle = (button) => { button.setAttribute('aria-pressed', String(button.getAttribute('aria-pressed') !== 'true')); applyFilter(); };
 for (const button of document.querySelectorAll('[data-topic]')) button.addEventListener('click', () => toggle(button));
 hubFilter?.addEventListener('click', () => toggle(hubFilter));
@@ -107,8 +137,34 @@ document.querySelector('[data-graph-zoom="fit"]').addEventListener('click', () =
 document.querySelector('[data-panel-close]')?.addEventListener('click', closeSheet);
 backdrop?.addEventListener('click', closeSheet);
 narrow.addEventListener('change', syncSheet);
-document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && narrow.matches && 'open' in panel.dataset) closeSheet(); });
-window.addEventListener('resize', () => graph.fit());
+// Escape: 시트가 열려 있으면 닫고, 아니면 선택을 푼다(빈 곳 클릭과 같다). 검색 다이얼로그의 Escape는 건드리지 않는다.
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape' || document.querySelector('dialog[open]')) return;
+  if (narrow.matches && 'open' in panel.dataset) closeSheet();
+  else if (graph.selected()) select(null, true);
+});
+// 모바일 주소창이 접히면 높이만 바뀐 resize가 온다. 무대 폭이 실제로 바뀔 때만 다시 맞춘다.
+let stageWidth = stageSize.width;
+window.addEventListener('resize', () => {
+  const width = Math.round(svg.parentElement.getBoundingClientRect().width);
+  if (width === stageWidth) return;
+  stageWidth = width;
+  graph.fit();
+});
+// 시트 손잡이를 아래로 끌면 따라 내려오고, 80px 넘게 끌어 놓으면 닫힌다.
+const grip = panel.querySelector('[data-sheet-grip]');
+let drag = null;
+grip?.addEventListener('pointerdown', (event) => { drag = { id: event.pointerId, y: event.clientY }; try { grip.setPointerCapture(event.pointerId); } catch { /* 합성 이벤트 등 잡을 수 없는 포인터 */ } panel.style.transition = 'none'; });
+grip?.addEventListener('pointermove', (event) => { if (drag?.id === event.pointerId) panel.style.transform = `translateY(${Math.max(0, event.clientY - drag.y)}px)`; });
+const endDrag = (event) => {
+  if (drag?.id !== event.pointerId) return;
+  const dy = Math.max(0, event.clientY - drag.y);
+  drag = null;
+  panel.style.transition = ''; panel.style.transform = '';
+  if (dy > 80) closeSheet();
+};
+grip?.addEventListener('pointerup', endDrag);
+grip?.addEventListener('pointercancel', endDrag);
 
 applyFilter();
 syncSheet();

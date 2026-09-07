@@ -1,16 +1,19 @@
 ---
-const { hubs } = Astro.props;
+const { startpoints, hubs = [] } = Astro.props;
 ---
 <div class="sheet-backdrop" data-sheet-backdrop hidden></div>
 <aside class="map-panel" data-panel aria-live="polite">
+  <div class="sheet-grip" data-sheet-grip aria-hidden="true"></div>
   <button class="panel-close" type="button" data-panel-close aria-label="닫기">닫기</button>
   <div data-panel-body>
-    <section class="list-block"><div class="meta">시작점</div><ul class="side-list">{hubs.map((h) => <li><a href={h.url} data-node={h.id}>{h.displayTitle}</a></li>)}</ul></section>
+    <section class="list-block"><div class="meta">시작점</div><ul class="side-list">{startpoints.map((h) => <li><a href={h.url} data-node={h.id}>{h.displayTitle}</a></li>)}</ul></section>
+    {hubs.length > 0 && <section class="list-block"><div class="meta">허브</div><ul class="side-list">{hubs.map((h) => <li><a href={h.url} data-node={h.id}>{h.displayTitle}</a></li>)}</ul></section>}
   </div>
 </aside>
 <style is:global>
   .map-panel { display: flex; flex-direction: column; min-height: 0; }
   .panel-close { display: none; }
+  .sheet-grip { display: none; }
   .panel-head { display: flex; flex-direction: column; gap: 12px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
   .panel-head h2 { margin: -6px 0 0; font-size: var(--t-h2); line-height: 1.45; }
   .panel-topics { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: var(--t-meta); color: var(--muted); }
@@ -25,7 +28,10 @@ const { hubs } = Astro.props;
     .sheet-backdrop[hidden] { display: none; }
     .map-panel { position: fixed; z-index: 31; right: 0; bottom: 0; left: 0; max-height: 55dvh; padding: 12px 20px 24px; border-top: 1px solid var(--line); border-radius: 0; background: var(--paper-strong); box-shadow: none; transform: translateY(100%); transition: transform .2s ease; overflow-y: auto; }
     .map-panel[data-open] { transform: translateY(0); }
-    .panel-close { display: inline-flex; align-self: flex-end; min-height: 36px; padding: 0 8px; border: 0; background: transparent; color: var(--muted); font-size: var(--t-meta); }
+    /* 손잡이를 아래로 끌면 시트가 닫힌다. 닫기 버튼은 그대로 둔다. */
+    .sheet-grip { display: block; flex: 0 0 auto; margin: -4px 0 0; padding: 8px 0 6px; touch-action: none; cursor: grab; }
+    .sheet-grip::before { display: block; width: 36px; height: 4px; margin: 0 auto; border-radius: 2px; background: var(--line); content: ""; }
+    .panel-close { display: inline-flex; align-self: flex-end; min-height: 32px; margin-top: -8px; padding: 0 8px; border: 0; background: transparent; color: var(--muted); font-size: var(--t-meta); }
     /* 시트는 제목·요약·노트 읽기까지만 보인다. 참조·역참조는 노트 페이지의 사이드바에서 본다. */
     .map-panel .panel-lists { display: none; }
     .map-panel .panel-head { padding-bottom: 0; border-bottom: 0; }
