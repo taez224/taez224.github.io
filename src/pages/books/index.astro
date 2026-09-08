@@ -2,14 +2,15 @@
 import Shell from '../../layouts/Shell.astro';
 import BookCard from '../../components/BookCard.astro';
 import { getGarden } from '../../lib/get-garden.mjs';
+import { statusFilters } from '../../lib/books.mjs';
 const { books } = await getGarden();
 const tiers = ['S', 'A', 'B', 'C', 'D', '미분류'].map((tier) => ({ tier, books: books.filter((b) => b.tier === tier) })).filter((t) => t.books.length);
-const statuses = [...new Set(books.map((b) => b.status).filter(Boolean))];
+const filters = statusFilters(books);
 ---
 <Shell title="책장" description="읽은 책과 한 줄 평." path="/books/" active="books">
   <div class="wrap books-page">
-    <div class="page-head"><div class="page-title"><h1 class="display">책장</h1><span class="meta" data-book-count>{books.length}권</span></div>
-      <label class="meta">읽기 상태 <select data-book-status><option value="all">전체</option>{statuses.map((s) => <option value={s}>{s}</option>)}</select></label>
+    <div class="page-head"><h1 class="display">책장</h1>
+      <nav class="status-filter meta" aria-label="읽기 상태">{filters.map((f) => <button type="button" data-book-status={f.value} aria-pressed={String(f.value === 'all')}>{f.label} <span class="count">{f.count}</span></button>)}</nav>
     </div>
     {tiers.map((t) => <section class="tier">
       <div class="tier-head"><h2 class:list={['display', { 'unrated': t.tier === '미분류' }]}>{t.tier}</h2><span class="meta" data-tier-count>{t.books.length}권</span></div>
@@ -20,14 +21,16 @@ const statuses = [...new Set(books.map((b) => b.status).filter(Boolean))];
 </Shell>
 <style>
   .books-page { padding: 36px 0 96px; }
-  .page-head { display: flex; align-items: baseline; gap: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
-  .page-title { display: flex; align-items: baseline; gap: 12px; }
+  .page-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 20px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
   .page-head h1 { margin: 0; font-size: 28px; line-height: 1.4; }
   .book-source { margin: 20px 0 0; color: var(--muted); text-align: right; }
   .book-source a { color: inherit; text-underline-offset: 3px; }
-  /* 제목 줄의 셀렉트는 옆 메타 글자(13px)에 맞춘 높이와 크기로 둔다. */
-  .page-head label { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; }
-  select { height: 32px; padding: 0 26px 0 10px; border: 1px solid var(--line); border-radius: 3px; background: var(--paper); color: var(--ink); font-size: var(--t-meta); line-height: 1; }
+  /* 거르개는 지도 범례와 같은 방식이다. 누른 것 하나만 aria-pressed로 남는다. */
+  .status-filter { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 4px; margin-left: auto; }
+  .status-filter button { padding: 4px 7px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font: inherit; cursor: pointer; }
+  .status-filter button:hover, .status-filter button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+  .status-filter .count { color: var(--faint); font-variant-numeric: tabular-nums; }
+  .status-filter button[aria-pressed="true"] .count { color: inherit; }
   .tier { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 24px; margin-top: 28px; padding-bottom: 28px; border-bottom: 1px solid var(--line); }
   .tier-head h2 { margin: 0; color: var(--accent); font-size: 40px; font-weight: 600; line-height: 1; }
   .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px 40px; }
