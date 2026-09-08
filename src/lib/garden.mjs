@@ -4,6 +4,7 @@ import MarkdownIt from 'markdown-it';
 import { createMarkdownRenderer, slugifyHeading, stripInlineMarkup } from './markdown.mjs';
 import { developmentCategory, externalPublicationFor, pathMatches, isExcluded as excludedByPolicy, isIncluded as includedByPolicy, validatePublicationConfig } from './publication.mjs';
 import { isImagePath } from './image-types.mjs';
+import { selectGraphNodes } from '../graph/select.mjs';
 import { slugFor, slugify, kindPrefix, noteUrl, assertUniqueSlugs } from './slug.mjs';
 import { plainText } from './text.mjs';
 import { publicTags, cleanTitle } from './format.mjs';
@@ -103,6 +104,11 @@ function summaryFor(note, { kind = '', contentMode = 'full' } = {}) {
   return explicit || excerpt(note.body);
 }
 
+// frontmatter의 tags. 목록이 아니면 빈 배열로 본다.
+function tagList(meta) {
+  return Array.isArray(meta.tags) ? meta.tags : [];
+}
+
 function explicitSummary(note) {
   return String(note.meta.summary ?? '').trim();
 }
@@ -165,6 +171,20 @@ function publicUrl(value, fallback) {
 
 function stripLinkTarget(rawTarget) {
   return rawTarget.split('|')[0].split('#')[0].trim().replace(/^!/, '');
+}
+
+// 같은 열쇠에 값을 모은다. 붙일 때마다 배열을 통째로 복사하지 않는다.
+function addTo(map, key, value) {
+  const bucket = map.get(key);
+  if (bucket) bucket.push(value);
+  else map.set(key, [value]);
+}
+
+// 경로를 소문자 파일명으로 묶은 색인. 위키 링크가 폴더를 안 밝힐 때 후보를 찾는 데 쓴다.
+function indexByBasename(paths) {
+  const index = new Map();
+  for (const relativePath of paths) addTo(index, path.posix.basename(relativePath).toLowerCase(), relativePath);
+  return index;
 }
 
 function resolveTarget(sourcePath, rawTarget, byPath, byBasename, preferred = null) {
@@ -249,7 +269,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
       summary: summaryFor(note, { kind: 'blog', contentMode }),
       summaryIsExplicit: Boolean(explicitSummary(note)),
       status: String(note.meta.status ?? ''),
-      tags: Array.isArray(note.meta.tags) ? note.meta.tags : [],
+      tags: tagList(note.meta),
       created: firstDate(note.meta)
     };
   }
@@ -340,7 +360,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
   const standaloneByPublication = new Map();
   for (const post of publishedBlogPosts.filter((candidate) => !candidate.series)) {
     const publication = post.publication || '발행처 미상';
-    standaloneByPublication.set(publication, [...(standaloneByPublication.get(publication) ?? []), post]);
+    addTo(standaloneByPublication, publication, post);
   }
   const blogPublications = [...standaloneByPublication.entries()]
     .map(([publication, posts]) => ({
@@ -361,17 +381,20 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
 
   const developmentRecords = [...candidateFiles]
     .filter(([relativePath]) => kindFor(relativePath) === 'development')
-    .map(([relativePath, note]) => ({
-      path: relativePath,
-      fileTitle: path.posix.basename(relativePath, '.md'),
-      title: firstHeading(note.body, path.posix.basename(relativePath, '.md')),
-      url: siteUrl(relativePath),
-      category: developmentCategory(relativePath),
-      summary: summaryFor(note),
-      summaryIsExplicit: Boolean(explicitSummary(note)),
-      tags: Array.isArray(note.meta.tags) ? note.meta.tags : [],
-      date: firstDate(note.meta)
-    }))
+    .map(([relativePath, note]) => {
+      const fileTitle = path.posix.basename(relativePath, '.md');
+      return {
+        path: relativePath,
+        fileTitle,
+        title: firstHeading(note.body, fileTitle),
+        url: siteUrl(relativePath),
+        category: developmentCategory(relativePath),
+        summary: summaryFor(note),
+        summaryIsExplicit: Boolean(explicitSummary(note)),
+        tags: tagList(note.meta),
+        date: firstDate(note.meta)
+      };
+    })
     .sort((left, right) => right.date.localeCompare(left.date) || left.title.localeCompare(right.title, 'ko'));
 
   const development = {
@@ -381,11 +404,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
   };
 
   const byPath = new Map(graphCandidateFiles);
-  const byBasename = new Map();
-  for (const relativePath of graphCandidateFiles.keys()) {
-    const basename = path.posix.basename(relativePath).toLowerCase();
-    byBasename.set(basename, [...(byBasename.get(basename) ?? []), relativePath]);
-  }
+  const byBasename = indexByBasename(graphCandidateFiles.keys());
 
   const allEdges = [];
   for (const [relativePath, note] of graphCandidateFiles) {
@@ -436,6 +455,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
 
   function publicEntry(relativePath, note) {
     const fileTitle = path.posix.basename(relativePath, '.md');
+    const tags = tagList(note.meta);
     const kind = kindFor(relativePath);
     const title = String(note.meta.title ?? firstHeading(note.body, fileTitle));
     const { externalPublisher, contentMode } = publicationFor(relativePath, note);
@@ -452,14 +472,14 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
       isEntry: relativePath === config.entry,
       status: String(note.meta.status ?? ''),
       type: String(note.meta.type ?? ''),
-      tags: Array.isArray(note.meta.tags) ? note.meta.tags : [],
+      tags,
       aliases: stringList(note.meta.aliases),
       slug: slugByPath.get(relativePath),
-      publicTags: publicTags(Array.isArray(note.meta.tags) ? note.meta.tags : []),
+      publicTags: publicTags(tags),
       bodyText,
       // 한국어 평균 읽기 속도 분당 600자 기준. 리더 메타 줄의 "N분".
       readingMinutes: contentMode === 'external' ? 0 : Math.max(1, Math.round([...bodyText].length / 600)),
-      topic: topicFor(Array.isArray(note.meta.tags) ? note.meta.tags : []),
+      topic: topicFor(tags),
       date: firstDate(note.meta),
       summary: summaryFor(note, { kind, contentMode }),
       summaryIsExplicit: Boolean(explicitSummary(note)),
@@ -505,16 +525,8 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
 
   const publicByPath = new Map(publicEntries);
   for (const relativePath of publicEntries.keys()) knownNotePaths.add(relativePath);
-  const knownByBasename = new Map();
-  for (const relativePath of knownNotePaths) {
-    const basename = path.posix.basename(relativePath).toLowerCase();
-    knownByBasename.set(basename, [...(knownByBasename.get(basename) ?? []), relativePath]);
-  }
-  const publicByBasename = new Map();
-  for (const relativePath of publicEntries.keys()) {
-    const basename = path.posix.basename(relativePath).toLowerCase();
-    publicByBasename.set(basename, [...(publicByBasename.get(basename) ?? []), relativePath]);
-  }
+  const knownByBasename = indexByBasename(knownNotePaths);
+  const publicByBasename = indexByBasename(publicEntries.keys());
 
   const publicAssetPaths = new Set();
   // General vault attachments are available only after explicit review.
@@ -539,11 +551,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
     if (!relativePath.endsWith('.md') && !isExcluded(relativePath)) publicAssetPaths.add(relativePath);
   }
 
-  const publicAssetsByBasename = new Map();
-  for (const relativePath of publicAssetPaths) {
-    const basename = path.posix.basename(relativePath).toLowerCase();
-    publicAssetsByBasename.set(basename, [...(publicAssetsByBasename.get(basename) ?? []), relativePath]);
-  }
+  const publicAssetsByBasename = indexByBasename(publicAssetPaths);
 
   const assetCopies = new Map();
 
@@ -609,8 +617,8 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
   const outgoingByPath = new Map();
   const incomingByPath = new Map();
   for (const edge of allPublicEdges) {
-    outgoingByPath.set(edge.source, [...(outgoingByPath.get(edge.source) ?? []), edge.target]);
-    incomingByPath.set(edge.target, [...(incomingByPath.get(edge.target) ?? []), edge.source]);
+    addTo(outgoingByPath, edge.source, edge.target);
+    addTo(incomingByPath, edge.target, edge.source);
   }
   const notes = [...publicEntries.values()]
     .filter((entry) => entry.kind !== 'book')
@@ -638,64 +646,28 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
       };
     });
 
-  const seedSet = new Set();
+  const seeds = [];
   for (const seed of config.seeds) {
     const normalizedSeed = normalize(seed);
-    if (graphCandidateFiles.has(normalizedSeed)) seedSet.add(normalizedSeed);
+    if (graphCandidateFiles.has(normalizedSeed)) seeds.push(normalizedSeed);
     else console.warn(`Seed is outside the public graph scope: ${normalizedSeed}`);
   }
-
-  const pathItemSet = new Set();
-  for (const readingPath of config.paths) {
-    for (const item of readingPath.items) {
-      if (typeof item === 'string') pathItemSet.add(normalize(item));
-    }
-  }
-
-  const selected = graphAll
-    ? new Set(graphCandidateFiles.keys())
-    : new Set([...seedSet, ...[...pathItemSet].filter((item) => graphCandidateFiles.has(item))]);
-  for (let level = 0; level < config.depth; level += 1) {
-    for (const edge of allEdges) {
-      if (selected.has(edge.source)) selected.add(edge.target);
-      if (selected.has(edge.target)) selected.add(edge.source);
-    }
-  }
-
-  const degree = new Map();
-  for (const edge of allEdges) {
-    degree.set(edge.source, (degree.get(edge.source) ?? 0) + 1);
-    degree.set(edge.target, (degree.get(edge.target) ?? 0) + 1);
-  }
-
-  const required = new Set([...seedSet, ...[...pathItemSet].filter((item) => graphCandidateFiles.has(item))]);
-  let selectedPaths = [...selected];
-  if (selectedPaths.length > config.maxGraphNodes) {
-    const optional = selectedPaths
-      .filter((item) => !required.has(item))
-      .sort((left, right) => (degree.get(right) ?? 0) - (degree.get(left) ?? 0));
-    selectedPaths = [...required, ...optional.slice(0, config.maxGraphNodes - required.size)];
-  }
-  // graphRule "linked": a note from such a folder joins the map only when a thought-map node (one outside any
-  // linked-only folder) links it directly. Linked-only nodes are endpoints: a chain of development notes citing each
-  // other does not pull the rest in, and pairs that only cite each other stay out.
+  const pathItems = config.paths
+    .flatMap((readingPath) => readingPath.items)
+    .filter((item) => typeof item === 'string')
+    .map(normalize);
+  // graphRule "linked" 폴더의 노트는 지도에서 종점이다. 자세한 규칙은 selectGraphNodes에 있다.
   const linkedOnlyRoots = config.include.filter((rule) => rule.graphRule === 'linked').map((rule) => rule.path);
-  const isLinkedOnly = (item) => linkedOnlyRoots.some((root) => pathMatches(item, root));
-  const selectedNow = new Set(selectedPaths);
-  const adjacency = new Map();
-  for (const edge of allEdges) {
-    if (!selectedNow.has(edge.source) || !selectedNow.has(edge.target)) continue;
-    adjacency.set(edge.source, [...(adjacency.get(edge.source) ?? []), edge.target]);
-    adjacency.set(edge.target, [...(adjacency.get(edge.target) ?? []), edge.source]);
-  }
-  const reached = new Set(selectedPaths.filter((item) => !isLinkedOnly(item)));
-  const queue = [...reached];
-  while (queue.length) {
-    const current = queue.pop();
-    if (isLinkedOnly(current)) continue; // 개발 노트는 종점. 여기서 더 뻗지 않는다.
-    for (const next of adjacency.get(current) ?? []) if (!reached.has(next)) { reached.add(next); queue.push(next); }
-  }
-  selectedPaths = selectedPaths.filter((item) => !isLinkedOnly(item) || reached.has(item));
+  const { paths: selectedPaths, degree } = selectGraphNodes({
+    candidates: new Set(graphCandidateFiles.keys()),
+    edges: allEdges,
+    seeds,
+    pathItems,
+    depth: config.depth,
+    maxNodes: config.maxGraphNodes,
+    isEndpoint: (item) => linkedOnlyRoots.some((root) => pathMatches(item, root)),
+    all: graphAll
+  });
   const selectedSet = new Set(selectedPaths);
 
   const nodes = selectedPaths.map((relativePath) => {
