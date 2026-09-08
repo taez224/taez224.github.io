@@ -8,6 +8,7 @@ import { parentLink, seriesNeighbors } from '../lib/note-nav.mjs';
 import { kindPrefix } from '../lib/slug.mjs';
 const { entry } = Astro.props;
 const note = entry.data;
+const mobileToc = note.headings.filter((heading) => heading.level === 2 || heading.level === 3);
 const title = cleanTitle(note.title); // 허브 노트의 🗺 같은 이모지는 리더 제목·문서 제목에서 뺀다
 const { Content } = await render(entry);
 const garden = await getGarden();
@@ -41,6 +42,10 @@ const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slic
         {note.publishedUrl && <><span>·</span><a href={note.publishedUrl} target="_blank" rel="noreferrer">{note.publication || '원문'}에 발행 ↗</a></>}
       </div>
       <h1 class="display note-title">{title}</h1>
+      {mobileToc.length >= 2 && <details class="mobile-toc">
+        <summary>목차</summary>
+        <nav aria-label="목차">{mobileToc.map((heading) => <a class:list={[{ 'level-3': heading.level === 3 }]} href={`#${heading.id}`}>{heading.title}</a>)}</nav>
+      </details>}
       {series?.isHub && series.first && <nav class="series-start" aria-label="연재 시작">
         <div><span class="meta">공개된 글 {series.total}편</span><p>{series.first.title}</p></div>
         <a class="btn" href={series.first.url}>1편부터 읽기 <span aria-hidden="true">→</span></a>
@@ -78,6 +83,7 @@ const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slic
   .series-title { font-size: 15px; font-weight: 600; line-height: 1.5; transition: color .15s ease; }
   .end-link { align-self: flex-start; font-size: var(--t-side); }
   .note-title { margin: 0 0 40px; font-size: var(--t-h1); line-height: 1.3; letter-spacing: -.03em; }
+  .mobile-toc { display: none; }
   .body { font-size: var(--t-body); line-height: 1.85; }
   .body p { margin: 0 0 22px; }
   /* 본문의 외부 링크는 사이트 다른 곳(발행처·출처)과 같이 ↗를 붙여 노트 링크와 구분한다. */
@@ -114,6 +120,11 @@ const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slic
     .note-view { grid-template-columns: minmax(0, 720px); gap: 20px; }
     .note-side { position: static; max-height: none; overflow: visible; padding-top: 0; } /* 경계선은 로컬 그래프의 위 테두리가 맡고, 간격은 첫 블록의 위 여백이 맡는다 */
     .note-side .rail { display: none; }
+    .mobile-toc { display: block; margin: -8px 0 28px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .mobile-toc summary { padding: 11px 0; color: var(--muted); font-size: var(--t-side); cursor: pointer; }
+    .mobile-toc nav { display: flex; flex-direction: column; gap: 4px; padding-bottom: 14px; }
+    .mobile-toc nav a { padding: 5px 0; font-size: var(--t-side); line-height: 1.5; }
+    .mobile-toc nav a.level-3 { padding-left: 16px; color: var(--muted); }
   }
   @media (max-width: 720px) {
     .note-view { padding: 32px 0 64px; }

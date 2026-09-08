@@ -1,6 +1,6 @@
 :root {
   color-scheme: light;
-  --paper: #f7f7f2; --paper-strong: #fdfdfa; --ink: #252e29; --muted: #626d64; --faint: #747c73;
+  --paper: #f7f7f2; --paper-strong: #fdfdfa; --ink: #252e29; --muted: #626d64; --faint: #687267;
   /* UI는 먹색 하나. 색은 주제색(GRAPH_COLORS)으로만 들어온다. accent 토큰은 이름만 남기고 값은 먹색이다(2026-09-07). */
   --line: #d8ded4; --accent: #252e29; --accent-soft: #e7e9e3;
   --slipbox: #3d7158; --blog: #a66a38; --development: #5f8184;
@@ -63,12 +63,13 @@ h1, h2, h3, p { margin-top: 0; }
   .ledger-group.is-word .ledger-head h2 { font-size: 17px; }
   .ledger-head .meta { margin-top: 0; }
   .ledger-row { grid-template-columns: 1fr; gap: 8px; padding: 16px 0; }
-  .ledger-row h3 { font-size: 18px; }
-  .ledger-row .summary { font-size: 15px; }
+  .ledger-row.is-compact { gap: 8px; }
+  .ledger-row h3, .ledger-row.is-compact h3 { font-size: 18px; }
+  .ledger-row .summary, .ledger-row.is-compact .summary { font-size: 15px; }
 }
 .scroll-list { position: relative; }
 .scroll-list.is-long .side-list { max-height: 236px; overflow-y: auto; padding-right: 6px; scrollbar-gutter: stable; }
-.scroll-list.is-long::after { position: absolute; right: 0; bottom: 0; left: 0; height: 36px; pointer-events: none; background: linear-gradient(180deg, rgba(247,247,242,0) 0%, var(--paper) 100%); content: ""; }
+.scroll-list.is-long[data-overflow]::after { position: absolute; right: 0; bottom: 0; left: 0; height: 36px; pointer-events: none; background: linear-gradient(180deg, rgba(247,247,242,0) 0%, var(--paper) 100%); content: ""; }
 
 .site-header { position: sticky; z-index: 20; top: 0; background: var(--paper); border-bottom: 1px solid var(--line); }
 .site-header .wrap { display: flex; align-items: center; height: 72px; }

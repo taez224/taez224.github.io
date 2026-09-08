@@ -46,3 +46,7 @@ const blocks = [block('참조', 'out', outgoing), block('역참조', 'in', incom
   .series-list a[aria-current="page"] { color: var(--accent); font-weight: 600; }
 </style>
 <script src="../scripts/toc.js"></script>
+<script>
+  import { setupScrollFades } from '../scripts/scroll-fades.js';
+  setupScrollFades(document.querySelector('.note-side'));
+</script>

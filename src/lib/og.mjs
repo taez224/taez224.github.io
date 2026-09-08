@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { Resvg } from '@resvg/resvg-js';
@@ -9,6 +9,8 @@ import { layoutGraph, nodeRadius } from '../graph/layout.mjs';
 import { topicColor } from './format.mjs';
 import { ensureOgFonts } from './og-fonts.mjs';
 import { projectPaths } from './get-garden.mjs';
+import { pngDimensions } from './png.mjs';
+export { pngDimensions } from './png.mjs';
 
 const PAPER = '#f7f7f2', INK = '#252e29', MUTED = '#626d64', FAINT = '#747c73', ACCENT = '#252e29', LINE = '#9aab9d';
 const esc = (value) => String(value).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -20,15 +22,9 @@ const CARD = { width: 1200, height: 630 };
 const RENDER_OPTIONS = { fitTo: { mode: 'width', value: CARD.width } };
 const CACHE_MAX_AGE_DAYS = 14;
 const ogCacheDir = process.env.GARDEN_OG_CACHE_DIR || path.join(projectPaths().projectRoot, 'node_modules', '.cache', 'garden-og-images');
-const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
 const digest = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
-// PNG 서명과 IHDR의 폭·높이. PNG가 아니거나 잘렸으면 null.
-export function pngDimensions(buffer) {
-  if (!buffer || buffer.length < 24 || !buffer.subarray(0, 8).equals(PNG_SIGNATURE) || buffer.toString('ascii', 12, 16) !== 'IHDR') return null;
-  return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
-}
 const isCard = (png) => { const d = pngDimensions(png); return Boolean(d && d.width === CARD.width && d.height === CARD.height); };
 
 // 빌드마다 처음 한 번, 오래 안 쓴 항목과 남은 임시 파일을 지운다. 적중한 파일은 mtime을 갱신하므로 계속 쓰는 카드는 남는다.
@@ -45,7 +41,15 @@ export async function pruneOgCache({ dir = ogCacheDir, maxAgeDays = CACHE_MAX_AG
 }
 
 let prunePromise = null;
+const inFlight = new Map();
 export async function cachedPng(key, render) {
+  if (inFlight.has(key)) return inFlight.get(key);
+  const pending = readOrRender(key, render);
+  inFlight.set(key, pending);
+  try { return await pending; } finally { inFlight.delete(key); }
+}
+
+async function readOrRender(key, render) {
   await fs.mkdir(ogCacheDir, { recursive: true });
   await (prunePromise ??= pruneOgCache());
   const target = path.join(ogCacheDir, `${key}.png`);
@@ -57,9 +61,12 @@ export async function cachedPng(key, render) {
     if (error.code !== 'ENOENT') throw error;
   }
   const png = await render();
-  const tmp = `${target}.${process.pid}.tmp`;
-  await fs.writeFile(tmp, png);
-  await fs.rename(tmp, target);
+  if (!isCard(png)) throw new Error('OG renderer returned an invalid 1200×630 PNG');
+  const tmp = `${target}.${randomUUID()}.tmp`;
+  try {
+    await fs.writeFile(tmp, png);
+    await fs.rename(tmp, target);
+  } finally { await fs.rm(tmp, { force: true }); }
   return png;
 }
 

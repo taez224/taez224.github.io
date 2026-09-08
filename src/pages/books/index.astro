@@ -31,8 +31,13 @@ const statuses = [...new Set(books.map((b) => b.status).filter(Boolean))];
   .tier { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 24px; margin-top: 28px; padding-bottom: 28px; border-bottom: 1px solid var(--line); }
   .tier-head h2 { margin: 0; color: var(--accent); font-size: 40px; font-weight: 600; line-height: 1; }
   .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px 40px; }
-  @media (min-width: 1000px) { .tier-head h2.unrated { font-size: 18px; line-height: 1.4; white-space: nowrap; } }
-  @media (max-width: 720px) { .tier { grid-template-columns: 32px minmax(0, 1fr); gap: 16px; } .tier-head h2 { font-size: 30px; } .grid { grid-template-columns: 1fr; } }
+  .tier-head h2.unrated { font-size: 18px; line-height: 1.4; white-space: nowrap; }
+  @media (max-width: 720px) {
+    .tier { grid-template-columns: 1fr; gap: 18px; }
+    .tier-head { display: flex; align-items: baseline; gap: 10px; }
+    .tier-head h2 { font-size: 30px; }
+    .grid { grid-template-columns: 1fr; }
+  }
   @media (max-width: 480px) { .page-head { gap: 12px; } .book-source { font-size: 12px; } }
 </style>
 <script src="../../scripts/books.js"></script>

@@ -4,7 +4,7 @@
 .graph:focus, .graph:focus-visible { outline: none; }
 /* 간선은 평소에 거의 안 보인다. 선택·호버에서만 방향과 함께 드러난다(지도가 그래프 뷰처럼 보이지 않게). */
 .graph .edge { stroke: #9aab9d; stroke-width: 1.1; stroke-opacity: .2; transition: stroke-opacity .15s ease; }
-/* 홈 히어로는 600px 상자라 지도보다 한 단계 진하게 그린다. 옅으면 소개문 옆에서 회색 얼룩으로 보인다(2026-09-07 배포본 확인). */
+/* 홈의 작은 지도에서도 연결이 보이도록 간선을 한 단계 진하게 그린다. */
 .graph.hero .edge { stroke-opacity: .28; }
 .graph .edge.is-out { stroke: var(--accent); stroke-width: 2; stroke-opacity: .9; }
 .graph .edge.is-in { stroke: var(--accent); stroke-width: 1.7; stroke-opacity: .8; stroke-dasharray: 5 4; }

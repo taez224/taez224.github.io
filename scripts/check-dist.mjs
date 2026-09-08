@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { pngDimensions } from '../src/lib/png.mjs';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const config = JSON.parse(await fs.readFile(path.join(projectRoot, 'config.json'), 'utf8'));
@@ -10,13 +11,12 @@ const read = (file) => fs.readFile(path.join(dist, file), 'utf8');
 const exists = async (file) => fs.access(path.join(dist, file)).then(() => true, () => false);
 function check(condition, message) { if (!condition) failures.push(message); }
 
-// 공유 카드는 1200×630 PNG여야 한다. 잘린 파일이나 빈 파일은 서명·IHDR에서 걸린다.
-const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+// 캐시와 배포 산출물에 같은 PNG 검사를 적용한다.
 async function checkCard(file) {
   const buffer = await fs.readFile(path.join(dist, file)).catch(() => null);
   if (!buffer) { failures.push(`og 이미지 없음: ${file}`); return; }
-  const png = buffer.length >= 24 && buffer.subarray(0, 8).equals(PNG_SIGNATURE) && buffer.toString('ascii', 12, 16) === 'IHDR';
-  check(png && buffer.readUInt32BE(16) === 1200 && buffer.readUInt32BE(20) === 630, `og 이미지 손상(1200×630 PNG 아님): ${file}`);
+  const size = pngDimensions(buffer);
+  check(size?.width === 1200 && size?.height === 630, `og 이미지 손상(1200×630 PNG 아님): ${file}`);
 }
 
 export async function checkShell(file) {

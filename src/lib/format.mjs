@@ -7,6 +7,8 @@ export function publicTags(tags = []) { return tags.filter((tag) => !HIDDEN_TAGS
 export function displayTag(tag) { return tag.startsWith('개발/') ? tag.slice(3) : tag; }
 export function cleanTitle(title) { return String(title ?? '').replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]\s*/gu, '').trim(); }
 export function formatDate(iso) { return String(iso ?? '').slice(0, 10).replaceAll('-', '.'); }
+// 목록에서는 작성한 요약의 첫 문장만 사용한다. 원문과 검색 데이터는 그대로 둔다.
+export function firstSentence(text = '') { return text.match(/^.*?[.!?](?:\s|$)/)?.[0]?.trim() || text; }
 export function developmentCategoryLabel(category) { return ({ Concepts: '개념·설계', Troubleshooting: '문제 해결', Tools: '도구·워크플로' })[category] || '개발 노트'; }
 export function kindLabel(note) {
   if (note.kind === 'development') return developmentCategoryLabel(note.category);

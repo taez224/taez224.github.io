@@ -163,8 +163,10 @@ test('series posts drop the 이전·다음 글 lines from the public body but ke
   const s2 = garden.notes.find((note) => note.path === '20_Projects/blog/S2.md');
   assert.doesNotMatch(s1.bodyHtml, /연결된 노트|다음 글/);
   assert.doesNotMatch(s1.bodyText, /연결된 노트|다음 글/);
+  assert.deepEqual(s1.headings, []);
   assert.ok(s1.outgoing.includes('20_Projects/blog/S2.md'));
   assert.match(s2.bodyHtml, /연결된 노트/);
+  assert.ok(s2.headings.some((heading) => heading.id === '연결된-노트'));
   assert.doesNotMatch(s2.bodyHtml, /이전 글/);
   assert.match(s2.bodyHtml, /생각 B/);
 });
@@ -206,4 +208,12 @@ test('headingsFor keeps every heading, strips inline markup and suffixes duplica
   assert.equal(headings.length, 15);
   assert.equal(headings[12].title, '3. DX와 DevRel 그리고 AX');
   assert.deepEqual(headings.slice(13).map((h) => h.id), ['절', '절-2']);
+});
+
+test('headingsFor skips code examples and matches ids when an h1 shares the same title', () => {
+  const body = '# 실제 절\n\n```markdown\n## 예시\n```\n\n    ## 코드\n\n## 실제 절\n\n하위 절\n-------\n\n~~~markdown\n### 숨김\n~~~';
+  assert.deepEqual(headingsFor(body), [
+    { id: '실제-절-2', level: 2, title: '실제 절' },
+    { id: '하위-절', level: 2, title: '하위 절' }
+  ]);
 });

@@ -1,6 +1,7 @@
 import { createGraph, isFilteredOut } from '../graph/engine.mjs';
 import { layoutGraph, ATLAS_LAYOUT } from '../graph/layout.mjs';
 import { panelModel } from '../lib/panel.mjs';
+import { setupScrollFades } from './scroll-fades.js';
 
 const page = document.querySelector('[data-site]');
 const svg = document.querySelector('svg[data-map]');
@@ -16,7 +17,9 @@ const IN = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="
 // 그래프 노드인 항목은 data-node를 달아 지도 안에서 선택되게 한다(그래프 밖 노트만 페이지로 이동).
 const list = (icon, label, items) => items.length ? `<section class="list-block"><div class="meta">${icon}${label}<span class="count">${items.length}</span></div><div class="scroll-list${items.length > 6 ? ' is-long' : ''}"><ul class="side-list">${items.map((i) => `<li><a href="${escape(i.url)}"${i.nodeId ? ` data-node="${escape(i.nodeId)}"` : ''}>${i.isHub ? '<i class="hub-mark" aria-hidden="true"></i>' : ''}${escape(i.title)}</a></li>`).join('')}</ul></div></section>` : '';
 
+let cleanupScrollFades = () => {};
 function renderPanel(model) {
+  cleanupScrollFades();
   body.innerHTML = `<div class="panel-head">
     <div class="meta">${escape(model.kind)}${model.isHub ? ' · <i class="hub-mark" aria-hidden="true"></i>허브' : ''}${model.date ? ` · ${model.date}` : ''}</div>
     <h2 class="display">${escape(model.title)}</h2>
@@ -24,6 +27,7 @@ function renderPanel(model) {
     ${model.summary ? `<p class="panel-summary">${escape(model.summary)}</p>` : ''}
     <a class="btn small" href="${escape(model.url)}" style="align-self:flex-start;margin-top:4px">노트 읽기</a>
   </div><div class="panel-lists">${list(OUT, '참조', model.outgoing)}${list(IN, '역참조', model.incoming)}</div>`;
+  cleanupScrollFades = setupScrollFades(body);
 }
 
 try {
@@ -95,7 +99,7 @@ function select(id, pushUrl, { open = true } = {}) {
   const node = site.nodes.find((n) => n.id === id);
   // 공개 노트 레코드에는 type이 없어 허브 여부는 그래프 노드에서 가져온다.
   if (node) { renderPanel({ ...withNodeIds(panelModel(notesByPath.get(node.path) ?? node, notesByPath, site.noteEdges, site.topicFold ?? {})), isHub: node.type === 'hub' }); if (open) panel.dataset.open = ''; }
-  else { body.innerHTML = emptyPanel; delete panel.dataset.open; }
+  else { cleanupScrollFades(); body.innerHTML = emptyPanel; delete panel.dataset.open; }
   if (pushUrl) {
     const params = new URLSearchParams();
     if (node) params.set('node', node.mapKey);

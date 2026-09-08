@@ -2,7 +2,7 @@
 import Shell from '../../layouts/Shell.astro';
 import ReadingPaths from '../../components/ReadingPaths.astro';
 import { getGarden } from '../../lib/get-garden.mjs';
-import { formatDate } from '../../lib/format.mjs';
+import { formatDate, firstSentence } from '../../lib/format.mjs';
 const { blog, paths } = await getGarden();
 // 단독 글과 연재를 한 장부에 넣고 연도로 묶는다. 연재는 링 표시가 붙은 한 행이고 마지막 편이 나온 연도에 들어간다.
 const standalone = blog.publications.flatMap((group) => group.posts).map((post) => ({ kind: 'post', date: post.published, post }));
@@ -24,14 +24,14 @@ const years = [...new Set(rows.map((row) => row.date.slice(0, 4)))].map((year) =
               <h3><a href={row.post.url}>{row.post.title}</a></h3>
               <div class="meta"><time datetime={row.post.published}>{formatDate(row.post.published)}</time>{row.post.publishedUrl && <a href={row.post.publishedUrl} target="_blank" rel="noreferrer">{row.post.publication || '원문'} ↗</a>}</div>
             </div>
-            {row.post.summary ? <p class="summary">{row.post.summary}</p> : <div></div>}
+            {row.post.summary ? <p class="summary">{firstSentence(row.post.summary)}</p> : <div></div>}
           </article>
         : <article class="ledger-row">
             <div>
               <h3>{row.series.noteUrl ? <a href={row.series.noteUrl}><i class="hub-mark" aria-hidden="true"></i>{row.series.title}</a> : <><i class="hub-mark" aria-hidden="true"></i>{row.series.title}</>}</h3>
               <div class="meta"><span>연재 {row.series.posts.length}편 · {finished(row.series) ? '완결' : '진행 중'}</span><time datetime={row.date}>{formatDate(row.date)}</time><a href={row.series.posts[0].url}>1편부터 읽기</a></div>
             </div>
-            {row.series.summary ? <p class="summary">{row.series.summary}</p> : <div></div>}
+            {row.series.summary ? <p class="summary">{firstSentence(row.series.summary)}</p> : <div></div>}
           </article>)}
       </div>
     </section>)}
