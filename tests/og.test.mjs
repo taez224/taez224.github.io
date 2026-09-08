@@ -4,11 +4,12 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { Resvg } from '@resvg/resvg-js';
+import imageService from 'astro/assets/services/sharp';
 import { crc32, deflateSync } from 'node:zlib';
 
 const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'garden-og-'));
 process.env.GARDEN_OG_CACHE_DIR = dir;
-const { cachedPng, pngDimensions, pruneOgCache, fitTitle } = await import('../src/lib/og.mjs');
+const { cachedPng, pngDimensions, pruneOgCache, fitTitle, ogSvg, renderOgPng, thumbnailDataUri } = await import('../src/lib/og.mjs');
 
 // 실제 렌더러의 PNG를 사용한다. 헤더만 흉내 내면 손상 검증 자체가 무의미해진다.
 const fixtures = new Map();
@@ -100,4 +101,64 @@ test('fitTitle picks the largest size that fits three lines and truncates the re
   const long = fitTitle('아주 '.repeat(40).trim());
   assert.equal(long.lines.length, 3);
   assert.ok(long.lines[2].endsWith('…'));
+});
+
+test('ogSvg uses a contained thumbnail in place of the local graph', () => {
+  const svg = ogSvg({
+    note: { title: 'Thumbnail note', displayTitle: 'Thumbnail note', kind: 'blog' },
+    outgoing: [],
+    incoming: [],
+    siteLabel: 'example.com',
+    thumbnailDataUri: 'data:image/png;base64,fixture'
+  });
+  assert.match(svg, /<image href="data:image\/png;base64,fixture" x="740" y="115" width="400" height="400" preserveAspectRatio="xMidYMid meet"\/>/);
+  assert.doesNotMatch(svg, /<circle /, 'thumbnail cards do not render the local graph');
+});
+
+test('ogSvg keeps the local graph when a note has no thumbnail', () => {
+  const svg = ogSvg({
+    note: { title: 'Graph note', displayTitle: 'Graph note', kind: 'blog' },
+    outgoing: [],
+    incoming: [],
+    siteLabel: 'example.com'
+  });
+  assert.match(svg, /<circle /);
+  assert.match(svg, /<g transform="translate\(740 115\)">/);
+  assert.doesNotMatch(svg, /<image /);
+});
+
+test('thumbnail normalization supports JPEG and WebP and same-path replacements change the card', async () => {
+  const render = (uri) => new Resvg(ogSvg({ note: { title: 'Thumbnail', kind: 'blog' }, outgoing: [], incoming: [], siteLabel: 'example.com', thumbnailDataUri: uri })).render().asPng();
+  for (const format of ['jpg', 'webp']) {
+    const raster = await imageService.transform(pngFixture(), { src: 'fixture.png', format }, { service: { config: {} } }, console);
+    await fs.writeFile(path.join(dir, `cover.${format}`), raster.data);
+    const uri = await thumbnailDataUri(`cover.${format}`, { vaultRoot: dir });
+    assert.match(uri, /^data:image\/png;base64,/);
+    assert.deepEqual(pngDimensions(render(uri)), { width: 1200, height: 630 });
+  }
+  const imagePath = path.join(dir, 'replace.png');
+  await fs.writeFile(imagePath, pngFixture());
+  const before = await thumbnailDataUri('replace.png', { vaultRoot: dir });
+  await fs.writeFile(imagePath, new Resvg('<svg xmlns="http://www.w3.org/2000/svg" width="80" height="60"><rect width="80" height="60" fill="red"/></svg>').render().asPng());
+  const after = await thumbnailDataUri('replace.png', { vaultRoot: dir });
+  assert.notEqual(before, after, '같은 경로라도 이미지 내용이 SVG 캐시 키에 반영된다');
+  assert.notDeepEqual(render(before), render(after));
+});
+
+test('renderOgPng rejects unsupported or escaping thumbnail paths explicitly', async () => {
+  const garden = {
+    notes: [{
+      path: '20_Projects/blog/thumbnail-test.md',
+      slug: 'thumbnail-test',
+      kind: 'blog',
+      title: 'Thumbnail test',
+      displayTitle: 'Thumbnail test',
+      thumbnail: '20_Projects/blog/assets/unsupported.txt',
+      outgoing: [],
+      incoming: []
+    }]
+  };
+  await assert.rejects(renderOgPng(garden, garden.notes[0].path, { siteLabel: 'example.com' }), /Unsupported OG thumbnail format/);
+  garden.notes[0].thumbnail = '../private/secret.png';
+  await assert.rejects(renderOgPng(garden, garden.notes[0].path, { siteLabel: 'example.com' }), /outside the vault/);
 });

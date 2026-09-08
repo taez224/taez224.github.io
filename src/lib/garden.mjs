@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import MarkdownIt from 'markdown-it';
 import { createMarkdownRenderer, slugifyHeading, stripInlineMarkup } from './markdown.mjs';
-import { developmentCategory, pathMatches, isExcluded as excludedByPolicy, isIncluded as includedByPolicy, validatePublicationConfig } from './publication.mjs';
+import { developmentCategory, externalPublicationFor, pathMatches, isExcluded as excludedByPolicy, isIncluded as includedByPolicy, validatePublicationConfig } from './publication.mjs';
 import { slugFor, slugify, kindPrefix, noteUrl, assertUniqueSlugs } from './slug.mjs';
 import { plainText } from './text.mjs';
 import { publicTags, cleanTitle } from './format.mjs';
@@ -92,8 +92,11 @@ function excerpt(body) {
 }
 
 function summaryFor(note) {
-  const summary = String(note.meta.summary ?? '').trim();
-  return summary || excerpt(note.body);
+  return explicitSummary(note) || excerpt(note.body);
+}
+
+function explicitSummary(note) {
+  return String(note.meta.summary ?? '').trim();
 }
 
 function sectionExcerpt(body, sectionNames) {
@@ -109,8 +112,7 @@ function sectionExcerpt(body, sectionNames) {
 }
 
 function seriesSummaryFor(note) {
-  const summary = String(note.meta.summary ?? '').trim();
-  return summary || sectionExcerpt(note.body, ['연재 목적', '시리즈 소개']) || excerpt(note.body);
+  return explicitSummary(note) || sectionExcerpt(note.body, ['연재 목적', '시리즈 소개']) || excerpt(note.body);
 }
 
 // 지도에서 노드가 이보다 적은 주제는 색과 영역을 기타로 접는다. 범례가 길어지고 팔레트가 바닥나는 걸 막는다. 원래 주제는 topicTag에 남는다.
@@ -151,7 +153,10 @@ function displayTitleFor(relativePath, title) {
 }
 
 function publicUrl(value, fallback) {
-  return /^https:\/\//.test(String(value ?? '')) ? String(value) : fallback;
+  try {
+    const url = new URL(String(value ?? '').trim());
+    return url.protocol === 'https:' && !url.username && !url.password ? url.href : fallback;
+  } catch { return fallback; }
 }
 
 function stripLinkTarget(rawTarget) {
@@ -215,6 +220,8 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
     const fileTitle = path.posix.basename(relativePath, '.md');
     const title = String(note.meta.title ?? firstHeading(note.body, fileTitle));
     const publishedUrl = publicUrl(note.meta.source, '');
+    const externalPublisher = externalPublicationFor(config, relativePath, note.meta);
+    const contentMode = externalPublisher ? 'external' : 'full';
     return {
       path: relativePath,
       fileTitle,
@@ -224,9 +231,11 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
       publishedUrl,
       publication: String(note.meta.publication ?? ''),
       published: String(note.meta.published ?? ''),
+      contentMode,
+      externalPublisher,
       series: String(note.meta.series ?? ''),
       seriesOrder: numberValue(note.meta.series_order),
-      summary: note.meta.type === 'series' ? seriesSummaryFor(note) : summaryFor(note),
+      summary: externalPublisher ? explicitSummary(note) : note.meta.type === 'series' ? seriesSummaryFor(note) : summaryFor(note),
       summaryIsExplicit: Boolean(String(note.meta.summary ?? '').trim()),
       status: String(note.meta.status ?? ''),
       tags: Array.isArray(note.meta.tags) ? note.meta.tags : [],
@@ -235,6 +244,8 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
   }
 
   const candidateFiles = new Map();
+  // 공개 후보를 읽는 동안 파일 존재 여부만 기록한다. 비공개 본문·메타는 출력하지 않는다.
+  const knownNotePaths = new Set();
   for (const include of config.include) {
     const absoluteDirectory = path.join(vaultRoot, include.path);
     let files = [];
@@ -246,6 +257,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
     }
     for (const absoluteFile of files) {
       const relativePath = normalize(path.relative(vaultRoot, absoluteFile));
+      knownNotePaths.add(relativePath);
       const source = await fs.readFile(absoluteFile, 'utf8');
       const parsed = parseFrontmatter(source);
       if (isIncluded(relativePath, parsed.meta)) {
@@ -415,6 +427,11 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
     const fileTitle = path.posix.basename(relativePath, '.md');
     const kind = kindFor(relativePath);
     const title = String(note.meta.title ?? firstHeading(note.body, fileTitle));
+    const externalPublisher = externalPublicationFor(config, relativePath, note.meta);
+    const contentMode = externalPublisher ? 'external' : 'full';
+    const publicContent = publicBody(kind, note.body);
+    const bodyText = contentMode === 'external' ? '' : plainText(publicContent);
+    const headings = contentMode === 'external' ? [] : headingsFor(publicContent);
     return {
       path: relativePath,
       fileTitle,
@@ -429,17 +446,20 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
       aliases: stringList(note.meta.aliases),
       slug: slugByPath.get(relativePath),
       publicTags: publicTags(Array.isArray(note.meta.tags) ? note.meta.tags : []),
-      bodyText: plainText(publicBody(kind, note.body)),
+      bodyText,
       // 한국어 평균 읽기 속도 분당 600자 기준. 리더 메타 줄의 "N분".
-      readingMinutes: Math.max(1, Math.round([...plainText(publicBody(kind, note.body))].length / 600)),
+      readingMinutes: contentMode === 'external' ? 0 : Math.max(1, Math.round([...bodyText].length / 600)),
       topic: topicFor(Array.isArray(note.meta.tags) ? note.meta.tags : []),
       date: firstDate(note.meta),
-      summary: kind === 'blog' && note.meta.type === 'series' ? seriesSummaryFor(note) : summaryFor(note),
+      summary: externalPublisher ? explicitSummary(note) : kind === 'blog' && note.meta.type === 'series' ? seriesSummaryFor(note) : summaryFor(note),
       summaryIsExplicit: Boolean(String(note.meta.summary ?? '').trim()),
-      headings: headingsFor(publicBody(kind, note.body)),
+      headings,
       url: siteUrl(relativePath),
       publishedUrl: kind === 'blog' ? publicUrl(note.meta.source, '') : '',
       publication: String(note.meta.publication ?? ''),
+      published: String(note.meta.published ?? ''),
+      contentMode,
+      externalPublisher,
       body: note.body
     };
   }
@@ -473,6 +493,12 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
   }
 
   const publicByPath = new Map(publicEntries);
+  for (const relativePath of publicEntries.keys()) knownNotePaths.add(relativePath);
+  const knownByBasename = new Map();
+  for (const relativePath of knownNotePaths) {
+    const basename = path.posix.basename(relativePath).toLowerCase();
+    knownByBasename.set(basename, [...(knownByBasename.get(basename) ?? []), relativePath]);
+  }
   const publicByBasename = new Map();
   for (const relativePath of publicEntries.keys()) {
     const basename = path.posix.basename(relativePath).toLowerCase();
@@ -510,7 +536,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
 
   const assetCopies = new Map();
 
-  function resolvePublicAsset(sourcePath, rawTarget) {
+  function resolvePublicAsset(sourcePath, rawTarget, { copy = true } = {}) {
     const target = String(rawTarget ?? '').split('#')[0].trim();
     if (/^(?:https?:)?\/\//i.test(target)) return { url: target };
     if (!target || !isImagePath(target)) return null;
@@ -526,19 +552,20 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
     }
     if (!assetPath) return null;
     const destination = `assets/vault/${assetPath.split('/').map(encodeURIComponent).join('/')}`;
-    assetCopies.set(assetPath, destination);
-    return { url: `${base}/${destination}` };
+    if (copy) assetCopies.set(assetPath, destination);
+    return { url: `${base}/${destination}`, sourcePath: assetPath };
   }
 
   function resolvePublicNote(sourcePath, rawTarget, fragment = '') {
     const target = String(rawTarget ?? '').trim();
     const resolved = target === sourcePath
       ? sourcePath
-      : resolveTarget(sourcePath, target, publicByPath, publicByBasename);
-    if (!resolved || !publicEntries.has(resolved)) return null;
+      : resolveTarget(sourcePath, target, knownNotePaths, knownByBasename);
+    if (!resolved) return null;
+    if (!publicEntries.has(resolved)) return { visibility: 'private' };
     const entry = publicEntries.get(resolved);
     if (entry.kind === 'book') return null;
-    return { title: entry.displayTitle || entry.title, url: siteUrl(resolved, fragment) };
+    return { title: entry.displayTitle || entry.title, url: siteUrl(resolved, entry.contentMode === 'external' ? '' : fragment) };
   }
 
   const renderMarkdown = createMarkdownRenderer({
@@ -563,12 +590,29 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
   }
   const notes = [...publicEntries.values()]
     .filter((entry) => entry.kind !== 'book')
-    .map(({ body, ...entry }) => ({
-      ...entry,
-      bodyHtml: renderMarkdown(entry.path, publicBody(entry.kind, body)),
-      outgoing: outgoingByPath.get(entry.path) ?? [],
-      incoming: incomingByPath.get(entry.path) ?? []
-    }));
+    .map(({ body, ...entry }) => {
+      const meta = candidateFiles.get(entry.path)?.meta ?? {};
+      const reference = String(meta.thumbnail ?? '').trim();
+      let thumbnail = null;
+      if (reference) {
+        const target = reference.match(/^!?\[\[([^\]|#]+)(?:\|[^\]]*)?\]\]$/)?.[1] ?? reference;
+        thumbnail = resolvePublicAsset(entry.path, target, { copy: false })?.sourcePath ?? null;
+        if (!thumbnail) throw new Error(`Missing or unreviewed thumbnail for ${entry.path}: ${reference}`);
+      }
+      const thumbnailStyle = String(meta.thumbnail_style ?? 'plain');
+      if (!['plain', 'soft'].includes(thumbnailStyle)) throw new Error(`Unknown thumbnail_style for ${entry.path}: ${thumbnailStyle}`);
+      const articleCards = [];
+      const bodyHtml = entry.contentMode === 'external' ? '' : renderMarkdown(entry.path, publicBody(entry.kind, body), { articleCards });
+      return {
+        ...entry,
+        thumbnail,
+        thumbnailStyle,
+        articleCards,
+        bodyHtml,
+        outgoing: outgoingByPath.get(entry.path) ?? [],
+        incoming: incomingByPath.get(entry.path) ?? []
+      };
+    });
 
   const seedSet = new Set();
   for (const seed of config.seeds) {

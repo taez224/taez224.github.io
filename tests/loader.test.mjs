@@ -33,6 +33,18 @@ test('bookLoader stores books by slug', async () => {
   assert.deepEqual(store.entries.map((entry) => entry.id), ['b']);
 });
 
+test('vaultLoader gives Astro an absolute thumbnail and a site-relative entry path', async () => {
+  const store = fakeStore();
+  let parsed;
+  const withImage = { ...garden, notes: [{ ...garden.notes[0], thumbnail: '20_Projects/blog/assets/cover.jpg' }] };
+  await vaultLoader({ garden: async () => withImage }).load({ store, parseData: async (input) => { parsed = input; return input.data; } });
+  assert.ok(path.isAbsolute(parsed.filePath));
+  assert.ok(path.isAbsolute(parsed.data.thumbnail));
+  assert.ok(parsed.filePath.endsWith('/20_Projects/blog/x.md'));
+  assert.ok(parsed.data.thumbnail.endsWith('/20_Projects/blog/assets/cover.jpg'));
+  assert.ok(!path.isAbsolute(store.entries[0].filePath));
+});
+
 test('isIgnoredWatchPath excludes DevLog, _workspace and build output roots', () => {
   assert.equal(isIgnoredWatchPath('30_Resources/Development/DevLog'), true);
   assert.equal(isIgnoredWatchPath('30_Resources/Development/DevLog/daily/2026-09-06.md'), true);

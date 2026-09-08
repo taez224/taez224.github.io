@@ -3,6 +3,7 @@ import sanitizeHtml from 'sanitize-html';
 
 const CALLOUT_TITLES = {
   abstract: '요약',
+  article: '함께 읽기',
   bug: '문제',
   danger: '주의',
   example: '예시',
@@ -27,7 +28,7 @@ const ALLOWED_TAGS = [
 
 const ALLOWED_ATTRIBUTES = {
   a: ['class', 'data-note-path', 'href', 'rel', 'target', 'title'],
-  aside: ['class'],
+  aside: ['class', 'data-article-card'],
   code: ['class'],
   details: ['class', 'open'],
   div: ['class'],
@@ -42,7 +43,7 @@ const ALLOWED_ATTRIBUTES = {
   p: ['class'],
   pre: ['class'],
   section: ['class'],
-  span: ['class'],
+  span: ['class', 'id', 'role', 'aria-label', 'aria-hidden', 'tabindex'],
   summary: ['class'],
   table: ['class'],
   td: ['class', 'colspan', 'rowspan'],
@@ -81,13 +82,20 @@ export function slugifyHeading(value) {
 function splitWikiTarget(rawTarget) {
   const parts = String(rawTarget ?? '').split('|');
   const target = parts.shift()?.trim() ?? '';
-  const label = parts.join('|').trim();
+  const label = parts.join('|');
   const hashIndex = target.indexOf('#');
   return {
     target: hashIndex < 0 ? target : target.slice(0, hashIndex),
     fragment: hashIndex < 0 ? '' : slugifyHeading(target.slice(hashIndex + 1)),
     label
   };
+}
+
+function renderPrivateNote(label, target) {
+  let decodedTarget = target;
+  try { decodedTarget = decodeURIComponent(target); } catch { /* Keep malformed authored text. */ }
+  const basename = decodedTarget.split('#')[0].replace(/\\/g, '/').split('/').at(-1).replace(/\.md$/i, '');
+  return `<span class="private-note">${escapeHtml(label || basename)} <span class="visibility-mark" role="img" tabindex="0" aria-label="공개되지 않은 자료"><span class="visibility-hint" aria-hidden="true">공개되지 않은 자료</span></span></span>`;
 }
 
 function replaceWikiLinks(source, context) {
@@ -100,51 +108,69 @@ function replaceWikiLinks(source, context) {
       const asset = context.resolveAsset?.(context.sourcePath, target);
       if (asset) {
         const alt = label || target.replace(/\.[^.]+$/, '');
-        return `![${alt}](${asset.url})`;
+        return `<img src="${escapeHtml(asset.url)}" alt="${escapeHtml(alt)}">`;
       }
     }
 
     const note = context.resolveNote?.(context.sourcePath, target || context.sourcePath, fragment);
-    if (!note) return label || target || whole;
+    if (!note) return escapeHtml(label || target || whole);
+    if (note.visibility === 'private') return renderPrivateNote(label, target);
     const display = label || note.title || target;
     return `<a class="internal-note-link" href="${escapeHtml(note.url)}">${escapeHtml(display)}</a>`;
   });
 }
 
 function replaceStandardLinks(source, context) {
-  let result = source.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (whole, alt, target) => {
+  if (source.startsWith('![')) return source.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (whole, alt, target) => {
     if (/^(?:https?:)?\/\//i.test(target) || target.startsWith('data:')) return whole;
     const asset = context.resolveAsset?.(context.sourcePath, target);
-    return asset ? `![${alt}](${asset.url})` : whole;
+    return asset ? `<img src="${escapeHtml(asset.url)}" alt="${escapeHtml(alt)}">` : whole;
   });
 
-  result = result.replace(/\[([^\]]+)\]\(([^)\s]+\.md(?:#[^)]*)?)(?:\s+"[^"]*")?\)/gi, (whole, label, rawTarget) => {
+  return source.replace(/\[([^\]]*)\]\(([^)\s]+\.md(?:#[^)]*)?)(?:\s+"[^"]*")?\)/gi, (whole, label, rawTarget) => {
     const { target, fragment } = splitWikiTarget(rawTarget);
     const note = context.resolveNote?.(context.sourcePath, target, fragment);
-    // 공개되지 않은 노트로 가는 링크는 죽은 링크 대신 평문으로 둔다(위키링크와 같은 규칙).
+    if (note?.visibility === 'private') return renderPrivateNote(label, target);
     return note
       ? `<a class="internal-note-link" href="${escapeHtml(note.url)}">${escapeHtml(label)}</a>`
-      : label;
+      : escapeHtml(label);
   });
-  return result;
 }
 
-// Obsidian 전용 문법을 걷어낸다. 주석(%% %%), 하이라이트(== ==), 그리고 블록 ID(문단 끝이나 단독 줄의 ^id).
-// 블록 ID는 링크 앵커용이라 독자에게 보여서는 안 된다. 코드 블록 안의 ^는 줄 끝 단어 형태가 아니면 건드리지 않는다.
-function replaceObsidianFormatting(source) {
-  return source
+// 블록 ID는 보이는 표기 대신 링크 도착점으로 남긴다. 코드 예시는 변환하지 않는다.
+function replaceObsidianFormatting(source, markdown, context) {
+  const prepared = source
     .replace(/%%[\s\S]*?%%/g, '')
-    .replace(/==([^=\n]+)==/g, '<mark>$1</mark>')
-    .replace(/^\^[A-Za-z0-9-]+[ \t]*$\n?/gm, '')
-    .replace(/[ \t]+\^[A-Za-z0-9-]+[ \t]*$/gm, '');
+    .replace(/==([^=\n]+)==/g, '<mark>$1</mark>');
+  const codeLines = codeLinesFor(prepared, markdown, context);
+  return prepared.split('\n').map((line, index) => codeLines.has(index) ? line : line
+    .replace(/(^|[ \t]+)\^([A-Za-z0-9-]+)[ \t]*$/, (_match, space, id) => `${space}<span id="${slugifyHeading(id)}"></span>`)
+  ).join('\n');
 }
 
-function renderCallouts(source, renderCore, depth = 0) {
+function codeLinesFor(source, markdown, context) {
+  const lines = new Set();
+  for (const token of markdown.parse(source, { context })) {
+    if ((token.type !== 'fence' && token.type !== 'code_block') || !token.map) continue;
+    for (let index = token.map[0]; index < token.map[1]; index += 1) lines.add(index);
+  }
+  return lines;
+}
+
+function articleTarget(line) {
+  const match = line.match(/^\s*\[\[([^\]]+)\]\]\s*$/);
+  if (!match) return null;
+  const parsed = splitWikiTarget(match[1]);
+  return parsed.target ? parsed : null;
+}
+
+function renderCallouts(source, renderCore, context, articleCards, depth = 0) {
   const lines = source.split('\n');
+  const codeLines = codeLinesFor(source, context.markdown, context);
   const output = [];
   for (let index = 0; index < lines.length; index += 1) {
     const match = lines[index].match(/^\s*>\s*\[!([\w-]+)\]([+-])?(?:\s+(.*))?\s*$/i);
-    if (!match) {
+    if (!match || codeLines.has(index)) {
       output.push(lines[index]);
       continue;
     }
@@ -160,9 +186,22 @@ function renderCallouts(source, renderCore, depth = 0) {
       next += 1;
     }
 
+    const target = type === 'article' && !foldMarker && quotedLines.length === 1
+      ? articleTarget(quotedLines[0])
+      : null;
+    const note = target ? context.resolveNote?.(context.sourcePath, target.target, target.fragment) : null;
+    if (note && note.visibility !== 'private' && note.url) {
+      const cardIndex = articleCards.length;
+      const title = note.title || target.target;
+      articleCards.push({ url: note.url, title, caption: customTitle?.trim() || '' });
+      output.push(`<aside class="article-card-slot" data-article-card="${cardIndex}"><a class="internal-note-link" href="${escapeHtml(note.url)}">${escapeHtml(title)}</a></aside>`);
+      index = next - 1;
+      continue;
+    }
+
     const title = customTitle?.trim() || CALLOUT_TITLES[type] || type;
     const body = quotedLines.join('\n').trim();
-    const nestedBody = depth < 3 ? renderCallouts(body, renderCore, depth + 1) : body;
+    const nestedBody = depth < 3 ? renderCallouts(body, renderCore, context, articleCards, depth + 1) : body;
     const bodyHtml = renderCore(nestedBody);
     const className = `callout callout-${type.replace(/[^a-z0-9_-]/gi, '') || 'note'}`;
     if (foldMarker === '-') {
@@ -182,6 +221,49 @@ function createMarkdownIt() {
     linkify: true,
     typographer: false
   });
+  // CommonMark rejects a punctuation-ending closer before a Korean particle.
+  // Keep native delimiter pairing and only relax this two-star closing case.
+  markdown.inline.ruler.before('emphasis', 'korean_strong_close', (state, silent) => {
+    if (silent || state.src.slice(state.pos, state.pos + 2) !== '**') return false;
+    const scanned = state.scanDelims(state.pos, true);
+    const previous = state.src.codePointAt(state.pos - 1);
+    const next = state.src[state.pos + scanned.length] ?? '';
+    if (scanned.length !== 2 || scanned.can_close || !/[가-힣]/u.test(next)
+      || !state.md.utils.isPunctCharCode(previous)) return false;
+
+    for (let index = 0; index < 2; index += 1) {
+      state.push('text', '', 0).content = '*';
+      state.delimiters.push({
+        marker: 0x2A,
+        length: 2,
+        token: state.tokens.length - 1,
+        end: -1,
+        open: false,
+        close: true
+      });
+    }
+    state.pos += 2;
+    return true;
+  });
+
+  // Run note and asset resolution only where MarkdownIt expects inline syntax.
+  // Code, fenced blocks and escaped opening brackets never enter this rule.
+  markdown.inline.ruler.before('link', 'vault_links', (state, silent) => {
+    const source = state.src.slice(state.pos, state.posMax);
+    const wiki = source.match(/^!?\[\[([^\]]+)\]\]/);
+    const standard = wiki ? null : source.match(/^!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)|^\[([^\]]*)\]\(([^)\s]+\.md(?:#[^)]*)?)(?:\s+"[^"]*")?\)/i);
+    const match = wiki || standard;
+    if (!match) return false;
+    const context = state.env.context;
+    const result = wiki
+      ? replaceWikiLinks(match[0], context)
+      : replaceStandardLinks(match[0], context);
+    if (result === match[0]) return false;
+    if (!silent) state.push('html_inline', '', 0).content = result;
+    state.pos += match[0].length;
+    return true;
+  });
+
   const defaultHeadingOpen = markdown.renderer.rules.heading_open;
   markdown.renderer.rules.heading_open = (tokens, index, options, env, self) => {
     const token = tokens[index];
@@ -203,31 +285,20 @@ export function createMarkdownRenderer({ resolveNote, resolveAsset }) {
   const markdown = createMarkdownIt();
 
   function renderCore(source, context) {
-    const prepared = replaceStandardLinks(
-      replaceWikiLinks(
-        replaceObsidianFormatting(String(source ?? '')),
-        context
-      ),
-      context
-    );
-    return markdown.render(prepared, { headingIds: new Map() });
+    const prepared = replaceObsidianFormatting(String(source ?? ''), markdown, context);
+    return markdown.render(prepared, { headingIds: new Map(), context });
   }
 
-  return function renderMarkdown(sourcePath, source) {
+  return function renderMarkdown(sourcePath, source, { articleCards = [] } = {}) {
     const context = {
       resolveAsset,
       resolveNote,
-      sourcePath
+      sourcePath,
+      markdown
     };
-    const prepared = replaceStandardLinks(
-      replaceWikiLinks(
-        replaceObsidianFormatting(String(source ?? '')),
-        context
-      ),
-      context
-    );
-    const withCallouts = renderCallouts(prepared, (body) => renderCore(body, context));
-    const rendered = markdown.render(withCallouts, { headingIds: new Map() });
+    const prepared = replaceObsidianFormatting(String(source ?? ''), markdown, context);
+    const withCallouts = renderCallouts(prepared, (body) => renderCore(body, context), context, articleCards);
+    const rendered = markdown.render(withCallouts, { headingIds: new Map(), context });
     return sanitizeHtml(rendered, {
       allowedAttributes: ALLOWED_ATTRIBUTES,
       allowedSchemes: ['http', 'https', 'mailto'],

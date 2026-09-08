@@ -3,7 +3,7 @@ import { getGarden } from '../../lib/get-garden.mjs';
 
 export const GET: APIRoute = async () => {
   const garden = await getGarden();
-  const pick = (note) => ({ path: note.path, slug: note.slug, url: note.url, kind: note.kind, category: note.category, title: note.title, displayTitle: note.displayTitle, date: note.date, topic: note.topic, publicTags: note.publicTags, summary: note.summary, summaryIsExplicit: note.summaryIsExplicit, headings: note.headings });
+  const pick = (note) => ({ path: note.path, slug: note.slug, url: note.url, kind: note.kind, category: note.category, title: note.title, displayTitle: note.displayTitle, date: note.date, topic: note.topic, publicTags: note.publicTags, summary: note.summary, summaryIsExplicit: note.summaryIsExplicit, headings: note.headings, contentMode: note.contentMode });
   const body = {
     home: garden.home,
     notes: garden.notes.map(pick),

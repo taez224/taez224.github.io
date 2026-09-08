@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { isIncluded, validatePublicationConfig } from '../src/lib/publication.mjs';
+import { externalPublicationFor, isIncluded, validatePublicationConfig } from '../src/lib/publication.mjs';
 
 const root = '30_Resources/Development';
 const approved = `${root}/Concepts/public.md`;
@@ -52,4 +52,36 @@ test('reviewed image assets cannot select private notes or escape the vault', ()
   for (const asset of ['../outside.svg', '/tmp/outside.svg', `${root}/DevLog/private.svg`, '_workspace/private.svg', '_attachments/private.md']) {
     assert.throws(() => validatePublicationConfig({ ...config, assets: [asset] }));
   }
+});
+
+const externalConfig = {
+  ...config,
+  externalPublications: [{ hosts: ['nextree.io', 'www.nextree.io'], publications: ['Nextree 기술 블로그'], name: '넥스트리' }]
+};
+
+test('external publication matching requires a published blog and exact configured host or label', () => {
+  const base = { status: 'published', source: 'https://www.nextree.io/post', publication: '다른 라벨' };
+  assert.equal(externalPublicationFor(externalConfig, '20_Projects/blog/post.md', base), '넥스트리');
+  assert.equal(externalPublicationFor(externalConfig, '20_Projects/blog/post.md', { ...base, publication: 'NEXTREE 기술 블로그' }), '넥스트리');
+  assert.equal(externalPublicationFor(externalConfig, '20_Projects/blog/post.md', { ...base, status: 'draft' }), '');
+  assert.equal(externalPublicationFor(externalConfig, '01_Slipbox/post.md', base), '');
+});
+
+test('external publication rules fail closed when a matched label lacks a valid configured source', () => {
+  for (const source of ['', 'not a URL', 'https://evil.example/post']) {
+    assert.throws(
+      () => externalPublicationFor(externalConfig, '20_Projects/blog/post.md', { status: 'published', source, publication: 'Nextree 기술 블로그' }),
+      /requires a valid source URL on a configured host/
+    );
+  }
+  assert.equal(externalPublicationFor(externalConfig, '20_Projects/blog/post.md', { status: 'published', source: 'https://evil.example/post', publication: 'other' }), '');
+});
+
+test('external publication configuration requires non-empty host, publication and display name fields', () => {
+  for (const rule of [
+    { hosts: [], publications: ['Nextree'], name: '넥스트리' },
+    { hosts: ['https://nextree.io'], publications: ['Nextree'], name: '넥스트리' },
+    { hosts: ['nextree.io'], publications: [], name: '넥스트리' },
+    { hosts: ['nextree.io'], publications: ['Nextree'], name: '' }
+  ]) assert.throws(() => validatePublicationConfig({ ...config, externalPublications: [rule] }), /Invalid external publication rule/);
 });

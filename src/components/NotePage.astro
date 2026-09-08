@@ -2,6 +2,7 @@
 import { render } from 'astro:content';
 import Shell from '../layouts/Shell.astro';
 import NoteSidebar from './NoteSidebar.astro';
+import ArticleBody from './ArticleBody.astro';
 import { getGarden } from '../lib/get-garden.mjs';
 import { formatDate, displayTag, withBase, cleanTitle, topicColor } from '../lib/format.mjs';
 import { parentLink, seriesNeighbors } from '../lib/note-nav.mjs';
@@ -50,7 +51,9 @@ const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slic
         <div><span class="meta">공개된 글 {series.total}편</span><p>{series.first.title}</p></div>
         <a class="btn" href={series.first.url}>1편부터 읽기 <span aria-hidden="true">→</span></a>
       </nav>}
-      <div class="body"><Content /></div>
+      <div class="body">{note.articleCards?.length
+        ? <ArticleBody html={byPath.get(note.path).bodyHtml} cards={note.articleCards} notes={garden.notes} />
+        : <Content />}</div>
       {(hasSeriesNav || endLink) && <nav class="note-end" aria-label="이어서 읽기">
         {hasSeriesNav && <div class:list={['series-links', { 'is-single': !series.prev || !series.next }]}>
           {series.prev && <a class="series-link" href={series.prev.url}><span class="series-direction"><span aria-hidden="true">←</span> 이전 편</span><span class="series-title">{series.prev.title}</span></a>}
@@ -90,6 +93,12 @@ const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slic
   /* 링크 색이 먹색이라 본문 링크는 밑줄로 구분한다. */
   .body a { text-decoration: underline; text-decoration-color: rgba(37,46,41,.35); text-decoration-thickness: 1px; text-underline-offset: .18em; }
   .body a:hover { text-decoration-color: var(--ink); }
+  .body .private-note { color: var(--muted); }
+  .body .visibility-mark { position: relative; display: inline-block; width: 22px; height: 22px; margin-left: 2px; color: var(--muted); vertical-align: -.2em; cursor: help; }
+  .body .visibility-mark::before { position: absolute; left: 5px; top: 10px; width: 10px; height: 8px; border: 1px solid currentColor; border-radius: 2px; content: ""; }
+  .body .visibility-mark::after { position: absolute; left: 8px; top: 5px; width: 4px; height: 6px; border: 1px solid currentColor; border-bottom: 0; border-radius: 4px 4px 0 0; content: ""; }
+  .body .visibility-hint { position: absolute; z-index: 2; right: 0; bottom: calc(100% + 5px); width: max-content; padding: 5px 8px; border-radius: 3px; background: var(--ink); color: var(--paper); font-size: 12px; line-height: 1.5; visibility: hidden; }
+  .body .visibility-mark:hover .visibility-hint, .body .visibility-mark:focus .visibility-hint { visibility: visible; }
   .body a[href^="http"]::after { content: "↗"; margin-left: .15em; font-size: .78em; vertical-align: .1em; }
   .body h2, .body h3, .body h4 { font-family: var(--display); font-weight: 700; letter-spacing: -.02em; scroll-margin-top: 110px; }
   .body h2 { margin: 44px 0 14px; font-size: 26px; line-height: 1.4; }

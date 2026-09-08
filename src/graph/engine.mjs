@@ -119,9 +119,31 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
   // 영역 이름 자리는 배치 때 한 번 정한다. 노드 원을 피하고 무대 안에 둔다. 노드 제목은 planLabels가 영역 이름을 장애물로 보고 피한다.
   const regionLabelAt = placeRegionLabels(regionList, nodes.filter((node) => positions.has(node.id)).map((node) => ({ ...positions.get(node.id), r: radius(node) + 4 })), { fontSize: 15, measure: estimateTextWidth, bounds: size() });
   const regionLabelBoxes = (u) => regionList.map((region) => regionLabelBox(regionLabelAt.get(region.topic), region.topic, { fontSize: 15, measure: estimateTextWidth, scale: u }));
+  const regionEls = new Map();
+  const refreshRegionStates = () => {
+    const filtering = mode === 'map' && Boolean(state.topics?.size);
+    svg.classList.toggle('has-topic-filter', filtering);
+    for (const [topic, elements] of regionEls) {
+      const active = filtering && state.topics.has(topic);
+      for (const element of elements) {
+        element.classList.toggle('is-topic-active', active);
+        element.classList.toggle('is-topic-dim', filtering && !active);
+      }
+    }
+  };
   const drawRegions = () => {
     regionLayer.replaceChildren();
-    for (const region of regionList) regionLayer.append(el('path', { class: 'region', d: regionPath(region.hull), fill: topicColor(region.topic), stroke: topicColor(region.topic) }));
+    regionLabelLayer.replaceChildren();
+    regionEls.clear();
+    for (const region of regionList) {
+      const shape = el('path', { class: 'region', 'data-region-topic': region.topic, d: regionPath(region.hull), fill: topicColor(region.topic), stroke: topicColor(region.topic) });
+      const at = regionLabelAt.get(region.topic);
+      const label = el('text', { class: 'region-label', 'data-region-topic': region.topic, x: at.x.toFixed(1), y: at.y.toFixed(1), 'text-anchor': at.anchor, fill: topicColor(region.topic) });
+      label.textContent = region.topic;
+      regionLayer.append(shape); regionLabelLayer.append(label);
+      regionEls.set(region.topic, [shape, label]);
+    }
+    refreshRegionStates();
   };
   svg.append(scene);
 
@@ -249,14 +271,9 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
     const u = 1 / (state.transform.scale || 1);
     labelLayer.style.fontSize = `${(13 * u).toFixed(2)}px`;
     labelLayer.style.strokeWidth = `${(4.5 * u).toFixed(2)}px`;
-    regionLabelLayer.replaceChildren();
+    // 영역 이름은 재생성하지 않아 필터 전환 중에도 자리를 지키며 농도만 바뀐다.
     regionLabelLayer.style.fontSize = `${(15 * u).toFixed(2)}px`;
     regionLabelLayer.style.strokeWidth = `${(3.5 * u).toFixed(2)}px`;
-    for (const region of regionList) {
-      const at = regionLabelAt.get(region.topic);
-      const text = el('text', { class: 'region-label', x: at.x.toFixed(1), y: at.y.toFixed(1), 'text-anchor': at.anchor, fill: topicColor(region.topic) });
-      text.textContent = region.topic; regionLabelLayer.append(text);
-    }
     if (!labelAll) {
       for (const [id, placement] of planLabels(u)) {
         const node = byId.get(id), p = positions.get(id);
@@ -339,7 +356,7 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
   const api = {
     select(id) { state.selected = id && byId.has(id) ? id : null; render(); },
     hover(id) { state.hovered = id; hoverChanged(); },
-    setFilter({ topics = state.topics, hubsOnly = state.hubsOnly } = {}) { state.topics = topics; state.hubsOnly = hubsOnly; drawEdges(); refreshNodeStates(); drawLabels(); },
+    setFilter({ topics = state.topics, hubsOnly = state.hubsOnly } = {}) { state.topics = topics; state.hubsOnly = hubsOnly; refreshRegionStates(); drawEdges(); refreshNodeStates(); drawLabels(); },
     setTopics(set) { api.setFilter({ topics: set }); },
     has: (id) => byId.has(id),
     view: () => ({ ...state.transform }),

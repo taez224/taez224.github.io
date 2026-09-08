@@ -1,23 +1,27 @@
 ---
-const { about, contacts, entryUrl } = Astro.props;
+const { about, contacts, entryUrl, makingOfUrl } = Astro.props;
 const shown = contacts.filter((c) => c.name !== 'Velog');
 ---
 <div class="about">
-  <h1 class="display">소프트웨어 개발자 TaeZ</h1>
+  <h1 class="display">Thinking Garden</h1>
   <p>{about}</p>
   <div class="contacts">{shown.map((c) => <a href={c.url} target="_blank" rel="noreferrer">{c.name}</a>)}</div>
-  <a class="btn" href={entryUrl}>생각의 정원으로 <span aria-hidden="true">→</span></a>
+  <div class="about-actions">
+    <a class="btn" href={entryUrl}>생각의 정원으로 <span aria-hidden="true">→</span></a>
+    {makingOfUrl && <a class="making-of" href={makingOfUrl}>이 위키를 만든 과정 <span aria-hidden="true">→</span></a>}
+  </div>
 </div>
 <style>
   .about { display: flex; flex-direction: column; gap: 18px; }
-  .about h1 { margin: 0; font-size: 28px; line-height: 1.45; }
+  .about h1 { margin: 0; font-size: 32px; line-height: 1.45; }
   .about p { margin: 0; color: var(--muted); font-size: var(--t-body); line-height: 1.8; }
   .contacts { display: flex; gap: 18px; font-size: var(--t-meta); }
-  .about .btn { align-self: flex-start; margin-top: 10px; }
+  .about-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px; margin-top: 10px; }
+  .making-of { display: inline-flex; align-items: baseline; gap: 8px; font-size: var(--t-side); text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 4px; }
   /* 모바일은 한 열이라 버튼을 소개문 바로 아래 두고, 연락처는 그 아래 작은 줄로 보낸다. */
   @media (max-width: 720px) {
     .about { gap: 14px; }
-    .about .btn { margin-top: 6px; }
+    .about-actions { margin-top: 6px; }
     .contacts { order: 1; margin-top: 4px; }
   }
 </style>

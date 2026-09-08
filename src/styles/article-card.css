@@ -1,0 +1,15 @@
+.body .article-card { margin: 28px 0; padding: 18px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.body .article-card-link { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; align-items: center; color: var(--ink); text-decoration: none; }
+.body .article-card-link.has-thumbnail { grid-template-columns: 160px minmax(0, 1fr); }
+.body .article-card img { display: block; width: 100%; height: auto; margin: 0; }
+.body .article-card-copy { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.body .article-card-publication { font-size: 12px; line-height: 1.5; color: var(--muted); }
+.body .article-card-title { font-size: 19px; line-height: 1.5; font-weight: 600; }
+.body .article-card-summary { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; color: var(--muted); font-size: 14px; line-height: 1.7; }
+.body .article-card-link:hover .article-card-title, .body .article-card-link:focus-visible .article-card-title { text-decoration: underline; text-underline-offset: 4px; }
+@media (max-width: 720px) {
+  .body .article-card-link { gap: 16px; }
+  .body .article-card-link.has-thumbnail { grid-template-columns: 96px minmax(0, 1fr); }
+  .body .article-card-title { font-size: 16px; }
+  .body .article-card-summary { font-size: 13px; }
+}

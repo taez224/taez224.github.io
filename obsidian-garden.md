@@ -57,6 +57,7 @@ aliases:
 
 ## 🧾 근거
 
+- 공개 위키 작성 문법과 표시 규칙: [[20_Projects/obsidian-garden/AUTHORING|작성 가이드]]. 썸네일 속성의 정본은 [[99_Templates/_property-schema|속성 스키마]]다.
 - 스펙·구현 계획: `20_Projects/obsidian-garden/docs/` (로컬 전용, Git 제외).
 - 배포 워크플로: `.github/workflows/obsidian-garden-pages.yml`.
 - 개념·도구 정리: [[그래프의 노드 제목이 겹치지 않게 놓는 방법]], [[정적 사이트에서의 OG 카드와 방문자 카운팅]].

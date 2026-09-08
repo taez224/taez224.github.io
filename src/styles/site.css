@@ -39,11 +39,14 @@ h1, h2, h3, p { margin-top: 0; }
 .list-block { padding: 18px 0; border-bottom: 1px solid var(--line); }
 .list-block .meta { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
 .list-block .meta svg { width: 14px; height: 14px; }
+.list-block > .meta { color: var(--ink); font-weight: 550; }
+.list-block > .meta .count { font-weight: 400; }
 /* 장부(ledger): 왼쪽 여백에 큰 라벨(연도·분류)과 개수, 오른쪽에 행. 책장의 등급 표시와 같은 장치. */
 .ledger-group { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 24px; margin-top: 28px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
 .ledger-group.is-year { grid-template-columns: 130px minmax(0, 1fr); }
 .ledger-group.is-word { grid-template-columns: 104px minmax(0, 1fr); }
 .ledger-head h2 { margin: 0; color: var(--accent); font-size: 40px; font-weight: 700; line-height: 1; }
+.ledger-group.is-year .ledger-head h2 { font-size: 32px; }
 .ledger-group.is-word .ledger-head h2 { font-size: 18px; line-height: 1.4; }
 .ledger-head .meta { display: block; margin-top: 6px; }
 .ledger-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 36px; align-items: start; padding: 18px 0; border-top: 1px solid var(--line); }
@@ -60,6 +63,7 @@ h1, h2, h3, p { margin-top: 0; }
   .ledger-group, .ledger-group.is-year, .ledger-group.is-word { grid-template-columns: 1fr; gap: 12px; margin-top: 22px; }
   .ledger-head { display: flex; align-items: baseline; gap: 10px; }
   .ledger-head h2 { font-size: 30px; }
+  .ledger-group.is-year .ledger-head h2 { font-size: 28px; }
   .ledger-group.is-word .ledger-head h2 { font-size: 17px; }
   .ledger-head .meta { margin-top: 0; }
   .ledger-row { grid-template-columns: 1fr; gap: 8px; padding: 16px 0; }

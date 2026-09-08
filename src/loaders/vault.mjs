@@ -36,13 +36,16 @@ export function watchPathsFor(config, { vaultRoot, projectRoot }) {
 function fillNotesStore({ store, parseData }) {
   return async (garden) => {
     store.clear();
+    const { projectRoot, vaultRoot } = projectPaths();
     for (const note of garden.notes) {
       const { bodyHtml, ...rest } = note;
       const id = noteEntryId(note);
-      const data = await parseData({ id, data: rest });
+      const filePath = path.join(vaultRoot, note.path);
+      const data = await parseData({ id, data: { ...rest, thumbnail: note.thumbnail ? path.join(vaultRoot, note.thumbnail) : null }, filePath });
       store.set({
         id,
         data,
+        filePath: path.relative(projectRoot, filePath).split(path.sep).join('/'),
         rendered: {
           html: bodyHtml,
           metadata: { headings: note.headings.map((heading) => ({ depth: heading.level, slug: heading.id, text: heading.title })) }

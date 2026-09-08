@@ -16,6 +16,7 @@ const years = [...new Set(rows.map((row) => row.date.slice(0, 4)))].map((year) =
 <Shell title="글" description="TaeZ가 발행한 글과 연재." path="/posts/" active="posts">
   <div class="wrap posts-page">
     <div class="page-head"><h1 class="display">글</h1><span class="meta">{blog.stats.posts}편 · 연재 {blog.stats.series}개</span></div>
+    <ReadingPaths paths={paths} collapsed />
     {years.map(({ year, rows, count }) => <section class="ledger-group is-year" aria-label={`${year}년`}>
       <div class="ledger-head"><h2 class="display">{year}</h2><span class="meta">{count}편</span></div>
       <div class="ledger-rows">{rows.map((row) => row.kind === 'post'
@@ -35,7 +36,6 @@ const years = [...new Set(rows.map((row) => row.date.slice(0, 4)))].map((year) =
           </article>)}
       </div>
     </section>)}
-    <ReadingPaths paths={paths} />
   </div>
 </Shell>
 <style>

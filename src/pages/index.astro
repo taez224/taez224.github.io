@@ -1,16 +1,23 @@
 ---
 import Shell from '../layouts/Shell.astro';
+import { Image } from 'astro:assets';
+import { getEntry } from 'astro:content';
 import '../styles/graph.css';
 import About from '../components/About.astro';
 import { getGarden } from '../lib/get-garden.mjs';
 import { formatDate, withBase, firstSentence } from '../lib/format.mjs';
 import { parentLink } from '../lib/note-nav.mjs';
+import { kindPrefix } from '../lib/slug.mjs';
 import { layoutGraph, ATLAS_LAYOUT } from '../graph/layout.mjs';
 import { renderSnapshotSvg } from '../graph/snapshot.mjs';
 const garden = await getGarden();
 const byPath = new Map(garden.notes.map((n) => [n.path, n]));
 const entry = byPath.get(garden.config.entry);
 const featured = byPath.get(garden.home.featured[0]);
+const makingOf = byPath.get(garden.config.home?.makingOf);
+const featuredEntry = featured ? await getEntry('notes', `${kindPrefix(featured.kind)}/${featured.slug}`) : null;
+const thumbnail = featuredEntry?.data.thumbnail;
+const softThumbnail = featured?.thumbnailStyle === 'soft';
 // 최근 기록은 종류마다 최신 한 편. 한 종류를 하루에 몰아 올려도 다른 종류가 목록에서 밀리지 않는다. 대표 글은 후보에서 뺀다.
 const HOME_KINDS = [['slipbox', '노트'], ['development', '개발 노트'], ['blog', '글']];
 const dated = garden.notes.filter((n) => n.date && n.type !== 'series' && n.path !== featured?.path).sort((a, b) => b.date.localeCompare(a.date) || a.title.localeCompare(b.title, 'ko'));
@@ -20,14 +27,19 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, layoutGraph(garde
 ---
 <Shell title="TaeZ" description={garden.home.about} path="/">
   <section class="hero" aria-label="소개와 생각 지도">
-    <div class="hero-about"><About about={garden.home.about} contacts={garden.home.contacts} entryUrl={entry?.url ?? withBase('/map/')} /></div>
+    <div class="hero-about"><About about={garden.home.about} contacts={garden.home.contacts} entryUrl={entry?.url ?? withBase('/map/')} makingOfUrl={makingOf?.url} /></div>
     <div class="hero-graph" data-graph data-site={withBase('/data/site.json')}><a class="hero-snapshot" href={withBase('/map/')} aria-label="생각 지도 열기"><Fragment set:html={snapshot} /></a></div>
     <div class="hero-fade" aria-hidden="true"></div>
   </section>
-  {featured && <section class="wrap featured">
-    <div class="meta">대표 글 · {formatDate(featured.date)}{featured.publication && <> · {featured.publication} 발행</>}</div>
-    <h2 class="display"><a href={featured.url}>{featured.title}</a></h2>
-    {featured.summaryIsExplicit && <p>{firstSentence(featured.summary)}</p>}
+  {featured && <section class:list={['wrap', 'featured', { 'has-thumbnail': thumbnail }]}>
+    <div class="featured-copy">
+      <div class="meta">대표 글 · {formatDate(featured.date)}{featured.publication && <> · {featured.publication} 발행</>}</div>
+      <h2 class="display"><a href={featured.url}>{featured.title}</a></h2>
+      {featured.summaryIsExplicit && <p>{firstSentence(featured.summary)}</p>}
+    </div>
+    {thumbnail && <a class:list={['featured-image', { 'is-soft': softThumbnail }]} href={featured.url} aria-label={featured.title}>
+      <Image src={thumbnail} alt="" width={560} widths={[280, 560, 840]} sizes={`(max-width: 460px) calc(100vw - 40px), (max-width: 720px) 420px, ${softThumbnail ? 312 : 280}px`} format="webp" loading="lazy" />
+    </a>}
   </section>}
   <section class="wrap recent" aria-labelledby="recent-heading">
     <h2 id="recent-heading" class="display">최근 기록</h2>
@@ -46,7 +58,19 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, layoutGraph(garde
   /* 종이색은 소개 블록(오른쪽 끝 50% - 160px)보다 조금 더 가서 끝난다. 퍼센트로 두면 1280px에서 소개문 옆에 반투명 점이 걸친다. */
   .hero-fade { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, var(--paper) 0, var(--paper) calc(50% - 140px), rgba(247,247,242,0) calc(50% + 140px)); }
   .hero-about { position: absolute; z-index: 1; left: calc(50% - 590px); top: 52px; width: 430px; }
-  .featured { padding: 44px 0 40px; border-top: 1px solid var(--ink); }
+  .featured { display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; gap: 28px 40px; padding: 44px 0 40px; border-top: 1px solid var(--ink); }
+  .featured.has-thumbnail { grid-template-columns: minmax(0, 1fr) 280px; }
+  .featured-image { display: block; width: 100%; }
+  .featured-image :global(img) { display: block; width: 100%; height: auto; }
+  @media (min-width: 721px) {
+    /* 콜라주의 가장자리를 종이 배경으로 이어 주고, 그림은 열보다 조금 넓게 둔다. */
+    .featured-image.is-soft :global(img) {
+      width: calc(100% + 32px); max-width: none; margin: -12px -16px;
+      -webkit-mask-image: linear-gradient(90deg, transparent, #000 18%, #000 90%, transparent), linear-gradient(180deg, transparent, #000 14%, #000 86%, transparent);
+      mask-image: linear-gradient(90deg, transparent, #000 18%, #000 90%, transparent), linear-gradient(180deg, transparent, #000 14%, #000 86%, transparent);
+      -webkit-mask-composite: source-in; mask-composite: intersect;
+    }
+  }
   .featured h2 { margin: 12px 0 10px; font-size: 34px; line-height: 1.3; letter-spacing: -.02em; max-width: 960px; }
   .featured h2 a { color: var(--ink); }
   .featured p { margin: 0; max-width: 34em; color: var(--muted); font-size: var(--t-body); line-height: 1.65; }
@@ -69,6 +93,8 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, layoutGraph(garde
     .hero-graph { height: clamp(220px, 55vw, 320px); margin: 4px 0 16px; }
     .hero-about { width: calc(100% - 40px); margin: 28px auto 8px; }
     .featured { padding: 32px 0 36px; }
+    .featured.has-thumbnail { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+    .featured-image { max-width: 420px; }
     .featured h2 { font-size: 24px; }
     .featured p { font-size: 16px; }
     .recent li { grid-template-columns: 1fr; gap: 4px; padding: 16px 0; }

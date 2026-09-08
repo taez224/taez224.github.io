@@ -75,6 +75,51 @@ test('graphRule linked stops at the first development note: a dev note linked on
   assert.ok(garden.development.concepts.some((record) => record.path === `${dev}/Concepts/사슬.md`), '목록에는 남는다');
 });
 
+test('private references are labelled without exposing their metadata, body or links', async () => {
+  const vaultRoot = await makeVault({ ...files,
+    '20_Projects/blog/초안.md': '---\nstatus: draft\ntitle: HIDDEN_TITLE\n---\nSECRET_DRAFT',
+    '20_Projects/blog/공개 글.md': files['20_Projects/blog/공개 글.md'] + '\n[[20_Projects/blog/초안|작업 메모]]와 [이전 기록](초안.md), [[없는 문서]]를 참고했다.'
+  });
+  const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
+  const html = garden.notes.find((note) => note.path === '20_Projects/blog/공개 글.md').bodyHtml;
+  assert.equal((html.match(/class="visibility-mark"/g) ?? []).length, 2);
+  assert.match(html, /작업 메모/);
+  assert.match(html, /이전 기록/);
+  assert.match(html, /없는 문서/);
+  assert.doesNotMatch(html, /href="[^"]*초안|20_Projects\/blog\/초안|HIDDEN_TITLE|SECRET_DRAFT/);
+  assert.ok(!JSON.stringify(garden).includes('SECRET_DRAFT'));
+  assert.ok(!JSON.stringify(garden).includes('HIDDEN_TITLE'));
+});
+
+test('thumbnail frontmatter resolves reviewed assets separately from body images', async () => {
+  const source = files['20_Projects/blog/공개 글.md'].replace('status: published', 'status: published\nthumbnail: "[[cover.svg]]"\nthumbnail_style: soft');
+  const vaultRoot = await makeVault({ ...files,
+    '20_Projects/blog/공개 글.md': source,
+    '20_Projects/blog/assets/cover.svg': '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"/>'
+  });
+  const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
+  const note = garden.notes.find((note) => note.path === '20_Projects/blog/공개 글.md');
+  assert.equal(note.thumbnail, '20_Projects/blog/assets/cover.svg');
+  assert.equal(note.thumbnailStyle, 'soft');
+  assert.doesNotMatch(note.bodyHtml, /<img/);
+  assert.ok(!garden.assetCopies.has(note.thumbnail), '썸네일만 지정한 원본은 본문 에셋으로 복사하지 않는다');
+  assert.equal(garden.notes.find((note) => note.path === '01_Slipbox/생각 A.md').thumbnail, null);
+  assert.equal(garden.notes.find((note) => note.path === '01_Slipbox/생각 A.md').thumbnailStyle, 'plain');
+});
+
+test('thumbnails cannot bypass the reviewed asset list and invalid styles fail the build', async () => {
+  const withThumbnail = (extra) => files['20_Projects/blog/공개 글.md'].replace('status: published', `status: published\n${extra}`);
+  const privateRoot = await makeVault({ ...files,
+    '20_Projects/blog/공개 글.md': withThumbnail('thumbnail: "[[_attachments/private.svg]]"'),
+    '_attachments/private.svg': '<svg xmlns="http://www.w3.org/2000/svg"/>'
+  });
+  await assert.rejects(assembleGarden({ vaultRoot: privateRoot, config }), /Missing or unreviewed thumbnail/);
+  const styleRoot = await makeVault({ ...files,
+    '20_Projects/blog/공개 글.md': withThumbnail('thumbnail: "[[_attachments/reviewed.svg]]"\nthumbnail_style: blurry')
+  });
+  await assert.rejects(assembleGarden({ vaultRoot: styleRoot, config }), /Unknown thumbnail_style/);
+});
+
 test('graphRule linked keeps only development notes connected to the thought map, slipbox isolates stay', async () => {
   const pairConfig = { ...config, include: config.include.map((rule) => rule.graphRule ? { ...rule, files: [...rule.files, `${dev}/Concepts/짝 A.md`, `${dev}/Concepts/짝 B.md`] } : rule) };
   const vaultRoot = await makeVault({ ...files,
@@ -216,4 +261,99 @@ test('headingsFor skips code examples and matches ids when an h1 shares the same
     { id: '실제-절-2', level: 2, title: '실제 절' },
     { id: '하위-절', level: 2, title: '하위 절' }
   ]);
+});
+
+const nextreeConfig = {
+  ...config,
+  externalPublications: [{ hosts: ['nextree.io', 'www.nextree.io'], publications: ['Nextree 기술 블로그'], name: '넥스트리' }]
+};
+
+test('external blog notes expose metadata and links while excluding original body, cards and assets', async () => {
+  const externalSource = [
+    '---',
+    'created: 2026-09-06',
+    'published: 2026-09-07',
+    'status: published',
+    'source: " HTTPS://WWW.NEXTREE.IO/external-post "',
+    'publication: Nextree 기술 블로그',
+    'thumbnail: "[[external-cover.svg]]"',
+    'summary: 외부 글의 명시 요약',
+    '---',
+    '# 외부 원문 제목',
+    'UNIQUE_EXTERNAL_BODY',
+    '',
+    '## UNIQUE_EXTERNAL_HEADING',
+    '',
+    '> [!article] UNIQUE_EXTERNAL_CAPTION',
+    '> [[생각 B]]',
+    '',
+    '![[reviewed.svg]]',
+    '![[external-only.svg]]'
+  ].join('\n');
+  const vaultRoot = await makeVault({
+    ...files,
+    '01_Slipbox/생각 A.md': `${files['01_Slipbox/생각 A.md']}\n\n[[외부 원문#UNIQUE_EXTERNAL_HEADING|정의]]\n\n> [!article] 외부 글\n> [[외부 원문]]`,
+    '20_Projects/blog/외부 원문.md': externalSource,
+    '20_Projects/blog/assets/external-only.svg': '<svg xmlns="http://www.w3.org/2000/svg"/>',
+    '20_Projects/blog/assets/external-cover.svg': '<svg xmlns="http://www.w3.org/2000/svg"/>'
+  });
+  const garden = await assembleGarden({ vaultRoot, config: nextreeConfig, basePath: '/obsidian' });
+  const external = garden.notes.find((note) => note.path === '20_Projects/blog/외부 원문.md');
+  const referring = garden.notes.find((note) => note.path === '01_Slipbox/생각 A.md');
+  assert.equal(external.contentMode, 'external');
+  assert.equal(external.externalPublisher, '넥스트리');
+  assert.equal(external.published, '2026-09-07');
+  assert.equal(external.summary, '외부 글의 명시 요약');
+  assert.equal(external.bodyHtml, '');
+  assert.equal(external.bodyText, '');
+  assert.deepEqual(external.headings, []);
+  assert.equal(external.readingMinutes, 0);
+  assert.deepEqual(external.articleCards, []);
+  assert.equal(external.publishedUrl, 'https://www.nextree.io/external-post');
+  assert.equal(external.thumbnail, '20_Projects/blog/assets/external-cover.svg');
+  assert.match(referring.bodyHtml, /article-card-slot/);
+  assert.deepEqual(referring.articleCards, [{ url: external.url, title: '외부 원문 제목', caption: '외부 글' }]);
+  assert.ok(garden.noteEdges.some((edge) => edge.source === referring.path && edge.target === external.path));
+  for (const sentinel of ['UNIQUE_EXTERNAL_BODY', 'UNIQUE_EXTERNAL_HEADING', 'UNIQUE_EXTERNAL_CAPTION']) {
+    assert.equal(JSON.stringify(garden).includes(sentinel), false, sentinel);
+  }
+  assert.equal(garden.assetCopies.has('_attachments/reviewed.svg'), true, '공개 노트 본문의 에셋은 유지된다');
+  assert.equal(garden.assetCopies.has('20_Projects/blog/assets/external-only.svg'), false, '외부 글에서만 쓰던 본문 이미지는 출력하지 않는다');
+});
+
+test('external notes without an explicit summary do not fall back to body excerpts', async () => {
+  const vaultRoot = await makeVault({
+    ...files,
+    '20_Projects/blog/요약 없는 외부 글.md': [
+      '---', 'created: 2026-09-06', 'published: 2026-09-07', 'status: published',
+      'source: https://nextree.io/no-summary', 'publication: Nextree 기술 블로그', '---',
+      '# 요약 없는 외부 글', 'EXTERNAL_SUMMARY_SENTINEL'
+    ].join('\n')
+  });
+  const garden = await assembleGarden({ vaultRoot, config: nextreeConfig, basePath: '/obsidian' });
+  const note = garden.notes.find((item) => item.path === '20_Projects/blog/요약 없는 외부 글.md');
+  const post = garden.blog.publications.flatMap((group) => group.posts).find((item) => item.path === note.path);
+  assert.equal(note.summary, '');
+  assert.equal(note.summaryIsExplicit, false);
+  assert.equal(post.summary, '');
+  assert.equal(note.bodyText, '');
+  assert.equal(JSON.stringify(garden).includes('EXTERNAL_SUMMARY_SENTINEL'), false);
+});
+
+test('published posts from other publishers keep the full body and ordinary summary fallback', async () => {
+  const vaultRoot = await makeVault({
+    ...files,
+    '20_Projects/blog/다른 발행처 글.md': [
+      '---', 'created: 2026-09-06', 'published: 2026-09-07', 'status: published',
+      'source: https://example.com/other', 'publication: Other Publisher', '---',
+      '# 다른 발행처 글', 'OTHER_PUBLISHER_BODY'
+    ].join('\n')
+  });
+  const garden = await assembleGarden({ vaultRoot, config: nextreeConfig, basePath: '/obsidian' });
+  const note = garden.notes.find((item) => item.path === '20_Projects/blog/다른 발행처 글.md');
+  assert.equal(note.contentMode, 'full');
+  assert.equal(note.externalPublisher, '');
+  assert.match(note.bodyHtml, /OTHER_PUBLISHER_BODY/);
+  assert.match(note.summary, /OTHER_PUBLISHER_BODY/);
+  assert.ok(note.readingMinutes > 0);
 });

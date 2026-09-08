@@ -1,0 +1,66 @@
+---
+import Shell from '../layouts/Shell.astro';
+import { Image } from 'astro:assets';
+import { getGarden } from '../lib/get-garden.mjs';
+import { cleanTitle, formatDate, kindLabel, withBase } from '../lib/format.mjs';
+import { kindPrefix } from '../lib/slug.mjs';
+
+const { entry } = Astro.props;
+const note = entry.data;
+const title = cleanTitle(note.title);
+const garden = await getGarden();
+const byPath = new Map(garden.notes.map((item) => [item.path, item]));
+const related = [...new Set([...note.outgoing, ...note.incoming])].filter((path) => path !== note.path).map((path) => byPath.get(path)).filter(Boolean);
+const base = String(garden.config.basePath ?? '').replace(/\/$/, '');
+const sitePath = base && note.url.startsWith(`${base}/`) ? note.url.slice(base.length) : note.url;
+---
+<Shell title={title} description={note.summary} path={sitePath} active="posts" ogType="article" ogImage={withBase(`/og/${kindPrefix(note.kind)}/${note.slug}.png`)}>
+  <article class="external-article">
+    <div class="external-meta meta">
+      <a href={note.publishedUrl} target="_blank" rel="noreferrer">{note.publication || note.externalPublisher} <span aria-hidden="true">↗</span></a>
+      {note.published && <time datetime={note.published}>{formatDate(note.published)}</time>}
+    </div>
+    <h1 class="display">{title}</h1>
+    {note.thumbnail && <figure class:list={['external-thumbnail', { 'is-soft': note.thumbnailStyle === 'soft' }]}>
+      <Image src={note.thumbnail} alt="" width={480} widths={[480, 960]} sizes="(max-width: 520px) calc(100vw - 40px), 480px" format="webp" />
+    </figure>}
+    {note.summary && <p class="external-summary">{note.summary}</p>}
+    <a class="btn read-original" href={note.publishedUrl} target="_blank" rel="noreferrer">전문 읽기 <span aria-hidden="true">↗</span></a>
+    <p class="external-notice meta">{note.publication || note.externalPublisher}에 기고한 글입니다. 전문은 원문에서 읽을 수 있습니다.</p>
+    {related.length > 0 && <section class="external-related" aria-labelledby="related-heading">
+      <h2 id="related-heading" class="display">연결된 노트</h2>
+      <ul>{related.map((item) => <li><a href={item.url}>{item.type === 'hub' && <i class="hub-mark" aria-hidden="true"></i>}{cleanTitle(item.displayTitle || item.title)}</a><span class="meta">{kindLabel(item)}</span></li>)}</ul>
+    </section>}
+    <a class="back-to-posts" href={withBase('/posts/')}><span aria-hidden="true">←</span> 글 목록</a>
+  </article>
+</Shell>
+<style>
+  .external-article { width: min(720px, 100% - 48px); margin: 0 auto; padding: 64px 0 96px; }
+  .external-meta { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-bottom: 22px; }
+  h1 { margin: 0 0 26px; font-size: var(--t-h1); line-height: 1.35; }
+  .external-summary { margin: 0 0 28px; color: var(--muted); font-size: 19px; line-height: 1.8; }
+  .read-original { gap: 14px; }
+  .external-notice { margin: 14px 0 0; }
+  .external-thumbnail { width: 100%; max-width: 480px; margin: 0 auto 28px; }
+  .external-thumbnail :global(img) { display: block; width: auto; max-width: 100%; height: auto; max-height: 260px; margin: 0 auto; }
+  .external-thumbnail.is-soft :global(img) {
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 18%, #000 90%, transparent), linear-gradient(180deg, transparent, #000 14%, #000 86%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 18%, #000 90%, transparent), linear-gradient(180deg, transparent, #000 14%, #000 86%, transparent);
+    -webkit-mask-composite: source-in; mask-composite: intersect;
+  }
+  .external-related { margin-top: 52px; padding-top: 22px; border-top: 1px solid var(--line); }
+  h2 { margin: 0 0 14px; font-size: 22px; }
+  ul { list-style: none; padding: 0; margin: 0; }
+  li { display: flex; align-items: baseline; gap: 20px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  li a { flex: 1; line-height: 1.6; }
+  li .meta { flex-shrink: 0; }
+  .back-to-posts { display: inline-flex; gap: 8px; margin-top: 34px; font-size: var(--t-side); }
+  @media (max-width: 720px) {
+    .external-article { width: calc(100% - 40px); padding: 38px 0 64px; }
+    h1 { font-size: 32px; }
+    .external-summary { font-size: 17px; }
+    .external-thumbnail :global(img) { max-height: 220px; }
+    .external-related { margin-top: 40px; }
+    li { gap: 12px; }
+  }
+</style>

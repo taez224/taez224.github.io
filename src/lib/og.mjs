@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { Resvg } from '@resvg/resvg-js';
+import imageService from 'astro/assets/services/sharp';
 import { kindLabel, formatDate, cleanTitle } from './format.mjs';
 import { estimateTextWidth } from '../graph/engine.mjs';
 import { localGraphLayout } from '../components/local-graph-layout.mjs';
@@ -22,6 +23,15 @@ const CARD = { width: 1200, height: 630 };
 const RENDER_OPTIONS = { fitTo: { mode: 'width', value: CARD.width } };
 const CACHE_MAX_AGE_DAYS = 14;
 const ogCacheDir = process.env.GARDEN_OG_CACHE_DIR || path.join(projectPaths().projectRoot, 'node_modules', '.cache', 'garden-og-images');
+
+const THUMBNAIL_MIME_TYPES = new Map([
+  ['.jpg', 'image/jpeg'],
+  ['.jpeg', 'image/jpeg'],
+  ['.png', 'image/png'],
+  ['.svg', 'image/svg+xml'],
+  ['.webp', 'image/webp'],
+  ['.avif', 'image/avif']
+]);
 
 const digest = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
@@ -126,23 +136,62 @@ export function fitTitle(title, { maxWidth = 620, maxLines = 3, sizes = [60, 54,
   return { size: 36, lines };
 }
 
-// 종이 배경, 왼쪽에 명조 제목과 메타, 오른쪽에 그 노트의 로컬 그래프. 글마다 그래프 모양이 달라 카드가 서로 다르다.
-export function ogSvg({ note, outgoing, incoming, siteLabel }) {
+function thumbnailSourcePath(thumbnail, vaultRoot) {
+  if (!thumbnail) return null;
+  const sourcePath = path.resolve(vaultRoot, thumbnail);
+  const relative = path.relative(vaultRoot, sourcePath);
+  if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+    throw new Error(`OG thumbnail is outside the vault: ${thumbnail}`);
+  }
+  return sourcePath;
+}
+
+export async function thumbnailDataUri(thumbnail, { vaultRoot = projectPaths().vaultRoot } = {}) {
+  const sourcePath = thumbnailSourcePath(thumbnail, vaultRoot);
+  if (!sourcePath) return null;
+  const extension = path.extname(sourcePath).toLowerCase();
+  const mimeType = THUMBNAIL_MIME_TYPES.get(extension);
+  if (!mimeType) {
+    throw new Error(`Unsupported OG thumbnail format: ${extension || '(none)'}`);
+  }
+  const source = await fs.readFile(sourcePath);
+  if (extension === '.svg') return `data:${mimeType};base64,${source.toString('base64')}`;
+  // 홈과 같은 이미지 서비스를 사용한다. resvg가 직접 읽지 못하는 WebP도 PNG로 전달한다.
+  const image = await imageService.transform(source, { src: sourcePath, width: 800, height: 800, fit: 'contain', format: 'png' }, { service: { config: {} } }, console);
+  if (image.format !== 'png') throw new Error(`Could not normalize OG thumbnail: ${thumbnail}`);
+  return `data:image/png;base64,${Buffer.from(image.data).toString('base64')}`;
+}
+
+// 왼쪽에 제목·메타, 오른쪽에 썸네일 또는 로컬 그래프를 둔다.
+export function ogSvg({ note, outgoing, incoming, siteLabel, thumbnailDataUri: thumbnail, thumbnailRatio = 1 }) {
   const title = cleanTitle(note.displayTitle || note.title);
   const { size, lines } = fitTitle(title);
   const lineHeight = Math.round(size * 1.34);
   const blockHeight = lineHeight * lines.length;
   const firstBaseline = Math.round((630 - blockHeight) / 2 + size * 0.92);
   const meta = [kindLabel(note), note.date ? formatDate(note.date) : '', note.readingMinutes ? `${note.readingMinutes}분` : ''].filter(Boolean).join(' · ');
-  const layout = localGraphLayout(note, outgoing, incoming, { width: 400, height: 400, max: 8 });
-  const edges = layout.edges.map((e) => `<line x1="${e.x1}" y1="${e.y1}" x2="${e.x2}" y2="${e.y2}" stroke="${LINE}" stroke-width="1.8" stroke-opacity=".85"${e.direction === 'in' ? ' stroke-dasharray="7 6"' : ''}/>`).join('');
-  const nodes = layout.nodes.map((n) => n.current
-    ? `<circle cx="${n.x}" cy="${n.y}" r="22" fill="none" stroke="${ACCENT}" stroke-width="1.8" stroke-opacity=".7"/><circle cx="${n.x}" cy="${n.y}" r="13" fill="${n.color}"/>`
-    : `<circle cx="${n.x}" cy="${n.y}" r="9" fill="${n.color}" stroke="${PAPER}" stroke-width="3"/>`).join('');
+  const imageWidth = Math.min(400, 400 * thumbnailRatio), imageHeight = Math.min(400, 400 / thumbnailRatio);
+  const image = thumbnail ? `<image href="${thumbnail}" x="${740 + (400 - imageWidth) / 2}" y="${115 + (400 - imageHeight) / 2}" width="${imageWidth}" height="${imageHeight}" preserveAspectRatio="xMidYMid meet"/>` : '';
+  const softMask = `<defs>
+<linearGradient id="thumb-x"><stop stop-color="white" stop-opacity="0"/><stop offset=".18" stop-color="white"/><stop offset=".90" stop-color="white"/><stop offset="1" stop-color="white" stop-opacity="0"/></linearGradient>
+<linearGradient id="thumb-y" x2="0" y2="1"><stop stop-color="white" stop-opacity="0"/><stop offset=".14" stop-color="white"/><stop offset=".86" stop-color="white"/><stop offset="1" stop-color="white" stop-opacity="0"/></linearGradient>
+<mask id="thumb-mask-x" maskContentUnits="objectBoundingBox"><rect width="1" height="1" fill="url(#thumb-x)"/></mask>
+<mask id="thumb-mask-y" maskContentUnits="objectBoundingBox"><rect width="1" height="1" fill="url(#thumb-y)"/></mask>
+</defs>`;
+  const rightPanel = thumbnail
+    ? note.thumbnailStyle === 'soft' ? `${softMask}<g mask="url(#thumb-mask-x)"><g mask="url(#thumb-mask-y)">${image}</g></g>` : image
+    : (() => {
+      const layout = localGraphLayout(note, outgoing, incoming, { width: 400, height: 400, max: 8 });
+      const edges = layout.edges.map((e) => `<line x1="${e.x1}" y1="${e.y1}" x2="${e.x2}" y2="${e.y2}" stroke="${LINE}" stroke-width="1.8" stroke-opacity=".85"${e.direction === 'in' ? ' stroke-dasharray="7 6"' : ''}/>`).join('');
+      const nodes = layout.nodes.map((n) => n.current
+        ? `<circle cx="${n.x}" cy="${n.y}" r="22" fill="none" stroke="${ACCENT}" stroke-width="1.8" stroke-opacity=".7"/><circle cx="${n.x}" cy="${n.y}" r="13" fill="${n.color}"/>`
+        : `<circle cx="${n.x}" cy="${n.y}" r="9" fill="${n.color}" stroke="${PAPER}" stroke-width="3"/>`).join('');
+      return `<g transform="translate(740 115)">${edges}${nodes}</g>`;
+    })();
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
 <rect width="1200" height="630" fill="${PAPER}"/>
 <text x="72" y="94" font-family="Gowun Batang" font-weight="700" font-size="34" fill="${INK}">TaeZ</text>
-<g transform="translate(740 115)">${edges}${nodes}</g>
+${rightPanel}
 ${lines.map((line, index) => `<text x="72" y="${firstBaseline + index * lineHeight}" font-family="Gowun Batang" font-weight="700" font-size="${size}" letter-spacing="-1.5" fill="${INK}">${esc(line)}</text>`).join('\n')}
 <text x="72" y="560" font-family="Pretendard" font-size="26" fill="${MUTED}">${esc(meta)}</text>
 <text x="1128" y="560" text-anchor="end" font-family="Pretendard" font-size="22" fill="${FAINT}">${esc(siteLabel)}</text>
@@ -154,7 +203,9 @@ export async function renderOgPng(garden, notePath, { siteLabel }) {
   const note = byPath.get(notePath);
   if (!note) throw new Error(`OG: unknown note ${notePath}`);
   const resolve = (paths) => paths.map((p) => byPath.get(p)).filter(Boolean);
-  return renderCard(ogSvg({ note, outgoing: resolve(note.outgoing), incoming: resolve(note.incoming), siteLabel }));
+  const thumbnail = await thumbnailDataUri(note.thumbnail);
+  const dimensions = thumbnail?.startsWith('data:image/png;') ? pngDimensions(Buffer.from(thumbnail.split(',')[1], 'base64')) : null;
+  return renderCard(ogSvg({ note, outgoing: resolve(note.outgoing), incoming: resolve(note.incoming), siteLabel, thumbnailDataUri: thumbnail, thumbnailRatio: dimensions ? dimensions.width / dimensions.height : 1 }));
 }
 
 // 사이트 카드: 홈·목록·지도처럼 노트가 아닌 페이지에 쓴다. 오른쪽에 전체 노트 지도를 얹는다.

@@ -37,6 +37,7 @@ const checks = [
 checks.push(async () => {
   const site = JSON.parse(await read('data/site.json').catch(() => '{"notes":[]}'));
   const notes = site.notes ?? [];
+  const search = JSON.parse(await read('data/search.json'));
   check(notes.length > 0, 'site.json에 노트가 없다 (Task 8 이후 필수)');
   for (const note of notes) {
     const pathname = decodeURIComponent(new URL(note.url, 'https://site.invalid').pathname);
@@ -45,6 +46,15 @@ checks.push(async () => {
     const file = `${pathname.slice(base.length).replace(/^\//, '')}index.html`;
     if (!(await exists(file))) { failures.push(`노트 페이지 없음: ${file}`); continue; }
     const html = await checkShell(file);
+    if (note.contentMode === 'external') {
+      check(html.includes('class="external-article"'), `${file}: 외부 발행 글 소개 페이지 없음`);
+      check(!/class="(?:body|note-side|mobile-toc|article-card|rail)\b/.test(html), `${file}: 외부 발행 글에 본문 또는 독서 UI 잔존`);
+      check(html.includes('read-original') && html.includes('전문 읽기'), `${file}: 원문 읽기 링크 없음`);
+      const record = search.find((entry) => entry.url === note.url);
+      check(record && record.text === '' && record.headings.length === 0, `${file}: 검색 데이터에 본문 또는 목차 잔존`);
+      check(record?.summary === note.summary, `${file}: 검색 요약이 공개 요약과 다름`);
+      check(note.headings.length === 0, `${file}: 지도 데이터에 본문 목차 잔존`);
+    }
     const article = html.slice(html.indexOf('<article'), html.indexOf('</article>'));
     const meta = article.match(/<div[^>]*class="[^"]*note-meta[^"]*"[^>]*>([\s\S]*?)<\/div>/)?.[1] ?? '';
     check(!/\b(published|slipbox|blog)\b|프로젝트\//.test(meta.replace(/<[^>]+>/g, ' ')), `${file}: UI 메타 영역에 내부 값 노출`);
