@@ -10,7 +10,6 @@ export const GET: APIRoute = async () => {
     nodes: garden.nodes.map(({ excerpt, headings, summary, ...node }) => node),
     edges: garden.edges,
     noteEdges: garden.noteEdges,
-    paths: garden.paths,
     books: garden.books.map(({ slug, url, title, author, rate, tier, status, note }) => ({ slug, url, title, author, rate, tier, status, note })),
     stats: garden.stats,
     topicFold: garden.topicFold

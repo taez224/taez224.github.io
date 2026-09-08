@@ -7,6 +7,7 @@ import About from '../components/About.astro';
 import { getGarden } from '../lib/get-garden.mjs';
 import { formatDate, withBase, firstSentence } from '../lib/format.mjs';
 import { parentLink } from '../lib/note-nav.mjs';
+import { latestSeries } from '../lib/blog.mjs';
 import { kindPrefix } from '../lib/slug.mjs';
 import { layoutGraph, ATLAS_LAYOUT } from '../graph/layout.mjs';
 import { renderSnapshotSvg } from '../graph/snapshot.mjs';
@@ -18,9 +19,14 @@ const featuredEntry = featured ? await getEntry('notes', `${kindPrefix(featured.
 const thumbnail = featuredEntry?.data.thumbnail;
 const softThumbnail = featured?.thumbnailStyle === 'soft';
 // 최근 기록은 종류마다 최신 한 편. 한 종류를 하루에 몰아 올려도 다른 종류가 목록에서 밀리지 않는다. 대표 글은 후보에서 뺀다.
+// 연재의 각 편은 여기 넣지 않는다. 새 편이 나올 때마다 아래 최근 연재와 같은 연재를 두 번 가리키게 된다.
 const HOME_KINDS = [['slipbox', '노트'], ['development', '개발 노트'], ['blog', '글']];
-const dated = garden.notes.filter((n) => n.date && n.type !== 'series' && n.path !== featured?.path).sort((a, b) => b.date.localeCompare(a.date) || a.title.localeCompare(b.title, 'ko'));
+const seriesPaths = new Set(garden.blog.series.flatMap((s) => s.posts.map((post) => post.path)));
+const dated = garden.notes.filter((n) => n.date && n.type !== 'series' && !seriesPaths.has(n.path) && n.path !== featured?.path).sort((a, b) => b.date.localeCompare(a.date) || a.title.localeCompare(b.title, 'ko'));
 const recent = HOME_KINDS.map(([kind, label]) => { const note = dated.find((n) => n.kind === kind); return note && { note, label, listUrl: withBase(parentLink(note).path) }; }).filter(Boolean).sort((a, b) => b.note.date.localeCompare(a.note.date));
+// 공개된 마지막 편이 가장 최근인 연재 하나. 없으면 이 영역을 그리지 않는다.
+const series = latestSeries(garden.blog.series);
+const seriesUrl = series && (series.noteUrl || series.posts[0]?.url);
 // 모바일 홈의 정적 지도. <img>가 아니라 인라인이라 영역 이름에 페이지 서체가 적용된다. 데스크톱은 hero.js가 살아 있는 지도로 바꾼다.
 const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, layoutGraph(garden.nodes, garden.edges, { width: 1000, height: 640, ...ATLAS_LAYOUT }), { width: 1000, height: 640, font: 26, regionFont: 30, strokeWidth: 2, label: `생각 지도. 노드 ${garden.stats.nodes}개와 연결 ${garden.stats.edges}개.` });
 ---
@@ -44,6 +50,11 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, layoutGraph(garde
     <h2 id="recent-heading" class="display">최근 기록</h2>
     <ol>{recent.map(({ note, label, listUrl }) => <li><time class="meta" datetime={note.date}>{formatDate(note.date)}</time><a href={note.url}>{note.type === 'hub' && <i class="hub-mark" aria-hidden="true"></i>}{note.title}</a><a class="meta kind" href={listUrl}>{label}</a></li>)}</ol>
   </section>
+  {series && seriesUrl && <section class="wrap latest-series" aria-labelledby="series-heading">
+    <h2 id="series-heading" class="display">최근 연재</h2>
+    <h3><a href={seriesUrl}>{series.title}</a></h3>
+    {series.summary && <p>{firstSentence(series.summary)}</p>}
+  </section>}
 </Shell>
 <style>
   .hero { position: relative; height: clamp(400px, calc(100svh - 280px), 500px); overflow: hidden; }
@@ -73,7 +84,14 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, layoutGraph(garde
   .featured h2 { margin: 12px 0 10px; font-size: 34px; line-height: 1.3; letter-spacing: -.02em; max-width: 960px; }
   .featured h2 a { color: var(--ink); }
   .featured p { margin: 0; max-width: 34em; color: var(--muted); font-size: var(--t-body); line-height: 1.65; }
-  .recent { padding: 48px 0 96px; }
+  .recent { padding: 48px 0 0; }
+  /* 연재가 하나도 없으면 최근 기록이 마지막이라 아래 여백을 여기서 준다. */
+  .recent:last-child { padding-bottom: 96px; }
+  .latest-series { padding: 44px 0 96px; }
+  .latest-series h2 { margin: 0 0 14px; font-size: var(--t-h2); }
+  .latest-series h3 { margin: 0; padding-top: 19px; border-top: 1px solid var(--line); font-size: var(--t-list); font-weight: 550; line-height: 1.5; }
+  .latest-series h3 a { color: var(--ink); }
+  .latest-series p { margin: 10px 0 0; color: var(--muted); line-height: 1.7; }
   .recent h2 { margin: 0 0 14px; font-size: var(--t-h2); }
   .recent ol { list-style: none; margin: 0; padding: 0; }
   .recent li { display: grid; grid-template-columns: 110px minmax(0, 1fr) 64px; gap: 28px; align-items: baseline; padding: 19px 0; border-top: 1px solid var(--line); }

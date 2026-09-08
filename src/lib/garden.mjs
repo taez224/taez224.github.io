@@ -652,17 +652,12 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
     if (graphCandidateFiles.has(normalizedSeed)) seeds.push(normalizedSeed);
     else console.warn(`Seed is outside the public graph scope: ${normalizedSeed}`);
   }
-  const pathItems = config.paths
-    .flatMap((readingPath) => readingPath.items)
-    .filter((item) => typeof item === 'string')
-    .map(normalize);
   // graphRule "linked" 폴더의 노트는 지도에서 종점이다. 자세한 규칙은 selectGraphNodes에 있다.
   const linkedOnlyRoots = config.include.filter((rule) => rule.graphRule === 'linked').map((rule) => rule.path);
   const { paths: selectedPaths, degree } = selectGraphNodes({
     candidates: new Set(graphCandidateFiles.keys()),
     edges: allEdges,
     seeds,
-    pathItems,
     depth: config.depth,
     maxNodes: config.maxGraphNodes,
     isEndpoint: (item) => linkedOnlyRoots.some((root) => pathMatches(item, root)),
@@ -703,21 +698,6 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
   const topicFold = Object.fromEntries([...topicCounts].filter(([topic, count]) => topic !== '기타' && count < minTopicNodes).map(([topic]) => [topic, '기타']));
   for (const node of nodes) { node.topicTag = node.topic; node.topic = topicFold[node.topic] ?? node.topic; }
   for (const note of notes) { note.topicTag = note.topic; note.topic = topicFold[note.topic] ?? note.topic; }
-  const nodeByPath = new Map(nodes.map((node) => [node.path, node]));
-  const blogByPath = new Map(publishedBlogPosts.map((post) => [post.path, { ...post, kind: 'blog' }]));
-  const developmentByPath = new Map(developmentRecords.map((record) => [record.path, { ...record, kind: 'development' }]));
-  const pathEntries = new Map([...nodeByPath, ...blogByPath, ...developmentByPath]);
-  const paths = config.paths.map((readingPath) => ({
-    ...readingPath,
-    items: readingPath.items.map((item) => {
-      if (typeof item !== 'string') return { ...item, external: true };
-      const normalized = normalize(item);
-      const entry = pathEntries.get(normalized);
-      return entry
-        ? { label: entry.displayTitle ?? entry.title, path: entry.path, url: entry.url, kind: entry.kind }
-        : null;
-    }).filter(Boolean)
-  })).filter((readingPath) => readingPath.items.length);
 
   return {
     home: {
@@ -725,7 +705,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
       contacts: config.home?.contacts || [],
       about: String(config.home?.about ?? '')
     },
-    notes, nodes, edges, noteEdges: allPublicEdges, paths, blog, development, books, topicFold, renderPage,
+    notes, nodes, edges, noteEdges: allPublicEdges, blog, development, books, topicFold, renderPage,
     stats: {
       candidates: graphCandidateFiles.size, nodes: nodes.length, edges: edges.length,
       blogPosts: blog.stats.posts, blogSeries: blog.stats.series, developmentNotes: developmentRecords.length

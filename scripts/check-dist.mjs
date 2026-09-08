@@ -66,8 +66,8 @@ checks.push(async () => {
     check(!/\b0[1-9]\s*<\/span>/.test(html), `${file}: 서수 라벨 잔존`);
     check(!html.includes('노트 읽기 →'), `${file}: "노트 읽기 →" 잔존`);
   }
-  const posts = await read('posts/index.html');
-  check(posts.includes('묶어서 읽기'), 'posts: 읽기 경로 섹션 없음');
+  const home = await read('index.html');
+  check(home.includes('id="series-heading"') && home.includes('최근 연재'), '홈: 최근 연재 영역 없음');
 });
 checks.push(async () => {
   const site = JSON.parse(await read('data/site.json'));

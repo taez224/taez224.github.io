@@ -1,9 +1,8 @@
 ---
 import Shell from '../../layouts/Shell.astro';
-import ReadingPaths from '../../components/ReadingPaths.astro';
 import { getGarden } from '../../lib/get-garden.mjs';
 import { formatDate, firstSentence } from '../../lib/format.mjs';
-const { blog, paths } = await getGarden();
+const { blog } = await getGarden();
 // 단독 글과 연재를 한 장부에 넣고 연도로 묶는다. 연재는 링 표시가 붙은 한 행이고 마지막 편이 나온 연도에 들어간다.
 const standalone = blog.publications.flatMap((group) => group.posts).map((post) => ({ kind: 'post', date: post.published, post }));
 const finished = (series) => Boolean(series.ended && series.ended !== 'null');
@@ -16,7 +15,6 @@ const years = [...new Set(rows.map((row) => row.date.slice(0, 4)))].map((year) =
 <Shell title="글" description="TaeZ가 발행한 글과 연재." path="/posts/" active="posts">
   <div class="wrap posts-page">
     <div class="page-head"><h1 class="display">글</h1><span class="meta">{blog.stats.posts}편 · 연재 {blog.stats.series}개</span></div>
-    <ReadingPaths paths={paths} collapsed />
     {years.map(({ year, rows, count }) => <section class="ledger-group is-year" aria-label={`${year}년`}>
       <div class="ledger-head"><h2 class="display">{year}</h2><span class="meta">{count}편</span></div>
       <div class="ledger-rows">{rows.map((row) => row.kind === 'post'
