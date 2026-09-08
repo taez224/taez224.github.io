@@ -1,0 +1,27 @@
+---
+import { frontmatter, rawContent } from '../../이 위키에 대해.md';
+import Shell from '../layouts/Shell.astro';
+import ArticleBody from '../components/ArticleBody.astro';
+import { getGarden } from '../lib/get-garden.mjs';
+
+const title = '이 위키에 대해';
+const garden = await getGarden();
+// 노트와 같은 파이프라인으로 그린다. 링크가 풀리지 않으면 노트처럼 자물쇠나 평문으로 낮추고 빌드는 계속한다.
+const articleCards = [];
+const html = garden.renderPage({ sourcePath: '20_Projects/obsidian-garden/이 위키에 대해.md', title, body: rawContent(), articleCards });
+---
+<Shell title={title} description={frontmatter.summary} path="/about/">
+  <article class="wrap wiki-about">
+    <h1 class="display">{title}</h1>
+    <div class="intro-body"><ArticleBody html={html} cards={articleCards} notes={garden.notes} /></div>
+  </article>
+</Shell>
+<style>
+  .wiki-about { max-width: 720px; padding-top: 64px; padding-bottom: 96px; }
+  h1 { margin: 0 0 32px; font-size: clamp(28px, 4vw, 38px); }
+  .intro-body { font-size: var(--t-body); line-height: 1.9; }
+  .intro-body :global(h2) { margin: 44px 0 18px; font-size: 23px; line-height: 1.5; }
+  .intro-body :global(p) { margin: 0 0 18px; }
+  .intro-body :global(a) { text-decoration: underline; text-underline-offset: 4px; }
+  @media (max-width: 720px) { .wiki-about { padding-top: 36px; padding-bottom: 64px; } }
+</style>

@@ -14,7 +14,6 @@ const garden = await getGarden();
 const byPath = new Map(garden.notes.map((n) => [n.path, n]));
 const entry = byPath.get(garden.config.entry);
 const featured = byPath.get(garden.home.featured[0]);
-const makingOf = byPath.get(garden.config.home?.makingOf);
 const featuredEntry = featured ? await getEntry('notes', `${kindPrefix(featured.kind)}/${featured.slug}`) : null;
 const thumbnail = featuredEntry?.data.thumbnail;
 const softThumbnail = featured?.thumbnailStyle === 'soft';
@@ -27,7 +26,7 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, layoutGraph(garde
 ---
 <Shell title="TaeZ" description={garden.home.about} path="/">
   <section class="hero" aria-label="소개와 생각 지도">
-    <div class="hero-about"><About about={garden.home.about} contacts={garden.home.contacts} entryUrl={entry?.url ?? withBase('/map/')} makingOfUrl={makingOf?.url} /></div>
+    <div class="hero-about"><About about={garden.home.about} contacts={garden.home.contacts} entryUrl={entry?.url ?? withBase('/map/')} aboutUrl={withBase('/about/')} /></div>
     <div class="hero-graph" data-graph data-site={withBase('/data/site.json')}><a class="hero-snapshot" href={withBase('/map/')} aria-label="생각 지도 열기"><Fragment set:html={snapshot} /></a></div>
     <div class="hero-fade" aria-hidden="true"></div>
   </section>
