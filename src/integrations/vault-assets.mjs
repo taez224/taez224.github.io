@@ -2,21 +2,12 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getGarden, projectPaths } from '../lib/get-garden.mjs';
+import { imageMimeType } from '../lib/image-types.mjs';
 
 const VAULT_ASSET_ROOT = 'assets/vault';
 
-const MIME_TYPES = {
-  '.avif': 'image/avif',
-  '.gif': 'image/gif',
-  '.jpeg': 'image/jpeg',
-  '.jpg': 'image/jpeg',
-  '.png': 'image/png',
-  '.svg': 'image/svg+xml',
-  '.webp': 'image/webp'
-};
-
 export function mimeTypeFor(filePath) {
-  return MIME_TYPES[path.extname(filePath).toLowerCase()] ?? 'application/octet-stream';
+  return imageMimeType(filePath) ?? 'application/octet-stream';
 }
 
 // True when `candidate` resolves to a location strictly inside `root` (or

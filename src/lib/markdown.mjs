@@ -62,6 +62,7 @@ function escapeHtml(value) {
 
 export function stripInlineMarkup(value) {
   return String(value ?? '')
+    .replace(/\\([!-\/:-@[-`{-~])/g, '$1')
     .replace(/!?(\[\[|\]\])/g, '')
     .replace(/[`*_~]/g, '')
     .replace(/<[^>]+>/g, '')
@@ -221,9 +222,10 @@ function createMarkdownIt() {
     linkify: true,
     typographer: false
   });
-  // CommonMark rejects a punctuation-ending closer before a Korean particle.
-  // Keep native delimiter pairing and only relax this two-star closing case.
-  markdown.inline.ruler.before('emphasis', 'korean_strong_close', (state, silent) => {
+  // CommonMark rejects a ** run that sits between punctuation and a Korean syllable: it can neither close
+  // (`역량(Capacity)**이라는`) nor be trusted to only open (`(**중요**)`). Hand the run to markdown-it as both an
+  // opener and a closer and let its own pairing decide which role it plays.
+  markdown.inline.ruler.before('emphasis', 'korean_strong_pair', (state, silent) => {
     if (silent || state.src.slice(state.pos, state.pos + 2) !== '**') return false;
     const scanned = state.scanDelims(state.pos, true);
     const previous = state.src.codePointAt(state.pos - 1);
@@ -238,7 +240,7 @@ function createMarkdownIt() {
         length: 2,
         token: state.tokens.length - 1,
         end: -1,
-        open: false,
+        open: true,
         close: true
       });
     }
@@ -264,16 +266,19 @@ function createMarkdownIt() {
     return true;
   });
 
+  // 문서의 목차를 소유한 렌더만 headingIds를 넘긴다. 콜아웃 본문은 따로 렌더하므로 번호를 다시 매기지 않고 id도 두지 않는다.
+  // 인용·목록 안의 헤딩(level > 0)도 같은 이유로 건너뛴다. garden.mjs의 headingsFor가 쓰는 규칙과 같다.
   const defaultHeadingOpen = markdown.renderer.rules.heading_open;
   markdown.renderer.rules.heading_open = (tokens, index, options, env, self) => {
     const token = tokens[index];
     const nextToken = tokens[index + 1];
     const headingText = nextToken?.type === 'inline' ? nextToken.content : '';
-    const baseId = slugifyHeading(headingText);
-    env.headingIds ??= new Map();
-    const count = (env.headingIds.get(baseId) ?? 0) + 1;
-    env.headingIds.set(baseId, count);
-    token.attrSet('id', count === 1 ? baseId : `${baseId}-${count}`);
+    if (env.headingIds && token.level === 0) {
+      const baseId = slugifyHeading(headingText);
+      const count = (env.headingIds.get(baseId) ?? 0) + 1;
+      env.headingIds.set(baseId, count);
+      token.attrSet('id', count === 1 ? baseId : `${baseId}-${count}`);
+    }
     return defaultHeadingOpen
       ? defaultHeadingOpen(tokens, index, options, env, self)
       : `<${token.tag}${self.renderAttrs(token)}>`;
@@ -286,7 +291,7 @@ export function createMarkdownRenderer({ resolveNote, resolveAsset }) {
 
   function renderCore(source, context) {
     const prepared = replaceObsidianFormatting(String(source ?? ''), markdown, context);
-    return markdown.render(prepared, { headingIds: new Map(), context });
+    return markdown.render(prepared, { context });
   }
 
   return function renderMarkdown(sourcePath, source, { articleCards = [] } = {}) {

@@ -209,3 +209,10 @@ test('ordinary wiki links remain ordinary links and nested article callouts stil
   assert.equal((html.match(/class="article-card-slot"/g) ?? []).length, 1);
   assert.equal((html.match(/class="internal-note-link"/g) ?? []).length, 2);
 });
+
+test('a ** that opens after punctuation before Korean still starts strong emphasis', () => {
+  const html = render('x.md', '(**중요**)라는 말과 그는 "**진짜**"라고 말했다');
+  assert.match(html, /\(<strong>중요<\/strong>\)라는/);
+  assert.match(html, /"<strong>진짜<\/strong>"라고/);
+  assert.doesNotMatch(html, /\*\*/);
+});

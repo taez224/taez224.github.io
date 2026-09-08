@@ -310,6 +310,9 @@ test('external blog notes expose metadata and links while excluding original bod
   assert.equal(external.readingMinutes, 0);
   assert.deepEqual(external.articleCards, []);
   assert.equal(external.publishedUrl, 'https://www.nextree.io/external-post');
+  const externalPost = garden.blog.publications.flatMap((group) => group.posts).find((item) => item.path === external.path);
+  assert.equal(externalPost.summary, external.summary, '글 목록과 노트 엔트리가 같은 요약 규칙을 쓴다');
+  assert.equal(externalPost.contentMode, external.contentMode);
   assert.equal(external.thumbnail, '20_Projects/blog/assets/external-cover.svg');
   assert.match(referring.bodyHtml, /article-card-slot/);
   assert.deepEqual(referring.articleCards, [{ url: external.url, title: '외부 원문 제목', caption: '외부 글' }]);
@@ -356,4 +359,72 @@ test('published posts from other publishers keep the full body and ordinary summ
   assert.match(note.bodyHtml, /OTHER_PUBLISHER_BODY/);
   assert.match(note.summary, /OTHER_PUBLISHER_BODY/);
   assert.ok(note.readingMinutes > 0);
+});
+
+test('headingsFor skips headings quoted inside blockquotes and callouts', () => {
+  const body = '## 배경\n\n본문\n\n> [!note]\n> ## 배경\n> 콜아웃 본문\n\n> ## 인용 안 제목\n\n## 정리';
+  assert.deepEqual(headingsFor(body), [
+    { id: '배경', level: 2, title: '배경' },
+    { id: '정리', level: 2, title: '정리' }
+  ]);
+});
+
+test('headingsFor drops escape backslashes from outline titles', () => {
+  assert.deepEqual(headingsFor('## 1\\. Editor Config 요청'), [
+    { id: '1-editor-config-요청', level: 2, title: '1. Editor Config 요청' }
+  ]);
+});
+
+test('every outline id exists in the rendered body so sidebar links land on a heading', async () => {
+  const note = '---\ncreated: 2026-09-07\n---\n# 콜아웃 노트\n## 배경\n본문\n\n> [!note]\n> ## 배경\n> 콜아웃 본문\n';
+  const vaultRoot = await makeVault({ ...files, '01_Slipbox/콜아웃 노트.md': note });
+  const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
+  const entry = garden.notes.find((item) => item.path === '01_Slipbox/콜아웃 노트.md');
+  const renderedIds = [...entry.bodyHtml.matchAll(/<h[1-6][^>]*\sid="([^"]+)"/g)].map((match) => match[1]);
+  assert.deepEqual(renderedIds, [...new Set(renderedIds)], '헤딩 id가 중복되지 않는다');
+  for (const heading of entry.headings) assert.ok(renderedIds.includes(heading.id), `목차 id ${heading.id}가 본문에 없다`);
+});
+
+test('a basename shared with an unpublished draft still links to the public note', async () => {
+  const vaultRoot = await makeVault({ ...files,
+    '20_Projects/blog/AI 활용.md': '---\ncreated: 2026-09-06\nstatus: published\n---\n# AI 활용\n공개 글.',
+    '20_Projects/blog/초고/AI 활용.md': '---\nstatus: draft\n---\n# AI 활용\nDRAFT_SENTINEL',
+    '01_Slipbox/참조.md': '---\ncreated: 2026-09-07\n---\n# 참조\n[[AI 활용]]을 참조한다.'
+  });
+  const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
+  const referrer = garden.notes.find((note) => note.path === '01_Slipbox/참조.md');
+  const target = garden.notes.find((note) => note.path === '20_Projects/blog/AI 활용.md');
+  assert.match(referrer.bodyHtml, new RegExp(`href="${target.url}"`));
+  assert.doesNotMatch(referrer.bodyHtml, /private-note/);
+  assert.ok(referrer.outgoing.includes('20_Projects/blog/AI 활용.md'));
+});
+
+const aboutPath = '20_Projects/obsidian-garden/이 위키에 대해.md';
+
+test('renderPage links public notes and marks unpublished ones instead of failing the build', async () => {
+  const vaultRoot = await makeVault(files);
+  const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
+  const target = garden.notes.find((note) => note.path === '01_Slipbox/생각 B.md');
+  const html = garden.renderPage({ sourcePath: aboutPath, title: '이 위키에 대해', body: '# 이 위키에 대해\n[[생각 B]]와 [[초안]]을 가리킨다.' });
+  assert.match(html, new RegExp(`href="${target.url}"`));
+  assert.match(html, /private-note/);
+  assert.doesNotMatch(html, /DRAFT_SENTINEL/, '비공개 노트의 본문은 새지 않는다');
+  assert.doesNotMatch(html, /<h1/, '페이지가 제목을 직접 그리므로 본문의 첫 제목은 뺀다');
+});
+
+test('renderPage turns a section link to the page itself into an anchor', async () => {
+  const vaultRoot = await makeVault(files);
+  const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
+  const html = garden.renderPage({ sourcePath: aboutPath, title: '이 위키에 대해', body: '## 기록을 다루는 방식\n[[#기록을 다루는 방식]]으로 돌아간다.' });
+  assert.match(html, /href="#기록을-다루는-방식"/);
+});
+
+test('renderPage collects article cards the way a note body does', async () => {
+  const vaultRoot = await makeVault(files);
+  const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
+  const target = garden.notes.find((note) => note.path === '01_Slipbox/생각 B.md');
+  const articleCards = [];
+  const html = garden.renderPage({ sourcePath: aboutPath, title: '이 위키에 대해', body: '> [!article] 함께 읽기\n> [[생각 B]]', articleCards });
+  assert.match(html, /article-card-slot/);
+  assert.deepEqual(articleCards, [{ url: target.url, title: target.title, caption: '함께 읽기' }]);
 });

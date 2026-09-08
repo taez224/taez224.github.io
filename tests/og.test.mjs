@@ -162,3 +162,9 @@ test('renderOgPng rejects unsupported or escaping thumbnail paths explicitly', a
   garden.notes[0].thumbnail = '../private/secret.png';
   await assert.rejects(renderOgPng(garden, garden.notes[0].path, { siteLabel: 'example.com' }), /outside the vault/);
 });
+
+test('a gif thumbnail reviewed by the note pipeline also renders an OG card', async () => {
+  await fs.writeFile(path.join(dir, 'cover.gif'), Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64'));
+  const uri = await thumbnailDataUri('cover.gif', { vaultRoot: dir });
+  assert.match(uri, /^data:image\/png;base64,/);
+});

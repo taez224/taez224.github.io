@@ -11,6 +11,7 @@ import { topicColor } from './format.mjs';
 import { ensureOgFonts } from './og-fonts.mjs';
 import { projectPaths } from './get-garden.mjs';
 import { pngDimensions } from './png.mjs';
+import { imageMimeType } from './image-types.mjs';
 export { pngDimensions } from './png.mjs';
 
 const PAPER = '#f7f7f2', INK = '#252e29', MUTED = '#626d64', FAINT = '#747c73', ACCENT = '#252e29', LINE = '#9aab9d';
@@ -23,15 +24,6 @@ const CARD = { width: 1200, height: 630 };
 const RENDER_OPTIONS = { fitTo: { mode: 'width', value: CARD.width } };
 const CACHE_MAX_AGE_DAYS = 14;
 const ogCacheDir = process.env.GARDEN_OG_CACHE_DIR || path.join(projectPaths().projectRoot, 'node_modules', '.cache', 'garden-og-images');
-
-const THUMBNAIL_MIME_TYPES = new Map([
-  ['.jpg', 'image/jpeg'],
-  ['.jpeg', 'image/jpeg'],
-  ['.png', 'image/png'],
-  ['.svg', 'image/svg+xml'],
-  ['.webp', 'image/webp'],
-  ['.avif', 'image/avif']
-]);
 
 const digest = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
@@ -150,7 +142,7 @@ export async function thumbnailDataUri(thumbnail, { vaultRoot = projectPaths().v
   const sourcePath = thumbnailSourcePath(thumbnail, vaultRoot);
   if (!sourcePath) return null;
   const extension = path.extname(sourcePath).toLowerCase();
-  const mimeType = THUMBNAIL_MIME_TYPES.get(extension);
+  const mimeType = imageMimeType(sourcePath);
   if (!mimeType) {
     throw new Error(`Unsupported OG thumbnail format: ${extension || '(none)'}`);
   }

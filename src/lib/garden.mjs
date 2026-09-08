@@ -3,6 +3,7 @@ import path from 'node:path';
 import MarkdownIt from 'markdown-it';
 import { createMarkdownRenderer, slugifyHeading, stripInlineMarkup } from './markdown.mjs';
 import { developmentCategory, externalPublicationFor, pathMatches, isExcluded as excludedByPolicy, isIncluded as includedByPolicy, validatePublicationConfig } from './publication.mjs';
+import { isImagePath } from './image-types.mjs';
 import { slugFor, slugify, kindPrefix, noteUrl, assertUniqueSlugs } from './slug.mjs';
 import { plainText } from './text.mjs';
 import { publicTags, cleanTitle } from './format.mjs';
@@ -69,12 +70,14 @@ function firstHeading(body, fallback) {
 }
 
 // 목차·검색용 헤딩. 개수 제한은 두지 않는다(사이드바가 스크롤한다). 제목의 굵게·코드·위키링크 표시는 지운다.
+// 본문 흐름의 헤딩만 센다. 인용·콜아웃·목록 안의 헤딩(token.level > 0)은 인용한 남의 글이라 목차에 넣지 않는다.
+// 렌더러도 같은 규칙으로 id를 매기므로 목차 id와 실제 id가 어긋나지 않는다.
 const headingParser = new MarkdownIt({ html: true });
 export function headingsFor(body) {
   const headingIds = new Map();
   const tokens = headingParser.parse(String(body ?? ''), {}), headings = [];
   for (let index = 0; index < tokens.length; index++) {
-    if (tokens[index].type !== 'heading_open') continue;
+    if (tokens[index].type !== 'heading_open' || tokens[index].level !== 0) continue;
     const title = stripInlineMarkup(tokens[index + 1].content.trim());
     const baseId = slugifyHeading(title), level = Number(tokens[index].tag.slice(1));
     const count = (headingIds.get(baseId) ?? 0) + 1;
@@ -91,8 +94,13 @@ function excerpt(body) {
   return `${cleaned.slice(0, 220).replace(/\s+\S*$/, '')}…`;
 }
 
-function summaryFor(note) {
-  return explicitSummary(note) || excerpt(note.body);
+// 노트 한 편의 요약 규칙. 목록·카드·노트 엔트리가 모두 이 함수를 부른다.
+// 외부 발행 글은 원문을 옮기지 않기로 했으므로 명시 요약만 쓰고, 없으면 요약을 비운다.
+function summaryFor(note, { kind = '', contentMode = 'full' } = {}) {
+  const explicit = explicitSummary(note);
+  if (contentMode === 'external') return explicit;
+  if (kind === 'blog' && note.meta.type === 'series') return explicit || sectionExcerpt(note.body, ['연재 목적', '시리즈 소개']) || excerpt(note.body);
+  return explicit || excerpt(note.body);
 }
 
 function explicitSummary(note) {
@@ -109,10 +117,6 @@ function sectionExcerpt(body, sectionNames) {
   const nextHeading = rest.search(/^##\s+/m);
   const content = nextHeading < 0 ? rest : rest.slice(0, nextHeading);
   return excerpt(content);
-}
-
-function seriesSummaryFor(note) {
-  return explicitSummary(note) || sectionExcerpt(note.body, ['연재 목적', '시리즈 소개']) || excerpt(note.body);
 }
 
 // 지도에서 노드가 이보다 적은 주제는 색과 영역을 기타로 접는다. 범례가 길어지고 팔레트가 바닥나는 걸 막는다. 원래 주제는 topicTag에 남는다.
@@ -163,7 +167,7 @@ function stripLinkTarget(rawTarget) {
   return rawTarget.split('|')[0].split('#')[0].trim().replace(/^!/, '');
 }
 
-function resolveTarget(sourcePath, rawTarget, byPath, byBasename) {
+function resolveTarget(sourcePath, rawTarget, byPath, byBasename, preferred = null) {
   const target = stripLinkTarget(rawTarget);
   if (!target || target.startsWith('http://') || target.startsWith('https://')) return null;
   const sourceDirectory = path.posix.dirname(sourcePath);
@@ -174,7 +178,10 @@ function resolveTarget(sourcePath, rawTarget, byPath, byBasename) {
   if (byPath.has(rootCandidate)) return rootCandidate;
   const basename = path.posix.basename(withExtension).toLowerCase();
   const matches = byBasename.get(basename) ?? [];
-  return matches.length === 1 ? matches[0] : null;
+  if (matches.length === 1) return matches[0];
+  // 이름이 겹치면 공개 노트를 먼저 고른다. 같은 이름의 초안이 생겨도 공개 노트의 링크가 평문으로 떨어지지 않는다.
+  const preferredMatches = preferred ? matches.filter((item) => preferred.has(item)) : [];
+  return preferredMatches.length === 1 ? preferredMatches[0] : null;
 }
 
 function extractTargets(sourcePath, body, byPath, byBasename) {
@@ -205,23 +212,27 @@ function publicBody(kind, body) {
   return stripLeadingTitle(kind === 'blog' ? stripSeriesLinks(body) : body);
 }
 
-const imageExtensions = new Set(['.avif', '.gif', '.jpeg', '.jpg', '.png', '.svg', '.webp']);
-function isImagePath(value) {
-  return imageExtensions.has(path.posix.extname(value).toLowerCase());
-}
-
 export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
   validatePublicationConfig(config);
   const base = String(basePath).replace(/\/$/, '');
   const isExcluded = (relativePath) => excludedByPolicy(config, relativePath);
   const isIncluded = (relativePath, meta) => includedByPolicy(config, relativePath, meta);
 
+  // 외부 발행 판정은 글 목록과 노트 엔트리가 같이 쓴다. 노트마다 한 번만 판정해 두 목록이 갈라지지 않게 한다.
+  const publicationVerdicts = new Map();
+  function publicationFor(relativePath, note) {
+    if (!publicationVerdicts.has(relativePath)) {
+      const externalPublisher = externalPublicationFor(config, relativePath, note.meta);
+      publicationVerdicts.set(relativePath, { externalPublisher, contentMode: externalPublisher ? 'external' : 'full' });
+    }
+    return publicationVerdicts.get(relativePath);
+  }
+
   function blogRecord(relativePath, note) {
     const fileTitle = path.posix.basename(relativePath, '.md');
     const title = String(note.meta.title ?? firstHeading(note.body, fileTitle));
     const publishedUrl = publicUrl(note.meta.source, '');
-    const externalPublisher = externalPublicationFor(config, relativePath, note.meta);
-    const contentMode = externalPublisher ? 'external' : 'full';
+    const { externalPublisher, contentMode } = publicationFor(relativePath, note);
     return {
       path: relativePath,
       fileTitle,
@@ -235,8 +246,8 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
       externalPublisher,
       series: String(note.meta.series ?? ''),
       seriesOrder: numberValue(note.meta.series_order),
-      summary: externalPublisher ? explicitSummary(note) : note.meta.type === 'series' ? seriesSummaryFor(note) : summaryFor(note),
-      summaryIsExplicit: Boolean(String(note.meta.summary ?? '').trim()),
+      summary: summaryFor(note, { kind: 'blog', contentMode }),
+      summaryIsExplicit: Boolean(explicitSummary(note)),
       status: String(note.meta.status ?? ''),
       tags: Array.isArray(note.meta.tags) ? note.meta.tags : [],
       created: firstDate(note.meta)
@@ -357,7 +368,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
       url: siteUrl(relativePath),
       category: developmentCategory(relativePath),
       summary: summaryFor(note),
-      summaryIsExplicit: Boolean(String(note.meta.summary ?? '').trim()),
+      summaryIsExplicit: Boolean(explicitSummary(note)),
       tags: Array.isArray(note.meta.tags) ? note.meta.tags : [],
       date: firstDate(note.meta)
     }))
@@ -427,8 +438,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
     const fileTitle = path.posix.basename(relativePath, '.md');
     const kind = kindFor(relativePath);
     const title = String(note.meta.title ?? firstHeading(note.body, fileTitle));
-    const externalPublisher = externalPublicationFor(config, relativePath, note.meta);
-    const contentMode = externalPublisher ? 'external' : 'full';
+    const { externalPublisher, contentMode } = publicationFor(relativePath, note);
     const publicContent = publicBody(kind, note.body);
     const bodyText = contentMode === 'external' ? '' : plainText(publicContent);
     const headings = contentMode === 'external' ? [] : headingsFor(publicContent);
@@ -451,8 +461,8 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
       readingMinutes: contentMode === 'external' ? 0 : Math.max(1, Math.round([...bodyText].length / 600)),
       topic: topicFor(Array.isArray(note.meta.tags) ? note.meta.tags : []),
       date: firstDate(note.meta),
-      summary: externalPublisher ? explicitSummary(note) : kind === 'blog' && note.meta.type === 'series' ? seriesSummaryFor(note) : summaryFor(note),
-      summaryIsExplicit: Boolean(String(note.meta.summary ?? '').trim()),
+      summary: summaryFor(note, { kind, contentMode }),
+      summaryIsExplicit: Boolean(explicitSummary(note)),
       headings,
       url: siteUrl(relativePath),
       publishedUrl: kind === 'blog' ? publicUrl(note.meta.source, '') : '',
@@ -460,6 +470,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
       published: String(note.meta.published ?? ''),
       contentMode,
       externalPublisher,
+      publicContent,
       body: note.body
     };
   }
@@ -560,7 +571,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
     const target = String(rawTarget ?? '').trim();
     const resolved = target === sourcePath
       ? sourcePath
-      : resolveTarget(sourcePath, target, knownNotePaths, knownByBasename);
+      : resolveTarget(sourcePath, target, knownNotePaths, knownByBasename, publicEntries);
     if (!resolved) return null;
     if (!publicEntries.has(resolved)) return { visibility: 'private' };
     const entry = publicEntries.get(resolved);
@@ -572,6 +583,19 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
     resolveAsset: resolvePublicAsset,
     resolveNote: resolvePublicNote
   });
+
+  // 소개처럼 노트 목록에는 없지만 vault 원고로 쓰는 페이지. 노트와 같은 링크·자산·콜아웃 규칙을 쓰되,
+  // 공개 색인에 없는 경로라 같은 문서 안의 절 링크만 페이지 앵커로 돌린다. 해석에 실패한 링크는 노트와 똑같이
+  // 자물쇠나 평문으로 낮춘다. 페이지 하나 때문에 빌드가 멈추지 않는다.
+  function renderPage({ sourcePath, title, body, articleCards = [] }) {
+    const render = createMarkdownRenderer({
+      resolveAsset: resolvePublicAsset,
+      resolveNote: (source, target, fragment = '') => (target === sourcePath
+        ? { title, url: fragment ? `#${fragment}` : '' }
+        : resolvePublicNote(source, target, fragment))
+    });
+    return render(sourcePath, stripLeadingTitle(body), { articleCards });
+  }
 
   const allPublicEdges = [];
   for (const [relativePath, entry] of publicEntries) {
@@ -590,7 +614,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
   }
   const notes = [...publicEntries.values()]
     .filter((entry) => entry.kind !== 'book')
-    .map(({ body, ...entry }) => {
+    .map(({ body, publicContent, ...entry }) => {
       const meta = candidateFiles.get(entry.path)?.meta ?? {};
       const reference = String(meta.thumbnail ?? '').trim();
       let thumbnail = null;
@@ -602,7 +626,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
       const thumbnailStyle = String(meta.thumbnail_style ?? 'plain');
       if (!['plain', 'soft'].includes(thumbnailStyle)) throw new Error(`Unknown thumbnail_style for ${entry.path}: ${thumbnailStyle}`);
       const articleCards = [];
-      const bodyHtml = entry.contentMode === 'external' ? '' : renderMarkdown(entry.path, publicBody(entry.kind, body), { articleCards });
+      const bodyHtml = entry.contentMode === 'external' ? '' : renderMarkdown(entry.path, publicContent, { articleCards });
       return {
         ...entry,
         thumbnail,
@@ -729,7 +753,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
       contacts: config.home?.contacts || [],
       about: String(config.home?.about ?? '')
     },
-    notes, nodes, edges, noteEdges: allPublicEdges, paths, blog, development, books, topicFold,
+    notes, nodes, edges, noteEdges: allPublicEdges, paths, blog, development, books, topicFold, renderPage,
     stats: {
       candidates: graphCandidateFiles.size, nodes: nodes.length, edges: edges.length,
       blogPosts: blog.stats.posts, blogSeries: blog.stats.series, developmentNotes: developmentRecords.length
