@@ -37,7 +37,7 @@ async function walkAll(directory) {
   return files;
 }
 
-function parseFrontmatter(source) {
+export function parseFrontmatter(source) {
   if (!source.startsWith('---')) return { body: source, meta: {} };
   const end = source.indexOf('\n---', 3);
   if (end < 0) return { body: source, meta: {} };

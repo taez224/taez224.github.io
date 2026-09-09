@@ -1,10 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { assembleGarden } from './garden.mjs';
+import { assembleGarden, parseFrontmatter } from './garden.mjs';
 
 // npm dev/build/test는 프로젝트 루트에서 실행한다. 번들 경로 깊이에 의존하지 않는다.
 const projectRoot = path.resolve(process.env.GARDEN_PROJECT_ROOT ?? process.cwd());
-const vaultRoot = path.resolve(projectRoot, '../..');
+// vault는 별도 저장소다. 로컬은 이 저장소 옆의 obsidian 클론, CI는 GARDEN_VAULT_ROOT로 받은 두 번째 checkout.
+const vaultRoot = path.resolve(process.env.GARDEN_VAULT_ROOT ?? path.resolve(projectRoot, '../obsidian'));
 let pending = null;
 let assembledAt = 0;
 // 개발 모드에서 한 페이지가 여러 컴포넌트에서 불러도 조립은 한 번이다. 이 시간이 지나면 다음 호출이 vault를 다시 읽는다.
@@ -14,6 +15,11 @@ export function invalidateGarden() { pending = null; assembledAt = 0; }
 
 export function projectPaths() {
   return { projectRoot, vaultRoot };
+}
+
+// vault의 노트 한 편을 frontmatter와 본문으로 읽는다. 소개 페이지처럼 공개 목록 밖의 노트를 그릴 때 쓴다.
+export async function readVaultNote(relativePath) {
+  return parseFrontmatter(await fs.readFile(path.join(vaultRoot, relativePath), 'utf8'));
 }
 
 export function getGarden() {

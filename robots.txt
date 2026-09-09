@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://taez224.github.io/obsidian/sitemap-index.xml

@@ -1,19 +1,20 @@
 ---
-import { frontmatter, rawContent } from '../../이 위키에 대해.md';
 import Shell from '../layouts/Shell.astro';
 import ArticleBody from '../components/ArticleBody.astro';
 import Contacts from '../components/Contacts.astro';
-import { getGarden } from '../lib/get-garden.mjs';
+import { getGarden, readVaultNote } from '../lib/get-garden.mjs';
 
 const title = '이 위키에 대해';
 const garden = await getGarden();
+// 소개 노트는 vault의 프로젝트 폴더에 산다. 공개 목록에는 없지만 같은 파이프라인으로 그린다.
+const aboutNote = await readVaultNote('20_Projects/obsidian-garden/이 위키에 대해.md');
 // 연락처는 홈 히어로와 이 페이지 끝 두 곳에만 둔다. 페이지마다 붙이면 어디서나 보이는 대신 어디에도 자리가 없다.
 const contacts = (garden.home.contacts || []).filter((contact) => contact.name !== 'Velog');
 // 노트와 같은 파이프라인으로 그린다. 링크가 풀리지 않으면 노트처럼 자물쇠나 평문으로 낮추고 빌드는 계속한다.
 const articleCards = [];
-const html = garden.renderPage({ sourcePath: '20_Projects/obsidian-garden/이 위키에 대해.md', title, body: rawContent(), articleCards });
+const html = garden.renderPage({ sourcePath: '20_Projects/obsidian-garden/이 위키에 대해.md', title, body: aboutNote.body, articleCards });
 ---
-<Shell title={title} description={frontmatter.summary} path="/about/">
+<Shell title={title} description={String(aboutNote.meta.summary ?? '')} path="/about/">
   <article class="wrap wiki-about">
     <h1 class="display">{title}</h1>
     <div class="body intro-body"><ArticleBody html={html} cards={articleCards} notes={garden.notes} /></div>

@@ -1,0 +1,84 @@
+name: Deploy Thinking Garden
+
+# 노트는 obsidian 저장소에 있다. 새벽 4시(KST)에 한 번 vault를 받아 다시 짓고, 코드가 바뀌면 바로 짓는다.
+# 당장 반영하고 싶을 때는 Actions 탭의 "Run workflow" 또는 `gh workflow run deploy.yml`.
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 19 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+env:
+  GARDEN_VAULT_ROOT: ${{ github.workspace }}/vault
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout site
+        uses: actions/checkout@v4
+
+      - name: Checkout vault
+        uses: actions/checkout@v4
+        with:
+          repository: taez224/obsidian
+          path: vault
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install build dependencies
+        run: npm ci
+
+      - name: Restore OG font cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules/.cache/garden-og-fonts
+          key: garden-og-fonts-${{ hashFiles('src/lib/og-fonts.mjs') }}
+
+      # 카드 파일은 최종 SVG·폰트·resvg 버전의 해시로 스스로 유효성을 갖는다. 실행마다 저장하고 가장 최근 것을 복원한다.
+      - name: Restore OG card cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules/.cache/garden-og-images
+          key: garden-og-images-${{ github.run_id }}
+          restore-keys: |
+            garden-og-images-
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
