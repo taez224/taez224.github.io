@@ -59,6 +59,16 @@ test('category filtering happens before the limit so a busy notebook cannot disp
  assert.equal(feedItems(input, { ...options, kinds: ['slipbox'], limit: 1 }).length, 1);
 });
 
+test('the unified feed reserves slots per kind so a burst of recent notes cannot displace articles', () => {
+ const many = (make, count, prefix) => Array.from({ length: count }, (_, i) => make({ date: `2026-08-${String(30 - (i % 28)).padStart(2, '0')}`, url: `/obsidian/${prefix}/${i}/` }));
+ const input = [...many(note, 20, 'notes'), ...many(dev, 20, 'dev'), ...Array.from({ length: 6 }, (_, i) => post({ published: `2024-0${i + 1}-01`, url: `/obsidian/posts/${i}/` }))];
+ const items = feedItems(input, { ...options, quota: { blog: 10, slipbox: 10, development: 10 } });
+ const count = (kind) => items.filter((item) => item.kind === kind).length;
+ assert.deepEqual([count('blog'), count('slipbox'), count('development')], [6, 10, 10], '글은 있는 만큼 전부, 노트와 개발 노트는 몫만큼');
+ assert.deepEqual(items.map((item) => item.date), [...items.map((item) => item.date)].sort().reverse(), '합친 뒤에는 날짜순');
+ assert.equal(feedItems(input, { ...options, kinds: ['slipbox'] }).length, 20, '종류별 피드는 몫과 무관하다');
+});
+
 test('filtered feeds declare their own identity and escape feed metadata', () => {
  const xml = renderFeed([note(), post()], { ...options, kinds: ['blog'], feedPath: 'feeds/posts.xml', title: '글 & 기록' });
  assert.ok(xml.includes('https://example.com/obsidian/feeds/posts.xml'));

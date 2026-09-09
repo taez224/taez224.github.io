@@ -1,5 +1,6 @@
 // XML 1.0 Char production; retain valid supplementary characters (including emoji).
 import { SITE_DESCRIPTION, SITE_TITLE } from './site-meta.mjs';
+import { KINDS } from './kinds.mjs';
 
 const escapeXml = value => String(value ?? '').replace(/[^\u0009\u000A\u000D\u0020-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}]/gu, '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'})[c]);
 
@@ -10,12 +11,13 @@ export function feedEntries(garden) {
   return garden.notes.map(note => ({ ...note, published: byPath.get(note.path)?.published ?? '' }));
 }
 
-const FEED_KINDS = { blog: '글', slipbox: '노트', development: '개발 노트' };
+const FEED_KINDS = ['blog', 'slipbox', 'development'];
 
-export function feedItems(notes, { site, basePath = '', limit = 30, kinds = Object.keys(FEED_KINDS), now = new Date() }) {
+// quota: 종류별 몫({ kind: n }). 주면 종류마다 최근 n편을 뽑은 뒤 합쳐 날짜순으로 놓는다. 종류별 피드는 몫 없이 limit만 쓴다.
+export function feedItems(notes, { site, basePath = '', limit = 30, kinds = FEED_KINDS, quota = null, now = new Date() }) {
   const home = new URL(`${basePath.replace(/\/$/, '')}/`, site);
-  return notes.flatMap(note => {
-    if (!kinds.includes(note.kind) || !FEED_KINDS[note.kind] || ['series', 'hub', 'moc'].includes(note.type)) return [];
+  const items = notes.flatMap(note => {
+    if (!kinds.includes(note.kind) || !FEED_KINDS.includes(note.kind) || ['series', 'hub', 'moc'].includes(note.type)) return [];
     const blog = note.kind === 'blog';
     if (blog && note.status !== 'published') return [];
     const day = blog ? note.published : note.date;
@@ -27,12 +29,15 @@ export function feedItems(notes, { site, basePath = '', limit = 30, kinds = Obje
     const external = blog && note.contentMode === 'external';
     let url;
     try { url = external ? new URL(note.publishedUrl) : new URL(note.url, site); } catch { return []; }
-    if (!['https:', 'http:'].includes(url.protocol) || url.username || url.password) return [];
+    if (url.protocol !== 'https:' || url.username || url.password) return [];
     if (!external && (url.origin !== home.origin || !url.pathname.startsWith(home.pathname))) return [];
-    return [{ title: note.displayTitle || note.title, kind: note.kind, label: FEED_KINDS[note.kind],
+    return [{ title: note.displayTitle || note.title, kind: note.kind, label: KINDS[note.kind].label,
       url: url.href, date: day, pubDate: date.toUTCString(), summary: note.summary || '' }];
   }).sort((a,b) => b.date.localeCompare(a.date) || a.url.localeCompare(b.url))
-    .filter((item,i,all) => all.findIndex(other => other.url === item.url) === i).slice(0, limit);
+    .filter((item,i,all) => all.findIndex(other => other.url === item.url) === i);
+  if (!quota) return items.slice(0, limit);
+  const taken = {};
+  return items.filter(item => (taken[item.kind] = (taken[item.kind] ?? 0) + 1) <= (quota[item.kind] ?? 0)).slice(0, limit);
 }
 
 export function renderFeed(notes, options) {

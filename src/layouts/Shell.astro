@@ -4,14 +4,14 @@ import Header from '../components/Header.astro';
 import SearchDialog from '../components/SearchDialog.astro';
 import { withBase } from '../lib/format.mjs';
 import { SITE_TITLE } from '../lib/site-meta.mjs';
+import { FEED_LINKS } from '../lib/feeds.mjs';
 import { structuredData, jsonLdScript } from '../lib/seo.mjs';
 import siteConfig from '../../config.json';
 const umami = siteConfig.analytics?.umami?.websiteId ? siteConfig.analytics.umami : null;
 // Search Console 소유권 확인 토큰. 공개되는 값이고, 지우면 소유권이 풀리므로 확인 뒤에도 남긴다.
 const googleSiteVerification = siteConfig.googleSiteVerification ?? '';
 const naverSiteVerification = siteConfig.naverSiteVerification ?? '';
-// feed: 목록 페이지가 자기 종류의 피드를 알릴 때 { title, path }. 통합 피드 링크는 모든 페이지에 있다.
-const { title, description, path, active = '', ogType = 'website', ogImage: ogImagePath = null, kind = null, published = null, feed = null } = Astro.props;
+const { title, description, path, active = '', ogType = 'website', ogImage: ogImagePath = null, kind = null, published = null } = Astro.props;
 const siteName = 'TaeZ';
 const fullTitle = path === '/' ? SITE_TITLE : `${title} · ${siteName}`;
 const canonical = new URL(withBase(path), Astro.site).href;
@@ -45,8 +45,7 @@ const jsonLd = jsonLdScript(structuredData({ ogType, kind, title: path === '/' ?
     <link rel="icon" href={withBase('/favicon.svg')} type="image/svg+xml" />
     <link rel="apple-touch-icon" href={withBase('/apple-touch-icon.png')} />
     <link rel="sitemap" href={withBase('/sitemap-index.xml')} />
-    <link rel="alternate" type="application/rss+xml" title={SITE_TITLE} href={new URL(withBase('/rss.xml'), Astro.site).href} />
-    {feed && <link rel="alternate" type="application/rss+xml" title={feed.title} href={new URL(withBase(feed.path), Astro.site).href} />}
+    {FEED_LINKS.map((feed) => <link rel="alternate" type="application/rss+xml" title={feed.title} href={new URL(withBase(feed.path), Astro.site).href} />)}
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
