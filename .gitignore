@@ -4,8 +4,13 @@ dist/
 .idea/
 .DS_Store
 
-# ai
+# AI 태스크 플랜 및 세션 상태 (커밋하지 않음)
+TASK.md
 .claude-session-state.md
+.claude-compact-note.md
+.claude/tasks/
+codex_result/
+
 # Claude Code 로컬 전용
 .claude/settings.local.json
 .claude/worktrees/
