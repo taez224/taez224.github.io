@@ -12,7 +12,7 @@ const rows = [...standalone, ...seriesRows].filter((row) => row.date).sort((a, b
 const publishedIn = (year) => standalone.filter((row) => row.date.startsWith(year)).length + blog.series.flatMap((series) => series.posts).filter((post) => (post.published || '').startsWith(year)).length;
 const years = [...new Set(rows.map((row) => row.date.slice(0, 4)))].map((year) => ({ year, rows: rows.filter((row) => row.date.startsWith(year)), count: publishedIn(year) }));
 ---
-<Shell title="글" description="TaeZ가 발행한 글과 연재." path="/posts/" active="posts">
+<Shell title="글" description="TaeZ가 발행한 글과 연재." path="/posts/" active="posts" feed={{ title: 'TaeZ · 발행한 글', path: '/feeds/posts.xml' }}>
   <div class="wrap posts-page">
     <div class="page-head"><h1 class="display">글</h1><span class="meta">{blog.stats.posts}편 · 연재 {blog.stats.series}개</span></div>
     {years.map(({ year, rows, count }) => <section class="ledger-group is-year" aria-label={`${year}년`}>

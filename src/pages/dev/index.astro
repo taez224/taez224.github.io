@@ -8,7 +8,7 @@ const records = selectDevelopmentRecords([...development.concepts, ...developmen
 // 분류가 여백 라벨이 된다. 탭과 기술 칩으로 거르던 것은 메타 줄의 기술명과 검색으로 대신한다.
 const groups = ['Concepts', 'Troubleshooting', 'Tools'].map((id) => ({ id, label: developmentCategoryLabel(id), records: records.filter((r) => r.category === id) })).filter((g) => g.records.length);
 ---
-<Shell title="개발 노트" description="개발하며 배운 개념과 해결한 문제, 도구 기록." path="/dev/" active="dev">
+<Shell title="개발 노트" description="개발하며 배운 개념과 해결한 문제, 도구 기록." path="/dev/" active="dev" feed={{ title: 'TaeZ · 개발 노트', path: '/feeds/dev.xml' }}>
   <div class="wrap dev-page">
     <div class="page-head"><h1 class="display">개발 노트</h1><span class="meta">{records.length}개</span></div>
     <!-- 페이지의 지도: 첫 화면에서 세 분류가 다 보이고, 누르면 그 장부로 내려간다. 아래 분류가 두 화면 밑으로 밀리는 문제를 푼다. -->

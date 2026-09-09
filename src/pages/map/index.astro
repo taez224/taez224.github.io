@@ -15,7 +15,7 @@ const folded = Object.keys(topicFold);
 const foldedLabel = folded.length > 2 ? `${folded.slice(0, 2).join(', ')} 외 ${folded.length - 2}` : folded.join(', ');
 const topics = [...topicCounts].map(([name, count]) => ({ name, color: GRAPH_COLORS[name] ?? GRAPH_COLORS.기타, count })).sort((a, b) => Number(a.name === '기타') - Number(b.name === '기타') || b.count - a.count);
 ---
-<Shell title="생각 지도" description="노트를 고르고 연결된 생각을 따라가는 지도." path="/map/" active="map">
+<Shell title="생각 지도" description="노트를 고르고 연결된 생각을 따라가는 지도." path="/map/" active="map" feed={{ title: 'TaeZ · 생각 노트', path: '/feeds/notes.xml' }}>
   <div class="wrap map-page" data-site={withBase('/data/site.json')}>
     <div class="page-head"><h1 class="display">생각 지도</h1><span class="meta" data-map-count>노트 {stats.nodes} · 연결 {stats.edges}</span></div>
     <div class="map-layout">

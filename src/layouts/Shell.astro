@@ -10,7 +10,8 @@ const umami = siteConfig.analytics?.umami?.websiteId ? siteConfig.analytics.umam
 // Search Console 소유권 확인 토큰. 공개되는 값이고, 지우면 소유권이 풀리므로 확인 뒤에도 남긴다.
 const googleSiteVerification = siteConfig.googleSiteVerification ?? '';
 const naverSiteVerification = siteConfig.naverSiteVerification ?? '';
-const { title, description, path, active = '', ogType = 'website', ogImage: ogImagePath = null, kind = null, published = null } = Astro.props;
+// feed: 목록 페이지가 자기 종류의 피드를 알릴 때 { title, path }. 통합 피드 링크는 모든 페이지에 있다.
+const { title, description, path, active = '', ogType = 'website', ogImage: ogImagePath = null, kind = null, published = null, feed = null } = Astro.props;
 const siteName = 'TaeZ';
 const fullTitle = path === '/' ? SITE_TITLE : `${title} · ${siteName}`;
 const canonical = new URL(withBase(path), Astro.site).href;
@@ -45,6 +46,7 @@ const jsonLd = jsonLdScript(structuredData({ ogType, kind, title: path === '/' ?
     <link rel="apple-touch-icon" href={withBase('/apple-touch-icon.png')} />
     <link rel="sitemap" href={withBase('/sitemap-index.xml')} />
     <link rel="alternate" type="application/rss+xml" title={SITE_TITLE} href={new URL(withBase('/rss.xml'), Astro.site).href} />
+    {feed && <link rel="alternate" type="application/rss+xml" title={feed.title} href={new URL(withBase(feed.path), Astro.site).href} />}
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />

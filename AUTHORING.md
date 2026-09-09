@@ -52,10 +52,18 @@ thumbnail: "[[thumbnail-ai-harness-loop.jpg]]"
 
 다른 공개 글에서 이 글을 `[!article]`로 소개하면 제목·요약·썸네일을 표시하고 가든의 소개 페이지로 연결한다. 발행처를 추가하거나 전문 공개로 되돌릴 때는 이 정책과 출력 검사를 함께 검토한다.
 
+## 피드
+
+피드는 네 개다. `rss.xml`은 글·노트·개발 노트를 합친 통합 피드이고, `feeds/posts.xml`, `feeds/notes.xml`, `feeds/dev.xml`은 종류별 피드다. 각 피드는 최근 30편만 담는다. 전체 목록은 사이트가 맡고 피드는 새 항목을 알리는 통로다.
+
+항목 주소는 canonical과 같은 가든 주소다. 외부 발행처에서만 전문을 읽는 글(`externalPublications`에 해당)만 원문 주소로 연결한다. 가든에 전문이 있는 글은 외부에도 발행했더라도 가든 주소로 나간다.
+
+글은 `published` 날짜가 있어야 피드에 들어가고, 노트와 개발 노트는 `created` 날짜를 쓴다. 연재 허브와 MOC는 넣지 않는다. 목록 페이지(`/posts/`, `/dev/`, `/map/`)는 자기 종류의 피드를 `<link rel="alternate">`로 알린다.
+
 ## 규칙을 변경할 때
 
 - frontmatter 속성을 바꾸면 속성 스키마를 수정한다.
 - 새로운 작성 문법이나 표시 조건을 추가하면 이 문서와 관련 테스트를 함께 수정한다.
 - 공개 범위를 바꾸려면 `config.json`의 게시 규칙과 이미지 허용 목록을 확인한다. 링크나 카드 지정만으로 비공개 자료를 공개하지 않는다.
 
-구현 위치는 `src/lib/markdown.mjs`(문법), `src/lib/garden.mjs`(공개 문서 연결), `src/components/ArticleBody.astro`와 `src/lib/article-card.mjs`(카드 출력), `src/styles/article-card.css`(배치), `src/lib/og.mjs`(공유 카드)다.
+구현 위치는 `src/lib/markdown.mjs`(문법), `src/lib/garden.mjs`(공개 문서 연결), `src/components/ArticleBody.astro`와 `src/lib/article-card.mjs`(카드 출력), `src/styles/article-card.css`(배치), `src/lib/og.mjs`(공유 카드), `src/lib/rss.mjs`(피드)다.

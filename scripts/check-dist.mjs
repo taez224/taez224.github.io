@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pngDimensions } from '../src/lib/png.mjs';
+import { kindPrefix } from '../src/lib/slug.mjs';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const config = JSON.parse(await fs.readFile(path.join(projectRoot, 'config.json'), 'utf8'));
@@ -54,7 +55,7 @@ checks.push(async () => {
   const site = JSON.parse(await read('data/site.json').catch(() => '{"notes":[]}'));
   const notes = site.notes ?? [];
   const search = JSON.parse(await read('data/search.json'));
-  check(notes.length > 0, 'site.json에 노트가 없다 (Task 8 이후 필수)');
+  check(notes.length > 0, 'site.json에 노트가 없다');
   for (const note of notes) {
     const pathname = decodeURIComponent(new URL(note.url, 'https://site.invalid').pathname);
     const base = String(config.basePath ?? '').replace(/\/$/, '');
@@ -97,17 +98,23 @@ checks.push(async () => {
 checks.push(async () => {
   // 노트마다 공유 카드 이미지가 있어야 한다.
   const site = JSON.parse(await read('data/site.json'));
-  const prefixes = { blog: 'posts', slipbox: 'notes', development: 'dev' };
-  for (const note of site.notes) await checkCard(`og/${prefixes[note.kind]}/${note.slug}.png`);
+  for (const note of site.notes) await checkCard(`og/${kindPrefix(note.kind)}/${note.slug}.png`);
   await checkCard('og/site.png');
 });
 checks.push(async () => {
-  for (const file of ['rss.xml', 'feeds/posts.xml', 'feeds/notes.xml', 'favicon.svg', 'og/site.png', 'apple-touch-icon.png', 'robots.txt', 'map/index.html', '404.html']) check(await exists(file), `${file} 없음`);
+  for (const file of ['rss.xml', 'feeds/posts.xml', 'feeds/notes.xml', 'feeds/dev.xml', 'favicon.svg', 'og/site.png', 'apple-touch-icon.png', 'robots.txt', 'map/index.html', '404.html']) check(await exists(file), `${file} 없음`);
+  const postsFeed = await read('feeds/posts.xml').catch(() => '');
+  check(/<link>https?:\/\/[^<]+\/posts\/[^<]+<\/link>/.test(postsFeed), 'feeds/posts.xml: 전문 공개 글이 가든 주소로 연결되지 않음');
+  for (const [page, feed] of [['posts/index.html', 'feeds/posts.xml'], ['dev/index.html', 'feeds/dev.xml'], ['map/index.html', 'feeds/notes.xml']]) {
+    check((await read(page)).includes(`href="https://taez224.github.io/${feed}"`) || (await read(page)).includes(`/${feed}"`), `${page}: ${feed} 피드 링크 없음`);
+  }
   const home = await read('index.html');
   check(home.includes('생각의 정원으로'), 'index: 생각의 정원 버튼 없음');
   check(!home.includes('Velog'), 'index: Velog 링크 잔존');
   check(!/노트 \d+개 · 연결 \d+개/.test(home.replace(/alt="[^"]*"/g, '')), 'index: 히어로 집계 잔존');
-  const recentRows = (home.match(/<li>/g) || []).length + (home.match(/<li /g) || []).length;
+  // 최근 기록 절 안의 항목만 센다. 다른 곳에 목록이 생겨도 이 검사는 흔들리지 않는다.
+  const recentSection = home.match(/<section[^>]*class="[^"]*\brecent\b[^"]*"[^>]*>[\s\S]*?<\/section>/)?.[0] ?? '';
+  const recentRows = (recentSection.match(/<li[\s>]/g) || []).length;
   check(recentRows === 3, `index: 최근 기록은 종류별 한 편(3개)이어야 하는데 ${recentRows}개`);
   for (const label of ['>노트</a>', '>개발 노트</a>', '>글</a>']) check(home.includes(label), `index: 최근 기록에 ${label.slice(1, -4)} 링크 없음`);
 });
@@ -123,8 +130,6 @@ checks.push(async () => {
   check(!/🗺|🌱/.test(home), 'index: 허브 이모지 잔존');
   check(home.includes('class="snap"') && home.includes('data-regions'), 'index: 인라인 스냅샷 또는 주제 영역 없음');
 });
-// __MORE_CHECKS__ (뒤 Task가 이 자리에 검사를 추가한다)
-
 for (const run of checks) await run();
 if (failures.length) {
   console.error(`check-dist: ${failures.length}개 실패\n- ${failures.join('\n- ')}`);

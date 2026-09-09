@@ -10,10 +10,12 @@ export function feedEntries(garden) {
   return garden.notes.map(note => ({ ...note, published: byPath.get(note.path)?.published ?? '' }));
 }
 
-export function feedItems(notes, { site, basePath = '', limit = 30, kinds = ['blog', 'slipbox'], now = new Date() }) {
+const FEED_KINDS = { blog: '글', slipbox: '노트', development: '개발 노트' };
+
+export function feedItems(notes, { site, basePath = '', limit = 30, kinds = Object.keys(FEED_KINDS), now = new Date() }) {
   const home = new URL(`${basePath.replace(/\/$/, '')}/`, site);
   return notes.flatMap(note => {
-    if (!kinds.includes(note.kind) || !['blog', 'slipbox'].includes(note.kind) || ['series', 'hub', 'moc'].includes(note.type)) return [];
+    if (!kinds.includes(note.kind) || !FEED_KINDS[note.kind] || ['series', 'hub', 'moc'].includes(note.type)) return [];
     const blog = note.kind === 'blog';
     if (blog && note.status !== 'published') return [];
     const day = blog ? note.published : note.date;
@@ -21,11 +23,13 @@ export function feedItems(notes, { site, basePath = '', limit = 30, kinds = ['bl
     const date = new Date(`${day}T00:00:00+09:00`);
     if (!Number.isFinite(date.getTime()) || date > now) return [];
     if (new Date(date.getTime() + 9 * 3600000).toISOString().slice(0, 10) !== day) return [];
+    // 전문을 가든에서 읽는 글과 노트는 가든 주소(canonical)로, 외부 발행처에서만 읽는 글은 원문 주소로 보낸다.
+    const external = blog && note.contentMode === 'external';
     let url;
-    try { url = blog ? new URL(note.publishedUrl) : new URL(note.url, site); } catch { return []; }
+    try { url = external ? new URL(note.publishedUrl) : new URL(note.url, site); } catch { return []; }
     if (!['https:', 'http:'].includes(url.protocol) || url.username || url.password) return [];
-    if (!blog && (url.origin !== home.origin || !url.pathname.startsWith(home.pathname))) return [];
-    return [{ title: note.displayTitle || note.title, kind: note.kind, label: blog ? '글' : '노트',
+    if (!external && (url.origin !== home.origin || !url.pathname.startsWith(home.pathname))) return [];
+    return [{ title: note.displayTitle || note.title, kind: note.kind, label: FEED_KINDS[note.kind],
       url: url.href, date: day, pubDate: date.toUTCString(), summary: note.summary || '' }];
   }).sort((a,b) => b.date.localeCompare(a.date) || a.url.localeCompare(b.url))
     .filter((item,i,all) => all.findIndex(other => other.url === item.url) === i).slice(0, limit);
