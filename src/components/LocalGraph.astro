@@ -38,7 +38,9 @@ const offset = (edge, sign) => {
   {layout.hidden > 0 && <p class="meta">가까운 연결 {layout.nodes.length - 1}개만 그렸습니다. 전체는 아래 목록에 있습니다.</p>}
 </div>
 <style>
-  .local-graph svg { display: block; width: 100%; height: 190px; overflow: visible; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  /* 위아래 선은 사이드바가 블록 사이에 긋는다. 여기서는 그림 앞뒤 여백만 둔다. */
+  .local-graph { padding: 14px 0 20px; }
+  .local-graph svg { display: block; width: 100%; height: 190px; overflow: visible; }
   .local-graph svg:focus, .local-graph svg:focus-visible { outline: none; }
   .edge { stroke: var(--accent); stroke-width: 1.2; stroke-opacity: .75; }
   .edge.is-in { stroke-dasharray: 5 4; }

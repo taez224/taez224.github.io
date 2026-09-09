@@ -144,8 +144,8 @@ const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slic
   .body .callout-bug :is(.callout-title, summary) { color: #9c6e6e; }
   @media (max-width: 1000px) {
     .note-view { grid-template-columns: minmax(0, 720px); gap: 20px; }
-    .note-side { position: static; max-height: none; overflow: visible; padding-top: 0; } /* 경계선은 로컬 그래프의 위 테두리가 맡고, 간격은 첫 블록의 위 여백이 맡는다 */
-    .note-side .rail { display: none; }
+    .note-side { position: static; max-height: none; overflow: visible; padding-top: 0; } /* 본문과의 경계선은 첫 블록의 위 선이 맡는다(숨긴 목차가 앞 형제로 남아 선이 생긴다) */
+    .note-side .rail-scroll { display: none; }
     .mobile-toc { display: block; margin: -8px 0 28px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
     .mobile-toc summary { padding: 11px 0; color: var(--muted); font-size: var(--t-side); cursor: pointer; }
     .mobile-toc nav { display: flex; flex-direction: column; gap: 4px; padding-bottom: 14px; }

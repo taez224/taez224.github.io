@@ -26,7 +26,12 @@ const blocks = [block('참조', 'out', outgoing), block('역참조', 'in', incom
   </section>)}
 </aside>
 <style>
-  .note-side { display: flex; flex-direction: column; gap: 34px; }
+  /* 사이드바의 리듬: 블록 사이에 선 하나, 여백은 20px 한 값. 블록이 자기 선을 따로 갖지 않는다(연재 아래 선과 그래프 위 선이 겹치고 그래프 아래가 유독 넓던 문제). */
+  .note-side { display: flex; flex-direction: column; }
+  /* 로컬 그래프는 다른 컴포넌트의 루트라 스코프 속성이 없다. 형제 규칙은 :global로 두어야 그래프와 그 다음 블록에도 선이 붙는다. */
+  .note-side > :global(* + *) { border-top: 1px solid var(--line); }
+  .rail-scroll { padding-bottom: 24px; }
+  .note-side .list-block { padding: 20px 0; border-bottom: 0; }
   .rail { display: flex; flex-direction: column; border-left: 2px solid var(--line); }
   /* 목차가 길면(11개 이상) 목차만 안에서 스크롤한다. 로컬 그래프와 참조 목록은 그 아래에 그대로 보인다. 끝까지 내리면 페이드를 걷는다. */
   .rail-scroll { position: relative; }
