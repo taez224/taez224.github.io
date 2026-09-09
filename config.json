@@ -1,7 +1,5 @@
 {
   "basePath": "",
-  "depth": 2,
-  "maxGraphNodes": 80,
   "entry": "01_Slipbox/생각의 정원.md",
   "home": {
     "about": "소프트웨어 엔지니어의 개인 위키입니다. 일하며 배운 개념과 기술, 그 과정에서 든 생각, 발행한 글과 읽은 책을 연결해 둡니다.",
@@ -83,11 +81,6 @@
       "publications": ["Nextree 기술 블로그"],
       "name": "넥스트리"
     }
-  ],
-  "seeds": [
-    "01_Slipbox/생각의 정원.md",
-    "01_Slipbox/AI 활용.md",
-    "01_Slipbox/나를 이해하기.md"
   ],
   "assets": [
     "_attachments/sse-fanout-instance-mismatch.svg",

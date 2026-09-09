@@ -1,7 +1,7 @@
 import { nodeRadius } from './layout.mjs';
 import { topicColor } from '../lib/format.mjs';
 import { topicRegions, regionPath, placeRegionLabels } from './regions.mjs';
-import { estimateTextWidth } from './focus.mjs';
+import { estimateTextWidth } from './label.mjs';
 
 const escape = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 

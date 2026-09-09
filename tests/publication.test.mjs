@@ -6,7 +6,7 @@ const root = '30_Resources/Development';
 const approved = `${root}/Concepts/public.md`;
 const config = {
   include: [{ path: `${root}/Concepts`, files: [approved], graph: false }],
-  exclude: [], paths: [], seeds: [], depth: 0
+  exclude: []
 };
 
 test('development file-list mode still requires explicit selection', () => {

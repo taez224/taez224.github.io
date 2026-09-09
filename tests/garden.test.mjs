@@ -23,7 +23,7 @@ async function makeVault(files) {
   return vaultRoot;
 }
 const config = {
-  basePath: '/obsidian', depth: 2, maxGraphNodes: 80, seeds: [], paths: [], exclude: [], assets: ['_attachments/reviewed.svg'],
+  basePath: '/obsidian', exclude: [], assets: ['_attachments/reviewed.svg'],
   home: { featured: ['20_Projects/blog/공개 글.md'], contacts: [], about: '소개 문장' },
   include: [
     { path: '01_Slipbox', mode: 'all', graph: true },

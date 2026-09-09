@@ -361,7 +361,6 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
     const rule = config.include.find((entry) => pathMatches(relativePath, entry.path));
     return rule?.graph !== false;
   }));
-  const graphAll = config.include.some((entry) => entry.graph === true && entry.mode === 'all');
 
   const blogHubRecords = new Map();
   for (const [relativePath, note] of candidateFiles) {
@@ -688,22 +687,12 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
       };
     });
 
-  const seeds = [];
-  for (const seed of config.seeds) {
-    const normalizedSeed = normalize(seed);
-    if (graphCandidateFiles.has(normalizedSeed)) seeds.push(normalizedSeed);
-    else console.warn(`Seed is outside the public graph scope: ${normalizedSeed}`);
-  }
   // graphRule "linked" 폴더의 노트는 지도에서 종점이다. 자세한 규칙은 selectGraphNodes에 있다.
   const linkedOnlyRoots = config.include.filter((rule) => rule.graphRule === 'linked').map((rule) => rule.path);
   const { paths: selectedPaths, degree } = selectGraphNodes({
     candidates: new Set(graphCandidateFiles.keys()),
     edges: allEdges,
-    seeds,
-    depth: config.depth,
-    maxNodes: config.maxGraphNodes,
-    isEndpoint: (item) => linkedOnlyRoots.some((root) => pathMatches(item, root)),
-    all: graphAll
+    isEndpoint: (item) => linkedOnlyRoots.some((root) => pathMatches(item, root))
   });
   const selectedSet = new Set(selectedPaths);
 

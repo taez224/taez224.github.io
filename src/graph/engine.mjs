@@ -1,7 +1,7 @@
 import { nodeRadius } from './layout.mjs';
 import { topicColor, cleanTitle } from '../lib/format.mjs';
 import { createGraphGesture } from './gestures.mjs';
-import { graphTitleLines, estimateTextWidth } from './focus.mjs';
+import { graphTitleLines, estimateTextWidth } from './label.mjs';
 import { topicRegions, regionPath, placeRegionLabels, regionLabelBox } from './regions.mjs';
 export { estimateTextWidth };
 
