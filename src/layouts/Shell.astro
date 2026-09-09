@@ -9,6 +9,7 @@ import siteConfig from '../../config.json';
 const umami = siteConfig.analytics?.umami?.websiteId ? siteConfig.analytics.umami : null;
 // Search Console 소유권 확인 토큰. 공개되는 값이고, 지우면 소유권이 풀리므로 확인 뒤에도 남긴다.
 const googleSiteVerification = siteConfig.googleSiteVerification ?? '';
+const naverSiteVerification = siteConfig.naverSiteVerification ?? '';
 const { title, description, path, active = '', ogType = 'website', ogImage: ogImagePath = null, kind = null, published = null } = Astro.props;
 const siteName = 'TaeZ';
 const fullTitle = path === '/' ? SITE_TITLE : `${title} · ${siteName}`;
@@ -28,6 +29,7 @@ const jsonLd = jsonLdScript(structuredData({ ogType, kind, title: path === '/' ?
     <meta name="description" content={description} />
     <meta name="author" content="TaeZ" />
     {googleSiteVerification && <meta name="google-site-verification" content={googleSiteVerification} />}
+    {naverSiteVerification && <meta name="naver-site-verification" content={naverSiteVerification} />}
     <link rel="canonical" href={canonical} />
     <meta property="og:site_name" content={SITE_TITLE} />
     <meta property="og:type" content={ogType} />

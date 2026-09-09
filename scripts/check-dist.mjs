@@ -36,6 +36,9 @@ const checks = [
   async () => {
     const home = await checkShell('index.html');
     check(home.includes('"@type":"WebSite"'), 'index.html: WebSite 구조화 데이터 없음');
+    for (const [key, name] of [['googleSiteVerification', 'google-site-verification'], ['naverSiteVerification', 'naver-site-verification']]) {
+      if (config[key]) check(home.includes(`name="${name}" content="${config[key]}"`), `index.html: ${name} 태그 없음`);
+    }
   },
   async () => {
     const llms = await read('llms.txt').catch(() => '');
