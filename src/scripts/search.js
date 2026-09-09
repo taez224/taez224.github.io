@@ -5,6 +5,8 @@ const dialog = document.getElementById('search');
 const input = document.getElementById('search-input');
 const results = document.getElementById('search-results');
 const hint = document.querySelector('[data-search-hint]');
+const form = dialog.querySelector('.search-head');
+const closeButton = dialog.querySelector('.search-close');
 const triggers = [...document.querySelectorAll('[data-search-open]')];
 let index = null;
 let queryVersion = 0;
@@ -39,6 +41,8 @@ async function render() {
   }
 }
 dialog.addEventListener('close', () => { queryVersion++; });
+form?.addEventListener('submit', (event) => { event.preventDefault(); render(); });
+closeButton?.addEventListener('click', () => dialog.close());
 for (const t of triggers) t.addEventListener('click', open);
 input.addEventListener('input', render);
 document.addEventListener('keydown', (event) => {

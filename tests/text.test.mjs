@@ -1,6 +1,14 @@
 import test from 'node:test';
+
 import assert from 'node:assert/strict';
 import { plainText } from '../src/lib/text.mjs';
+
+test('search text excludes Obsidian comments but retains literal code examples', () => {
+  const text = plainText('공개\n%%\n비공개 메모\n%%\n\n`%%코드 예시%%`');
+  assert.ok(text.includes('공개'));
+  assert.ok(text.includes('%%코드 예시%%'));
+  assert.ok(!text.includes('비공개 메모'));
+});
 
 test('plainText strips markdown syntax but keeps heading and link text', () => {
   const body = `# 제목\n\n> [!bug] 증상\n> 배포가 **멈춘다**.\n\n## 원인\n\n[[다른 노트|별칭]]과 [[세 번째 노트]]를 보라. [문서](https://x.y)\n\n\`\`\`java\nSEARCHABLE_CODE\n\`\`\`\n\n- 항목 \`inline\`\n\n| a | b |\n|---|---|\n| 1 | 2 |`;
@@ -51,4 +59,9 @@ test('plainText keeps single spacing around emphasis markers inside a sentence',
   const text = plainText(body);
   assert.equal(text, '이것은 중요한 문장이고 강조도 있다.');
   assert.doesNotMatch(text, /\*/);
+});
+
+test('plainText drops prose block ids but keeps code block and inline code content', () => {
+  const body = '문장 ^prose-id\n\n```md\n코드 ^code-id\n```\n\n`인라인 ^inline-id`';
+  assert.equal(plainText(body), '문장 코드 ^code-id 인라인 ^inline-id');
 });

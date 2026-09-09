@@ -37,6 +37,7 @@
 .graph .label.is-entry { fill: var(--accent); font-weight: 700; }
 .graph .label.is-selected, .graph .label.is-hovered { fill: var(--accent); font-weight: 600; }
 .graph .label.is-topic-dim { opacity: .22; }
+.graph .label.is-faint:not(.is-topic-dim) { opacity: .45; }
 
 .legend { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin-top: 12px; }
 .legend-item { display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: var(--t-meta); }

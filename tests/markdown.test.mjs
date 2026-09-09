@@ -26,6 +26,58 @@ test('comments are removed and highlights become mark', () => {
   assert.match(html, /<mark>강조<\/mark>/);
 });
 
+test('multiline comments hide their contents even when they contain code fences', () => {
+  const html = render('x.md', '공개\n\n%%\n숨길 메모\n```js\nsecret()\n```\n%%\n\n끝');
+  assert.doesNotMatch(html, /숨길|secret|%%/);
+  assert.match(html, /<p>공개<\/p>/);
+  assert.match(html, /<p>끝<\/p>/);
+});
+
+test('escaped backticks do not protect comments, real code spans do', () => {
+  const html = render('x.md', '일반 \\` %%숨김%% \\`\n\n``코드 ` %%유지%%``\n\n`여러 줄\n%%코드 유지%%`');
+  assert.doesNotMatch(html, /숨김/);
+  assert.match(html, /<code>코드 ` %%유지%%<\/code>/);
+  assert.match(html, /<code>여러 줄 %%코드 유지%%<\/code>/);
+});
+
+test('unmatched code delimiters do not expose subsequent comments', () => {
+  assert.doesNotMatch(render('x.md', '%%\n```\n%%\n공개\n%%숨김%%'), /숨김|%%/);
+  assert.doesNotMatch(render('x.md', '`` unmatched %%숨김%% ` end'), /숨김|%%/);
+});
+
+test('callouts adjacent to prose remain independent blocks', () => {
+  const html = render('x.md', '앞 문단\n> [!note]\n> 내용\n뒤 문단');
+  assert.match(html, /<p>앞 문단<\/p>\s*<aside/);
+  assert.match(html, /<\/aside>\s*<p>뒤 문단<\/p>/);
+  assert.doesNotMatch(html, /<p><\/p>|CALLOUT_/);
+});
+
+test('comments and highlights stay literal in inline and fenced code', () => {
+  const html = render('x.md', [
+    '`if (status == 2 || status == 6) {}` `SELECT * WHERE a LIKE \'%%\';`',
+    '',
+    '```sql',
+    "SELECT * WHERE a LIKE '%%' AND b LIKE '%%';",
+    'if (status == 2 || status == 6) {}',
+    '```',
+    '',
+    '실제 ==강조== %%숨김%%'
+  ].join('\n'));
+  assert.match(html, /<code>if \(status == 2 \|\| status == 6\) \{\}<\/code>/);
+  assert.match(html, /<code>SELECT \* WHERE a LIKE '%%';<\/code>/);
+  assert.match(html, /SELECT \* WHERE a LIKE '%%' AND b LIKE '%%';/);
+  assert.match(html, /if \(status == 2 \|\| status == 6\) \{\}/);
+  assert.match(html, /<mark>강조<\/mark>/);
+  assert.doesNotMatch(html, /숨김/);
+});
+
+test('heading ids ignore Obsidian-only comments, highlights, and block ids', () => {
+  const html = render('x.md', '## 제목 ^heading-id\n\n## 제목 %%숨김%%\n\n## ==강조 제목==');
+  assert.match(html, /<h2 id="제목">제목/);
+  assert.match(html, /<h2 id="제목-2">제목/);
+  assert.match(html, /<h2 id="강조-제목">/);
+});
+
 test('strong emphasis closes after punctuation before Korean particles', () => {
   const html = render('x.md', '**흡수 역량(Absorptive Capacity)**이라는 **워크슬롭(Workslop)**이라고 **"결국 내가 다시 확인해야 하나"**라는');
   assert.match(html, /<strong>흡수 역량\(Absorptive Capacity\)<\/strong>이라는/);
@@ -124,6 +176,22 @@ test('private links and Korean strong emphasis work inside callouts', () => {
   assert.match(html, /class="callout callout-note"/);
   assert.match(html, /class="private-note">별칭/);
   assert.match(html, /<strong>워크슬롭\(Workslop\)<\/strong>이라고/);
+});
+
+test('callout code fences keep blank lines inside the code block', () => {
+  const html = render('x.md', [
+    '> [!note] 예시',
+    '>',
+    '> ```js',
+    '> const a = 1;',
+    '>',
+    '> ```',
+    '>',
+    '> **굵게** 아님'
+  ].join('\n'));
+  assert.match(html, /<pre><code class="language-js">const a = 1;\n\n<\/code><\/pre>/);
+  assert.match(html, /<p><strong>굵게<\/strong> 아님<\/p>/);
+  assert.doesNotMatch(html, /<code[^>]*>[\s\S]*<p><\/p>/);
 });
 
 function renderWithArticles() {

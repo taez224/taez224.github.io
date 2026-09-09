@@ -2,10 +2,13 @@
 import { frontmatter, rawContent } from '../../이 위키에 대해.md';
 import Shell from '../layouts/Shell.astro';
 import ArticleBody from '../components/ArticleBody.astro';
+import Contacts from '../components/Contacts.astro';
 import { getGarden } from '../lib/get-garden.mjs';
 
 const title = '이 위키에 대해';
 const garden = await getGarden();
+// 연락처는 홈 히어로와 이 페이지 끝 두 곳에만 둔다. 페이지마다 붙이면 어디서나 보이는 대신 어디에도 자리가 없다.
+const contacts = (garden.home.contacts || []).filter((contact) => contact.name !== 'Velog');
 // 노트와 같은 파이프라인으로 그린다. 링크가 풀리지 않으면 노트처럼 자물쇠나 평문으로 낮추고 빌드는 계속한다.
 const articleCards = [];
 const html = garden.renderPage({ sourcePath: '20_Projects/obsidian-garden/이 위키에 대해.md', title, body: rawContent(), articleCards });
@@ -13,10 +16,13 @@ const html = garden.renderPage({ sourcePath: '20_Projects/obsidian-garden/이 �
 <Shell title={title} description={frontmatter.summary} path="/about/">
   <article class="wrap wiki-about">
     <h1 class="display">{title}</h1>
-    <div class="intro-body"><ArticleBody html={html} cards={articleCards} notes={garden.notes} /></div>
+    <div class="body intro-body"><ArticleBody html={html} cards={articleCards} notes={garden.notes} /></div>
+    {contacts.length > 0 && <div class="about-contacts"><Contacts contacts={contacts} /></div>}
   </article>
 </Shell>
 <style>
+  .about-contacts { display: flex; justify-content: flex-end; margin-top: 44px; padding-top: 16px; border-top: 1px solid var(--line); }
+
   .wiki-about { max-width: 720px; padding-top: 64px; padding-bottom: 96px; }
   h1 { margin: 0 0 32px; font-size: clamp(28px, 4vw, 38px); }
   .intro-body { font-size: var(--t-body); line-height: 1.9; }

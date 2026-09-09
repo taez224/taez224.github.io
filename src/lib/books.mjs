@@ -20,3 +20,9 @@ export function statusFilters(books) {
     ...[...known, ...unknown].map((status) => ({ value: status, label: status, count: counts.get(status) }))
   ];
 }
+
+// 표지는 88x128 상자에 들어간다. yes24의 XL은 823x1200이라 화면에 쓰이는 것보다 스무 배 넓고 한 장에 90KB다.
+// L(274x400)이면 2배 해상도까지 덮는다. 아는 형태가 아니면 그대로 둔다.
+export function coverUrl(url) {
+  return String(url ?? '').replace(/^(https?:\/\/image\.yes24\.com\/goods\/\d+\/)XL$/, '$1L');
+}

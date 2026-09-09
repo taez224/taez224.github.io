@@ -69,6 +69,13 @@ export function stripInlineMarkup(value) {
     .trim();
 }
 
+export function headingTextForId(value) {
+  return stripInlineMarkup(replaceOutsideInlineCode(String(value ?? ''), (text) => text
+    .replace(/%%[\s\S]*?%%/g, '')
+    .replace(/==([^=\n]+)==/g, '$1')
+    .replace(/(^|[ \t]+)\^([A-Za-z0-9-]+)[ \t]*$/, '$1')));
+}
+
 export function slugifyHeading(value) {
   const slug = stripInlineMarkup(value)
     .normalize('NFKC')
@@ -138,15 +145,93 @@ function replaceStandardLinks(source, context) {
   });
 }
 
+function inlineCodeEnd(source, start) {
+  let escapes = 0;
+  for (let i = start - 1; i >= 0 && source[i] === '\\'; i -= 1) escapes += 1;
+  if (escapes % 2) return -1;
+  let runEnd = start;
+  while (source[runEnd] === '`') runEnd += 1;
+  const runs = /`+/g;
+  runs.lastIndex = runEnd;
+  for (let match; (match = runs.exec(source));) {
+    if (match[0].length === runEnd - start) return runs.lastIndex;
+  }
+  return -1;
+}
+
+const commentParser = new MarkdownIt({ html: true });
+export function stripObsidianComments(source) {
+  const original = String(source ?? '');
+  const offsets = [0];
+  for (let i = 0; i < original.length; i += 1) if (original[i] === '\n') offsets.push(i + 1);
+  const ranges = commentParser.parse(original, {})
+    .filter((token) => ['fence', 'code_block'].includes(token.type) && token.map)
+    .map((token) => [offsets[token.map[0]], offsets[token.map[1]] ?? original.length]);
+  let output = '', rangeIndex = 0;
+  for (let i = 0; i < original.length;) {
+    // 주석 안에서 시작한 코드 블록은 주석을 건너뛴 뒤의 본문을 보호하지 않는다.
+    while (rangeIndex < ranges.length && ranges[rangeIndex][0] < i) rangeIndex += 1;
+    const range = ranges[rangeIndex];
+    if (range && range[0] <= i) {
+      output += original.slice(i, range[1]); i = range[1]; continue;
+    }
+    if (original.startsWith('%%', i)) {
+      const end = original.indexOf('%%', i + 2);
+      if (end >= 0) {
+        output += original.slice(i, end + 2).replace(/[^\n]/g, '');
+        i = end + 2; continue;
+      }
+    }
+    if (original[i] === '`') {
+      const end = inlineCodeEnd(original, i);
+      if (end >= 0 && (!range || end <= range[0])) {
+        output += original.slice(i, end); i = end; continue;
+      }
+      let runEnd = i + 1;
+      while (original[runEnd] === '`') runEnd += 1;
+      output += original.slice(i, runEnd); i = runEnd; continue;
+    }
+    output += original[i++];
+  }
+  return output;
+}
+
+function replaceOutsideInlineCode(line, transform) {
+  let output = '';
+  let cursor = 0;
+  while (cursor < line.length) {
+    const start = line.indexOf('`', cursor);
+    if (start < 0) {
+      output += transform(line.slice(cursor));
+      break;
+    }
+
+    let runEnd = start + 1;
+    while (line[runEnd] === '`') runEnd += 1;
+    const end = inlineCodeEnd(line, start);
+    if (end < 0) {
+      output += transform(line.slice(cursor, runEnd));
+      cursor = runEnd;
+      continue;
+    }
+
+    output += transform(line.slice(cursor, start));
+    output += line.slice(start, end);
+    cursor = end;
+  }
+  return output;
+}
+
 // 블록 ID는 보이는 표기 대신 링크 도착점으로 남긴다. 코드 예시는 변환하지 않는다.
 function replaceObsidianFormatting(source, markdown, context) {
-  const prepared = source
-    .replace(/%%[\s\S]*?%%/g, '')
-    .replace(/==([^=\n]+)==/g, '<mark>$1</mark>');
-  const codeLines = codeLinesFor(prepared, markdown, context);
-  return prepared.split('\n').map((line, index) => codeLines.has(index) ? line : line
-    .replace(/(^|[ \t]+)\^([A-Za-z0-9-]+)[ \t]*$/, (_match, space, id) => `${space}<span id="${slugifyHeading(id)}"></span>`)
-  ).join('\n');
+  const original = stripObsidianComments(source);
+  const codeLines = codeLinesFor(original, markdown, context);
+  return original.split('\n').map((line, index) => {
+    if (codeLines.has(index)) return line;
+    return replaceOutsideInlineCode(line, (text) => text
+      .replace(/==([^=\n]+)==/g, '<mark>$1</mark>')
+      .replace(/(^|[ \t]+)\^([A-Za-z0-9-]+)[ \t]*$/, (_match, space, id) => `${space}<span id="${slugifyHeading(id)}"></span>`));
+  }).join('\n');
 }
 
 function codeLinesFor(source, markdown, context) {
@@ -165,7 +250,9 @@ function articleTarget(line) {
   return parsed.target ? parsed : null;
 }
 
-function renderCallouts(source, renderCore, context, articleCards, depth = 0) {
+const calloutPlaceholder = (index) => `\uE000CALLOUT_${index}\uE001`;
+
+function renderCallouts(source, renderCore, context, articleCards, depth = 0, blocks = []) {
   const lines = source.split('\n');
   const codeLines = codeLinesFor(source, context.markdown, context);
   const output = [];
@@ -195,24 +282,35 @@ function renderCallouts(source, renderCore, context, articleCards, depth = 0) {
       const cardIndex = articleCards.length;
       const title = note.title || target.target;
       articleCards.push({ url: note.url, title, caption: customTitle?.trim() || '' });
-      output.push(`<aside class="article-card-slot" data-article-card="${cardIndex}"><a class="internal-note-link" href="${escapeHtml(note.url)}">${escapeHtml(title)}</a></aside>`);
+      blocks.push(`<aside class="article-card-slot" data-article-card="${cardIndex}"><a class="internal-note-link" href="${escapeHtml(note.url)}">${escapeHtml(title)}</a></aside>`);
+      output.push('', calloutPlaceholder(blocks.length - 1), '');
       index = next - 1;
       continue;
     }
 
     const title = customTitle?.trim() || CALLOUT_TITLES[type] || type;
     const body = quotedLines.join('\n').trim();
-    const nestedBody = depth < 3 ? renderCallouts(body, renderCore, context, articleCards, depth + 1) : body;
+    const nestedBody = depth < 3 ? renderCallouts(body, renderCore, context, articleCards, depth + 1, blocks) : body;
     const bodyHtml = renderCore(nestedBody);
     const className = `callout callout-${type.replace(/[^a-z0-9_-]/gi, '') || 'note'}`;
-    if (foldMarker === '-') {
-      output.push(`<details class="${className}"><summary>${escapeHtml(title)}</summary><div class="callout-body">${bodyHtml}</div></details>`);
-    } else {
-      output.push(`<aside class="${className}"><div class="callout-title">${escapeHtml(title)}</div><div class="callout-body">${bodyHtml}</div></aside>`);
-    }
+    const block = foldMarker === '-'
+      ? `<details class="${className}"><summary>${escapeHtml(title)}</summary><div class="callout-body">${bodyHtml}</div></details>`
+      : `<aside class="${className}"><div class="callout-title">${escapeHtml(title)}</div><div class="callout-body">${bodyHtml}</div></aside>`;
+    blocks.push(block);
+    output.push('', calloutPlaceholder(blocks.length - 1), '');
     index = next - 1;
   }
   return output.join('\n');
+}
+
+function materializeCallouts(html, blocks) {
+  let output = html;
+  // 바깥 콜아웃이 안쪽 콜아웃의 placeholder를 품을 수 있으므로 역순으로 풀어낸다.
+  for (let index = blocks.length - 1; index >= 0; index -= 1) {
+    const marker = calloutPlaceholder(index);
+    output = output.replaceAll(`<p>${marker}</p>`, blocks[index]).replaceAll(marker, blocks[index]);
+  }
+  return output;
 }
 
 function createMarkdownIt() {
@@ -274,7 +372,7 @@ function createMarkdownIt() {
     const nextToken = tokens[index + 1];
     const headingText = nextToken?.type === 'inline' ? nextToken.content : '';
     if (env.headingIds && token.level === 0) {
-      const baseId = slugifyHeading(headingText);
+      const baseId = slugifyHeading(headingTextForId(headingText));
       const count = (env.headingIds.get(baseId) ?? 0) + 1;
       env.headingIds.set(baseId, count);
       token.attrSet('id', count === 1 ? baseId : `${baseId}-${count}`);
@@ -302,8 +400,9 @@ export function createMarkdownRenderer({ resolveNote, resolveAsset }) {
       markdown
     };
     const prepared = replaceObsidianFormatting(String(source ?? ''), markdown, context);
-    const withCallouts = renderCallouts(prepared, (body) => renderCore(body, context), context, articleCards);
-    const rendered = markdown.render(withCallouts, { headingIds: new Map(), context });
+    const calloutBlocks = [];
+    const withCallouts = renderCallouts(prepared, (body) => renderCore(body, context), context, articleCards, 0, calloutBlocks);
+    const rendered = materializeCallouts(markdown.render(withCallouts, { headingIds: new Map(), context }), calloutBlocks);
     return sanitizeHtml(rendered, {
       allowedAttributes: ALLOWED_ATTRIBUTES,
       allowedSchemes: ['http', 'https', 'mailto'],

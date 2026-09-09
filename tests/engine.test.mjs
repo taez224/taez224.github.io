@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyEdges, labelIds, fitTransform, offsetLine, isFilteredOut, wrapLabel } from '../src/graph/engine.mjs';
+import { classifyEdges, labelIds, hoverLabelCandidates, fitTransform, offsetLine, isFilteredOut, wrapLabel } from '../src/graph/engine.mjs';
 
 const edges = [{ source: 'a', target: 'b' }, { source: 'b', target: 'a' }, { source: 'a', target: 'c' }, { source: 'd', target: 'e' }];
 const nodes = [
@@ -35,6 +35,13 @@ test('labelIds follows the idle, selected and hovered rules', () => {
   assert.deepEqual([...labelIds(nodes, edges, { selected: 'a', hovered: 'e' })].sort(), ['a', 'b', 'e']);
 });
 
+test('hover labels consider direct neighbors in both directions, largest first', () => {
+  const graphEdges = [...edges, { source: 'd', target: 'a' }, { source: 'a', target: 'a' }];
+  assert.deepEqual(hoverLabelCandidates(nodes, graphEdges, 'a').map((n) => n.id), ['d', 'c']);
+  assert.deepEqual(hoverLabelCandidates(nodes, graphEdges, 'd').map((n) => n.id), ['e']);
+  assert.deepEqual(hoverLabelCandidates(nodes, graphEdges, 'missing'), []);
+});
+
 test('fitTransform brings every point inside the padded viewport and clamps scale', () => {
   const positions = new Map([['a', { x: 0, y: 0 }], ['b', { x: 2000, y: 1000 }]]);
   const t = fitTransform(positions, { width: 800, height: 500, pad: 40 });
@@ -45,6 +52,7 @@ test('fitTransform brings every point inside the padded viewport and clamps scal
   assert.ok(t.scale > 0 && t.scale <= 3.2);
   assert.ok(Math.abs(t.scale - 0.36) < 1e-6);
   assert.equal(fitTransform(new Map([['a', { x: 10, y: 10 }]]), { width: 800, height: 500 }).scale, 1);
+  assert.equal(fitTransform(positions, { width: 0, height: 0, pad: 40 }).scale, 1, '크기 0인 상자에서는 배율을 만들지 않는다');
 });
 
 test('offsetLine shifts a segment along its normal by the requested distance', () => {

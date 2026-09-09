@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { feedEntries, feedItems, renderFeed } from '../src/lib/rss.mjs';
+import { SITE_DESCRIPTION } from '../src/lib/site-meta.mjs';
 const options = { site: 'https://example.com', basePath: '/obsidian', now: new Date('2026-09-06T12:00:00Z') };
 const note = extra => ({ title: '생각', kind: 'slipbox', type: 'permanent', date: '2026-09-01', url: '/obsidian/notes/test/', summary: '요약', ...extra });
 const post = extra => note({ kind: 'blog', status: 'published', published: '2026-09-02', publishedUrl: 'https://publisher.test/article', ...extra });
@@ -27,7 +28,7 @@ test('XML escapes untrusted titles and summaries; full text is not published', (
 test('default feed identity matches the site title and About description', () => {
  const xml = renderFeed([note()], options);
  assert.ok(xml.includes('<title>TaeZ’s Thinking Garden</title>'));
- assert.ok(xml.includes('<description>글과 노트, 읽은 책을 모아둔 개인 위키입니다.</description>'));
+ assert.ok(xml.includes(`<description>${SITE_DESCRIPTION}</description>`), '피드 설명은 사이트 설명을 그대로 쓴다');
 });
 test('only notes present in public garden selection are enriched', () => {
  const garden = { notes: [note({path:'a'})], blog: { series: [{posts:[{path:'a',published:'2026-09-02'}]}], publications:[{posts:[{path:'private',published:'2026-09-03'}]}] } };

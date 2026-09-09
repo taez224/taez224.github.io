@@ -1,9 +1,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import MarkdownIt from 'markdown-it';
-import { createMarkdownRenderer, slugifyHeading, stripInlineMarkup } from './markdown.mjs';
+import { createMarkdownRenderer, headingTextForId, slugifyHeading, stripObsidianComments } from './markdown.mjs';
 import { developmentCategory, externalPublicationFor, pathMatches, isExcluded as excludedByPolicy, isIncluded as includedByPolicy, validatePublicationConfig } from './publication.mjs';
 import { isImagePath } from './image-types.mjs';
+import { coverUrl } from './books.mjs';
 import { selectGraphNodes } from '../graph/select.mjs';
 import { slugFor, slugify, kindPrefix, noteUrl, assertUniqueSlugs } from './slug.mjs';
 import { plainText } from './text.mjs';
@@ -44,23 +45,30 @@ function parseFrontmatter(source) {
   const frontmatter = source.slice(3, end).replace(/^\n/, '');
   const meta = {};
   let activeListKey = null;
+  const parseValue = (rawValue) => {
+    const value = String(rawValue ?? '').trim();
+    if (value === 'null' || value === '~') return null;
+    const quoted = value.match(/^(['"])([\s\S]*)\1$/);
+    return quoted ? quoted[2] : value;
+  };
   for (const line of frontmatter.split('\n')) {
-    const listItem = line.match(/^\s*-\s*["']?(.*?)["']?\s*$/);
+    const listItem = line.match(/^\s*-\s*(.*?)\s*$/);
     if (activeListKey && listItem) {
       meta[activeListKey] ??= [];
-      meta[activeListKey].push(listItem[1]);
+      const value = parseValue(listItem[1]);
+      if (value !== null && value !== '') meta[activeListKey].push(value);
       continue;
     }
     const field = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
     if (!field) continue;
     const [, key, rawValue] = field;
-    if (!rawValue) {
+    if (rawValue.trim() === '') {
       activeListKey = key;
       meta[key] = [];
       continue;
     }
     activeListKey = null;
-    meta[key] = rawValue.replace(/^['"]|['"]$/g, '');
+    meta[key] = parseValue(rawValue);
   }
   return { body: source.slice(end + 4), meta };
 }
@@ -76,10 +84,10 @@ function firstHeading(body, fallback) {
 const headingParser = new MarkdownIt({ html: true });
 export function headingsFor(body) {
   const headingIds = new Map();
-  const tokens = headingParser.parse(String(body ?? ''), {}), headings = [];
+  const tokens = headingParser.parse(stripObsidianComments(body), {}), headings = [];
   for (let index = 0; index < tokens.length; index++) {
     if (tokens[index].type !== 'heading_open' || tokens[index].level !== 0) continue;
-    const title = stripInlineMarkup(tokens[index + 1].content.trim());
+    const title = headingTextForId(tokens[index + 1].content.trim());
     const baseId = slugifyHeading(title), level = Number(tokens[index].tag.slice(1));
     const count = (headingIds.get(baseId) ?? 0) + 1;
     headingIds.set(baseId, count);
@@ -129,7 +137,7 @@ function sectionExcerpt(body, sectionNames) {
 export const MIN_TOPIC_NODES = 3;
 
 function topicFor(tags) {
-  const topic = tags.find((tag) => tag !== 'slipbox');
+  const topic = publicTags(tags).find(Boolean);
   return topic ? topic.split('/')[0] : '기타';
 }
 
@@ -228,8 +236,26 @@ function stripSeriesLinks(body) {
   return withoutLines.replace(/^#{1,6}[ \t]+연결된 노트[ \t]*(?:\r?\n[ \t]*)*(?=#{1,6}[ \t]|(?![\s\S]))/gm, '');
 }
 
+// 저자만 보는 절. vault 원문은 그대로 두고 사이트로 나가는 사본에서만 제목과 그 아래 내용을 뺀다.
+// 연재 허브의 "운영 메모"가 frontmatter·정본 같은 작업 용어를 독자에게 보여주고 있었다. 절 이름을 여기 늘리면 함께 빠진다.
+const AUTHOR_ONLY_SECTIONS = ['운영 메모'];
+// 절의 끝은 다음 헤딩이다. 코드 블록 안의 `# 주석` 줄은 헤딩이 아니므로 펜스 안에서는 헤딩을 보지 않는다.
+function stripAuthorSections(body) {
+  const kept = [];
+  let skipping = false, fence = '';
+  for (const line of String(body ?? '').split('\n')) {
+    const text = line.replace(/\r$/, '');
+    const mark = text.match(/^ {0,3}(`{3,}|~{3,})/)?.[1];
+    if (mark) fence = !fence ? mark : (mark[0] === fence[0] && mark.length >= fence.length ? '' : fence);
+    const heading = !fence && text.match(/^#{1,6}[ \t]+(.*?)[ \t]*$/);
+    if (heading) skipping = AUTHOR_ONLY_SECTIONS.includes(heading[1]);
+    if (!skipping) kept.push(line);
+  }
+  return kept.join('\n');
+}
+
 function publicBody(kind, body) {
-  return stripLeadingTitle(kind === 'blog' ? stripSeriesLinks(body) : body);
+  return stripAuthorSections(stripLeadingTitle(kind === 'blog' ? stripSeriesLinks(body) : body));
 }
 
 export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
@@ -294,6 +320,22 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
       if (isIncluded(relativePath, parsed.meta)) {
         candidateFiles.set(relativePath, { source, ...parsed });
       }
+    }
+  }
+
+  // 연재 허브는 type이 series라 글의 status와 상관없이 후보로 들어온다. 한 편도 발행하지 않은 연재까지
+  // 페이지·사이트맵·검색에 올라가 독자가 집필 계획서에 닿는다. 발행한 편이 생기면 저절로 풀린다.
+  const publishedSeriesNames = new Set(
+    [...candidateFiles]
+      .filter(([, note]) => note.meta.status === 'published' && String(note.meta.series ?? '').trim())
+      .map(([, note]) => String(note.meta.series).trim())
+  );
+  for (const [relativePath, note] of [...candidateFiles]) {
+    if (kindFor(relativePath) !== 'blog' || note.meta.type !== 'series') continue;
+    const seriesName = String(note.meta.title ?? firstHeading(note.body, path.posix.basename(relativePath, '.md'))).trim();
+    if (!publishedSeriesNames.has(seriesName)) {
+      candidateFiles.delete(relativePath);
+      console.warn(`Series has no published post yet, kept off the site: ${relativePath}`);
     }
   }
 
@@ -437,7 +479,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
         publisher: String(parsed.meta.publisher ?? ''),
         category: String(parsed.meta.category ?? ''),
         publishDate: String(parsed.meta.publish_date ?? ''),
-        coverUrl: String(parsed.meta.cover_url ?? ''),
+        coverUrl: coverUrl(parsed.meta.cover_url),
         status: String(parsed.meta.status ?? ''),
         startDate: String(parsed.meta.start_read_date ?? ''),
         finishDate: String(parsed.meta.finish_read_date ?? ''),

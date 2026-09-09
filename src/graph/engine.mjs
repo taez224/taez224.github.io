@@ -48,6 +48,16 @@ export function labelIds(nodes, edges, { selected = null, hovered = null } = {})
   return ids;
 }
 
+export function hoverLabelCandidates(nodes, edges, hovered) {
+  const neighbors = new Set();
+  for (const edge of edges) {
+    if (edge.source === hovered) neighbors.add(edge.target);
+    if (edge.target === hovered) neighbors.add(edge.source);
+  }
+  return nodes.filter((node) => node.id !== hovered && node.type !== 'hub' && neighbors.has(node.id))
+    .sort((a, b) => (b.degree ?? 0) - (a.degree ?? 0));
+}
+
 export function fitTransform(positions, { width, height, pad = 40 } = {}) {
   const points = [...positions.values()];
   if (!points.length) return { x: 0, y: 0, scale: 1 };
@@ -56,7 +66,8 @@ export function fitTransform(positions, { width, height, pad = 40 } = {}) {
   const spanX = Math.max(1, maxX - minX), spanY = Math.max(1, maxY - minY);
   const inset = Math.min(pad, Math.max(0, (width - 1) / 2), Math.max(0, (height - 1) / 2));
   const raw = Math.min((width - 2 * inset) / spanX, (height - 2 * inset) / spanY);
-  const scale = points.length === 1 ? 1 : Math.min(MAX_SCALE, raw);
+  // 상자가 아직 크기를 못 받았으면(폭·높이 0) 배율이 0이 되고 그 뒤 나누기에서 NaN이 퍼진다. 그때는 배율을 두지 않는다.
+  const scale = points.length === 1 || !(raw > 0) ? 1 : Math.min(MAX_SCALE, raw);
   return { scale, x: (width - spanX * scale) / 2 - minX * scale, y: (height - spanY * scale) / 2 - minY * scale };
 }
 
@@ -228,8 +239,12 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
     return { x: p.x, y: p.y + r + 18 * u, anchor: 'middle', box: { left: p.x - w / 2, right: p.x + w / 2, top: p.y + r + 5 * u, bottom: p.y + r + 5 * u + h } };
   };
   const planLabels = (u) => {
-    // 호버는 계획에서 뺀다. 호버할 때마다 우선순위가 바뀌어 남의 제목까지 움직이면 안 된다.
-    const base = [...labelIds(nodes, edges, { selected: state.selected, hovered: null })];
+    // 선택 전 호버는 허브를 남기고 해당 노드의 이웃 제목을 미리 보여준다.
+    const preview = mode === 'map' && !state.selected && state.hovered && !outOfFilter(state.hovered)
+      ? state.hovered : null;
+    const base = preview
+      ? [...new Set([preview, ...nodes.filter((node) => node.type === 'hub' && !outOfFilter(node.id)).map((node) => node.id)])]
+      : [...labelIds(nodes, edges, { selected: state.selected, hovered: null })];
     const scale = state.transform.scale || 1;
     const neighbors = new Set();
     if (state.selected) for (const e of edges) { if (e.source === state.selected) neighbors.add(e.target); if (e.target === state.selected) neighbors.add(e.source); }
@@ -253,12 +268,13 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
       }
       if (mustPlace) { placed.push(labelGeometry(node, p, lines, 'below', u).box); plan.set(node.id, 'below'); }
     };
-    const priority = (id) => (id === state.selected ? 0 : 1);
+    const priority = (id) => (id === (state.selected || preview) ? 0 : 1);
     for (const id of base.sort((a, b) => priority(a) - priority(b))) { const node = byId.get(id); if (node) tryPlace(node, true); }
     // 홈 히어로(hero 모드)는 허브·호버만 보인다. 자리 채우기는 지도에서만: 평소에는 연결 많은 순으로 몇 개, 확대하거나 선택하면 자리가 나는 만큼 전부.
     if (mode === 'map') {
-      const rest = nodes.filter((node) => !plan.has(node.id) && !dimmed(node.id)).sort((a, b) => (b.degree ?? 0) - (a.degree ?? 0));
-      const reveal = scale >= LABEL_REVEAL_SCALE || state.selected;
+      const candidates = preview ? hoverLabelCandidates(nodes, edges, preview) : nodes;
+      const rest = candidates.filter((node) => !plan.has(node.id) && !dimmed(node.id)).sort((a, b) => (b.degree ?? 0) - (a.degree ?? 0));
+      const reveal = preview || scale >= LABEL_REVEAL_SCALE || state.selected;
       for (const node of reveal ? rest : rest.slice(0, RESTING_LABEL_LIMIT)) tryPlace(node, false);
     }
     // 호버한 노드는 이미 자리가 있으면 그대로 두고, 숨어 있던 노드면 그때만 빈자리(없으면 아래)에 얹는다. 맨 위에 그려지므로 겹쳐도 읽힌다.
@@ -303,6 +319,11 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
       if (multiLine) lines.forEach((line, index) => { const tspan = el('tspan', { x: labelX.toFixed(1), dy: index === 0 ? 0 : lineHeight.toFixed(1) }); tspan.textContent = line; text.append(tspan); });
       else text.textContent = lines[0];
       labelLayer.append(text);
+    }
+    // 무관한 허브는 위치를 알려주는 제목만 남기고 노드와 같은 농도로 낮춘다.
+    for (const text of labelLayer.querySelectorAll('[data-for]')) {
+      const id = text.dataset.for;
+      if (byId.get(id)?.type === 'hub') text.classList.toggle('is-faint', nodeEls.get(id)?.classList.contains('is-faint') ?? false);
     }
     // 호버·선택한 제목은 다른 제목의 테두리에 가리지 않게 맨 위로 올린다.
     for (const id of [state.selected, state.hovered]) { const text = id && labelLayer.querySelector(`[data-for="${CSS.escape(id)}"]`); if (text) labelLayer.append(text); }

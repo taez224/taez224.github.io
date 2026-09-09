@@ -1,0 +1,20 @@
+---
+// 브랜드 로고를 회색조로 눕혀 종이색 톤에 맞춘다. 색을 지워도 실루엣이 남아 어느 서비스인지 알아볼 수 있다.
+// 상자는 40px(모바일 44px)이라 20px 아이콘보다 크다. 손가락으로 누를 자리를 확보한다.
+import { withBase } from '../lib/format.mjs';
+const { contacts = [] } = Astro.props;
+const shown = contacts.filter((contact) => contact.name !== 'Velog' && contact.icon);
+---
+{shown.length > 0 && <div class="contacts">
+  {shown.map((contact) => <a href={contact.url} target="_blank" rel="noreferrer" aria-label={contact.name}>
+    <img src={withBase(`/social/${contact.icon}`)} alt="" width="20" height="20" />
+  </a>)}
+</div>}
+<style>
+  .contacts { display: flex; align-items: center; gap: 4px; margin: 0 -8px; }
+  .contacts a { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 4px; transition: background .15s ease; }
+  .contacts img { width: 20px; height: 20px; object-fit: contain; filter: grayscale(1); opacity: .7; transition: opacity .15s ease; }
+  .contacts a:hover { background: var(--accent-soft); }
+  .contacts a:hover img, .contacts a:focus-visible img { opacity: 1; }
+  @media (max-width: 720px) { .contacts a { width: 44px; height: 44px; } }
+</style>

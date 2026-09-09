@@ -1,9 +1,17 @@
 import test from 'node:test';
+
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { headingsFor, assembleGarden } from '../src/lib/garden.mjs';
+
+test('table of contents excludes headings inside multiline Obsidian comments', () => {
+  assert.deepEqual(headingsFor('## 공개\n\n%%\n## 숨김\n%%\n\n## 끝'), [
+    { id: '공개', level: 2, title: '공개' },
+    { id: '끝', level: 2, title: '끝' }
+  ]);
+});
 
 const dev = '30_Resources/Development';
 async function makeVault(files) {
@@ -60,6 +68,7 @@ test('assembleGarden publishes reviewed notes with slug urls and no private stri
   assert.equal(garden.home.about, '소개 문장');
   assert.equal(garden.books[0].url, '/obsidian/books/#book-좋은-책');
   assert.equal(byPath.get('20_Projects/blog/공개 글.md').publication, 'Nextree');
+  assert.equal(byPath.get('20_Projects/blog/공개 글.md').topicTag, 'AI', 'blog 태그가 주제로 사용되지 않는다');
   assert.equal(byPath.get('01_Slipbox/생각 A.md').publication, '');
 });
 
@@ -263,6 +272,14 @@ test('headingsFor skips code examples and matches ids when an h1 shares the same
   ]);
 });
 
+test('headingsFor ignores Obsidian-only comments, highlights, and block ids', () => {
+  assert.deepEqual(headingsFor('## 제목 ^heading-id\n\n## 제목 %%숨김%%\n\n## ==강조 제목=='), [
+    { id: '제목', level: 2, title: '제목' },
+    { id: '제목-2', level: 2, title: '제목' },
+    { id: '강조-제목', level: 2, title: '강조 제목' }
+  ]);
+});
+
 const nextreeConfig = {
   ...config,
   externalPublications: [{ hosts: ['nextree.io', 'www.nextree.io'], publications: ['Nextree 기술 블로그'], name: '넥스트리' }]
@@ -399,6 +416,17 @@ test('a basename shared with an unpublished draft still links to the public note
   assert.ok(referrer.outgoing.includes('20_Projects/blog/AI 활용.md'));
 });
 
+test('frontmatter normalizes null values and scalar whitespace', async () => {
+  const vaultRoot = await makeVault({ ...files,
+    '01_Slipbox/정규화.md': '---\ncreated: 2026-09-07\nstatus: null\ntype: hub   \npublication: null\n---\n# 정규화\n본문.'
+  });
+  const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
+  const note = garden.notes.find((item) => item.path === '01_Slipbox/정규화.md');
+  assert.equal(note.status, '');
+  assert.equal(note.type, 'hub');
+  assert.equal(note.publication, '');
+});
+
 const aboutPath = '20_Projects/obsidian-garden/이 위키에 대해.md';
 
 test('renderPage links public notes and marks unpublished ones instead of failing the build', async () => {
@@ -427,4 +455,61 @@ test('renderPage collects article cards the way a note body does', async () => {
   const html = garden.renderPage({ sourcePath: aboutPath, title: '이 위키에 대해', body: '> [!article] 함께 읽기\n> [[생각 B]]', articleCards });
   assert.match(html, /article-card-slot/);
   assert.deepEqual(articleCards, [{ url: target.url, title: target.title, caption: '함께 읽기' }]);
+});
+
+test('a series hub stays off the site until one of its posts is published', async () => {
+  const hub = (name) => `---\ncreated: 2026-09-01\ntype: series\nstatus: active\nsummary: ${name} 소개\n---\n# ${name}\n연재 소개.`;
+  const episode = (name, status) => `---\ncreated: 2026-09-02\nstatus: ${status}\nseries: ${name}\nseries_order: 1\nsource: https://example.com/${status}\n---\n# ${name} 1화\n본문.`;
+  const vaultRoot = await makeVault({ ...files,
+    '20_Projects/blog/준비 중 연재.md': hub('준비 중 연재'),
+    '20_Projects/blog/준비 중 연재 1화.md': episode('준비 중 연재', 'draft'),
+    '20_Projects/blog/시작한 연재.md': hub('시작한 연재'),
+    '20_Projects/blog/시작한 연재 1화.md': episode('시작한 연재', 'published')
+  });
+  const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
+  const titles = garden.notes.map((note) => note.title);
+  assert.ok(!titles.includes('준비 중 연재'), '발행한 편이 하나도 없는 연재는 사이트에 나오지 않는다');
+  assert.ok(titles.includes('시작한 연재'), '한 편이라도 발행하면 허브가 올라온다');
+  assert.deepEqual(garden.blog.series.map((s) => s.title), ['시작한 연재']);
+});
+
+test('an author-only section is cut from the published body but stays in the vault file', async () => {
+  const hub = [
+    '---', 'created: 2026-09-01', 'type: series', 'status: active', 'summary: 연재 소개', '---',
+    '# 검증 연재', '연재 소개 문장.', '',
+    '## 연재 흐름', '- 1화 소개', '',
+    '## 운영 메모', '- 실제 발행 상태는 각 글의 frontmatter를 정본으로 삼는다.', '- OPERATIONAL_SENTINEL', '',
+    '## 연관된 노트', '- [[생각 B]]'
+  ].join('\n');
+  const vaultRoot = await makeVault({ ...files,
+    '20_Projects/blog/검증 연재.md': hub,
+    '20_Projects/blog/검증 연재 1화.md': '---\ncreated: 2026-09-02\nstatus: published\nseries: 검증 연재\nseries_order: 1\n---\n# 검증 연재 1화\n본문.'
+  });
+  const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
+  const note = garden.notes.find((item) => item.path === '20_Projects/blog/검증 연재.md');
+  assert.ok(note, '허브는 사이트에 있다');
+  assert.doesNotMatch(note.bodyHtml, /운영 메모|OPERATIONAL_SENTINEL|frontmatter/);
+  assert.doesNotMatch(note.bodyText, /OPERATIONAL_SENTINEL/, '검색 색인에도 남지 않는다');
+  assert.equal(garden.notes.some((n) => JSON.stringify(n.headings).includes('운영 메모')), false, '목차에도 없다');
+  assert.match(note.bodyHtml, /연재 흐름/, '앞 절은 남는다');
+  assert.match(note.bodyHtml, /연관된 노트/, '뒤 절도 남는다');
+  const raw = await fs.readFile(path.join(vaultRoot, '20_Projects/blog/검증 연재.md'), 'utf8');
+  assert.match(raw, /OPERATIONAL_SENTINEL/, 'vault 원문은 그대로다');
+});
+
+test('an author-only section ends at the next heading, not at a comment line inside its code block', async () => {
+  const hub = [
+    '---', 'created: 2026-09-01', 'type: series', 'status: active', 'summary: 연재 소개', '---',
+    '# 검증 연재', '연재 소개 문장.', '',
+    '## 운영 메모', '```sh', '# 발행 확인', 'echo OPERATIONAL_SENTINEL', '```', '- 꼬리 메모 TAIL_SENTINEL', '',
+    '## 연관된 노트', '- [[생각 B]]'
+  ].join('\n');
+  const vaultRoot = await makeVault({ ...files,
+    '20_Projects/blog/검증 연재.md': hub,
+    '20_Projects/blog/검증 연재 1화.md': '---\ncreated: 2026-09-02\nstatus: published\nseries: 검증 연재\nseries_order: 1\n---\n# 검증 연재 1화\n본문.'
+  });
+  const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
+  const note = garden.notes.find((item) => item.path === '20_Projects/blog/검증 연재.md');
+  assert.doesNotMatch(note.bodyHtml, /운영 메모|OPERATIONAL_SENTINEL|TAIL_SENTINEL/, '코드 블록 안의 # 줄에서 절이 끝나지 않는다');
+  assert.match(note.bodyHtml, /연관된 노트/, '다음 절은 남는다');
 });
