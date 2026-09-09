@@ -1,4 +1,5 @@
 import { matchRecord, normalizeQuery } from '../lib/search-match.mjs';
+import { escapeHtml } from '../lib/format.mjs';
 import { searchShortcut } from '../lib/shortcuts.mjs';
 
 const dialog = document.getElementById('search');
@@ -14,7 +15,6 @@ let queryVersion = 0;
 const shortcut = searchShortcut(navigator.platform, navigator.userAgent, navigator.maxTouchPoints);
 if (shortcut) { hint.textContent = shortcut; hint.hidden = false; for (const t of triggers) t.title = `검색 (${shortcut})`; }
 
-const escapeHtml = (v) => String(v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 function loadIndex() {
   index ??= fetch(dialog.dataset.index).then((response) => {
     if (!response.ok) throw new Error(`Search index: ${response.status}`);

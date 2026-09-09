@@ -44,7 +44,6 @@ export function createGraphGesture({ getMinScale = () => .65, maxScale = 3.2 } =
       if (!pointers.delete(id)) return;
       rebase();
     },
-    ids: () => [...pointers.keys()],
     active: () => pointers.size > 0,
     shouldSuppressClick: () => suppressClick
   };

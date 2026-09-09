@@ -1,5 +1,6 @@
 import MarkdownIt from 'markdown-it';
 import sanitizeHtml from 'sanitize-html';
+import { escapeHtml } from './format.mjs';
 
 const CALLOUT_TITLES = {
   abstract: '요약',
@@ -50,15 +51,6 @@ const ALLOWED_ATTRIBUTES = {
   th: ['class', 'colspan', 'rowspan']
 };
 
-function escapeHtml(value) {
-  return String(value ?? '').replace(/[&<>'"]/g, (character) => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    "'": '&#39;',
-    '"': '&quot;'
-  }[character]));
-}
 
 export function stripInlineMarkup(value) {
   return String(value ?? '')
@@ -160,6 +152,14 @@ function inlineCodeEnd(source, start) {
 }
 
 const commentParser = new MarkdownIt({ html: true });
+// 헤딩 id. 같은 제목이 되풀이되면 -2, -3을 붙인다. 목차(garden.headingsFor)와 렌더러가 같은 함수를 써서 앵커가 어긋나지 않는다.
+export function headingId(headingIds, text) {
+  const baseId = slugifyHeading(headingTextForId(text));
+  const count = (headingIds.get(baseId) ?? 0) + 1;
+  headingIds.set(baseId, count);
+  return count === 1 ? baseId : `${baseId}-${count}`;
+}
+
 export function stripObsidianComments(source) {
   const original = String(source ?? '');
   const offsets = [0];
@@ -372,10 +372,7 @@ function createMarkdownIt() {
     const nextToken = tokens[index + 1];
     const headingText = nextToken?.type === 'inline' ? nextToken.content : '';
     if (env.headingIds && token.level === 0) {
-      const baseId = slugifyHeading(headingTextForId(headingText));
-      const count = (env.headingIds.get(baseId) ?? 0) + 1;
-      env.headingIds.set(baseId, count);
-      token.attrSet('id', count === 1 ? baseId : `${baseId}-${count}`);
+      token.attrSet('id', headingId(env.headingIds, headingText));
     }
     return defaultHeadingOpen
       ? defaultHeadingOpen(tokens, index, options, env, self)

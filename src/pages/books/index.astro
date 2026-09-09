@@ -12,8 +12,8 @@ const filters = statusFilters(books);
     <div class="page-head"><h1 class="display">책장</h1>
       <nav class="status-filter meta" aria-label="읽기 상태">{filters.map((f) => <button type="button" data-book-status={f.value} aria-pressed={String(f.value === 'all')}>{f.label} <span class="count">{f.count}</span></button>)}</nav>
     </div>
-    {tiers.map((t) => <section class="tier">
-      <div class="tier-head"><h2 class:list={['display', { 'unrated': t.tier === '미분류' }]}>{t.tier}</h2><span class="meta" data-tier-count>{t.books.length}권</span></div>
+    {tiers.map((t) => <section class="ledger-group" data-tier>
+      <div class="ledger-head"><h2 class:list={['display', { 'unrated': t.tier === '미분류' }]}>{t.tier}</h2><span class="meta" data-tier-count>{t.books.length}권</span></div>
       <div class="grid">{t.books.map((book) => <BookCard book={book} />)}</div>
     </section>)}
     <p class="book-source meta">도서 정보·표지 출처: <a href="https://www.yes24.com" target="_blank" rel="noreferrer">YES24 ↗</a></p>
@@ -21,8 +21,7 @@ const filters = statusFilters(books);
 </Shell>
 <style>
   .books-page { padding: 36px 0 96px; }
-  .page-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 20px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
-  .page-head h1 { margin: 0; font-size: 28px; line-height: 1.4; }
+  .page-head { flex-wrap: wrap; gap: 8px 20px; }
   .book-source { margin: 20px 0 0; color: var(--muted); text-align: right; }
   .book-source a { color: inherit; text-underline-offset: 3px; }
   /* 거르개는 지도 범례와 같은 방식이다. 누른 것 하나만 aria-pressed로 남는다. */
@@ -31,16 +30,12 @@ const filters = statusFilters(books);
   .status-filter button:hover, .status-filter button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
   .status-filter .count { color: var(--faint); font-variant-numeric: tabular-nums; }
   .status-filter button[aria-pressed="true"] .count { color: inherit; }
-  .tier { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 24px; margin-top: 28px; padding-bottom: 28px; border-bottom: 1px solid var(--line); }
-  .tier-head h2 { margin: 0; color: var(--accent); font-size: 40px; font-weight: 600; line-height: 1; }
+  /* 등급 묶음은 공용 장부(.ledger-group)를 쓰고 여백과 굵기만 다르다. */
+  .books-page .ledger-group { padding-bottom: 28px; }
+  .books-page .ledger-head h2 { font-weight: 600; }
+  .books-page .ledger-head h2.unrated { font-size: 18px; line-height: 1.4; white-space: nowrap; }
   .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px 40px; }
-  .tier-head h2.unrated { font-size: 18px; line-height: 1.4; white-space: nowrap; }
-  @media (max-width: 720px) {
-    .tier { grid-template-columns: 1fr; gap: 18px; }
-    .tier-head { display: flex; align-items: baseline; gap: 10px; }
-    .tier-head h2 { font-size: 30px; }
-    .grid { grid-template-columns: 1fr; }
-  }
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
   @media (max-width: 480px) { .page-head { gap: 12px; } .book-source { font-size: 12px; } }
 </style>
 <script src="../../scripts/books.js"></script>

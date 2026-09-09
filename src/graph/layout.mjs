@@ -2,23 +2,24 @@ export function nodeRadius(degree, scale = 1) {
   return (4.5 + Math.min(degree, 15) * 0.6) * scale;
 }
 
-// repelRange: 척력이 미치는 거리(k 배수). gravity: 중심 장력. spring: 주면 링크를 고정 길이(spring·k)의 용수철로 당긴다(없으면 기존 d²/k).
+// 척력은 k의 1.5배 거리까지만 미친다. 중심 장력 0.08. 링크는 d²/k로 당긴다. 씨앗과 반복 횟수는 고정이라 배치가 결정적이다.
 // 아틀라스 배치: 같은 주제는 무게중심으로 당기고(topicGravity) 다른 주제끼리는 더 세게 밀어(crossRepel) 주제가 영토처럼 갈라진다.
 // 2026-09-07 실측(36노드): 1000×640과 830×630 두 무대에서 남의 영역에 들어간 노드 0~1개, 최소 간격 41px. 지도·홈 히어로·모바일 스냅샷이 같은 값을 쓴다.
 export const ATLAS_LAYOUT = { topicGravity: 0.12, crossRepel: 2 };
 
 // topicGravity: 같은 주제 무게중심으로 당기는 힘. crossRepel: 주제가 다른 노드 쌍의 척력 배수.
-export function layoutGraph(nodes, edges, { width, height, seed = 7, iterations = 700, pad = 56, repelRange = 1.5, gravity = 0.08, spring = null, topicGravity = 0, crossRepel = 1 } = {}) {
-  let state = seed;
+const SEED = 7, ITERATIONS = 700, REPEL_RANGE = 1.5, GRAVITY = 0.08;
+export function layoutGraph(nodes, edges, { width, height, pad = 56, topicGravity = 0, crossRepel = 1 } = {}) {
+  let state = SEED;
   const random = () => { state = (state * 1664525 + 1013904223) % 4294967296; return state / 4294967296; };
   const index = new Map(nodes.map((node, i) => [node.id, i]));
   const points = nodes.map(() => ({ x: width * (0.1 + 0.8 * random()), y: height * (0.1 + 0.8 * random()), dx: 0, dy: 0 }));
   const pairs = edges.filter((e) => index.has(e.source) && index.has(e.target)).map((e) => [index.get(e.source), index.get(e.target)]);
   const k = Math.sqrt((width * height) / Math.max(1, nodes.length)) * 0.8;
   // Repulsion only acts within a short range so small disconnected pieces settle beside the main cluster instead of flying to the corners.
-  const cutoff = k * repelRange;
-  for (let iteration = 0; iteration < iterations; iteration += 1) {
-    const temperature = 50 * (1 - iteration / iterations) + 0.5;
+  const cutoff = k * REPEL_RANGE;
+  for (let iteration = 0; iteration < ITERATIONS; iteration += 1) {
+    const temperature = 50 * (1 - iteration / ITERATIONS) + 0.5;
     for (const p of points) { p.dx = 0; p.dy = 0; }
     for (let i = 0; i < points.length; i += 1) for (let j = i + 1; j < points.length; j += 1) {
       const a = points[i], b = points[j];
@@ -27,7 +28,7 @@ export function layoutGraph(nodes, edges, { width, height, seed = 7, iterations 
     }
     for (const [i, j] of pairs) {
       const a = points[i], b = points[j];
-      let dx = a.x - b.x, dy = a.y - b.y; const d = Math.hypot(dx, dy) || 0.01; const f = spring ? (d - spring * k) : (d * d) / k; dx /= d; dy /= d;
+      let dx = a.x - b.x, dy = a.y - b.y; const d = Math.hypot(dx, dy) || 0.01; const f = (d * d) / k; dx /= d; dy /= d;
       a.dx -= dx * f; a.dy -= dy * f; b.dx += dx * f; b.dy += dy * f;
     }
     if (topicGravity > 0) {
@@ -36,7 +37,7 @@ export function layoutGraph(nodes, edges, { width, height, seed = 7, iterations 
       nodes.forEach((node, i) => { const c = centers.get(node.topic); if (c.n > 1) { points[i].dx += (c.x / c.n - points[i].x) * topicGravity; points[i].dy += (c.y / c.n - points[i].y) * topicGravity; } });
     }
     for (const p of points) {
-      p.dx += (width / 2 - p.x) * gravity; p.dy += (height / 2 - p.y) * gravity;
+      p.dx += (width / 2 - p.x) * GRAVITY; p.dy += (height / 2 - p.y) * GRAVITY;
       const d = Math.hypot(p.dx, p.dy) || 0.01; const m = Math.min(d, temperature);
       p.x += (p.dx / d) * m; p.y += (p.dy / d) * m;
     }

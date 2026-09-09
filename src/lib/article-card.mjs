@@ -1,6 +1,4 @@
-import { firstSentence } from './format.mjs';
-
-const escape = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+import { firstSentence, escapeHtml as escape } from './format.mjs';
 
 export function articleCardHtml({ note, caption = '', image = null }) {
   const summary = String(caption ?? '').trim() || firstSentence(note.summary);

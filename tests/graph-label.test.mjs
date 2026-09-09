@@ -14,3 +14,44 @@ test('estimateTextWidth weighs hangul, latin and punctuation differently and sca
   assert.equal(estimateTextWidth('가a.'), 12.5 + 7.2 + 4.5);
   assert.equal(estimateTextWidth('가', 26), 25);
 });
+
+import { placeLabels, labelGeometry } from '../src/graph/label.mjs';
+
+const radius = () => 6;
+const at = (x, y) => ({ x, y });
+
+test('placeLabels puts a free label below its node and moves it above when that slot is blocked', () => {
+  const a = { id: 'a', title: '에이' };
+  const positions = new Map([['a', at(100, 100)]]);
+  const free = placeLabels([{ node: a, mustPlace: true }], { positions, radius });
+  assert.equal(free.get('a').placement, 'below');
+  assert.deepEqual(free.get('a').lines, ['에이']);
+  const below = labelGeometry(at(100, 100), 6, ['에이'], 'below', 1).box;
+  assert.equal(placeLabels([{ node: a, mustPlace: true }], { positions, radius, obstacles: [below] }).get('a').placement, 'above');
+});
+
+test('placeLabels keeps later labels off earlier ones: below blocked by an obstacle and above blocked by a label sends it right', () => {
+  const a = { id: 'a', title: '에이' }, b = { id: 'b', title: '비' };
+  const positions = new Map([['a', at(100, 100)], ['b', at(100, 130)]]);
+  const belowB = labelGeometry(at(100, 130), 6, ['비'], 'below', 1).box;
+  const plan = placeLabels([{ node: a, mustPlace: true }, { node: b, mustPlace: true }], { positions, radius, obstacles: [belowB] });
+  assert.equal(plan.get('a').placement, 'below');
+  assert.equal(plan.get('b').placement, 'right');
+});
+
+test('placeLabels skips optional labels with no room, forces required ones below, and places a node once', () => {
+  const a = { id: 'a', title: '에이' };
+  const positions = new Map([['a', at(100, 100)]]);
+  const everywhere = [{ left: -1e4, right: 1e4, top: -1e4, bottom: 1e4 }];
+  assert.equal(placeLabels([{ node: a, mustPlace: false }], { positions, radius, obstacles: everywhere }).size, 0);
+  const forced = placeLabels([{ node: a, mustPlace: true }, { node: a, mustPlace: false }], { positions, radius, obstacles: everywhere });
+  assert.equal(forced.size, 1);
+  assert.equal(forced.get('a').placement, 'below');
+});
+
+test('placeLabels avoids slots outside the visible area', () => {
+  const a = { id: 'a', title: '에이' };
+  const positions = new Map([['a', at(100, 630)]]);
+  const inside = (box) => box.top >= 0 && box.bottom <= 640;
+  assert.equal(placeLabels([{ node: a, mustPlace: true }], { positions, radius, inside }).get('a').placement, 'above');
+});

@@ -1,5 +1,6 @@
+import { KINDS } from './kinds.mjs';
+
 const SLUG_PATTERN = /^[\p{L}\p{N}-]+$/u;
-const PREFIX = { blog: 'posts', slipbox: 'notes', development: 'dev' };
 
 export function slugify(title) {
   return String(title ?? '')
@@ -22,7 +23,7 @@ export function slugFor(meta, title) {
 }
 
 export function kindPrefix(kind) {
-  const prefix = PREFIX[kind];
+  const prefix = KINDS[kind]?.prefix;
   if (!prefix) throw new Error(`Unknown note kind: ${kind}`);
   return prefix;
 }

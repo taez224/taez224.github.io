@@ -30,10 +30,6 @@ export function createRefreshCoordinator({
     fillers.set(name, fill);
   }
 
-  function unregister(name) {
-    fillers.delete(name);
-  }
-
   // Astro's LoaderContext.logger is only available inside a loader's load(),
   // not at module-import time when the coordinator singleton is built - so
   // loaders call this once they have one.
@@ -88,5 +84,5 @@ export function createRefreshCoordinator({
     }, debounceMs);
   }
 
-  return { register, unregister, run, scheduleRefresh, setLogger };
+  return { register, run, scheduleRefresh, setLogger };
 }

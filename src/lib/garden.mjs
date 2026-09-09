@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import MarkdownIt from 'markdown-it';
-import { createMarkdownRenderer, headingTextForId, slugifyHeading, stripObsidianComments } from './markdown.mjs';
+import { createMarkdownRenderer, headingTextForId, headingId, stripObsidianComments } from './markdown.mjs';
 import { developmentCategory, externalPublicationFor, pathMatches, isExcluded as excludedByPolicy, isIncluded as includedByPolicy, validatePublicationConfig } from './publication.mjs';
 import { isImagePath } from './image-types.mjs';
 import { coverUrl } from './books.mjs';
@@ -10,29 +10,18 @@ import { slugFor, slugify, kindPrefix, noteUrl, assertUniqueSlugs } from './slug
 import { plainText } from './text.mjs';
 import { publicTags, cleanTitle } from './format.mjs';
 
-const toPosix = (value) => value.split(path.sep).join('/');
-const normalize = (value) => toPosix(value).replace(/^\.\//, '').replace(/\\/g, '/');
+const normalize = (value) => value.replace(/\\/g, '/').replace(/^\.\//, '');
 
-async function walk(directory) {
+const isMarkdown = (name) => name.endsWith('.md');
+
+async function walk(directory, accept = () => true) {
   const entries = await fs.readdir(directory, { withFileTypes: true });
   const files = [];
   for (const entry of entries) {
     if (entry.name.startsWith('.')) continue;
     const absolute = path.join(directory, entry.name);
-    if (entry.isDirectory()) files.push(...await walk(absolute));
-    else if (entry.isFile() && entry.name.endsWith('.md')) files.push(absolute);
-  }
-  return files;
-}
-
-async function walkAll(directory) {
-  const entries = await fs.readdir(directory, { withFileTypes: true });
-  const files = [];
-  for (const entry of entries) {
-    if (entry.name.startsWith('.')) continue;
-    const absolute = path.join(directory, entry.name);
-    if (entry.isDirectory()) files.push(...await walkAll(absolute));
-    else if (entry.isFile()) files.push(absolute);
+    if (entry.isDirectory()) files.push(...await walk(absolute, accept));
+    else if (entry.isFile() && accept(entry.name)) files.push(absolute);
   }
   return files;
 }
@@ -87,11 +76,9 @@ export function headingsFor(body) {
   const tokens = headingParser.parse(stripObsidianComments(body), {}), headings = [];
   for (let index = 0; index < tokens.length; index++) {
     if (tokens[index].type !== 'heading_open' || tokens[index].level !== 0) continue;
-    const title = headingTextForId(tokens[index + 1].content.trim());
-    const baseId = slugifyHeading(title), level = Number(tokens[index].tag.slice(1));
-    const count = (headingIds.get(baseId) ?? 0) + 1;
-    headingIds.set(baseId, count);
-    if (level >= 2 && level <= 4) headings.push({ id: count === 1 ? baseId : `${baseId}-${count}`, level, title });
+    const text = tokens[index + 1].content.trim();
+    const id = headingId(headingIds, text), level = Number(tokens[index].tag.slice(1));
+    if (level >= 2 && level <= 4) headings.push({ id, level, title: headingTextForId(text) });
   }
   return headings;
 }
@@ -134,7 +121,7 @@ function sectionExcerpt(body, sectionNames) {
 }
 
 // 지도에서 노드가 이보다 적은 주제는 색과 영역을 기타로 접는다. 범례가 길어지고 팔레트가 바닥나는 걸 막는다. 원래 주제는 topicTag에 남는다.
-export const MIN_TOPIC_NODES = 3;
+const MIN_TOPIC_NODES = 3;
 
 function topicFor(tags) {
   const topic = publicTags(tags).find(Boolean);
@@ -164,10 +151,6 @@ function kindFor(relativePath) {
   if (relativePath.startsWith('01_Slipbox/')) return 'slipbox';
   if (relativePath.startsWith('20_Projects/blog/')) return 'blog';
   return 'development';
-}
-
-function displayTitleFor(relativePath, title) {
-  return title;
 }
 
 function publicUrl(value, fallback) {
@@ -264,40 +247,43 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
   const isExcluded = (relativePath) => excludedByPolicy(config, relativePath);
   const isIncluded = (relativePath, meta) => includedByPolicy(config, relativePath, meta);
 
-  // 외부 발행 판정은 글 목록과 노트 엔트리가 같이 쓴다. 노트마다 한 번만 판정해 두 목록이 갈라지지 않게 한다.
-  const publicationVerdicts = new Map();
-  function publicationFor(relativePath, note) {
-    if (!publicationVerdicts.has(relativePath)) {
-      const externalPublisher = externalPublicationFor(config, relativePath, note.meta);
-      publicationVerdicts.set(relativePath, { externalPublisher, contentMode: externalPublisher ? 'external' : 'full' });
-    }
-    return publicationVerdicts.get(relativePath);
-  }
-
-  function blogRecord(relativePath, note) {
+  // 글 목록·개발 노트 목록·공개 엔트리가 같은 노트를 각자 계산하지 않도록, 공통 필드는 노트마다 한 번만 만든다.
+  const baseRecords = new Map();
+  function baseRecord(relativePath, note) {
+    if (baseRecords.has(relativePath)) return baseRecords.get(relativePath);
     const fileTitle = path.posix.basename(relativePath, '.md');
+    const kind = kindFor(relativePath);
     const title = String(note.meta.title ?? firstHeading(note.body, fileTitle));
-    const publishedUrl = publicUrl(note.meta.source, '');
-    const { externalPublisher, contentMode } = publicationFor(relativePath, note);
-    return {
+    const externalPublisher = externalPublicationFor(config, relativePath, note.meta);
+    const contentMode = externalPublisher ? 'external' : 'full';
+    const tags = tagList(note.meta);
+    const record = {
       path: relativePath,
       fileTitle,
       title,
-      displayTitle: displayTitleFor(relativePath, title),
+      displayTitle: title,
+      kind,
+      category: kind === 'development' ? developmentCategory(relativePath) : null,
       url: siteUrl(relativePath),
-      publishedUrl,
+      publishedUrl: kind === 'blog' ? publicUrl(note.meta.source, '') : '',
       publication: String(note.meta.publication ?? ''),
       published: String(note.meta.published ?? ''),
       contentMode,
       externalPublisher,
-      series: String(note.meta.series ?? ''),
-      seriesOrder: numberValue(note.meta.series_order),
-      summary: summaryFor(note, { kind: 'blog', contentMode }),
-      summaryIsExplicit: Boolean(explicitSummary(note)),
       status: String(note.meta.status ?? ''),
-      tags: tagList(note.meta),
-      created: firstDate(note.meta)
+      type: String(note.meta.type ?? ''),
+      tags,
+      date: firstDate(note.meta),
+      summary: summaryFor(note, { kind, contentMode }),
+      summaryIsExplicit: Boolean(explicitSummary(note))
     };
+    baseRecords.set(relativePath, record);
+    return record;
+  }
+
+  function blogRecord(relativePath, note) {
+    const base = baseRecord(relativePath, note);
+    return { ...base, series: String(note.meta.series ?? ''), seriesOrder: numberValue(note.meta.series_order), created: base.date };
   }
 
   const candidateFiles = new Map();
@@ -307,7 +293,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
     const absoluteDirectory = path.join(vaultRoot, include.path);
     let files = [];
     try {
-      files = await walk(absoluteDirectory);
+      files = await walk(absoluteDirectory, isMarkdown);
     } catch {
       console.warn(`Skipped missing include path: ${include.path}`);
       continue;
@@ -422,20 +408,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
 
   const developmentRecords = [...candidateFiles]
     .filter(([relativePath]) => kindFor(relativePath) === 'development')
-    .map(([relativePath, note]) => {
-      const fileTitle = path.posix.basename(relativePath, '.md');
-      return {
-        path: relativePath,
-        fileTitle,
-        title: firstHeading(note.body, fileTitle),
-        url: siteUrl(relativePath),
-        category: developmentCategory(relativePath),
-        summary: summaryFor(note),
-        summaryIsExplicit: Boolean(explicitSummary(note)),
-        tags: tagList(note.meta),
-        date: firstDate(note.meta)
-      };
-    })
+    .map(([relativePath, note]) => baseRecord(relativePath, note))
     .sort((left, right) => right.date.localeCompare(left.date) || left.title.localeCompare(right.title, 'ko'));
 
   const development = {
@@ -444,12 +417,11 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
     tools: developmentRecords.filter((record) => record.category === 'Tools')
   };
 
-  const byPath = new Map(graphCandidateFiles);
   const byBasename = indexByBasename(graphCandidateFiles.keys());
 
   const allEdges = [];
   for (const [relativePath, note] of graphCandidateFiles) {
-    for (const target of extractTargets(relativePath, note.body, byPath, byBasename)) {
+    for (const target of extractTargets(relativePath, note.body, graphCandidateFiles, byBasename)) {
       allEdges.push({ source: relativePath, target });
     }
   }
@@ -458,7 +430,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
   const bookSources = new Map();
   const booksDirectory = path.join(vaultRoot, '30_Resources/References/Books');
   try {
-    for (const absoluteFile of await walk(booksDirectory)) {
+    for (const absoluteFile of await walk(booksDirectory, isMarkdown)) {
       const relativePath = normalize(path.relative(vaultRoot, absoluteFile));
       if (path.posix.basename(relativePath).startsWith('_')) continue;
       const source = await fs.readFile(absoluteFile, 'utf8');
@@ -495,42 +467,20 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
   assertUniqueSlugs(books.map((book) => ({ kind: 'book', slug: book.slug, path: book.path })));
 
   function publicEntry(relativePath, note) {
-    const fileTitle = path.posix.basename(relativePath, '.md');
-    const tags = tagList(note.meta);
-    const kind = kindFor(relativePath);
-    const title = String(note.meta.title ?? firstHeading(note.body, fileTitle));
-    const { externalPublisher, contentMode } = publicationFor(relativePath, note);
-    const publicContent = publicBody(kind, note.body);
-    const bodyText = contentMode === 'external' ? '' : plainText(publicContent);
-    const headings = contentMode === 'external' ? [] : headingsFor(publicContent);
+    const base = baseRecord(relativePath, note);
+    const publicContent = publicBody(base.kind, note.body);
+    const bodyText = base.contentMode === 'external' ? '' : plainText(publicContent);
     return {
-      path: relativePath,
-      fileTitle,
-      title,
-      displayTitle: displayTitleFor(relativePath, title),
-      kind,
-      category: kind === 'development' ? developmentCategory(relativePath) : null,
+      ...base,
       isEntry: relativePath === config.entry,
-      status: String(note.meta.status ?? ''),
-      type: String(note.meta.type ?? ''),
-      tags,
       aliases: stringList(note.meta.aliases),
       slug: slugByPath.get(relativePath),
-      publicTags: publicTags(tags),
+      publicTags: publicTags(base.tags),
       bodyText,
       // 한국어 평균 읽기 속도 분당 600자 기준. 리더 메타 줄의 "N분".
-      readingMinutes: contentMode === 'external' ? 0 : Math.max(1, Math.round([...bodyText].length / 600)),
-      topic: topicFor(tags),
-      date: firstDate(note.meta),
-      summary: summaryFor(note, { kind, contentMode }),
-      summaryIsExplicit: Boolean(explicitSummary(note)),
-      headings,
-      url: siteUrl(relativePath),
-      publishedUrl: kind === 'blog' ? publicUrl(note.meta.source, '') : '',
-      publication: String(note.meta.publication ?? ''),
-      published: String(note.meta.published ?? ''),
-      contentMode,
-      externalPublisher,
+      readingMinutes: base.contentMode === 'external' ? 0 : Math.max(1, Math.round([...bodyText].length / 600)),
+      topic: topicFor(base.tags),
+      headings: base.contentMode === 'external' ? [] : headingsFor(publicContent),
       publicContent,
       body: note.body
     };
@@ -564,7 +514,6 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
     });
   }
 
-  const publicByPath = new Map(publicEntries);
   for (const relativePath of publicEntries.keys()) knownNotePaths.add(relativePath);
   const knownByBasename = indexByBasename(knownNotePaths);
   const publicByBasename = indexByBasename(publicEntries.keys());
@@ -579,7 +528,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
   for (const include of config.include) {
     const absoluteDirectory = path.join(vaultRoot, include.path);
     try {
-      for (const absoluteFile of await walkAll(absoluteDirectory)) {
+      for (const absoluteFile of await walk(absoluteDirectory)) {
         const relativePath = normalize(path.relative(vaultRoot, absoluteFile));
         if (!relativePath.endsWith('.md') && !isExcluded(relativePath)) publicAssetPaths.add(relativePath);
       }
@@ -587,7 +536,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
       // The Markdown include loop already reports missing public directories.
     }
   }
-  for (const absoluteFile of await walkAll(booksDirectory).catch(() => [])) {
+  for (const absoluteFile of await walk(booksDirectory).catch(() => [])) {
     const relativePath = normalize(path.relative(vaultRoot, absoluteFile));
     if (!relativePath.endsWith('.md') && !isExcluded(relativePath)) publicAssetPaths.add(relativePath);
   }
@@ -649,7 +598,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
   const allPublicEdges = [];
   for (const [relativePath, entry] of publicEntries) {
     if (entry.kind === 'book') continue;
-    for (const target of extractTargets(relativePath, entry.body, publicByPath, publicByBasename)) {
+    for (const target of extractTargets(relativePath, entry.body, publicEntries, publicByBasename)) {
       if (publicEntries.get(target)?.kind === 'book') continue;
       allPublicEdges.push({ source: relativePath, target });
     }

@@ -9,7 +9,8 @@ import { crc32, deflateSync } from 'node:zlib';
 
 const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'garden-og-'));
 process.env.GARDEN_OG_CACHE_DIR = dir;
-const { cachedPng, pngDimensions, pruneOgCache, fitTitle, ogSvg, renderOgPng, thumbnailDataUri } = await import('../src/lib/og.mjs');
+const { cachedPng, pruneOgCache, fitTitle, ogSvg, renderOgPng, thumbnailDataUri } = await import('../src/lib/og.mjs');
+const { pngDimensions } = await import('../src/lib/png.mjs');
 
 // 실제 렌더러의 PNG를 사용한다. 헤더만 흉내 내면 손상 검증 자체가 무의미해진다.
 const fixtures = new Map();

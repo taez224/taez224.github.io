@@ -11,7 +11,7 @@ const offset = (edge, sign) => {
 };
 ---
 <div class="local-graph">
-  <svg data-local-graph viewBox={`0 0 ${width} ${height}`} role="group" aria-label="이 노트의 연결">
+  <svg viewBox={`0 0 ${width} ${height}`} role="group" aria-label="이 노트의 연결">
     <g>
       {layout.edges.map((edge) => edge.direction === 'both'
         ? <>

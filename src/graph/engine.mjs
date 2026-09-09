@@ -1,12 +1,11 @@
 import { nodeRadius } from './layout.mjs';
 import { topicColor, cleanTitle } from '../lib/format.mjs';
 import { createGraphGesture } from './gestures.mjs';
-import { graphTitleLines, estimateTextWidth } from './label.mjs';
+import { estimateTextWidth, labelIds, wrapLabel, placeLabels, nodeBox } from './label.mjs';
 import { topicRegions, regionPath, placeRegionLabels, regionLabelBox } from './regions.mjs';
-export { estimateTextWidth };
 
-export const MIN_SCALE = 0.65;
-export const MAX_SCALE = 3.2;
+const MIN_SCALE = 0.65;
+const MAX_SCALE = 3.2;
 const key = (s, t) => JSON.stringify([s, t]);
 
 export function classifyEdges(edges, selected) {
@@ -28,24 +27,6 @@ export function classifyEdges(edges, selected) {
     result.push({ source: edge.source, target: edge.target, state, mutual, offset: mutual ? 1 : 0 });
   }
   return result;
-}
-
-export function labelIds(nodes, edges, { selected = null, hovered = null } = {}) {
-  const ids = new Set();
-  if (selected) {
-    ids.add(selected);
-    for (const edge of edges) {
-      const other = edge.source === selected ? edge.target : edge.target === selected ? edge.source : null;
-      if (other && nodes.find((n) => n.id === other)?.type === 'hub') ids.add(other);
-    }
-  } else {
-    for (const node of nodes) {
-      const title = cleanTitle(node.displayTitle ?? node.title ?? '');
-      if (node.type === 'hub' || ((node.degree ?? 0) >= 9 && [...title].length <= 14)) ids.add(node.id);
-    }
-  }
-  if (hovered) ids.add(hovered);
-  return ids;
 }
 
 export function hoverLabelCandidates(nodes, edges, hovered) {
@@ -77,8 +58,6 @@ export function offsetLine(a, b, sign, distance = 2.5) {
   return { x1: a.x + nx, y1: a.y + ny, x2: b.x + nx, y2: b.y + ny };
 }
 
-export { nodeRadius, topicColor };
-
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const LAYOUT = { width: 1000, height: 640 };
 
@@ -91,22 +70,13 @@ export function isFilteredOut(node, { topics = null, hubsOnly = false } = {}) {
 }
 
 // 이 배율부터는 자리가 나는 만큼 제목을 더 보인다(허브 → 연결 많은 순, 겹치지 않는 것만).
-export const LABEL_REVEAL_SCALE = 1.2;
+const LABEL_REVEAL_SCALE = 1.2;
 // 평소 배율에서도 연결 많은 순으로 이만큼은 자리가 나면 제목을 보인다. 허브만 남기면 가장 연결 많은 노트가 점으로만 보인다.
-export const RESTING_LABEL_LIMIT = 6;
+const RESTING_LABEL_LIMIT = 6;
 
-// 20자를 넘는 제목은 두 줄로 접는다. 줄 길이를 절반 근처로 잡아 두 줄이 비슷하게 나뉘게 한다.
-export function wrapLabel(title, maxChars = 20) {
-  const chars = [...title];
-  if (chars.length <= maxChars) return [title];
-  let limit = Math.ceil(chars.length / 2) + 2;
-  let lines = graphTitleLines(title, limit);
-  while (lines.length > 2 && limit < chars.length) { limit += 3; lines = graphTitleLines(title, limit); }
-  return lines;
-}
-
-export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelAll = false, labelLines = null, labelAnchor = 'auto', fitBounds = null, nodeScale = 1, focusable = true, regions = true, onSelect = () => {}, onOpen = () => {}, onHover = () => {} }) {
-  // nodeScale: 노드 원 크기 배율. 지도는 무대가 좁아 0.85로 그려 홈과 밀도를 맞춘다.
+// layoutSize: 좌표가 놓인 무대 크기. 홈 히어로처럼 좌표 공간(1000×640)과 상자 픽셀 크기가 다를 때 준다. 지도는 상자 크기로 배치하므로 생략한다.
+export function createGraph(svg, { nodes, edges, positions, mode = 'map', nodeScale = 1, focusable = true, layoutSize = null, onSelect = () => {}, onOpen = () => {} }) {
+  // nodeScale: 노드 원 크기 배율. 지도는 무대가 좁아 0.7, 홈 히어로는 0.9로 그려 밀도를 맞춘다.
   const radius = (node) => nodeRadius(node.degree ?? 0, nodeScale);
   const el = (name, attrs = {}) => { const node = document.createElementNS(SVG_NS, name); for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, String(v)); return node; };
   const size = () => ({ width: svg.clientWidth || LAYOUT.width, height: svg.clientHeight || LAYOUT.height });
@@ -116,19 +86,18 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
   const outOfFilter = (id) => id !== state.selected && isFilteredOut(byId.get(id), state);
   const minScale = () => Math.min(MIN_SCALE, fitTransform(positions, size()).scale);
   const gesture = createGraphGesture({ getMinScale: minScale, maxScale: MAX_SCALE });
-  const events = new AbortController();
-  const listen = (type, handler, options = {}) => svg.addEventListener(type, handler, { ...options, signal: events.signal });
+  const listen = (type, handler, options) => svg.addEventListener(type, handler, options);
   const nodeEls = new Map();
   svg.classList.add('graph', mode);
   svg.replaceChildren();
-  const scene = el('g', { 'data-scene': '' });
+  const scene = el('g');
   const regionLayer = el('g', { 'data-regions': '' }), regionLabelLayer = el('g', { 'data-region-labels': '' });
-  const edgeLayer = el('g', { 'data-edges': '' }), nodeLayer = el('g', { 'data-nodes': '' }), labelLayer = el('g', { 'data-labels': '' });
+  const edgeLayer = el('g'), nodeLayer = el('g'), labelLayer = el('g', { 'data-labels': '' });
   scene.append(regionLayer, regionLabelLayer, edgeLayer, nodeLayer, labelLayer);
   // 주제 영역은 배치가 정해지면 고정이다. 색면은 장면 좌표(확대하면 같이 커짐), 이름은 제목처럼 화면 크기 고정.
-  const regionList = regions ? topicRegions(nodes, positions) : [];
+  const regionList = topicRegions(nodes, positions);
   // 영역 이름 자리는 배치 때 한 번 정한다. 노드 원을 피하고 무대 안에 둔다. 노드 제목은 planLabels가 영역 이름을 장애물로 보고 피한다.
-  const regionLabelAt = placeRegionLabels(regionList, nodes.filter((node) => positions.has(node.id)).map((node) => ({ ...positions.get(node.id), r: radius(node) + 4 })), { fontSize: 15, measure: estimateTextWidth, bounds: size() });
+  const regionLabelAt = placeRegionLabels(regionList, nodes.filter((node) => positions.has(node.id)).map((node) => ({ ...positions.get(node.id), r: radius(node) + 4 })), { fontSize: 15, measure: estimateTextWidth, bounds: layoutSize ?? size() });
   const regionLabelBoxes = (u) => regionList.map((region) => regionLabelBox(regionLabelAt.get(region.topic), region.topic, { fontSize: 15, measure: estimateTextWidth, scale: u }));
   const regionEls = new Map();
   const refreshRegionStates = () => {
@@ -147,9 +116,9 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
     regionLabelLayer.replaceChildren();
     regionEls.clear();
     for (const region of regionList) {
-      const shape = el('path', { class: 'region', 'data-region-topic': region.topic, d: regionPath(region.hull), fill: topicColor(region.topic), stroke: topicColor(region.topic) });
+      const shape = el('path', { class: 'region', d: regionPath(region.hull), fill: topicColor(region.topic), stroke: topicColor(region.topic) });
       const at = regionLabelAt.get(region.topic);
-      const label = el('text', { class: 'region-label', 'data-region-topic': region.topic, x: at.x.toFixed(1), y: at.y.toFixed(1), 'text-anchor': at.anchor, fill: topicColor(region.topic) });
+      const label = el('text', { class: 'region-label', x: at.x.toFixed(1), y: at.y.toFixed(1), 'text-anchor': at.anchor, fill: topicColor(region.topic) });
       label.textContent = region.topic;
       regionLayer.append(shape); regionLabelLayer.append(label);
       regionEls.set(region.topic, [shape, label]);
@@ -211,33 +180,8 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
       nodeLayer.append(g); nodeEls.set(node.id, g);
     }
   };
-  // 모든 제목을 보일 때는 가장자리 노드의 제목을 안쪽으로 붙여 화면 밖으로 잘리지 않게 한다.
-  const xs = [...positions.values()].map((p) => p.x);
-  const xLo = Math.min(...xs), xThird = (Math.max(...xs) - xLo) / 3;
-  const anchorFor = (x) => (!labelAll || labelAnchor === 'middle' ? 'middle' : x < xLo + xThird ? 'start' : x > xLo + 2 * xThird ? 'end' : 'middle');
-  // 제목 배치 계획. 우선순위(선택 → 호버 → 허브 → 연결 많은 순)대로 아래·위·오른쪽·왼쪽, 그다음 대각선 네 자리를 시도해
-  // 이미 놓인 제목이나 노드 원과 겹치지 않는 첫 자리를 준다. 기본 집합(선택·호버·허브)은 자리가 없어도 아래에 둔다.
+  // 제목 배치 계획. 우선순위(선택 → 호버 → 허브 → 연결 많은 순)로 placeLabels에 넘긴다. 기본 집합(선택·호버·허브)은 자리가 없어도 아래에 둔다.
   // 나머지는 1.2배 이상 확대했거나 선택 상태일 때, 자리가 날 때만 보인다. 흐려진 노드는 제외.
-  const PLACEMENTS = ['below', 'above', 'right', 'left', 'below-right', 'below-left', 'above-right', 'above-left'];
-  const labelGeometry = (node, p, lines, placement, u) => {
-    const r = radius(node), lh = 18 * u, gap = 8 * u;
-    const w = Math.max(...lines.map((line) => estimateTextWidth(line))) * u, h = lines.length * lh;
-    const mid = p.y - ((lines.length - 1) * lh) / 2 + 5 * u;
-    // 대각선 자리: 원 테두리에서 45도 방향으로 살짝 떨어진 모서리에 제목의 안쪽 모서리를 맞춘다. 밀집 구간에서 상하좌우가 다 막혔을 때 쓴다.
-    if (placement.includes('-')) {
-      const [vertical, side] = placement.split('-');
-      const d = (r + gap) * 0.75;
-      const ax = side === 'right' ? p.x + d : p.x - d, anchor = side === 'right' ? 'start' : 'end';
-      const left = side === 'right' ? ax : ax - w, right = left + w;
-      if (vertical === 'below') { const top = p.y + d; return { x: ax, y: top + 13 * u, anchor, box: { left, right, top, bottom: top + h } }; }
-      const bottom = p.y - d + 4 * u;
-      return { x: ax, y: p.y - d - (lines.length - 1) * lh, anchor, box: { left, right, top: bottom - h, bottom } };
-    }
-    if (placement === 'above') return { x: p.x, y: p.y - r - gap - (lines.length - 1) * lh, anchor: 'middle', box: { left: p.x - w / 2, right: p.x + w / 2, top: p.y - r - gap - h + 4 * u, bottom: p.y - r - gap + 4 * u } };
-    if (placement === 'right') return { x: p.x + r + gap, y: mid, anchor: 'start', box: { left: p.x + r + gap, right: p.x + r + gap + w, top: p.y - h / 2, bottom: p.y + h / 2 } };
-    if (placement === 'left') return { x: p.x - r - gap, y: mid, anchor: 'end', box: { left: p.x - r - gap - w, right: p.x - r - gap, top: p.y - h / 2, bottom: p.y + h / 2 } };
-    return { x: p.x, y: p.y + r + 18 * u, anchor: 'middle', box: { left: p.x - w / 2, right: p.x + w / 2, top: p.y + r + 5 * u, bottom: p.y + r + 5 * u + h } };
-  };
   const planLabels = (u) => {
     // 선택 전 호버는 허브를 남기고 해당 노드의 이웃 제목을 미리 보여준다.
     const preview = mode === 'map' && !state.selected && state.hovered && !outOfFilter(state.hovered)
@@ -249,37 +193,26 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
     const neighbors = new Set();
     if (state.selected) for (const e of edges) { if (e.source === state.selected) neighbors.add(e.target); if (e.target === state.selected) neighbors.add(e.source); }
     const dimmed = (id) => outOfFilter(id) || Boolean(state.selected && id !== state.selected && !neighbors.has(id));
-    const overlaps = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
-    // 흐려지지 않은 노드 원도 장애물이다. 제목이 다른 노드 위에 얹히지 않게.
-    const obstacles = nodes.filter((node) => !dimmed(node.id) && positions.has(node.id)).map((node) => { const p = positions.get(node.id), r = radius(node) + 2 * u; return { left: p.x - r, right: p.x + r, top: p.y - r, bottom: p.y + r }; });
-    obstacles.push(...regionLabelBoxes(u)); // 영역 이름 위에 노드 제목을 얹지 않는다.
+    // 흐려지지 않은 노드 원과 영역 이름은 장애물이다. 제목이 그 위에 얹히지 않게.
+    const obstacles = nodes.filter((node) => !dimmed(node.id) && positions.has(node.id)).map((node) => nodeBox(positions.get(node.id), radius(node) + 2 * u));
+    obstacles.push(...regionLabelBoxes(u));
     // 화면 밖으로 나가는 자리는 쓰지 않는다(장면 좌표로 환산한 무대 범위).
     const { width: vw, height: vh } = size();
     const view = { left: -state.transform.x * u, top: -state.transform.y * u, right: (vw - state.transform.x) * u, bottom: (vh - state.transform.y) * u };
     const inside = (b) => b.left >= view.left && b.right <= view.right && b.top >= view.top && b.bottom <= view.bottom;
-    const placed = [], plan = new Map();
-    const tryPlace = (node, mustPlace) => {
-      const p = positions.get(node.id); if (!p) return;
-      const lines = wrapLabel(cleanTitle(node.displayTitle ?? node.title));
-      for (const placement of PLACEMENTS) {
-        const g = labelGeometry(node, p, lines, placement, u);
-        if (!inside(g.box) || placed.some((b) => overlaps(b, g.box)) || obstacles.some((b) => overlaps(b, g.box))) continue;
-        placed.push(g.box); plan.set(node.id, placement); return;
-      }
-      if (mustPlace) { placed.push(labelGeometry(node, p, lines, 'below', u).box); plan.set(node.id, 'below'); }
-    };
     const priority = (id) => (id === (state.selected || preview) ? 0 : 1);
-    for (const id of base.sort((a, b) => priority(a) - priority(b))) { const node = byId.get(id); if (node) tryPlace(node, true); }
+    const baseSet = new Set(base);
+    const order = base.sort((a, b) => priority(a) - priority(b)).map((id) => byId.get(id)).filter(Boolean).map((node) => ({ node, mustPlace: true }));
     // 홈 히어로(hero 모드)는 허브·호버만 보인다. 자리 채우기는 지도에서만: 평소에는 연결 많은 순으로 몇 개, 확대하거나 선택하면 자리가 나는 만큼 전부.
     if (mode === 'map') {
       const candidates = preview ? hoverLabelCandidates(nodes, edges, preview) : nodes;
-      const rest = candidates.filter((node) => !plan.has(node.id) && !dimmed(node.id)).sort((a, b) => (b.degree ?? 0) - (a.degree ?? 0));
+      const rest = candidates.filter((node) => !baseSet.has(node.id) && !dimmed(node.id)).sort((a, b) => (b.degree ?? 0) - (a.degree ?? 0));
       const reveal = preview || scale >= LABEL_REVEAL_SCALE || state.selected;
-      for (const node of reveal ? rest : rest.slice(0, RESTING_LABEL_LIMIT)) tryPlace(node, false);
+      order.push(...(reveal ? rest : rest.slice(0, RESTING_LABEL_LIMIT)).map((node) => ({ node, mustPlace: false })));
     }
     // 호버한 노드는 이미 자리가 있으면 그대로 두고, 숨어 있던 노드면 그때만 빈자리(없으면 아래)에 얹는다. 맨 위에 그려지므로 겹쳐도 읽힌다.
-    if (state.hovered && !plan.has(state.hovered)) { const node = byId.get(state.hovered); if (node) tryPlace(node, true); }
-    return plan;
+    if (state.hovered) { const node = byId.get(state.hovered); if (node) order.push({ node, mustPlace: true }); }
+    return placeLabels(order, { positions, radius, u, obstacles, inside });
   };
   const drawLabels = () => {
     labelLayer.replaceChildren();
@@ -290,34 +223,11 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
     // 영역 이름은 재생성하지 않아 필터 전환 중에도 자리를 지키며 농도만 바뀐다.
     regionLabelLayer.style.fontSize = `${(15 * u).toFixed(2)}px`;
     regionLabelLayer.style.strokeWidth = `${(3.5 * u).toFixed(2)}px`;
-    if (!labelAll) {
-      for (const [id, placement] of planLabels(u)) {
-        const node = byId.get(id), p = positions.get(id);
-        const lines = wrapLabel(cleanTitle(node.displayTitle ?? node.title));
-        const g = labelGeometry(node, p, lines, placement, u);
-        const topicDim = outOfFilter(id);
-        const text = el('text', { class: `label${node.isEntry ? ' is-entry' : ''}${id === state.selected ? ' is-selected' : ''}${id === state.hovered ? ' is-hovered' : ''}${topicDim ? ' is-topic-dim' : ''}`, 'data-for': id, x: g.x.toFixed(1), y: g.y.toFixed(1), 'text-anchor': g.anchor });
-        lines.forEach((line, index) => { const tspan = el('tspan', { x: g.x.toFixed(1), dy: index === 0 ? 0 : (18 * u).toFixed(1) }); tspan.textContent = line; text.append(tspan); });
-        labelLayer.append(text);
-      }
-    }
-    const ids = labelAll ? nodes.map((node) => node.id) : [];
-    for (const id of ids) {
-      const node = byId.get(id), p = positions.get(id);
-      if (!node || !p) continue;
-      const r = radius(node), anchor = anchorFor(p.x);
-      const x = anchor === 'start' ? p.x - r : anchor === 'end' ? p.x + r : p.x;
-      const lines = labelLines?.get(id) ?? wrapLabel(cleanTitle(node.displayTitle ?? node.title));
-      const multiLine = lines.length > 1 || Boolean(labelLines?.has(id));
-      const lineHeight = 18 * u;
-      const labelX = multiLine ? (anchor === 'start' ? p.x + r + 8 * u : anchor === 'end' ? p.x - r - 8 * u : p.x) : x;
-      const labelY = multiLine
-        ? (anchor === 'middle' ? p.y + r + 18 * u : p.y - ((lines.length - 1) * lineHeight) / 2 + 5 * u)
-        : p.y + r + 18 * u;
+    for (const [id, { lines, g }] of planLabels(u)) {
+      const node = byId.get(id);
       const topicDim = outOfFilter(id);
-      const text = el('text', { class: `label${node.isEntry ? ' is-entry' : ''}${id === state.selected ? ' is-selected' : ''}${id === state.hovered ? ' is-hovered' : ''}${topicDim ? ' is-topic-dim' : ''}`, 'data-for': id, x: labelX.toFixed(1), y: labelY.toFixed(1), 'text-anchor': anchor });
-      if (multiLine) lines.forEach((line, index) => { const tspan = el('tspan', { x: labelX.toFixed(1), dy: index === 0 ? 0 : lineHeight.toFixed(1) }); tspan.textContent = line; text.append(tspan); });
-      else text.textContent = lines[0];
+      const text = el('text', { class: `label${node.isEntry ? ' is-entry' : ''}${id === state.selected ? ' is-selected' : ''}${id === state.hovered ? ' is-hovered' : ''}${topicDim ? ' is-topic-dim' : ''}`, 'data-for': id, x: g.x.toFixed(1), y: g.y.toFixed(1), 'text-anchor': g.anchor });
+      lines.forEach((line, index) => { const tspan = el('tspan', { x: g.x.toFixed(1), dy: index === 0 ? 0 : (18 * u).toFixed(1) }); tspan.textContent = line; text.append(tspan); });
       labelLayer.append(text);
     }
     // 무관한 허브는 위치를 알려주는 제목만 남기고 노드와 같은 농도로 낮춘다.
@@ -368,29 +278,18 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
     if (event.key === ' ') { event.preventDefault(); onSelect(g.dataset.id); }
   });
   const hoverChanged = () => { if (!state.selected) { drawEdges(); refreshNodeStates(); } drawLabels(); };
-  listen('pointerover', (event) => { const g = event.target.closest('.node'); const id = g ? g.dataset.id : null; if (id !== state.hovered) { state.hovered = id; hoverChanged(); onHover(id); } });
-  listen('pointerleave', () => { if (state.hovered) { state.hovered = null; hoverChanged(); onHover(null); } });
+  listen('pointerover', (event) => { const g = event.target.closest('.node'); const id = g ? g.dataset.id : null; if (id !== state.hovered) { state.hovered = id; hoverChanged(); } });
+  listen('pointerleave', () => { if (state.hovered) { state.hovered = null; hoverChanged(); } });
   if (mode === 'map') listen('wheel', (event) => { event.preventDefault(); api.zoom(event.deltaY < 0 ? 1.12 : 1 / 1.12, point(event)); }, { passive: false });
   listen('focusin', (event) => { const g = event.target.closest('.node'); if (g) { state.hovered = g.dataset.id; hoverChanged(); } });
   listen('focusout', () => { state.hovered = null; hoverChanged(); });
 
   const api = {
     select(id) { state.selected = id && byId.has(id) ? id : null; render(); },
-    hover(id) { state.hovered = id; hoverChanged(); },
     setFilter({ topics = state.topics, hubsOnly = state.hubsOnly } = {}) { state.topics = topics; state.hubsOnly = hubsOnly; refreshRegionStates(); drawEdges(); refreshNodeStates(); drawLabels(); },
-    setTopics(set) { api.setFilter({ topics: set }); },
-    has: (id) => byId.has(id),
     view: () => ({ ...state.transform }),
     moveTo(target) { animateTo(target); },
-    fit(animate = false) { const target = fitBounds ? { ...fitBounds } : fitTransform(positions, size()); if (animate) animateTo(target); else { stopAnimation(); state.transform = target; applyTransform(); } },
-    // 노드를 무대 가운데로 옮기고, 맞춤 배율의 zoom배까지 키운다(이미 더 크면 유지).
-    focusOn(id, { zoom = 1.35 } = {}) {
-      const p = positions.get(id); if (!p) return;
-      const { width, height } = size();
-      const fitScale = fitBounds ? fitBounds.scale : fitTransform(positions, size()).scale;
-      const scale = Math.min(MAX_SCALE, Math.max(state.transform.scale, fitScale * zoom));
-      animateTo({ scale, x: width / 2 - p.x * scale, y: height / 2 - p.y * scale });
-    },
+    fit(animate = false) { const target = fitTransform(positions, size()); if (animate) animateTo(target); else { stopAnimation(); state.transform = target; applyTransform(); } },
     zoom(factor, center) {
       const { width, height } = size();
       const c = center ?? { x: width / 2, y: height / 2 };
@@ -400,13 +299,7 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', labelA
       state.transform = { scale, x: c.x - (c.x - t.x) * ratio, y: c.y - (c.y - t.y) * ratio };
       applyTransform();
     },
-    selected: () => state.selected,
-    destroy() {
-      stopAnimation();
-      events.abort();
-      for (const id of gesture.ids()) { if (svg.hasPointerCapture?.(id)) svg.releasePointerCapture(id); gesture.end(id); }
-      svg.replaceChildren(); svg.classList.remove('graph', mode, 'is-panning');
-    }
+    selected: () => state.selected
   };
   drawRegions(); drawNodes(); render(); api.fit();
   return api;

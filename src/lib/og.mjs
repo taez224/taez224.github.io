@@ -4,7 +4,7 @@ import path from 'node:path';
 import { Resvg } from '@resvg/resvg-js';
 import imageService from 'astro/assets/services/sharp';
 import { kindLabel, formatDate, cleanTitle } from './format.mjs';
-import { estimateTextWidth } from '../graph/engine.mjs';
+import { estimateTextWidth } from '../graph/label.mjs';
 import { localGraphLayout } from '../components/local-graph-layout.mjs';
 import { layoutGraph, nodeRadius } from '../graph/layout.mjs';
 import { topicColor } from './format.mjs';
@@ -12,7 +12,6 @@ import { ensureOgFonts } from './og-fonts.mjs';
 import { projectPaths } from './get-garden.mjs';
 import { pngDimensions } from './png.mjs';
 import { imageMimeType } from './image-types.mjs';
-export { pngDimensions } from './png.mjs';
 
 const PAPER = '#f7f7f2', INK = '#252e29', MUTED = '#626d64', FAINT = '#747c73', ACCENT = '#252e29', LINE = '#9aab9d';
 const esc = (value) => String(value).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -190,6 +189,12 @@ ${lines.map((line, index) => `<text x="72" y="${firstBaseline + index * lineHeig
 </svg>`;
 }
 
+// 카드 오른쪽 아래의 주소 라벨. 호스트에 basePath를 붙인다.
+export function siteLabelFor(config, site) {
+  const base = String(config.basePath ?? '').replace(/\/$/, '');
+  return `${new URL(site ?? 'https://taez224.github.io').host}${base}`;
+}
+
 export async function renderOgPng(garden, notePath, { siteLabel }) {
   const byPath = new Map(garden.notes.map((n) => [n.path, n]));
   const note = byPath.get(notePath);
@@ -202,7 +207,7 @@ export async function renderOgPng(garden, notePath, { siteLabel }) {
 
 // 사이트 카드: 홈·목록·지도처럼 노트가 아닌 페이지에 쓴다. 오른쪽에 전체 노트 지도를 얹는다.
 // 워드마크 'TaeZ'가 왼쪽 위에 있으니 제목에서는 이름을 빼고 'Thinking Garden'만 크게 둔다. 소개문은 넣지 않는다.
-export function siteSvg({ garden, title, siteLabel }) {
+function siteSvg({ garden, title, siteLabel }) {
   const { size, lines } = fitTitle(title, { maxWidth: 600, maxLines: 2, sizes: [84, 76, 68, 60, 52] });
   const lineHeight = Math.round(size * 1.2);
   const box = { width: 440, height: 440 };

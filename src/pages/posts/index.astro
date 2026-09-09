@@ -5,14 +5,14 @@ import { formatDate, firstSentence } from '../../lib/format.mjs';
 const { blog } = await getGarden();
 // 단독 글과 연재를 한 장부에 넣고 연도로 묶는다. 연재는 링 표시가 붙은 한 행이고 마지막 편이 나온 연도에 들어간다.
 const standalone = blog.publications.flatMap((group) => group.posts).map((post) => ({ kind: 'post', date: post.published, post }));
-const finished = (series) => Boolean(series.ended && series.ended !== 'null');
+const finished = (series) => Boolean(series.ended);
 const seriesRows = blog.series.map((series) => ({ kind: 'series', date: series.lastPublished || series.posts.at(-1)?.published || series.started, series }));
 const rows = [...standalone, ...seriesRows].filter((row) => row.date).sort((a, b) => b.date.localeCompare(a.date));
 // 연도 옆 편수는 그해에 발행된 글 수(연재의 각 편 포함)라 상단 총계와 기준이 같다. 행 수가 아니다.
 const publishedIn = (year) => standalone.filter((row) => row.date.startsWith(year)).length + blog.series.flatMap((series) => series.posts).filter((post) => (post.published || '').startsWith(year)).length;
 const years = [...new Set(rows.map((row) => row.date.slice(0, 4)))].map((year) => ({ year, rows: rows.filter((row) => row.date.startsWith(year)), count: publishedIn(year) }));
 ---
-<Shell title="글" description="TaeZ가 발행한 글과 연재." path="/posts/" active="posts" feed={{ title: 'TaeZ · 발행한 글', path: '/feeds/posts.xml' }}>
+<Shell title="글" description="TaeZ가 발행한 글과 연재." path="/posts/" active="posts">
   <div class="wrap posts-page">
     <div class="page-head"><h1 class="display">글</h1><span class="meta">{blog.stats.posts}편 · 연재 {blog.stats.series}개</span></div>
     {years.map(({ year, rows, count }) => <section class="ledger-group is-year" aria-label={`${year}년`}>
@@ -38,6 +38,4 @@ const years = [...new Set(rows.map((row) => row.date.slice(0, 4)))].map((year) =
 </Shell>
 <style>
   .posts-page { padding: 36px 0 96px; }
-  .page-head { display: flex; align-items: baseline; gap: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
-  .page-head h1 { margin: 0; font-size: 28px; line-height: 1.4; }
 </style>

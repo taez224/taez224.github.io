@@ -3,7 +3,7 @@ const cards = [...document.querySelectorAll('article[data-status]')];
 
 function apply(status) {
   for (const card of cards) card.hidden = !(status === 'all' || card.dataset.status === status);
-  for (const tier of document.querySelectorAll('.tier')) {
+  for (const tier of document.querySelectorAll('[data-tier]')) {
     const count = [...tier.querySelectorAll('article')].filter((card) => !card.hidden).length;
     tier.hidden = count === 0;
     const tierCounter = tier.querySelector('[data-tier-count]');

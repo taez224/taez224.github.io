@@ -1,3 +1,5 @@
+import { KINDS } from './kinds.mjs';
+import { inlineJson } from './format.mjs';
 // 검색 엔진과 답변 엔진이 읽는 구조화 데이터. 페이지가 이미 가진 제목·요약·날짜·URL만 쓰고 새 정보를 만들지 않는다.
 const AUTHOR_NAME = 'TaeZ';
 const ARTICLE_TYPES = { blog: 'BlogPosting', development: 'TechArticle' };
@@ -25,17 +27,18 @@ export function structuredData({ ogType = 'website', kind = null, title, descrip
 
 // <script> 안에 넣는 JSON. 문자열 속 "</script>"가 태그를 닫지 못하게 "<"만 이스케이프한다.
 export function jsonLdScript(data) {
-  return JSON.stringify(data).replace(/</g, '\\u003c');
+  return inlineJson(data);
 }
 
 // llms.txt: 사이트 요약과 공개 노트 목록을 마크다운 한 장으로. 사이트맵의 사람이 읽는 판이다.
-const KIND_LABELS = [['blog', '글'], ['development', '개발 노트'], ['slipbox', '노트']];
+const LLMS_ORDER = ['blog', 'development', 'slipbox'];
 const oneLine = (value) => String(value ?? '').replace(/\s+/g, ' ').trim();
 
 export function llmsText(notes, { site, basePath = '', title, description }) {
   const home = new URL(`${String(basePath).replace(/\/$/, '')}/`, site).href;
   const lines = [`# ${oneLine(title)}`, '', `> ${oneLine(description)}`, '', `사이트: ${home}`];
-  for (const [kind, label] of KIND_LABELS) {
+  for (const kind of LLMS_ORDER) {
+    const label = KINDS[kind].label;
     const items = notes
       .filter((note) => note.kind === kind && note.url)
       .sort((a, b) => String(b.date ?? '').localeCompare(String(a.date ?? '')) || oneLine(a.title).localeCompare(oneLine(b.title), 'ko'));
