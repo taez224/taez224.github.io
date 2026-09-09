@@ -2,9 +2,10 @@
 import Shell from '../../layouts/Shell.astro';
 import MapPanel from '../../components/MapPanel.astro';
 import { getGarden } from '../../lib/get-garden.mjs';
-import { withBase, GRAPH_COLORS } from '../../lib/format.mjs';
+import { withBase, GRAPH_COLORS, inlineJson } from '../../lib/format.mjs';
+import { inlineGraph, inlinePanelNotes } from '../../lib/graph-data.mjs';
 import '../../styles/graph.css';
-const { nodes, stats, topicFold } = await getGarden();
+const { nodes, edges, notes, noteEdges, stats, topicFold } = await getGarden();
 const startpoints = nodes.filter((n) => n.isEntry);
 const hubs = nodes.filter((n) => n.type === 'hub' && !n.isEntry).sort((a, b) => (b.degree ?? 0) - (a.degree ?? 0));
 // 범례는 지도에 실제 있는 주제만, 노드 많은 순. 기타는 맨 끝에 두고 접힌 주제 이름을 옆에 옅게 적는다(색은 같지만 태그는 남는다).
@@ -15,8 +16,10 @@ const folded = Object.keys(topicFold);
 const foldedLabel = folded.length > 2 ? `${folded.slice(0, 2).join(', ')} 외 ${folded.length - 2}` : folded.join(', ');
 const topics = [...topicCounts].map(([name, count]) => ({ name, color: GRAPH_COLORS[name] ?? GRAPH_COLORS.기타, count })).sort((a, b) => Number(a.name === '기타') - Number(b.name === '기타') || b.count - a.count);
 ---
-<Shell title="생각 지도" description="노트를 고르고 연결된 생각을 따라가는 지도." path="/map/" active="map" feed={{ title: 'TaeZ · 생각 노트', path: '/feeds/notes.xml' }}>
-  <div class="wrap map-page" data-site={withBase('/data/site.json')}>
+<Shell title="생각 지도" description="노트를 고르고 연결된 생각을 따라가는 지도." path="/map/" active="map">
+  {/* 그래프와 패널이 쓰는 데이터를 전부 페이지에 인라인한다. 스크립트가 실행되는 즉시(첫 화면 전에) 그래프와 선택된 노트 패널까지 한 번에 그린다. */}
+  <div class="wrap map-page">
+    <script type="application/json" data-map-data is:inline set:html={inlineJson({ ...inlineGraph(nodes, edges, { extra: ['path', 'mapKey'] }), ...inlinePanelNotes(notes, noteEdges, topicFold) })}></script>
     <div class="page-head"><h1 class="display">생각 지도</h1><span class="meta" data-map-count>노트 {stats.nodes} · 연결 {stats.edges}</span></div>
     <div class="map-layout">
       <div class="map-stage">
@@ -44,20 +47,21 @@ const topics = [...topicCounts].map(([name, count]) => ({ name, color: GRAPH_COL
 </Shell>
 <style is:global>
   .map-page { padding: 24px 0 48px; }
-  .page-head { display: flex; align-items: baseline; gap: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
-  .page-head h1 { margin: 0; font-size: 28px; }
   .map-layout { display: grid; grid-template-columns: minmax(0, 1fr) 310px; gap: 40px; margin-top: 16px; align-items: stretch; }
   .graph-box { height: calc(100dvh - 270px); min-height: 420px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
   .map-panel { max-height: calc(100dvh - 270px + 88px); }
   /* 범례는 위 한 줄, 확대 컨트롤은 지도 앱처럼 무대 오른쪽 아래에 띄운다. */
   .map-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-  .map-toolbar .legend { flex: 1 1 auto; gap: 4px 12px; margin-top: 0; min-width: 0; }
-  .map-toolbar .legend-item { gap: 5px; padding: 4px 4px; white-space: nowrap; }
+  .legend { display: flex; flex: 1 1 auto; flex-wrap: wrap; align-items: center; gap: 4px 12px; min-width: 0; }
+  .legend-item { display: inline-flex; align-items: center; gap: 5px; padding: 4px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: var(--t-meta); white-space: nowrap; }
+  .legend button.legend-item:hover, .legend button.legend-item[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+  .legend-sep { width: 1px; height: 12px; background: var(--line); }
   .legend-fold { margin-left: 2px; color: var(--faint); font-weight: 400; }
   .graph-box { position: relative; }
   .map-stage { min-width: 0; } /* 그리드 아이템이 범례의 min-content 폭으로 늘어나 페이지가 넘치지 않게 */
   .graph-controls { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper-strong); }
-  .graph-controls button { border: 0; }
+  .graph-controls button { min-width: 36px; min-height: 36px; padding: 3px 9px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: var(--t-meta); }
+  .graph-controls button:hover { color: var(--accent); }
   @media (max-width: 999.98px) {
     .map-layout { grid-template-columns: 1fr; gap: 24px; }
     .graph-box { height: 60vh; min-height: 360px; }

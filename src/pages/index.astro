@@ -5,10 +5,12 @@ import { getEntry } from 'astro:content';
 import '../styles/graph.css';
 import About from '../components/About.astro';
 import { getGarden } from '../lib/get-garden.mjs';
-import { formatDate, withBase, firstSentence } from '../lib/format.mjs';
+import { formatDate, withBase, firstSentence, inlineJson } from '../lib/format.mjs';
+import { inlineGraph } from '../lib/graph-data.mjs';
 import { parentLink } from '../lib/note-nav.mjs';
 import { latestSeries } from '../lib/blog.mjs';
 import { kindPrefix } from '../lib/slug.mjs';
+import { KINDS } from '../lib/kinds.mjs';
 import { layoutGraph, ATLAS_LAYOUT } from '../graph/layout.mjs';
 import { renderSnapshotSvg } from '../graph/snapshot.mjs';
 const garden = await getGarden();
@@ -20,7 +22,7 @@ const thumbnail = featuredEntry?.data.thumbnail;
 const softThumbnail = featured?.thumbnailStyle === 'soft';
 // 최근 기록은 종류마다 최신 한 편. 한 종류를 하루에 몰아 올려도 다른 종류가 목록에서 밀리지 않는다. 대표 글은 후보에서 뺀다.
 // 연재의 각 편은 여기 넣지 않는다. 새 편이 나올 때마다 아래 최근 연재와 같은 연재를 두 번 가리키게 된다.
-const HOME_KINDS = [['slipbox', '노트'], ['development', '개발 노트'], ['blog', '글']];
+const HOME_KINDS = ['slipbox', 'development', 'blog'].map((kind) => [kind, KINDS[kind].label]);
 const seriesPaths = new Set(garden.blog.series.flatMap((s) => s.posts.map((post) => post.path)));
 const dated = garden.notes.filter((n) => n.date && n.type !== 'series' && !seriesPaths.has(n.path) && n.path !== featured?.path).sort((a, b) => b.date.localeCompare(a.date) || a.title.localeCompare(b.title, 'ko'));
 const recent = HOME_KINDS.map(([kind, label]) => { const note = dated.find((n) => n.kind === kind); return note && { note, label, listUrl: withBase(parentLink(note).path) }; }).filter(Boolean).sort((a, b) => b.note.date.localeCompare(a.note.date));
@@ -28,12 +30,17 @@ const recent = HOME_KINDS.map(([kind, label]) => { const note = dated.find((n) =
 const series = latestSeries(garden.blog.series);
 const seriesUrl = series && (series.noteUrl || series.posts[0]?.url);
 // 모바일 홈의 정적 지도. <img>가 아니라 인라인이라 영역 이름에 페이지 서체가 적용된다. 데스크톱은 hero.js가 살아 있는 지도로 바꾼다.
-const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, layoutGraph(garden.nodes, garden.edges, { width: 1000, height: 640, ...ATLAS_LAYOUT }), { width: 1000, height: 640, font: 26, regionFont: 30, strokeWidth: 2, label: `생각 지도. 노드 ${garden.stats.nodes}개와 연결 ${garden.stats.edges}개.` });
+const positions = layoutGraph(garden.nodes, garden.edges, { width: 1000, height: 640, ...ATLAS_LAYOUT });
+const snapshotLabel = `생각 지도. 노드 ${garden.stats.nodes}개와 연결 ${garden.stats.edges}개.`;
+// 데스크톱(1000px 초과)은 hero.js가 살아 있는 지도로 바꾸기 전까지 같은 모습의 정적 그림을 보여 교체가 눈에 띄지 않게 한다.
+const snapshotDesktop = renderSnapshotSvg(garden.nodes, garden.edges, positions, { width: 1000, height: 640, preset: 'desktop', pixelHeight: 500, label: snapshotLabel });
+const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { width: 1000, height: 640, font: 26, regionFont: 30, strokeWidth: 2, label: snapshotLabel });
 ---
 <Shell title="TaeZ" description={garden.home.about} path="/">
   <section class="hero" aria-label="소개와 생각 지도">
     <div class="hero-about"><About about={garden.home.about} contacts={garden.home.contacts} entryUrl={entry?.url ?? withBase('/map/')} aboutUrl={withBase('/about/')} /></div>
-    <div class="hero-graph" data-graph data-site={withBase('/data/site.json')}><a class="hero-snapshot" href={withBase('/map/')} aria-label="생각 지도 열기"><Fragment set:html={snapshot} /></a></div>
+    {/* 살아 있는 지도가 첫 화면 전에 올라오도록 데이터와 좌표를 페이지에 둔다. hero.js는 fetch 없이 이걸 읽는다. */}
+    <div class="hero-graph" data-graph><script type="application/json" data-hero-data is:inline set:html={inlineJson(inlineGraph(garden.nodes, garden.edges, { positions }))}></script><a class="hero-snapshot" href={withBase('/map/')} aria-label="생각 지도 열기"><Fragment set:html={snapshotDesktop} /><Fragment set:html={snapshot} /></a></div>
     <div class="hero-fade" aria-hidden="true"></div>
   </section>
   {/* 대표 글 썸네일은 데스크톱 첫 화면 안에 있다. lazy로 두면 LCP 후보가 늦게 시작한다. */}
@@ -44,7 +51,7 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, layoutGraph(garde
       {featured.summaryIsExplicit && <p>{firstSentence(featured.summary)}</p>}
     </div>
     {thumbnail && <a class:list={['featured-image', { 'is-soft': softThumbnail }]} href={featured.url} aria-label={featured.title}>
-      <Image src={thumbnail} alt="" width={560} widths={[280, 560, 840]} sizes={`(max-width: 460px) calc(100vw - 40px), (max-width: 720px) 420px, ${softThumbnail ? 312 : 280}px`} format="webp" loading="eager" fetchpriority="high" />
+      <Image src={thumbnail} alt="" width={560} widths={[280, 560, 840]} sizes={`(max-width: 460px) calc(100vw - 40px), (max-width: 720px) 420px, ${softThumbnail ? 312 : 280}px`} format="webp" loading="eager" fetchpriority="high" decoding="sync" />
     </a>}
   </section>}
   <section class="wrap recent" aria-labelledby="recent-heading">
@@ -62,10 +69,10 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, layoutGraph(garde
   /* 그래프 상자는 뷰포트 안에 다 들어온다. 1600px 미만에서는 오른쪽 끝까지, 그 이상은 940px. 맞춤 배율이 상자에 맞춘다. */
   .hero-graph { position: absolute; top: 0; left: calc(50% - 160px); width: min(940px, 50% + 160px); height: 100%; }
   .hero-graph :global(svg), .hero-snapshot { display: block; width: 100%; height: 100%; }
+  .hero-graph .hero-snapshot :global(.is-mobile) { display: none; }
   /* 오른쪽·위·아래 가장자리를 옅게. 색면과 간선이 헤더 선·대표 글 선에 닿거나 화면 끝에서 뚝 잘리지 않게 한다. 왼쪽은 종이색 그라데이션이 맡는다. */
   .hero-graph { -webkit-mask-image: linear-gradient(90deg, #000 0, #000 84%, transparent 100%), linear-gradient(180deg, transparent 0, #000 10%, #000 90%, transparent 100%); mask-image: linear-gradient(90deg, #000 0, #000 84%, transparent 100%), linear-gradient(180deg, transparent 0, #000 10%, #000 90%, transparent 100%); -webkit-mask-composite: source-in; mask-composite: intersect; }
   .hero-graph .graph { cursor: pointer; }
-  .hero .graph .node.is-dim { opacity: 1; }
   /* 종이색은 소개 블록(오른쪽 끝 50% - 160px)보다 조금 더 가서 끝난다. 퍼센트로 두면 1280px에서 소개문 옆에 반투명 점이 걸친다. */
   .hero-fade { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, var(--paper) 0, var(--paper) calc(50% - 140px), rgba(247,247,242,0) calc(50% + 140px)); }
   .hero-about { position: absolute; z-index: 1; left: calc(50% - 590px); top: 52px; width: 430px; }
@@ -105,6 +112,8 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, layoutGraph(garde
     .hero { height: auto; overflow: visible; }
     .hero-graph { position: static; width: 100%; height: 280px; -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 8%, #000 92%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0, #000 8%, #000 92%, transparent 100%); }
     .hero-fade { display: none; }
+    .hero-graph .hero-snapshot :global(.is-desktop) { display: none; }
+    .hero-graph .hero-snapshot :global(.is-mobile) { display: block; }
     .hero-about { position: relative; top: auto; left: auto; width: calc(100% - 48px); max-width: 640px; margin: 36px auto 12px; }
   }
   @media (max-width: 720px) {

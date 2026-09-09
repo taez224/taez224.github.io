@@ -2,6 +2,7 @@ import path from 'node:path';
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 import vaultAssets from './src/integrations/vault-assets.mjs';
+import modulePreload from './src/integrations/module-preload.mjs';
 import config from './config.json' with { type: 'json' };
 
 // 썸네일 같은 vault 자산은 프로젝트 루트 밖에 있다. dev 서버의 파일 접근 허용 목록에 vault를 넣는다.
@@ -13,6 +14,6 @@ export default defineConfig({
   output: 'static',
   trailingSlash: 'always',
   build: { format: 'directory' },
-  integrations: [sitemap(), vaultAssets()],
+  integrations: [sitemap(), vaultAssets(), modulePreload({ renderBlocking: ['/map/'] })],
   vite: { server: { fs: { allow: ['.', vaultRoot] } } }
 });

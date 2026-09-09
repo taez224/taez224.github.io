@@ -2,15 +2,15 @@ import { createGraph, isFilteredOut } from '../graph/engine.mjs';
 import { layoutGraph, ATLAS_LAYOUT } from '../graph/layout.mjs';
 import { panelModel } from '../lib/panel.mjs';
 import { setupScrollFades } from './scroll-fades.js';
+import { escapeHtml as escape } from '../lib/format.mjs';
 
-const page = document.querySelector('[data-site]');
+const page = document.querySelector('.map-page');
 const svg = document.querySelector('svg[data-map]');
 const panel = document.querySelector('[data-panel]');
 const body = document.querySelector('[data-panel-body]');
 const emptyPanel = body.innerHTML;
 const countEl = document.querySelector('[data-map-count]');
 const totalCount = countEl?.textContent ?? '';
-const escape = (v) => String(v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const OUT = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="4" cy="7" r="2"></circle><path d="M6 7h6m-2.5-2.5L12 7l-2.5 2.5"></path></svg>';
 const IN = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="7" r="2"></circle><path d="M8 7H2m2.5-2.5L2 7l2.5 2.5"></path></svg>';
 
@@ -31,14 +31,15 @@ function renderPanel(model) {
 }
 
 try {
-const response = await fetch(page.dataset.site);
-if (!response.ok) throw new Error(`Map data: ${response.status}`);
-const site = await response.json();
-const notesByPath = new Map(site.notes.map((n) => [n.path, n]));
-const nodeByPath = new Map(site.nodes.map((n) => [n.path, n]));
+// 노드·간선과 패널용 노트 정보가 페이지에 인라인돼 있다(map/index.astro). fetch 없이 배치하고 그래프와 패널을 한 번에 그린다.
+const data = JSON.parse(page.querySelector('[data-map-data]').textContent);
+const { nodes, edges, notes, topicFold } = data;
+const notesByPath = new Map(notes.map((n) => [n.path, n]));
+const noteEdges = data.noteEdges.map(([source, target]) => ({ source: notes[source].path, target: notes[target].path }));
+const nodeByPath = new Map(nodes.map((n) => [n.path, n]));
 const decorate = (i) => { const node = nodeByPath.get(i.path); return { ...i, nodeId: node?.id, isHub: node?.type === 'hub' }; };
 const withNodeIds = (model) => ({ ...model, outgoing: model.outgoing.map(decorate), incoming: model.incoming.map(decorate) });
-const byMapKey = new Map(site.nodes.map((n) => [n.mapKey, n]));
+const byMapKey = new Map(nodes.map((n) => [n.mapKey, n]));
 // SVG는 마운트 전까지 기본 크기(300×150)라서 CSS로 크기가 정해진 상자를 잰다.
 const rect = svg.parentElement.getBoundingClientRect();
 // 무대 픽셀 크기로 배치한다. 맞춤 배율이 1이 되어 제목이 13px 그대로 보인다(pad는 fitTransform의 여백과 같은 40).
@@ -68,15 +69,15 @@ function syncSheet() {
   }
 }
 
-const positions = layoutGraph(site.nodes, site.edges, { ...stageSize, pad: 40, ...ATLAS_LAYOUT });
+const positions = layoutGraph(nodes, edges, { ...stageSize, pad: 40, ...ATLAS_LAYOUT });
 graph = createGraph(svg, {
-  nodes: site.nodes,
-  edges: site.edges,
+  nodes,
+  edges,
   positions,
   mode: 'map',
   nodeScale: 0.7,
   onSelect: (id) => select(id, true),
-  onOpen: (id) => { const node = site.nodes.find((n) => n.id === id); if (node) window.location.href = node.url; }
+  onOpen: (id) => { const node = nodes.find((n) => n.id === id); if (node) window.location.href = node.url; }
 });
 
 // 모바일 시트가 고른 노드를 덮을 때만 배율은 그대로 두고 노드가 시트 위 띠 안에 오도록 세로로 민다.
@@ -96,9 +97,9 @@ function keepNodeAboveSheet(id) {
 function select(id, pushUrl, { open = true } = {}) {
   // 선택해도 시점은 그대로 둔다. 이웃 제목은 자리가 나는 만큼 그 자리에서 보인다.
   graph.select(id);
-  const node = site.nodes.find((n) => n.id === id);
+  const node = nodes.find((n) => n.id === id);
   // 공개 노트 레코드에는 type이 없어 허브 여부는 그래프 노드에서 가져온다.
-  if (node) { renderPanel({ ...withNodeIds(panelModel(notesByPath.get(node.path) ?? node, notesByPath, site.noteEdges, site.topicFold ?? {})), isHub: node.type === 'hub' }); if (open) panel.dataset.open = ''; }
+  if (node) { renderPanel({ ...withNodeIds(panelModel(notesByPath.get(node.path) ?? node, notesByPath, noteEdges, topicFold)), isHub: node.type === 'hub' }); if (open) panel.dataset.open = ''; }
   else { cleanupScrollFades(); body.innerHTML = emptyPanel; delete panel.dataset.open; }
   if (pushUrl) {
     const params = new URLSearchParams();
@@ -122,8 +123,8 @@ function updateCount() {
   const filter = currentFilter();
   if (!filter.topics && !filter.hubsOnly) { countEl.textContent = totalCount; return; }
   const selected = graph.selected();
-  const shown = new Set(site.nodes.filter((n) => n.id === selected || !isFilteredOut(n, filter)).map((n) => n.id));
-  const links = site.edges.filter((e) => shown.has(e.source) && shown.has(e.target)).length;
+  const shown = new Set(nodes.filter((n) => n.id === selected || !isFilteredOut(n, filter)).map((n) => n.id));
+  const links = edges.filter((e) => shown.has(e.source) && shown.has(e.target)).length;
   countEl.textContent = `노트 ${shown.size} · 연결 ${links}`;
 }
 function applyFilter() { graph.setFilter(currentFilter()); updateCount(); }

@@ -8,10 +8,8 @@
 .graph.hero .edge { stroke-opacity: .28; }
 .graph .edge.is-out { stroke: var(--accent); stroke-width: 1.4; stroke-opacity: .75; }
 .graph .edge.is-in { stroke: var(--accent); stroke-width: 1.2; stroke-opacity: .65; stroke-dasharray: 5 4; }
-.graph .edge.is-dim { stroke-opacity: .08; }
-.graph .edge.is-faint { stroke-opacity: .08; }
+.graph .edge.is-dim, .graph .edge.is-faint, .graph .edge.is-topic-dim { stroke-opacity: .08; }
 .graph .node.is-faint { opacity: .45; }
-.graph .edge.is-topic-dim { stroke-opacity: .08; }
 /* 주제 영역: 같은 주제 노드의 껍질을 옅은 색면으로. 이름은 자간 넓힌 명조, 화면 크기 고정(엔진이 인라인 지정). */
 .graph [data-regions] { opacity: .06; pointer-events: none; transition: opacity .15s ease; }
 .graph.hero [data-regions] { opacity: .07; }
@@ -38,13 +36,3 @@
 .graph .label.is-selected, .graph .label.is-hovered { fill: var(--accent); font-weight: 600; }
 .graph .label.is-topic-dim { opacity: .22; }
 .graph .label.is-faint:not(.is-topic-dim) { opacity: .45; }
-
-.legend { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin-top: 12px; }
-.legend-item { display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: var(--t-meta); }
-.legend button.legend-item:hover, .legend button.legend-item[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
-.legend-sep { width: 1px; height: 12px; background: var(--line); }
-.graph-controls { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
-.graph-controls button { min-width: 36px; min-height: 36px; padding: 3px 9px; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--muted); font-size: var(--t-meta); }
-.graph-controls button:hover { border-color: var(--accent); color: var(--accent); }
-.graph-controls button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
-.graph-controls button:disabled { opacity: .45; cursor: default; }
