@@ -1,0 +1,155 @@
+---
+import { render } from 'astro:content';
+import Shell from '../layouts/Shell.astro';
+import NoteSidebar from './NoteSidebar.astro';
+import ArticleBody from './ArticleBody.astro';
+import { getGarden } from '../lib/get-garden.mjs';
+import { formatDate, displayTag, withBase, cleanTitle, topicColor } from '../lib/format.mjs';
+import { parentLink, seriesNeighbors } from '../lib/note-nav.mjs';
+import { kindPrefix } from '../lib/slug.mjs';
+const { entry } = Astro.props;
+const note = entry.data;
+const mobileToc = note.headings.filter((heading) => heading.level === 2 || heading.level === 3);
+const title = cleanTitle(note.title); // 허브 노트의 🗺 같은 이모지는 리더 제목·문서 제목에서 뺀다
+const { Content } = await render(entry);
+const garden = await getGarden();
+const byPath = new Map(garden.notes.map((n) => [n.path, n]));
+const resolve = (paths) => paths.map((p) => byPath.get(p)).filter(Boolean);
+const outgoing = resolve(note.outgoing);
+const incoming = resolve(note.incoming);
+const mapNode = garden.nodes.find((node) => node.path === note.path);
+const mapUrl = mapNode ? withBase(`/map/?node=${encodeURIComponent(mapNode.mapKey)}`) : '';
+// 주제 점 색은 지도와 같다. 노드가 적어 기타로 접힌 주제는 여기서도 기타 색(garden.topicFold).
+const topicFold = garden.topicFold ?? {};
+const topics = note.publicTags.slice(0, 2).map((tag) => { const head = tag.split('/')[0]; return { label: displayTag(tag), color: topicColor(topicFold[head] ?? head) }; });
+const parent = parentLink(note, mapNode?.mapKey);
+const parentUrl = withBase(parent.path);
+const series = note.kind === 'blog' ? seriesNeighbors(note, garden.blog.series) : null;
+const hasSeriesNav = Boolean(series && (series.prev || series.next));
+// 노트(Slipbox)는 사이드바의 "생각 지도에서 보기"가 같은 곳으로 가므로 본문 끝에 목록 링크를 두지 않는다.
+// 사이드바는 모바일에서도 보이므로 여기서 한 번 더 두면 같은 링크가 두 개가 된다.
+const endLink = note.kind === 'slipbox' ? null : parent.listLabel;
+// 다 읽은 자리에서 저자에게 닿는 길. 검색이나 SNS로 상세 페이지에 바로 들어온 사람에게는 이것이 유일한 경로다.
+const aboutUrl = withBase('/about/');
+const siteBase = String(garden.config.basePath ?? '').replace(/\/$/, '');
+const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slice(siteBase.length) : note.url;
+---
+<Shell title={title} description={note.summary} path={sitePath} kind={note.kind} published={note.date || null} ogImage={withBase(`/og/${kindPrefix(note.kind)}/${note.slug}.png`)} active={note.kind === 'blog' ? 'posts' : note.kind === 'development' ? 'dev' : 'map'} ogType="article">
+  <div class="wrap note-view" style={`--topic:${topicColor(note.topic)}`}>
+    <article class="note-article">
+      <div class="meta note-meta">
+        <a class="kicker" href={parentUrl}>{parent.label}</a>
+        {note.type === 'hub' && <><span>·</span><span><i class="hub-mark" aria-hidden="true"></i>허브</span></>}
+        {note.date && <><span>·</span><time datetime={note.date}>{formatDate(note.date)}</time></>}
+        {note.readingMinutes > 0 && <><span>·</span><span>{note.readingMinutes}분</span></>}
+        {topics.map((t) => <><span>·</span><span><i class="topic-dot" style={`background:${t.color}`} aria-hidden="true"></i>{t.label}</span></>)}
+        {note.publishedUrl && <><span>·</span><a href={note.publishedUrl} target="_blank" rel="noreferrer">{note.publication || '원문'}에 발행 ↗</a></>}
+      </div>
+      <h1 class="display note-title">{title}</h1>
+      {mobileToc.length >= 2 && <details class="mobile-toc">
+        <summary>목차</summary>
+        <nav aria-label="목차">{mobileToc.map((heading) => <a class:list={[{ 'level-3': heading.level === 3 }]} href={`#${heading.id}`}>{heading.title}</a>)}</nav>
+      </details>}
+      {series?.isHub && series.first && <nav class="series-start" aria-label="연재 시작">
+        <div><span class="meta">공개된 글 {series.total}편</span><p>{series.first.title}</p></div>
+        <a class="btn" href={series.first.url}>1편부터 읽기 <span aria-hidden="true">→</span></a>
+      </nav>}
+      <div class="body">{note.articleCards?.length
+        ? <ArticleBody html={byPath.get(note.path).bodyHtml} cards={note.articleCards} notes={garden.notes} />
+        : <Content />}</div>
+      <nav class="note-end" aria-label="이어서 읽기">
+        {hasSeriesNav && <div class:list={['series-links', { 'is-single': !series.prev || !series.next }]}>
+          {series.prev && <a class="series-link" href={series.prev.url}><span class="series-direction"><span aria-hidden="true">←</span> 이전 편</span><span class="series-title">{series.prev.title}</span></a>}
+          {series.next && <a class="series-link is-next" href={series.next.url}><span class="series-direction">{series.isHub ? '1편부터 읽기' : '다음 편'} <span aria-hidden="true">→</span></span><span class="series-title">{series.next.title}</span></a>}
+        </div>}
+        <div class="end-links">
+          {endLink && <a class="end-link" href={parentUrl}>{endLink}</a>}
+          <a class="end-link is-about" href={aboutUrl}>이 위키에 대해 <span aria-hidden="true">→</span></a>
+        </div>
+      </nav>
+    </article>
+    <NoteSidebar note={note} headings={note.headings} outgoing={outgoing} incoming={incoming} mapUrl={mapUrl} series={series} />
+  </div>
+</Shell>
+<style is:global>
+  .note-view { display: grid; grid-template-columns: minmax(0, 720px) 310px; justify-content: space-between; gap: 40px; align-items: start; padding: 56px 0 96px; }
+  .note-side { position: sticky; top: 100px; max-height: calc(100dvh - 120px); overflow-y: auto; padding-top: 82px; scrollbar-gutter: stable; }
+  .note-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .note-meta .kicker { color: var(--accent); }
+  .note-end { display: flex; flex-direction: column; gap: 22px; margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--line); }
+  .series-start { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin: -12px 0 36px; padding: 22px 24px; border-left: 3px solid var(--accent); background: var(--accent-soft); }
+  .series-start p { margin: 4px 0 0; font-size: 16px; line-height: 1.5; }
+  .series-start .btn { flex-shrink: 0; gap: 14px; }
+  /* 이전·다음 편 카드: 둘 다 얇은 선과 종이색만 쓴다. 채움이나 강조 테두리는 호버·포커스에서만 나타나 카드가 본문 톤에서 튀지 않는다. */
+  .series-links { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+  .series-links.is-single { grid-template-columns: 1fr; }
+  .series-link { display: flex; flex-direction: column; gap: 6px; padding: 14px 18px; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--ink); transition: border-color .15s ease, background-color .15s ease; }
+  .series-link:hover, .series-link:focus-visible { border-color: var(--accent); background: var(--accent-soft); text-decoration: none; outline: none; }
+  .series-link:hover .series-title, .series-link:focus-visible .series-title { color: var(--accent); }
+  .series-link.is-next { align-items: flex-end; text-align: right; }
+  .series-direction { color: var(--muted); font-size: var(--t-meta); font-weight: 500; }
+  /* 제목은 소제목이 아니라 내비게이션이므로 사이드바 목록과 같은 고딕 15px */
+  .series-title { font-size: 15px; font-weight: 600; line-height: 1.5; transition: color .15s ease; }
+  .end-links { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 24px; }
+  .end-link { align-self: flex-start; font-size: var(--t-side); }
+  .end-link.is-about { color: var(--muted); }
+  .note-title { margin: 0 0 40px; font-size: var(--t-h1); line-height: 1.3; letter-spacing: -.03em; }
+  .mobile-toc { display: none; }
+  .body { font-size: var(--t-body); line-height: 1.85; }
+  .body p { margin: 0 0 22px; }
+  /* 본문의 외부 링크는 사이트 다른 곳(발행처·출처)과 같이 ↗를 붙여 노트 링크와 구분한다. */
+  /* 링크 색이 먹색이라 본문 링크는 밑줄로 구분한다. */
+  .body a { text-decoration: underline; text-decoration-color: rgba(37,46,41,.35); text-decoration-thickness: 1px; text-underline-offset: .18em; }
+  .body a:hover { text-decoration-color: var(--ink); }
+  .body .private-note { color: var(--muted); }
+  .body .visibility-mark { position: relative; display: inline-block; width: 22px; height: 22px; margin-left: 2px; color: var(--muted); vertical-align: -.2em; cursor: help; }
+  .body .visibility-mark::before { position: absolute; left: 5px; top: 10px; width: 10px; height: 8px; border: 1px solid currentColor; border-radius: 2px; content: ""; }
+  .body .visibility-mark::after { position: absolute; left: 8px; top: 5px; width: 4px; height: 6px; border: 1px solid currentColor; border-bottom: 0; border-radius: 4px 4px 0 0; content: ""; }
+  .body .visibility-hint { position: absolute; z-index: 2; right: 0; bottom: calc(100% + 5px); width: max-content; padding: 5px 8px; border-radius: 3px; background: var(--ink); color: var(--paper); font-size: 12px; line-height: 1.5; visibility: hidden; }
+  .body .visibility-mark:hover .visibility-hint, .body .visibility-mark:focus .visibility-hint { visibility: visible; }
+  .body a[href^="http"]::after { content: "↗"; margin-left: .15em; font-size: .78em; vertical-align: .1em; }
+  .body h2, .body h3, .body h4 { font-family: var(--display); font-weight: 700; letter-spacing: -.02em; scroll-margin-top: 110px; }
+  .body h2 { margin: 44px 0 14px; font-size: 26px; line-height: 1.4; }
+  .body h3 { margin: 32px 0 10px; font-size: 21px; }
+  .body h4 { margin: 24px 0 8px; font-size: 17px; }
+  .body ul, .body ol { margin: 0 0 22px; padding-left: 22px; }
+  .body li { margin: 6px 0; }
+  .body blockquote { margin: 18px 0; padding: 4px 16px; border-left: 3px solid var(--line); color: var(--muted); }
+  .body pre { overflow-x: auto; margin: 18px 0; padding: 14px 16px; border: 1px solid var(--line); background: var(--paper-strong); font-size: 14px; line-height: 1.6; }
+  .body code { padding: 1px 4px; background: rgba(36,39,32,.08); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .88em; }
+  .body pre code { padding: 0; background: transparent; }
+  .body table { display: block; overflow-x: auto; width: 100%; margin: 18px 0; border-collapse: collapse; font-size: 14px; }
+  .body th, .body td { min-width: 100px; padding: 7px 10px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
+  .body th { background: var(--paper-strong); font-weight: 650; }
+  .body img { display: block; max-width: 100%; height: auto; margin: 18px auto; }
+  .body hr { margin: 30px 0; border: 0; border-top: 1px solid var(--line); }
+  .body mark { padding: 0 3px; background: #e7d99b; }
+  .body .mermaid { overflow-x: auto; margin: 22px 0; padding: 12px; border: 1px solid var(--line); background: var(--paper-strong); text-align: center; }
+  .body .callout { margin: 18px 0; padding: 13px 16px; border-left: 3px solid var(--accent); background: var(--accent-soft); }
+  .body .callout + .callout { margin-top: 12px; }
+  .body .callout summary, .body .callout-title { color: var(--accent); font-size: var(--t-meta); font-weight: 600; }
+  .body .callout-body { margin-top: 7px; }
+  .body .callout-body > :first-child { margin-top: 0; }
+  .body .callout-body > :last-child { margin-bottom: 0; }
+  .body .callout-warning, .body .callout-danger, .body .callout-failure { border-left-color: #a66a38; background: #f3e9db; }
+  .body .callout-bug { border-left-color: #9c6e6e; background: #f3e3e2; }
+  @media (max-width: 1000px) {
+    .note-view { grid-template-columns: minmax(0, 720px); gap: 20px; }
+    .note-side { position: static; max-height: none; overflow: visible; padding-top: 0; } /* 경계선은 로컬 그래프의 위 테두리가 맡고, 간격은 첫 블록의 위 여백이 맡는다 */
+    .note-side .rail { display: none; }
+    .mobile-toc { display: block; margin: -8px 0 28px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .mobile-toc summary { padding: 11px 0; color: var(--muted); font-size: var(--t-side); cursor: pointer; }
+    .mobile-toc nav { display: flex; flex-direction: column; gap: 4px; padding-bottom: 14px; }
+    .mobile-toc nav a { padding: 5px 0; font-size: var(--t-side); line-height: 1.5; }
+    .mobile-toc nav a.level-3 { padding-left: 16px; color: var(--muted); }
+  }
+  @media (max-width: 720px) {
+    .note-view { padding: 32px 0 64px; }
+    .note-title { font-size: 32px; margin-bottom: 28px; }
+    .note-end { margin-top: 40px; }
+    .series-links { grid-template-columns: 1fr; gap: 12px; }
+    .series-link.is-next { align-items: flex-start; text-align: left; }
+    .series-start { align-items: flex-start; flex-direction: column; gap: 16px; }
+  }
+</style>
+<script src="../scripts/mermaid.js"></script>

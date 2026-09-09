@@ -1,0 +1,22 @@
+---
+import { getImage } from 'astro:assets';
+import { getEntry } from 'astro:content';
+import { kindPrefix } from '../lib/slug.mjs';
+import { articleCardHtml, replaceArticleCards } from '../lib/article-card.mjs';
+import '../styles/article-card.css';
+
+const { html, cards, notes } = Astro.props;
+const byUrl = new Map(notes.map((note) => [note.url, note]));
+const renderedCards = await Promise.all(cards.map(async (card) => {
+  const note = byUrl.get(card.url.split('#')[0]);
+  if (!note) return null;
+  const linkedEntry = await getEntry('notes', `${kindPrefix(note.kind)}/${note.slug}`);
+  let image = null;
+  if (linkedEntry?.data.thumbnail) {
+    const optimized = await getImage({ src: linkedEntry.data.thumbnail, width: 320, widths: [160, 320, 480], sizes: '(max-width: 720px) 96px, 160px', format: 'webp' });
+    image = { src: optimized.src, srcset: optimized.srcSet.attribute, sizes: optimized.attributes.sizes, width: optimized.attributes.width, height: optimized.attributes.height };
+  }
+  return articleCardHtml({ note: { ...note, url: card.url }, caption: card.caption, image });
+}));
+---
+<Fragment set:html={replaceArticleCards(html, renderedCards)} />

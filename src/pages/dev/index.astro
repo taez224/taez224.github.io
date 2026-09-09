@@ -1,0 +1,38 @@
+---
+import Shell from '../../layouts/Shell.astro';
+import { getGarden } from '../../lib/get-garden.mjs';
+import { technologyTags, selectDevelopmentRecords } from '../../lib/development.mjs';
+import { developmentCategoryLabel, formatDate, firstSentence } from '../../lib/format.mjs';
+const { development } = await getGarden();
+const records = selectDevelopmentRecords([...development.concepts, ...development.troubleshooting, ...development.tools]);
+// 분류가 여백 라벨이 된다. 탭과 기술 칩으로 거르던 것은 메타 줄의 기술명과 검색으로 대신한다.
+const groups = ['Concepts', 'Troubleshooting', 'Tools'].map((id) => ({ id, label: developmentCategoryLabel(id), records: records.filter((r) => r.category === id) })).filter((g) => g.records.length);
+---
+<Shell title="개발 노트" description="개발하며 배운 개념과 해결한 문제, 도구 기록." path="/dev/" active="dev">
+  <div class="wrap dev-page">
+    <div class="page-head"><h1 class="display">개발 노트</h1><span class="meta">{records.length}개</span></div>
+    <!-- 페이지의 지도: 첫 화면에서 세 분류가 다 보이고, 누르면 그 장부로 내려간다. 아래 분류가 두 화면 밑으로 밀리는 문제를 푼다. -->
+    <nav class="cat-index meta" aria-label="분류">{groups.map((g, i) => <>{i > 0 && <span class="sep">·</span>}<a href={`#${g.id.toLowerCase()}`}>{g.label} <span class="count">{g.records.length}</span></a></>)}</nav>
+    {groups.map((g) => <section class="ledger-group is-word" id={g.id.toLowerCase()} aria-label={g.label}>
+      <div class="ledger-head"><h2 class="display">{g.label}</h2><span class="meta">{g.records.length}개</span></div>
+      <div class="ledger-rows">{g.records.map((r) => <article class="ledger-row is-compact">
+        <div>
+          <h3><a href={r.url}>{r.title}</a></h3>
+          <div class="meta">{technologyTags(r.tags).length > 0 && <span>{technologyTags(r.tags).join(' · ')}</span>}{r.date && <time datetime={r.date}>{formatDate(r.date)}</time>}</div>
+        </div>
+        {r.summary ? <p class="summary">{firstSentence(r.summary)}</p> : <div></div>}
+      </article>)}</div>
+    </section>)}
+  </div>
+</Shell>
+<style>
+  .dev-page { padding: 36px 0 96px; }
+  .page-head { display: flex; align-items: baseline; gap: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+  .page-head h1 { margin: 0; font-size: 28px; line-height: 1.4; }
+  .cat-index { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 14px 0 2px; }
+  .cat-index a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--line); text-decoration-thickness: 1px; text-underline-offset: 4px; transition: text-decoration-color .15s ease; }
+  .cat-index a:hover, .cat-index a:focus-visible { text-decoration-color: var(--ink); }
+  .cat-index .count { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .cat-index .sep { color: var(--line); }
+  .ledger-group { scroll-margin-top: 96px; }
+</style>

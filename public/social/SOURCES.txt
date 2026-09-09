@@ -1,0 +1,9 @@
+Profile destinations verified from https://github.com/taez224/taez224/blob/main/README.md
+GitHub destination: https://github.com/taez224
+
+Icon sources:
+LinkedIn: https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/linkedin/linkedin-original.svg
+Brunch: https://raw.githubusercontent.com/jiwonrom/KoreanSNSicon/master/brunch_simplified.png
+Velog: https://cdn.simpleicons.org/velog/20C997
+GitHub: https://cdn.simpleicons.org/github
+Retrieved 2026-09-05. Local copies avoid runtime requests to icon services.
