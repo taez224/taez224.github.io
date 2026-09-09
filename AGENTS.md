@@ -99,16 +99,16 @@ vault 원문은 건드리지 않고 사이트로 나가는 사본만 바꾼다(`
 
 ## 커밋 규칙
 
-Conventional Commits를 따르되 제목은 한국어 평서문으로 무엇을 하는지 적는다.
+Conventional Commits를 따르되 제목은 한국어 명사형으로 짧게 끝낸다. "~한다"가 아니라 "~로 변경", "~ 추가", "~ 제거".
 
 ```
-type(scope): 한국어 평서문
+type(scope): 명사형 제목
 ```
 
 - `type`: `feat`, `fix`, `refactor`, `style`, `docs`, `test`, `chore`, `ci`.
-- `scope`는 선택이고 영역 이름을 쓴다: `map`, `hero`, `reader`, `og`, `search`, `build`, `ci`, `config`. 이 저장소 전체가 garden이므로 `garden` scope는 쓰지 않는다.
-- 예: `feat(map): 범례 필터를 주제·허브 토글로 바꾼다`, `fix(og): 썸네일이 없는 글의 카드가 그래프로 떨어지게 한다`, `docs: 에이전트 지침을 AGENTS.md로 합친다`.
-- 커밋은 한 가지 변경에 집중한다. push가 곧 배포다.
+- `scope`는 선택이고 영역 이름을 쓴다: `map`, `hero`, `reader`, `og`, `search`, `rss`, `build`, `ci`, `config`. 이 저장소 전체가 garden이므로 `garden` scope는 쓰지 않는다.
+- 예: `feat(map): 범례 필터를 주제·허브 토글로 변경`, `fix(og): 썸네일 없는 글의 카드 그래프 폴백`, `docs: 에이전트 지침을 AGENTS.md로 통합`.
+- 작업 단위가 끝나면 에이전트가 바로 커밋한다. 커밋은 한 가지 변경에 집중한다. push는 사용자가 하며 push가 곧 배포다.
 
 ## 위임
 
@@ -123,7 +123,7 @@ type(scope): 한국어 평서문
 ## 에이전트 설정 파일 배치
 
 - `AGENTS.md`가 정본이다. `CLAUDE.md`는 `@AGENTS.md`로 이 파일을 가져온 뒤 Claude Code 전용 지침만 덧붙인다. 공통 지침은 여기에만 쓴다.
-- Claude와 Codex가 함께 쓰는 스킬의 정본은 `.agents/skills/<skill-name>/`에 둔다. Codex는 이 경로를 직접 읽는다.
+- Claude와 Codex가 함께 쓰는 스킬의 정본은 `.agents/skills/<skill-name>/`에 둔다. Codex는 이 경로를 직접 읽는다. 이 저장소에는 아직 스킬이 없다.
 - Claude Code는 `.claude/skills/`만 읽으므로 `.claude/skills/<skill-name>`에 정본을 가리키는 **상대 심볼릭 링크**만 둔다. `.codex/skills/`에는 링크를 만들지 않는다.
 - `SKILL.md`는 두 도구가 읽을 수 있는 공통 지침으로 유지하고, 도구 전용 런타임은 `.claude/workflows/` 또는 `.codex/`에 분리한다.
-- 추적하는 설정: `.claude/settings.json`, `.claude/launch.json`, `.codex/config.toml`. `.claude/settings.local.json`과 `.claude/worktrees/`는 무시한다.
+- 도구 설정 파일은 생기면 추적한다(`.claude/settings.json`, `.claude/launch.json`, `.codex/config.toml`). 지금 있는 것은 `.claude/launch.json`뿐이다. `.claude/settings.local.json`과 `.claude/worktrees/`는 무시한다.
