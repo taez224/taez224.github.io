@@ -4,13 +4,20 @@ import Header from '../components/Header.astro';
 import SearchDialog from '../components/SearchDialog.astro';
 import { withBase } from '../lib/format.mjs';
 import { SITE_TITLE } from '../lib/site-meta.mjs';
+import { structuredData, jsonLdScript } from '../lib/seo.mjs';
 import siteConfig from '../../config.json';
 const umami = siteConfig.analytics?.umami?.websiteId ? siteConfig.analytics.umami : null;
-const { title, description, path, active = '', ogType = 'website', ogImage: ogImagePath = null } = Astro.props;
+// Search Console 소유권 확인 토큰. 공개되는 값이고, 지우면 소유권이 풀리므로 확인 뒤에도 남긴다.
+const googleSiteVerification = siteConfig.googleSiteVerification ?? '';
+const { title, description, path, active = '', ogType = 'website', ogImage: ogImagePath = null, kind = null, published = null } = Astro.props;
 const siteName = 'TaeZ';
 const fullTitle = path === '/' ? SITE_TITLE : `${title} · ${siteName}`;
 const canonical = new URL(withBase(path), Astro.site).href;
 const ogImage = new URL(ogImagePath ?? withBase('/og/site.png'), Astro.site).href;
+// 구조화 데이터는 페이지가 이미 가진 값만 쓴다. 홈은 WebSite, 노트는 글 종류별 Article, 나머지는 WebPage.
+const home = new URL(withBase('/'), Astro.site).href;
+const sameAs = (siteConfig.home?.contacts ?? []).map((contact) => contact.url).filter(Boolean);
+const jsonLd = jsonLdScript(structuredData({ ogType, kind, title: path === '/' ? SITE_TITLE : title, description, url: canonical, image: ogImage, published, siteTitle: SITE_TITLE, siteUrl: home, sameAs }));
 ---
 <!doctype html>
 <html lang="ko">
@@ -19,6 +26,8 @@ const ogImage = new URL(ogImagePath ?? withBase('/og/site.png'), Astro.site).hre
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
+    <meta name="author" content="TaeZ" />
+    {googleSiteVerification && <meta name="google-site-verification" content={googleSiteVerification} />}
     <link rel="canonical" href={canonical} />
     <meta property="og:site_name" content={SITE_TITLE} />
     <meta property="og:type" content={ogType} />
@@ -26,6 +35,8 @@ const ogImage = new URL(ogImagePath ?? withBase('/og/site.png'), Astro.site).hre
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={ogImage} />
+    {ogType === 'article' && published && <meta property="article:published_time" content={published} />}
+    <script type="application/ld+json" is:inline set:html={jsonLd}></script>
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#f7f7f2" />
     <link rel="icon" href={withBase('/favicon.svg')} type="image/svg+xml" />

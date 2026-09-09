@@ -34,7 +34,7 @@ const aboutUrl = withBase('/about/');
 const siteBase = String(garden.config.basePath ?? '').replace(/\/$/, '');
 const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slice(siteBase.length) : note.url;
 ---
-<Shell title={title} description={note.summary} path={sitePath} ogImage={withBase(`/og/${kindPrefix(note.kind)}/${note.slug}.png`)} active={note.kind === 'blog' ? 'posts' : note.kind === 'development' ? 'dev' : 'map'} ogType="article">
+<Shell title={title} description={note.summary} path={sitePath} kind={note.kind} published={note.date || null} ogImage={withBase(`/og/${kindPrefix(note.kind)}/${note.slug}.png`)} active={note.kind === 'blog' ? 'posts' : note.kind === 'development' ? 'dev' : 'map'} ogType="article">
   <div class="wrap note-view" style={`--topic:${topicColor(note.topic)}`}>
     <article class="note-article">
       <div class="meta note-meta">

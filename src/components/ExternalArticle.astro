@@ -14,7 +14,7 @@ const related = [...new Set([...note.outgoing, ...note.incoming])].filter((path)
 const base = String(garden.config.basePath ?? '').replace(/\/$/, '');
 const sitePath = base && note.url.startsWith(`${base}/`) ? note.url.slice(base.length) : note.url;
 ---
-<Shell title={title} description={note.summary} path={sitePath} active="posts" ogType="article" ogImage={withBase(`/og/${kindPrefix(note.kind)}/${note.slug}.png`)}>
+<Shell title={title} description={note.summary} path={sitePath} kind={note.kind} published={note.date || null} active="posts" ogType="article" ogImage={withBase(`/og/${kindPrefix(note.kind)}/${note.slug}.png`)}>
   <article class="external-article">
     <div class="external-meta meta">
       <a href={note.publishedUrl} target="_blank" rel="noreferrer">{note.publication || note.externalPublisher} <span aria-hidden="true">↗</span></a>

@@ -26,12 +26,21 @@ export async function checkShell(file) {
   check(html.includes('rel="canonical"'), `${file}: canonical 없음`);
   check(html.includes('class="site-header"'), `${file}: 헤더 없음`);
   check(html.includes('type="application/rss+xml"'), `${file}: RSS 구독 정보 없음`);
+  check(html.includes('name="author"'), `${file}: author 메타 없음`);
+  check(html.includes('application/ld+json'), `${file}: 구조화 데이터 없음`);
   if (config.analytics?.umami?.websiteId) check(html.includes(`data-website-id="${config.analytics.umami.websiteId}"`), `${file}: 방문 통계 스크립트 없음`);
   return html;
 }
 
 const checks = [
-  async () => { await checkShell('index.html'); },
+  async () => {
+    const home = await checkShell('index.html');
+    check(home.includes('"@type":"WebSite"'), 'index.html: WebSite 구조화 데이터 없음');
+  },
+  async () => {
+    const llms = await read('llms.txt').catch(() => '');
+    check(/^# .+\n/.test(llms) && llms.includes('\n## ') && llms.includes('](https://'), 'llms.txt 없음 또는 목록 형식이 아님');
+  },
   async () => {
     const about = await checkShell('about/index.html');
     check(/<article[^>]*class="[^"]*wiki-about[^"]*"[^>]*>[\s\S]*<h1[^>]*>이 위키에 대해<\/h1>[\s\S]*<div[^>]*class="[^"]*body intro-body[^"]*"[^>]*>\s*\S/.test(about), 'about/index.html: 소개 본문이 비어 있거나 공통 본문 스타일이 없다');
@@ -50,6 +59,7 @@ checks.push(async () => {
     const file = `${pathname.slice(base.length).replace(/^\//, '')}index.html`;
     if (!(await exists(file))) { failures.push(`노트 페이지 없음: ${file}`); continue; }
     const html = await checkShell(file);
+    check(/"@type":"(BlogPosting|TechArticle|Article)"/.test(html), `${file}: 글 구조화 데이터 없음`);
     if (note.contentMode === 'external') {
       check(html.includes('class="external-article"'), `${file}: 외부 발행 글 소개 페이지 없음`);
       check(!/class="(?:body|note-side|mobile-toc|article-card|rail)\b/.test(html), `${file}: 외부 발행 글에 본문 또는 독서 UI 잔존`);
