@@ -3,3 +3,9 @@ dist/
 .astro/
 .idea/
 .DS_Store
+
+# ai
+.claude-session-state.md
+# Claude Code 로컬 전용
+.claude/settings.local.json
+.claude/worktrees/
