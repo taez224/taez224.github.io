@@ -1,7 +1,8 @@
 import { KINDS } from './kinds.mjs';
 
 // 개발은 옛 소프트웨어공학의 파란색을 물려받는다(2026-09-07 태그 통합). 청록 #5f8184는 지식관리 초록과 구분이 안 됐다. 소프트웨어공학은 남은 태그를 위한 별칭.
-export const GRAPH_COLORS = { AI: '#80698f', 개발: '#5d7897', 커리어: '#9a7852', 지식관리: '#5c806c', 글쓰기: '#9c6e6e', 철학: '#9b8a45', 소프트웨어공학: '#5d7897', 기타: '#817f72' };
+// 조직(청록)과 심리(자홍)는 색상환에서 가장 넓게 빈 두 자리를 채운다(2026-09-10). 조직은 옛 청록보다 채도를 두 배로 올려 지식관리와 떨어뜨렸다.
+export const GRAPH_COLORS = { AI: '#80698f', 개발: '#5d7897', 커리어: '#9a7852', 지식관리: '#5c806c', 글쓰기: '#9c6e6e', 철학: '#9b8a45', 조직: '#3c8e99', 심리: '#9f6e92', 소프트웨어공학: '#5d7897', 기타: '#817f72' };
 const HIDDEN_TAGS = new Set(['slipbox', 'blog', 'inbox', 'clippings']);
 
 export function topicColor(topic) { return GRAPH_COLORS[topic] ?? GRAPH_COLORS.기타; }
