@@ -52,6 +52,7 @@ const checks = [
   async () => {
     const about = await checkShell('about/index.html');
     check(/<article[^>]*class="[^"]*wiki-about[^"]*"[^>]*>[\s\S]*<h1[^>]*>이 위키에 대해<\/h1>[\s\S]*<div[^>]*class="[^"]*body intro-body[^"]*"[^>]*>\s*\S/.test(about), 'about/index.html: 소개 본문이 비어 있거나 공통 본문 스타일이 없다');
+    check(about.includes('"@type":"AboutPage"'), 'about/index.html: AboutPage 구조화 데이터 없음');
   },
   async () => { check(await exists('sitemap-index.xml'), 'sitemap-index.xml 없음'); }
 ];

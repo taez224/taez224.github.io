@@ -31,6 +31,12 @@ test('list pages are WebPages inside the site', () => {
   assert.equal(data.isPartOf['@type'], 'WebSite');
 });
 
+test('about pages can use the specific AboutPage type', () => {
+  const data = structuredData({ ...base, pageType: 'AboutPage', title: '이 위키에 대해', url: `${siteUrl}about/` });
+  assert.equal(data['@type'], 'AboutPage');
+  assert.equal(data.isPartOf['@type'], 'WebSite');
+});
+
 test('jsonLdScript cannot close the script tag from inside a string', () => {
   const script = jsonLdScript({ headline: '</script><b>x' });
   assert.ok(!script.includes('</script>'));

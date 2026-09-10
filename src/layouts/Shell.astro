@@ -11,15 +11,15 @@ const umami = siteConfig.analytics?.umami?.websiteId ? siteConfig.analytics.umam
 // Search Console 소유권 확인 토큰. 공개되는 값이고, 지우면 소유권이 풀리므로 확인 뒤에도 남긴다.
 const googleSiteVerification = siteConfig.googleSiteVerification ?? '';
 const naverSiteVerification = siteConfig.naverSiteVerification ?? '';
-const { title, description, path, active = '', ogType = 'website', ogImage: ogImagePath = null, kind = null, published = null } = Astro.props;
+const { title, description, path, active = '', ogType = 'website', ogImage: ogImagePath = null, kind = null, pageType = null, published = null } = Astro.props;
 const siteName = 'TaeZ';
 const fullTitle = path === '/' ? SITE_TITLE : `${title} · ${siteName}`;
 const canonical = new URL(withBase(path), Astro.site).href;
 const ogImage = new URL(ogImagePath ?? withBase('/og/site.png'), Astro.site).href;
-// 구조화 데이터는 페이지가 이미 가진 값만 쓴다. 홈은 WebSite, 노트는 글 종류별 Article, 나머지는 WebPage.
+// 구조화 데이터는 페이지가 이미 가진 값만 쓴다. 홈은 WebSite, 노트는 글 종류별 Article, 나머지는 WebPage다. 페이지별 하위 타입은 호출부가 지정한다.
 const home = new URL(withBase('/'), Astro.site).href;
 const sameAs = (siteConfig.home?.contacts ?? []).map((contact) => contact.url).filter(Boolean);
-const jsonLd = jsonLdScript(structuredData({ ogType, kind, title: path === '/' ? SITE_TITLE : title, description, url: canonical, image: ogImage, published, siteTitle: SITE_TITLE, siteUrl: home, sameAs }));
+const jsonLd = jsonLdScript(structuredData({ ogType, kind, pageType, title: path === '/' ? SITE_TITLE : title, description, url: canonical, image: ogImage, published, siteTitle: SITE_TITLE, siteUrl: home, sameAs }));
 ---
 <!doctype html>
 <html lang="ko">

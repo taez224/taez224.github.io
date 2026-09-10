@@ -4,7 +4,7 @@ import { inlineJson } from './format.mjs';
 const AUTHOR_NAME = 'TaeZ';
 const ARTICLE_TYPES = { blog: 'BlogPosting', development: 'TechArticle' };
 
-export function structuredData({ ogType = 'website', kind = null, title, description, url, image = null, published = null, siteTitle, siteUrl, sameAs = [] }) {
+export function structuredData({ ogType = 'website', kind = null, pageType = null, title, description, url, image = null, published = null, siteTitle, siteUrl, sameAs = [] }) {
   const author = { '@type': 'Person', name: AUTHOR_NAME, ...(sameAs.length ? { sameAs } : {}) };
   const website = { '@type': 'WebSite', name: siteTitle, url: siteUrl };
   if (url === siteUrl) return { '@context': 'https://schema.org', ...website, description, inLanguage: 'ko', author };
@@ -22,7 +22,7 @@ export function structuredData({ ogType = 'website', kind = null, title, descrip
       isPartOf: website
     };
   }
-  return { '@context': 'https://schema.org', '@type': 'WebPage', name: title, description, url, inLanguage: 'ko', isPartOf: website };
+  return { '@context': 'https://schema.org', '@type': pageType ?? 'WebPage', name: title, description, url, inLanguage: 'ko', isPartOf: website };
 }
 
 // <script> 안에 넣는 JSON. 문자열 속 "</script>"가 태그를 닫지 못하게 "<"만 이스케이프한다.

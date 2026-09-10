@@ -14,7 +14,7 @@ const contacts = (garden.home.contacts || []).filter((contact) => contact.name !
 const articleCards = [];
 const html = garden.renderPage({ sourcePath: '20_Projects/obsidian-garden/이 위키에 대해.md', title, body: aboutNote.body, articleCards });
 ---
-<Shell title={title} description={String(aboutNote.meta.summary ?? '')} path="/about/">
+<Shell title={title} description={String(aboutNote.meta.summary ?? '')} path="/about/" pageType="AboutPage">
   <article class="wrap wiki-about">
     <h1 class="display">{title}</h1>
     <div class="body intro-body"><ArticleBody html={html} cards={articleCards} notes={garden.notes} /></div>
