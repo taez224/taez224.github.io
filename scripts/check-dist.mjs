@@ -66,6 +66,12 @@ checks.push(async () => {
     const file = `${pathname.slice(base.length).replace(/^\//, '')}index.html`;
     if (!(await exists(file))) { failures.push(`노트 페이지 없음: ${file}`); continue; }
     const html = await checkShell(file);
+    const hasLead = /<h1[^>]*>[\s\S]*?<\/h1>\s*<p class="note-lead">\s*\S/.test(html);
+    if (note.kind === 'development' && String(note.summary ?? '').trim()) {
+      check(hasLead, `${file}: 개발 노트 제목 아래 summary 없음`);
+    } else {
+      check(!hasLead, `${file}: 개발 노트 외 summary 문단 노출`);
+    }
     check(/"@type":"(BlogPosting|TechArticle|Article)"/.test(html), `${file}: 글 구조화 데이터 없음`);
     if (note.contentMode === 'external') {
       check(html.includes('class="external-article"'), `${file}: 외부 발행 글 소개 페이지 없음`);

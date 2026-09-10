@@ -132,7 +132,7 @@ type(scope): 명사형 제목
 - `type`: `feat`, `fix`, `refactor`, `style`, `docs`, `test`, `chore`, `ci`.
 - `scope`는 선택이고 바뀐 영역 이름을 쓴다(`map`, `graph`, `reader`, `og`, `rss`, `search`, `build` 등). 닫힌 목록이 아니므로 새 영역이 생기면 그 이름을 그대로 쓰고 이 줄은 고치지 않는다. 이 저장소 전체가 garden이므로 `garden` scope는 쓰지 않는다.
 - 예: `feat(map): 범례 필터를 주제·허브 토글로 변경`, `fix(og): 썸네일 없는 글의 카드 그래프 폴백`, `docs: 에이전트 지침을 AGENTS.md로 통합`.
-- 커밋과 push는 사용자가 요청할 때만 한다. 커밋은 한 가지 변경에 집중한다. push가 곧 배포다.
+- 커밋과 push는 사용자가 요청할 때만 한다. 커밋은 한 가지 변경에 집중한다. `main` 에서의 push가 곧 배포다.
 
 ## 위임
 
@@ -150,6 +150,4 @@ type(scope): 명사형 제목
 - Claude와 Codex가 함께 쓰는 스킬의 정본은 `.agents/skills/<skill-name>/`에 둔다. Codex는 이 경로를 직접 읽는다. 이 저장소에는 아직 스킬이 없다.
 - Claude Code는 `.claude/skills/`만 읽으므로 `.claude/skills/<skill-name>`에 정본을 가리키는 **상대 심볼릭 링크**만 둔다. `.codex/skills/`에는 링크를 만들지 않는다.
 - `SKILL.md`는 두 도구가 읽을 수 있는 공통 지침으로 유지하고, 도구 전용 런타임은 `.claude/workflows/` 또는 `.codex/`에 분리한다.
-- 도구 설정 파일은 생기면 추적한다(`.claude/settings.json`, `.claude/launch.json`, `.codex/config.toml`, `.mcp.json`). 지금 있는 것은 `.claude/launch.json`과 `.claude/output-styles/`, `.mcp.json`이다. `.claude/settings.local.json`과 `.claude/worktrees/`는 무시한다.
 - `.mcp.json`의 `qmd`는 vault 노트를 검색하는 MCP 서버다. 색인은 `~/.cache/qmd`에 전역으로 있어 이 저장소에서도 vault를 찾는다. 색인이 오래됐으면 `qmd update`로 다시 만든다.
-- output-style은 Claude Code 전용 기능이라 Codex는 `.claude/output-styles/`를 읽지 못한다. 그래서 문체 규칙의 정본은 「한국어 문체」 절이고, output-style 파일은 Claude 쪽 전달 수단이다. 어느 스타일을 켤지는 추적하지 않는 `.claude/settings.local.json`의 `outputStyle`이 정한다.
