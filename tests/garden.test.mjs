@@ -5,6 +5,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { headingsFor, assembleGarden } from '../src/lib/garden.mjs';
+import { seriesNeighbors } from '../src/lib/note-nav.mjs';
 
 test('table of contents excludes headings inside multiline Obsidian comments', () => {
   assert.deepEqual(headingsFor('## 공개\n\n%%\n## 숨김\n%%\n\n## 끝'), [
@@ -206,23 +207,108 @@ test('summary omits fenced code while body search preserves it', async () => {
   assert.match(note.bodyText, /TILDE_ONLY_SENTINEL/);
 });
 
-test('series posts drop the 이전·다음 글 lines from the public body but keep the edges', async () => {
-  const post = (order, extra) => `---\ncreated: 2026-09-0${order}\nstatus: published\nsource: https://example.com/s${order}\npublication: Brunch\nseries: 연재 S\nseries_order: ${order}\ntags:\n  - blog\n---\n# S${order}\n본문 ${order}.\n\n## 연결된 노트\n\n${extra}`;
+test('automatic summaries and references use only the public body without modifying the source', async () => {
+  const source = [
+    '---', 'created: 2026-09-02', '---', '# 생각 B',
+    '공개 문장.', '', '## 운영 메모', 'AUTHOR_ONLY_SENTINEL [[생각 A]]', '',
+    '%%', '## 주석 속 가짜 경계', '%%', 'HIDDEN_TAIL_SENTINEL', '',
+    '## 공개 절', '공개 끝.'
+  ].join('\n');
+  const vaultRoot = await makeVault({ ...files, '01_Slipbox/생각 B.md': source });
+  const garden = await assembleGarden({ vaultRoot, config });
+  const note = garden.notes.find((note) => note.path === '01_Slipbox/생각 B.md');
+  assert.equal(note.summary, '공개 문장. 공개 끝.');
+  assert.deepEqual(note.outgoing, []);
+  assert.deepEqual(garden.edges.filter((edge) => edge.source === note.path), []);
+  assert.doesNotMatch(JSON.stringify(garden), /AUTHOR_ONLY_SENTINEL|HIDDEN_TAIL_SENTINEL|주석 속 가짜 경계/);
+  assert.equal(await fs.readFile(path.join(vaultRoot, note.path), 'utf8'), source);
+});
+
+test('series and publication summaries exclude author-only sections and retain explicit summaries', async () => {
   const vaultRoot = await makeVault({ ...files,
-    '20_Projects/blog/S1.md': post(1, '- [[S2]] - 다음 글\n'),
-    '20_Projects/blog/S2.md': post(2, '- [[S1]] - 이전 글\n- [[생각 B]]\n')
+    '20_Projects/blog/연재 S.md': '---\ntype: series\n---\n# 연재 S\n```md\n## 연재 목적\n코드 속 가짜 소개.\n```\n## 운영 메모\nHUB_SENTINEL\n## 연재 목적\n연재 소개.\n## 운영 메모\nHUB_TAIL_SENTINEL',
+    '20_Projects/blog/S1.md': '---\nstatus: published\nseries: 연재 S\nseries_order: 1\n---\n# S1\n## 운영 메모\nPOST_SENTINEL\n## 공개 절\n첫 편 소개.',
+    '20_Projects/blog/공개 글.md': '---\nstatus: published\n---\n# 공개 글\n## 운영 메모\nSTANDALONE_SENTINEL\n## 공개 절\n독립 글 소개.',
+    '01_Slipbox/생각 B.md': '---\nsummary: 명시한 요약\n---\n# 생각 B\n자동 요약과 다른 본문.'
+  });
+  const garden = await assembleGarden({ vaultRoot, config });
+  assert.equal(garden.blog.series[0].summary, '연재 소개.');
+  assert.equal(garden.blog.series[0].posts[0].summary, '첫 편 소개.');
+  assert.equal(garden.blog.publications[0].posts[0].summary, '독립 글 소개.');
+  assert.equal(garden.notes.find((note) => note.path === '01_Slipbox/생각 B.md').summary, '명시한 요약');
+  assert.doesNotMatch(JSON.stringify(garden), /HUB_SENTINEL|HUB_TAIL_SENTINEL|POST_SENTINEL|STANDALONE_SENTINEL/);
+});
+
+test('graph and references ignore comments and code while keeping visible links and related', async () => {
+  const vaultRoot = await makeVault({ ...files,
+    '01_Slipbox/생각 A.md': [
+      '---', 'related:', '  - "[[속성 연결]]"', '---', '# 생각 A',
+      '%% [[생각 B]] %%', '<!-- [[생각 B]] -->',
+      '`[[생각 B]]`와 ``[예시](생각 B.md)``', '\\[[생각 B]]', '',
+      '```md', '[[생각 B]]', '```', '',
+      '~~~md', '[[생각 B]]', '~~~', '',
+      '    [[생각 B]]', '', '> ```md', '> [[생각 B]]', '> ```', '',
+      '[[본문 연결]]과 [본문 연결](본문연결.md).', '',
+      '> [!article]', '> [[카드 연결]]', '',
+      '> [!note]', '> [[인용 연결]]'
+    ].join('\n'),
+    '01_Slipbox/본문연결.md': '---\ntitle: 본문 연결\n---\n# 본문 연결\n공개 본문.',
+    '01_Slipbox/카드 연결.md': '# 카드 연결\n카드 대상.',
+    '01_Slipbox/인용 연결.md': '# 인용 연결\n인용 대상.',
+    '01_Slipbox/속성 연결.md': '# 속성 연결\n속성 대상.'
+  });
+  const garden = await assembleGarden({ vaultRoot, config });
+  const note = garden.notes.find((note) => note.path === '01_Slipbox/생각 A.md');
+  const expected = ['본문연결', '카드 연결', '인용 연결', '속성 연결'].map((name) => `01_Slipbox/${name}.md`).sort();
+  assert.deepEqual(note.outgoing.toSorted(), expected);
+  assert.deepEqual(garden.edges.filter((edge) => edge.source === note.path).map((edge) => edge.target).sort(), expected);
+  assert.deepEqual(garden.notes.find((note) => note.path === '01_Slipbox/생각 B.md').incoming, []);
+  assert.match(note.bodyHtml, /<code>\[\[생각 B\]\]<\/code>/);
+  assert.equal(note.articleCards.length, 1);
+});
+
+test('series navigation and references survive with related links and no body navigation list', async () => {
+  const post = (order, related, body) => `---\ncreated: 2026-09-0${order}\nstatus: published\nseries: 연재 S\nseries_order: ${order}\nrelated:\n${related.map((link) => `  - "${link}"`).join('\n')}\n---\n# S${order}\n${body}`;
+  const vaultRoot = await makeVault({ ...files,
+    '20_Projects/blog/S1.md': post(1, ['[[S2]]', '[[S2#절|두 번째 편]]', '[[초안]]', '[[없는 문서]]'], '본문 1.'),
+    '20_Projects/blog/S2.md': post(2, ['[[S1]]', '[[생각 B]]'], '본문 2. [[생각 B]]를 참고한다.')
   });
   const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
   const s1 = garden.notes.find((note) => note.path === '20_Projects/blog/S1.md');
   const s2 = garden.notes.find((note) => note.path === '20_Projects/blog/S2.md');
-  assert.doesNotMatch(s1.bodyHtml, /연결된 노트|다음 글/);
-  assert.doesNotMatch(s1.bodyText, /연결된 노트|다음 글/);
+  assert.equal(s1.bodyText, '본문 1.');
   assert.deepEqual(s1.headings, []);
-  assert.ok(s1.outgoing.includes('20_Projects/blog/S2.md'));
-  assert.match(s2.bodyHtml, /연결된 노트/);
-  assert.ok(s2.headings.some((heading) => heading.id === '연결된-노트'));
-  assert.doesNotMatch(s2.bodyHtml, /이전 글/);
-  assert.match(s2.bodyHtml, /생각 B/);
+  assert.deepEqual(s1.outgoing, [s2.path]);
+  assert.deepEqual(s2.outgoing.sort(), ['01_Slipbox/생각 B.md', s1.path].sort());
+  assert.deepEqual(s1.incoming, [s2.path]);
+  assert.deepEqual(s2.incoming, [s1.path]);
+  assert.equal(garden.noteEdges.filter((edge) => edge.source === s2.path && edge.target === '01_Slipbox/생각 B.md').length, 1);
+  assert.doesNotMatch(JSON.stringify(garden), /초안|없는 문서|DRAFT_SENTINEL/);
+  assert.equal(seriesNeighbors(s1, garden.blog.series).next.path, s2.path);
+  assert.equal(seriesNeighbors(s2, garden.blog.series).prev.path, s1.path);
+  assert.deepEqual(seriesNeighbors(s1, garden.blog.series).posts.map((post) => post.path), [s1.path, s2.path]);
+});
+
+test('blog body lists and code mentioning 이전 or 다음 글 are preserved', async () => {
+  const vaultRoot = await makeVault({ ...files,
+    '20_Projects/blog/공개 글.md': files['20_Projects/blog/공개 글.md'] + '\n\n## 본문\n- 본문에서 보존해야 하는 이전 글\n- [[생각 B]] - 다음 글\n\n```md\n- 예시의 이전 글\n```'
+  });
+  const garden = await assembleGarden({ vaultRoot, config });
+  const note = garden.notes.find((note) => note.path === '20_Projects/blog/공개 글.md');
+  assert.match(note.bodyHtml, /본문에서 보존해야 하는 이전 글/);
+  assert.match(note.bodyHtml, /생각 B<\/a> - 다음 글/);
+  assert.match(note.bodyHtml, /<code class="language-md">- 예시의 이전 글/);
+});
+
+test('related links use the public graph candidates and ignore plain text and unpublished targets', async () => {
+  const vaultRoot = await makeVault({ ...files,
+    '01_Slipbox/생각 A.md': '---\nrelated:\n  - "[[생각 B]]"\n  - "[[생각 B#절|별칭]]"\n  - "[[30_Resources/Development/Concepts/연결된 개념]]"\n  - "[[20_Projects/blog/초안]]"\n  - "[[20_Projects/blog/공개 글]]"\n  - "[[비공개 개념]]"\n  - 고립된 개념\n---\n# 생각 A\n연결은 속성에만 둔다.'
+  });
+  const garden = await assembleGarden({ vaultRoot, config });
+  const a = garden.notes.find((note) => note.path === '01_Slipbox/생각 A.md');
+  assert.deepEqual(a.outgoing.sort(), ['01_Slipbox/생각 B.md', `${dev}/Concepts/연결된 개념.md`, '20_Projects/blog/공개 글.md'].sort());
+  assert.deepEqual(garden.edges.filter((edge) => edge.source === a.path).map((edge) => edge.target).sort(), ['01_Slipbox/생각 B.md', `${dev}/Concepts/연결된 개념.md`].sort());
+  assert.doesNotMatch(JSON.stringify(garden), /초안|비공개 개념|DRAFT_SENTINEL|WITHHELD_SENTINEL/);
 });
 
 test('folder publication picks up new development notes without publishing helper files', async () => {

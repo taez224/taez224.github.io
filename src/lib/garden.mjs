@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import MarkdownIt from 'markdown-it';
-import { createMarkdownRenderer, headingTextForId, headingId, stripObsidianComments } from './markdown.mjs';
+import { createMarkdownRenderer, extractNoteTargets, headingTextForId, headingId, stripObsidianComments } from './markdown.mjs';
 import { developmentCategory, externalPublicationFor, pathMatches, isExcluded as excludedByPolicy, isIncluded as includedByPolicy, validatePublicationConfig } from './publication.mjs';
 import { isImagePath } from './image-types.mjs';
 import { coverUrl } from './books.mjs';
@@ -70,14 +70,19 @@ function firstHeading(body, fallback) {
 // 목차·검색용 헤딩. 개수 제한은 두지 않는다(사이드바가 스크롤한다). 제목의 굵게·코드·위키링크 표시는 지운다.
 // 본문 흐름의 헤딩만 센다. 인용·콜아웃·목록 안의 헤딩(token.level > 0)은 인용한 남의 글이라 목차에 넣지 않는다.
 // 렌더러도 같은 규칙으로 id를 매기므로 목차 id와 실제 id가 어긋나지 않는다.
-const headingParser = new MarkdownIt({ html: true });
+const contentParser = new MarkdownIt({ html: true });
+function bodyHeadings(body) {
+  const tokens = contentParser.parse(body, {});
+  return tokens.flatMap((token, index) => token.type === 'heading_open' && token.level === 0
+    ? [{ start: token.map[0], end: token.map[1], level: Number(token.tag.slice(1)), text: tokens[index + 1].content.trim() }]
+    : []);
+}
+
 export function headingsFor(body) {
   const headingIds = new Map();
-  const tokens = headingParser.parse(stripObsidianComments(body), {}), headings = [];
-  for (let index = 0; index < tokens.length; index++) {
-    if (tokens[index].type !== 'heading_open' || tokens[index].level !== 0) continue;
-    const text = tokens[index + 1].content.trim();
-    const id = headingId(headingIds, text), level = Number(tokens[index].tag.slice(1));
+  const headings = [];
+  for (const { text, level } of bodyHeadings(stripObsidianComments(body))) {
+    const id = headingId(headingIds, text);
     if (level >= 2 && level <= 4) headings.push({ id, level, title: headingTextForId(text) });
   }
   return headings;
@@ -95,8 +100,8 @@ function excerpt(body) {
 function summaryFor(note, { kind = '', contentMode = 'full' } = {}) {
   const explicit = explicitSummary(note);
   if (contentMode === 'external') return explicit;
-  if (kind === 'blog' && note.meta.type === 'series') return explicit || sectionExcerpt(note.body, ['연재 목적', '시리즈 소개']) || excerpt(note.body);
-  return explicit || excerpt(note.body);
+  if (kind === 'blog' && note.meta.type === 'series') return explicit || sectionExcerpt(note.publicContent, ['연재 목적', '시리즈 소개']) || excerpt(note.publicContent);
+  return explicit || excerpt(note.publicContent);
 }
 
 // frontmatter의 tags. 목록이 아니면 빈 배열로 본다.
@@ -110,14 +115,10 @@ function explicitSummary(note) {
 
 function sectionExcerpt(body, sectionNames) {
   const wanted = sectionNames.map((name) => name.toLowerCase());
-  const headings = [...body.matchAll(/^##\s+(.+)$/gm)];
-  const heading = headings.find((match) => wanted.includes(match[1].trim().toLowerCase()));
-  if (!heading || heading.index === undefined) return '';
-  const contentStart = heading.index + heading[0].length;
-  const rest = body.slice(contentStart);
-  const nextHeading = rest.search(/^##\s+/m);
-  const content = nextHeading < 0 ? rest : rest.slice(0, nextHeading);
-  return excerpt(content);
+  const headings = bodyHeadings(body).filter((heading) => heading.level <= 2);
+  const index = headings.findIndex((heading) => heading.level === 2 && wanted.includes(heading.text.toLowerCase()));
+  if (index < 0) return '';
+  return excerpt(body.split('\n').slice(headings[index].end, headings[index + 1]?.start).join('\n'));
 }
 
 // 지도에서 노드가 이보다 적은 주제는 색과 영역을 기타로 접는다. 범례가 길어지고 팔레트가 바닥나는 걸 막는다. 원래 주제는 topicTag에 남는다.
@@ -195,28 +196,22 @@ function resolveTarget(sourcePath, rawTarget, byPath, byBasename, preferred = nu
   return preferredMatches.length === 1 ? preferredMatches[0] : null;
 }
 
-function extractTargets(sourcePath, body, byPath, byBasename) {
-  const targets = new Set();
-  for (const match of body.matchAll(/!?\[\[([^\]]+)\]\]/g)) {
-    const resolved = resolveTarget(sourcePath, match[1], byPath, byBasename);
-    if (resolved) targets.add(resolved);
-  }
-  for (const match of body.matchAll(/\[[^\]]*\]\(([^)]+\.md(?:#[^)]*)?)\)/g)) {
-    const resolved = resolveTarget(sourcePath, match[1], byPath, byBasename);
-    if (resolved) targets.add(resolved);
+function noteTargets(body, related = []) {
+  const targets = new Set(extractNoteTargets(body));
+  for (const value of Array.isArray(related) ? related : []) {
+    const target = typeof value === 'string' ? value.trim().match(/^\[\[([^\]\n]+)\]\]$/)?.[1] : null;
+    if (target) targets.add(target);
   }
   return [...targets];
 }
 
-function stripLeadingTitle(body) {
-  return String(body ?? '').replace(/^\s*#\s+.+(?:\r?\n){1,2}/, '');
+// 링크 문법은 한 번만 해석하고, 전체 공개 목록과 그래프 후보에 맞춰 각각 대상을 찾는다.
+function resolveTargets(sourcePath, targets, byPath, byBasename) {
+  return [...new Set(targets.map((target) => resolveTarget(sourcePath, target, byPath, byBasename)).filter(Boolean))];
 }
 
-// 연재 글의 "연결된 노트" 절에서 "- [[…]] - 이전 글/다음 글" 줄을 뺀다. 리더가 연재 내비를 따로 그리므로 본문에서는 중복이다.
-// 간선은 원문에서 뽑으므로 로컬 그래프와 참조 목록에는 그대로 남는다. 줄을 빼서 절이 비면 제목도 뺀다.
-function stripSeriesLinks(body) {
-  const withoutLines = String(body ?? '').replace(/^[ \t]*[-*+][ \t]+.*(?:이전|다음) 글[ \t]*(?:\r?\n|(?![\s\S]))/gm, '');
-  return withoutLines.replace(/^#{1,6}[ \t]+연결된 노트[ \t]*(?:\r?\n[ \t]*)*(?=#{1,6}[ \t]|(?![\s\S]))/gm, '');
+function stripLeadingTitle(body) {
+  return String(body ?? '').replace(/^\s*#\s+.+(?:\r?\n){1,2}/, '');
 }
 
 // 저자만 보는 절. vault 원문은 그대로 두고 사이트로 나가는 사본에서만 제목과 그 아래 내용을 뺀다.
@@ -224,21 +219,19 @@ function stripSeriesLinks(body) {
 const AUTHOR_ONLY_SECTIONS = ['운영 메모'];
 // 절의 끝은 다음 헤딩이다. 코드 블록 안의 `# 주석` 줄은 헤딩이 아니므로 펜스 안에서는 헤딩을 보지 않는다.
 function stripAuthorSections(body) {
-  const kept = [];
-  let skipping = false, fence = '';
-  for (const line of String(body ?? '').split('\n')) {
-    const text = line.replace(/\r$/, '');
-    const mark = text.match(/^ {0,3}(`{3,}|~{3,})/)?.[1];
-    if (mark) fence = !fence ? mark : (mark[0] === fence[0] && mark.length >= fence.length ? '' : fence);
-    const heading = !fence && text.match(/^#{1,6}[ \t]+(.*?)[ \t]*$/);
-    if (heading) skipping = AUTHOR_ONLY_SECTIONS.includes(heading[1]);
-    if (!skipping) kept.push(line);
+  const lines = body.split('\n'), kept = [];
+  const headings = bodyHeadings(body);
+  let start = 0;
+  for (const [index, heading] of headings.entries()) {
+    if (!AUTHOR_ONLY_SECTIONS.includes(heading.text)) continue;
+    kept.push(...lines.slice(start, heading.start));
+    start = headings[index + 1]?.start ?? lines.length;
   }
-  return kept.join('\n');
+  return [...kept, ...lines.slice(start)].join('\n');
 }
 
-function publicBody(kind, body) {
-  return stripAuthorSections(stripLeadingTitle(kind === 'blog' ? stripSeriesLinks(body) : body));
+function publicBody(body) {
+  return stripAuthorSections(stripLeadingTitle(stripObsidianComments(body)));
 }
 
 export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
@@ -304,7 +297,8 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
       const source = await fs.readFile(absoluteFile, 'utf8');
       const parsed = parseFrontmatter(source);
       if (isIncluded(relativePath, parsed.meta)) {
-        candidateFiles.set(relativePath, { source, ...parsed });
+        const publicContent = publicBody(parsed.body);
+        candidateFiles.set(relativePath, { ...parsed, publicContent, linkTargets: noteTargets(publicContent, parsed.meta.related) });
       }
     }
   }
@@ -421,7 +415,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
 
   const allEdges = [];
   for (const [relativePath, note] of graphCandidateFiles) {
-    for (const target of extractTargets(relativePath, note.body, graphCandidateFiles, byBasename)) {
+    for (const target of resolveTargets(relativePath, note.linkTargets, graphCandidateFiles, byBasename)) {
       allEdges.push({ source: relativePath, target });
     }
   }
@@ -468,7 +462,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
 
   function publicEntry(relativePath, note) {
     const base = baseRecord(relativePath, note);
-    const publicContent = publicBody(base.kind, note.body);
+    const publicContent = note.publicContent;
     const bodyText = base.contentMode === 'external' ? '' : plainText(publicContent);
     return {
       ...base,
@@ -481,8 +475,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
       readingMinutes: base.contentMode === 'external' ? 0 : Math.max(1, Math.round([...bodyText].length / 600)),
       topic: topicFor(base.tags),
       headings: base.contentMode === 'external' ? [] : headingsFor(publicContent),
-      publicContent,
-      body: note.body
+      publicContent
     };
   }
 
@@ -596,9 +589,8 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
   }
 
   const allPublicEdges = [];
-  for (const [relativePath, entry] of publicEntries) {
-    if (entry.kind === 'book') continue;
-    for (const target of extractTargets(relativePath, entry.body, publicEntries, publicByBasename)) {
+  for (const [relativePath, note] of candidateFiles) {
+    for (const target of resolveTargets(relativePath, note.linkTargets, publicEntries, publicByBasename)) {
       if (publicEntries.get(target)?.kind === 'book') continue;
       allPublicEdges.push({ source: relativePath, target });
     }
@@ -612,7 +604,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
   }
   const notes = [...publicEntries.values()]
     .filter((entry) => entry.kind !== 'book')
-    .map(({ body, publicContent, ...entry }) => {
+    .map(({ publicContent, ...entry }) => {
       const meta = candidateFiles.get(entry.path)?.meta ?? {};
       const reference = String(meta.thumbnail ?? '').trim();
       let thumbnail = null;

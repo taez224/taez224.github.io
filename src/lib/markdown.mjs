@@ -1,6 +1,7 @@
 import MarkdownIt from 'markdown-it';
 import sanitizeHtml from 'sanitize-html';
 import { escapeHtml } from './format.mjs';
+import { isImagePath } from './image-types.mjs';
 
 const CALLOUT_TITLES = {
   abstract: '요약',
@@ -379,6 +380,20 @@ function createMarkdownIt() {
       : `<${token.tag}${self.renderAttrs(token)}>`;
   };
   return markdown;
+}
+
+const linkParser = createMarkdownIt();
+
+// 렌더러와 같은 inline 규칙으로 노트 대상만 모은다. 코드·주석·이스케이프는 링크가 되지 않는다.
+// 파일 해석과 공개 판정은 호출자가 맡고, 같은 문서의 절 링크는 노트 사이 연결에서 제외한다.
+export function extractNoteTargets(source) {
+  const targets = new Set();
+  linkParser.parse(stripObsidianComments(source), { context: {
+    sourcePath: '',
+    resolveAsset: (_source, target) => isImagePath(target) ? { url: target } : null,
+    resolveNote: (_source, target) => { if (target) targets.add(target); return null; }
+  } });
+  return [...targets];
 }
 
 export function createMarkdownRenderer({ resolveNote, resolveAsset }) {

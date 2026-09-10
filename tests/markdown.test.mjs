@@ -1,8 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createMarkdownRenderer } from '../src/lib/markdown.mjs';
+import { createMarkdownRenderer, extractNoteTargets } from '../src/lib/markdown.mjs';
 
 const render = createMarkdownRenderer({ resolveNote: () => null, resolveAsset: () => null });
+
+test('note target extraction follows rendered link syntax while ignoring examples and images', () => {
+  const source = [
+    '[[공개#절|표시 이름]] [일반 링크](note.md#section) ![[임베드 노트]]',
+    '> [!article]', '> [[카드]]', '',
+    '> [!note]', '> [[인용]]', '',
+    '`[[코드]]` ``[[코드]] ` 예시``', '\\[[이스케이프]]',
+    '%% [[주석]] %% <!-- [[HTML 주석]] -->', '',
+    '```md', '[[펜스]]', '```', '', '    [[들여쓰기 코드]]', '',
+    '> ```md', '> [[인용 코드]]', '> ```', '',
+    '![이미지](cover.png) ![[cover.png]] [[#같은 문서의 절]]'
+  ].join('\n');
+  assert.deepEqual(extractNoteTargets(source), ['공개', 'note.md', '임베드 노트', '카드', '인용']);
+});
 
 test('block ids become invisible anchors at paragraph ends and on their own line', () => {
   const html = render('x.md', '플랫폼 팀의 첫 번째 미션은 몰입 시간을 되찾는 것이다. ^flow-time-mission\n\n다음 문단.\n^para-2\n\n`a ^ b`는 코드라 남는다.');

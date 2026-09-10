@@ -66,6 +66,8 @@ checks.push(async () => {
     const file = `${pathname.slice(base.length).replace(/^\//, '')}index.html`;
     if (!(await exists(file))) { failures.push(`노트 페이지 없음: ${file}`); continue; }
     const html = await checkShell(file);
+    const record = search.find((entry) => entry.url === note.url);
+    check(record?.summary === note.summary, `${file}: 검색 요약이 공개 요약과 다름`);
     const hasLead = /<h1[^>]*>[\s\S]*?<\/h1>\s*<p class="note-lead">\s*\S/.test(html);
     if (note.kind === 'development' && String(note.summary ?? '').trim()) {
       check(hasLead, `${file}: 개발 노트 제목 아래 summary 없음`);
@@ -77,9 +79,7 @@ checks.push(async () => {
       check(html.includes('class="external-article"'), `${file}: 외부 발행 글 소개 페이지 없음`);
       check(!/class="(?:body|note-side|mobile-toc|article-card|rail)\b/.test(html), `${file}: 외부 발행 글에 본문 또는 독서 UI 잔존`);
       check(html.includes('read-original') && html.includes('전문 읽기'), `${file}: 원문 읽기 링크 없음`);
-      const record = search.find((entry) => entry.url === note.url);
       check(record && record.text === '' && record.headings.length === 0, `${file}: 검색 데이터에 본문 또는 목차 잔존`);
-      check(record?.summary === note.summary, `${file}: 검색 요약이 공개 요약과 다름`);
       check(note.headings.length === 0, `${file}: 지도 데이터에 본문 목차 잔존`);
     }
     const article = html.slice(html.indexOf('<article'), html.indexOf('</article>'));
@@ -96,8 +96,21 @@ checks.push(async () => {
   check(home.includes('id="series-heading"') && home.includes('최근 연재'), '홈: 최근 연재 영역 없음');
 });
 checks.push(async () => {
-  check(!JSON.stringify(site).includes('bodyHtml'), 'site.json에 본문이 들어 있다');
+  check(!/"(?:bodyHtml|publicContent|linkTargets)":/.test(JSON.stringify(site)), 'site.json에 본문 또는 처리 중인 링크 정보가 들어 있다');
   check(site.nodes.length > 0 && site.edges.length > 0, 'site.json 그래프가 비어 있다');
+  // 본문과 related에서 모은 연결은 공개 대상만 포함하고, 같은 방향의 연결은 한 번만 낸다.
+  for (const [name, edges, ids] of [
+    ['참조', site.noteEdges, new Set(site.notes.map((note) => note.path))],
+    ['그래프', site.edges, new Set(site.nodes.map((node) => node.id))]
+  ]) {
+    const seen = new Set();
+    for (const edge of edges) {
+      const key = JSON.stringify([edge.source, edge.target]);
+      check(ids.has(edge.source) && ids.has(edge.target), `${name}: 공개 대상 밖의 연결`);
+      check(!seen.has(key), `${name}: 중복 연결`);
+      seen.add(key);
+    }
+  }
   check(search.length >= site.notes.length, 'search.json 레코드 수 부족');
   check(search.every((r) => typeof r.text === 'string'), 'search.json 검색 텍스트 형식 오류');
 });
