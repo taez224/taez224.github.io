@@ -84,6 +84,29 @@ vault 원문은 건드리지 않고 사이트로 나가는 사본만 바꾼다(`
 - 공용 로직은 `src/lib/`, 브라우저 동작은 `src/scripts/`, 그래프 순수 함수는 `src/graph/`에 둔다.
 - 주석과 문서는 한국어로 쓴다. 코드 주석은 "왜"를 적는다.
 
+## 한국어 문체
+
+한국어 출력은 관할을 두 축으로 나눈다. 두 축이 서로 독립적이므로 동시에 지킨다.
+
+- **문장 내부**는 `fluent-korean` 지침이 정한다. 조사와 어미를 생략하지 않고, 의미를 담은 문장 성분을 빼지 않으며, 명사구나 연결어미로 문장을 끝내지 않는다. 종결 조항은 헤더와 목록에 강제하지 않으므로 헤딩은 각 산출물의 규칙대로 명사구로 쓸 수 있다. 일반적인 어휘를 써야 할 자리에 비유적 어휘를 쓰지 않고, 엠대시 대신 콜론이나 접속사를 쓴다. 전문은 `.claude/output-styles/fluent-korean.md`에 있고, 원문 출처는 snflkd/fluent-korean(MIT)이다. 이 줄은 조항을 줄여 옮긴 것이라 원문보다 좁게 읽히면 안 되고, 어긋나면 전문을 따른다.
+- **문서 전체**는 이 파일과 각 산출물의 기존 규칙이 정한다. 분량, 구조, 종결체, 형식이 여기 속한다. 이 저장소의 문서는 "~한다" 평서형으로 쓴다. 분량을 줄이라는 요구는 문장 수를 줄이라는 뜻이지, 문장에서 조사와 어미를 덜어내라는 뜻이 아니다.
+
+문서 전체에는 다음을 지킨다.
+
+- 문장은 짧게, 대상은 구체적으로 쓴다. 범위·경계·책임·주체 같은 추상명사가 쌓이면 실제 대상(파일, 함수, 빌드 단계, 독자)으로 바꾼다.
+- 한 절에서 하려는 말은 하나다. 같은 뜻을 원칙·목록·조건으로 되풀이하지 않고, 앞 문단을 되짚거나 다음 문단을 예고하는 문장은 뺀다.
+- 헤딩은 절에 무엇이 있는지 말하는 짧은 명사구로 쓴다. "~한다"로 끝나는 구호형과 "~하기" 문장형은 쓰지 않는다.
+- 비유와 꾸민 표현 대신 직설로 쓴다. 문자 그대로의 표현이 있으면 그것을 쓴다.
+- 지어낸 장면과 "확인할 질문" 표로 내용을 채우지 않는다. 실제 사례가 없으면 일반 원리만 쓴다.
+- 링크는 관계나 출처를 말하는 본문 문장의 어구에 건다. 문장 끝에 인용만 덧붙이지 않는다.
+- em dash(U+2014)와 en dash(U+2013)를 쓰지 않는다. 링크 뒤 설명은 하이픈, 소제목 뒤는 콜론이나 문장 분리.
+
+코드, 코드 주석, 변수명, 로그 문자열, 커밋 메시지, 인용문에는 적용하지 않는다. 각자의 기존 관례를 그대로 따른다. 커밋 제목을 명사형으로 끝내는 규칙이 유지되는 것도 이 때문이다.
+
+vault(`../obsidian`)에 쓰는 노트와 글은 그 저장소의 규칙과 스킬이 정본이다.
+
+Codex는 이 절만 읽고, Claude Code는 여기에 더해 위의 output-style 전문까지 읽는다. 두 도구에 같은 조항을 두 벌 싣지 않으려고 조항 전문과 관할 배분을 나눠 두었다.
+
 ## 테스트
 
 - `node:test`와 `node:assert/strict`를 쓰고 파일 이름은 `*.test.mjs`다. 테스트 이름은 관찰 가능한 동작을 서술한다.
@@ -107,7 +130,7 @@ type(scope): 명사형 제목
 ```
 
 - `type`: `feat`, `fix`, `refactor`, `style`, `docs`, `test`, `chore`, `ci`.
-- `scope`는 선택이고 영역 이름을 쓴다: `map`, `hero`, `reader`, `og`, `search`, `rss`, `build`, `ci`, `config`. 이 저장소 전체가 garden이므로 `garden` scope는 쓰지 않는다.
+- `scope`는 선택이고 바뀐 영역 이름을 쓴다(`map`, `graph`, `reader`, `og`, `rss`, `search`, `build` 등). 닫힌 목록이 아니므로 새 영역이 생기면 그 이름을 그대로 쓰고 이 줄은 고치지 않는다. 이 저장소 전체가 garden이므로 `garden` scope는 쓰지 않는다.
 - 예: `feat(map): 범례 필터를 주제·허브 토글로 변경`, `fix(og): 썸네일 없는 글의 카드 그래프 폴백`, `docs: 에이전트 지침을 AGENTS.md로 통합`.
 - 커밋과 push는 사용자가 요청할 때만 한다. 커밋은 한 가지 변경에 집중한다. push가 곧 배포다.
 
@@ -127,4 +150,6 @@ type(scope): 명사형 제목
 - Claude와 Codex가 함께 쓰는 스킬의 정본은 `.agents/skills/<skill-name>/`에 둔다. Codex는 이 경로를 직접 읽는다. 이 저장소에는 아직 스킬이 없다.
 - Claude Code는 `.claude/skills/`만 읽으므로 `.claude/skills/<skill-name>`에 정본을 가리키는 **상대 심볼릭 링크**만 둔다. `.codex/skills/`에는 링크를 만들지 않는다.
 - `SKILL.md`는 두 도구가 읽을 수 있는 공통 지침으로 유지하고, 도구 전용 런타임은 `.claude/workflows/` 또는 `.codex/`에 분리한다.
-- 도구 설정 파일은 생기면 추적한다(`.claude/settings.json`, `.claude/launch.json`, `.codex/config.toml`). 지금 있는 것은 `.claude/launch.json`뿐이다. `.claude/settings.local.json`과 `.claude/worktrees/`는 무시한다.
+- 도구 설정 파일은 생기면 추적한다(`.claude/settings.json`, `.claude/launch.json`, `.codex/config.toml`, `.mcp.json`). 지금 있는 것은 `.claude/launch.json`과 `.claude/output-styles/`, `.mcp.json`이다. `.claude/settings.local.json`과 `.claude/worktrees/`는 무시한다.
+- `.mcp.json`의 `qmd`는 vault 노트를 검색하는 MCP 서버다. 색인은 `~/.cache/qmd`에 전역으로 있어 이 저장소에서도 vault를 찾는다. 색인이 오래됐으면 `qmd update`로 다시 만든다.
+- output-style은 Claude Code 전용 기능이라 Codex는 `.claude/output-styles/`를 읽지 못한다. 그래서 문체 규칙의 정본은 「한국어 문체」 절이고, output-style 파일은 Claude 쪽 전달 수단이다. 어느 스타일을 켤지는 추적하지 않는 `.claude/settings.local.json`의 `outputStyle`이 정한다.
