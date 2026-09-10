@@ -11,9 +11,12 @@ export function slugify(title) {
     .replace(/^-+|-+$/g, '');
 }
 
+// 값이 있을 때만 frontmatter slug를 쓴다. 템플릿이 빈 slug를 달고 나오므로 키가 있다는 이유로 막으면
+// 채우지 않은 노트 하나가 사이트 전체 빌드를 멈춘다. 빈 값·null·값 없는 키는 제목에서 만든 슬러그로 넘어가고,
+// 오타처럼 값이 있는데 규칙을 어긴 것만 빌드를 세운다. String(null)이 "null"이 되어 /dev/null/로 나가던 것도 여기서 막힌다.
 export function slugFor(meta, title) {
-  if (meta && meta.slug !== undefined) {
-    const candidate = String(meta.slug).trim();
+  const candidate = meta?.slug === undefined || meta.slug === null ? '' : String(meta.slug).trim();
+  if (candidate) {
     if (!SLUG_PATTERN.test(candidate)) throw new Error(`Invalid frontmatter slug "${candidate}" for "${title}"`);
     return candidate;
   }

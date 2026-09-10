@@ -15,7 +15,17 @@ test('slugFor prefers a valid frontmatter slug and rejects an invalid one', () =
   assert.equal(slugFor({ slug: 'human-agency' }, 'AI Agent 시대의 Human Agency'), 'human-agency');
   assert.equal(slugFor({}, 'AI Agent 시대의 Human Agency'), 'ai-agent-시대의-human-agency');
   assert.throws(() => slugFor({ slug: 'has space' }, 'x'), /slug/);
-  assert.throws(() => slugFor({ slug: '' }, 'x'), /slug/);
+  assert.throws(() => slugFor({ slug: 'dot.slug' }, 'x'), /slug/);
+});
+
+// 템플릿이 빈 slug를 달고 나오므로, 채우지 않은 노트 하나가 사이트 전체 빌드를 막지 않게 한다.
+// frontmatter 파서는 값 없는 키를 빈 배열로, YAML의 null과 ~를 null로 준다. 셋 다 "값 없음"이다.
+test('slugFor falls back to the title when the frontmatter slug is empty', () => {
+  const title = 'K8s envFrom Secret은 Pod 재기동 없이 갱신되지 않는다';
+  const derived = 'k8s-envfrom-secret은-pod-재기동-없이-갱신되지-않는다';
+  for (const slug of ['', '   ', null, []]) {
+    assert.equal(slugFor({ slug }, title), derived, `${JSON.stringify(slug)}는 제목으로 넘어간다`);
+  }
 });
 
 test('kindPrefix and noteUrl build kind-scoped urls under the base path', () => {
