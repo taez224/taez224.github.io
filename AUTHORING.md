@@ -28,6 +28,18 @@
 
 공개되지 않은 문서는 카드로 만들지 않는다. 실제 비공개 파일로 확인되는 링크에는 기존 자물쇠 표시를 사용하고, 존재를 확인할 수 없는 대상은 일반 텍스트로 남긴다. 비공개 문서의 제목 속성·요약·이미지를 가져오지 않는다.
 
+## 주소와 slug
+
+노트의 사이트 주소는 `/posts/<slug>/`, `/notes/<slug>/`, `/dev/<slug>/`다. frontmatter에 `slug`가 있으면 그 값을 쓰고, 없으면 제목에서 만든다. 제목에서 만들면 한글이 그대로 남아 주소에서 퍼센트 인코딩되고, 한 글자가 아홉 문자로 늘어난다.
+
+새 공개 노트에는 `slug`를 처음부터 넣는다. 제목 문장을 그대로 옮기지 말고 핵심어 서너 개를 영문 소문자와 하이픈으로 적는다.
+
+```yaml
+slug: k8s-envfrom-secret-reload
+```
+
+글자·숫자·하이픈만 쓸 수 있고 다른 기호가 들어가면 빌드가 실패한다. 같은 종류 안에서 값이 겹쳐도 빌드가 실패하며 어느 파일끼리 겹쳤는지 알려준다. 이미 공개한 노트의 `slug`를 바꾸면 그 주소로 걸린 링크가 깨지므로 발행 전에 정한다.
+
 ## 썸네일
 
 썸네일은 대상 글의 frontmatter에 지정한다.
@@ -66,4 +78,4 @@ thumbnail: "[[thumbnail-ai-harness-loop.jpg]]"
 - 새로운 작성 문법이나 표시 조건을 추가하면 이 문서와 관련 테스트를 함께 수정한다.
 - 공개 범위를 바꾸려면 `config.json`의 게시 규칙과 이미지 허용 목록을 확인한다. 링크나 카드 지정만으로 비공개 자료를 공개하지 않는다.
 
-구현 위치는 `src/lib/markdown.mjs`(문법), `src/lib/garden.mjs`(공개 문서 연결), `src/components/ArticleBody.astro`와 `src/lib/article-card.mjs`(카드 출력), `src/styles/article-card.css`(배치), `src/lib/og.mjs`(공유 카드), `src/lib/rss.mjs`(피드)다.
+구현 위치는 `src/lib/markdown.mjs`(문법), `src/lib/slug.mjs`(주소), `src/lib/garden.mjs`(공개 문서 연결), `src/components/ArticleBody.astro`와 `src/lib/article-card.mjs`(카드 출력), `src/styles/article-card.css`(배치), `src/lib/og.mjs`(공유 카드), `src/lib/rss.mjs`(피드)다.

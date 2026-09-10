@@ -50,7 +50,7 @@ config.json ──▶ publication.mjs (공개 판정)
 ```
 
 - **페이지**(`src/pages/**`)는 `getCollection('notes'|'books')`로 읽고, **엔드포인트**(`data/*.json.ts`, `og/*.png.ts`, `rss.xml.js`, `llms.txt.ts`)는 `getGarden()`을 직접 부른다. 둘 다 같은 조립 결과다.
-- **클라이언트 JS**: 홈(`hero.js`)과 지도(`map.js`)는 페이지에 인라인된 노드·간선(`data-hero-data`, `data-map-data`, `graph-data.mjs`)으로 스크립트 실행 즉시 그래프를 올린다. 홈은 빌드 때 계산한 좌표까지 싣고, 지도는 무대 크기에 맞춰 배치한다. 지도 패널이 쓰는 노트 정보·참조 관계도 같은 JSON에 실어 fetch가 없다. 검색만 `search.json`을 열 때 fetch한다. `data/site.json`은 공개 데이터 엔드포인트이자 check-dist의 기준 자료로 남는다. `integrations/module-preload.mjs`가 빌드 산출물의 정적 import를 따라가 엔진 청크에 `modulepreload`를 달고, 지도 페이지 스크립트는 `<head>`로 옮겨 `blocking="render"`를 달아 그래프가 올라간 뒤에 첫 화면을 그린다(지도는 무대 크기가 화면마다 달라 스냅샷을 둘 수 없다). 그 전에 보이는 데스크톱 스냅샷(`snapshot.mjs`의 `desktop` 프리셋)은 엔진과 같은 배치 규칙(`label.mjs`의 `placeLabels`)과 같은 맞춤으로 그려서 교체가 눈에 띄지 않는다. 제목 배치 규칙을 바꾸면 두 쪽이 같이 바뀐다. 그래프는 프레임워크 없는 SVG 엔진 `src/graph/engine.mjs`가 그리고, 순수 함수(`layout`, `select`, `focus`, `regions`, `gestures`)는 DOM 없이 테스트한다.
+- **클라이언트 JS**: 홈(`hero.js`)과 지도(`map.js`)는 페이지에 인라인된 노드·간선(`data-hero-data`, `data-map-data`, `graph-data.mjs`)으로 스크립트 실행 즉시 그래프를 올린다. 홈은 빌드 때 계산한 좌표까지 싣고, 지도는 무대 크기에 맞춰 배치한다. 지도 패널이 쓰는 노트 정보·참조 관계도 같은 JSON에 실어 fetch가 없다. 검색만 `search.json`을 열 때 fetch한다. `data/site.json`은 공개 데이터 엔드포인트이자 check-dist의 기준 자료로 남는다. `integrations/module-preload.mjs`가 빌드 산출물의 정적 import를 따라가 엔진 청크에 `modulepreload`를 달고, 지도 페이지 스크립트는 `<head>`로 옮겨 `blocking="render"`를 달아 그래프가 올라간 뒤에 첫 화면을 그린다(지도는 무대 크기가 화면마다 달라 스냅샷을 둘 수 없다). 그 전에 보이는 데스크톱 스냅샷(`snapshot.mjs`의 `desktop` 프리셋)은 엔진과 같은 배치 규칙(`label.mjs`의 `placeLabels`)과 같은 맞춤으로 그려서 교체가 눈에 띄지 않는다. 제목 배치 규칙을 바꾸면 두 쪽이 같이 바뀐다. 그래프는 프레임워크 없는 SVG 엔진 `src/graph/engine.mjs`가 그린다. `src/graph`의 나머지 모듈은 DOM을 만지지 않는 순수 함수이고 각각 단위 테스트가 있다.
 - **dev 감시**: `loaders/vault.mjs`가 include 루트·Books·`config.json`·검토된 자산을 watcher에 등록하고, `refresh-coordinator.mjs`가 디바운스와 직렬화를 맡아 notes·books 스토어를 한 번의 재조립으로 채운다.
 - **OG 카드**: `src/lib/og.mjs`. 최종 SVG 문자열 + 폰트 정체 + resvg 버전의 해시가 캐시 키라 수동 버전 상수가 없다. 캐시는 `node_modules/.cache/garden-og-images`와 `garden-og-fonts`이고 CI가 복원한다.
 
@@ -72,7 +72,8 @@ vault 원문은 건드리지 않고 사이트로 나가는 사본만 바꾼다(`
 
 ### URL과 슬러그
 
-`/posts/<slug>/`(blog), `/notes/<slug>/`(slipbox), `/dev/<slug>/`(development). 슬러그는 frontmatter `slug`가 있으면 그것, 없으면 제목에서 만든다(한글 유지, 소문자, 기호는 `-`). 같은 kind에서 충돌하면 빌드가 실패하고 `slug`를 달라고 한다(`src/lib/slug.mjs`). **기존 URL과 fragment는 보존한다.** 슬러그 생성 규칙이나 헤딩 id 규칙을 바꾸면 이미 공유된 주소가 깨진다.
+`/posts/<slug>/`(blog), `/notes/<slug>/`(slipbox), `/dev/<slug>/`(development). 슬러그는 frontmatter `slug`가 있으면 그것, 없으면 제목에서 만든다(한글 유지, 소문자, 기호는 `-`). 같은 kind에서 충돌하면 빌드가 실패하고 `slug`를 달라고 한다(`src/lib/slug.mjs`). 
+**기존 URL과 fragment는 슬러그 생성 규칙이나 헤딩 id 규칙이 정해지기 전까지 당분간 유동적으로 관리하며 과거 호환도 신경쓰지 않는다.**
 
 ## 코드 스타일
 
