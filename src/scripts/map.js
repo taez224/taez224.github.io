@@ -3,6 +3,7 @@ import { layoutGraph, ATLAS_LAYOUT } from '../graph/layout.mjs';
 import { panelModel } from '../lib/panel.mjs';
 import { setupScrollFades } from './scroll-fades.js';
 import { escapeHtml as escape } from '../lib/format.mjs';
+import { REF_ICONS } from '../lib/ref-icons.mjs';
 
 const page = document.querySelector('.map-page');
 const svg = document.querySelector('svg[data-map]');
@@ -11,8 +12,7 @@ const body = document.querySelector('[data-panel-body]');
 const emptyPanel = body.innerHTML;
 const countEl = document.querySelector('[data-map-count]');
 const totalCount = countEl?.textContent ?? '';
-const OUT = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="4" cy="7" r="2"></circle><path d="M6 7h6m-2.5-2.5L12 7l-2.5 2.5"></path></svg>';
-const IN = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="7" r="2"></circle><path d="M8 7H2m2.5-2.5L2 7l2.5 2.5"></path></svg>';
+const { out: OUT, in: IN } = REF_ICONS;
 
 // 그래프 노드인 항목은 data-node를 달아 지도 안에서 선택되게 한다(그래프 밖 노트만 페이지로 이동).
 const list = (icon, label, items) => items.length ? `<section class="list-block"><div class="meta">${icon}${label}<span class="count">${items.length}</span></div><div class="scroll-list${items.length > 6 ? ' is-long' : ''}"><ul class="side-list">${items.map((i) => `<li><a href="${escape(i.url)}"${i.nodeId ? ` data-node="${escape(i.nodeId)}"` : ''}>${i.isHub ? '<i class="hub-mark" aria-hidden="true"></i>' : ''}${escape(i.title)}</a></li>`).join('')}</ul></div></section>` : '';

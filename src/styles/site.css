@@ -38,7 +38,7 @@ h1, h2, h3, p { margin-top: 0; }
 .side-list a:hover { color: var(--accent); }
 .list-block { padding: 18px 0; border-bottom: 1px solid var(--line); }
 .list-block .meta { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
-.list-block .meta svg { width: 14px; height: 14px; }
+.list-block .meta svg { flex: none; width: 20px; height: 14px; }
 .list-block > .meta { color: var(--ink); font-weight: 550; }
 .list-block > .meta .count { font-weight: 400; }
 /* 목록 페이지 머리: 제목과 거르개·안내가 기준선에 나란히. */
