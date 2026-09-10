@@ -77,7 +77,8 @@ const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slic
   .note-side { position: sticky; top: 100px; max-height: calc(100dvh - 120px); overflow-y: auto; padding-top: 82px; scrollbar-gutter: stable; }
   .note-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
   .note-meta .kicker { color: var(--accent); }
-  .note-lead { margin: -12px 0 32px; color: var(--muted); font-size: var(--t-body); line-height: 1.8; }
+  /* 제목 아래 요약: 본문의 요약 콜아웃과 같은 왼쪽 선과 세리프를 써서 독자가 같은 종류의 블록으로 알아본다. 큰 제목과 무게가 겹치지 않게 사방 테두리와 배경은 뺀다. */
+  .note-lead { margin: -12px 0 36px; padding-left: 18px; border-left: 3px solid var(--accent); color: var(--ink); font-family: var(--display); font-size: 18.5px; line-height: 1.65; letter-spacing: -.01em; }
   .note-end { display: flex; flex-direction: column; gap: 22px; margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--line); }
   .series-start { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin: -12px 0 36px; padding: 22px 24px; border-left: 3px solid var(--accent); background: var(--accent-soft); }
   .series-start p { margin: 4px 0 0; font-size: 16px; line-height: 1.5; }
@@ -157,6 +158,8 @@ const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slic
   @media (max-width: 720px) {
     .note-view { padding: 32px 0 64px; }
     .note-title { font-size: 32px; margin-bottom: 28px; }
+    /* 이 폭에서는 제목 아래 여백이 28px로 줄어들어 위쪽 당김을 완화한다 */
+    .note-lead { margin-top: -4px; }
     .note-end { margin-top: 40px; }
     .series-links { grid-template-columns: 1fr; gap: 12px; }
     .series-link.is-next { align-items: flex-start; text-align: left; }
