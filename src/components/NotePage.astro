@@ -133,7 +133,16 @@ const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slic
   .body .callout { margin: 26px 0; padding: 12px 18px 16px; border: 1px solid var(--line); background: var(--paper-strong); }
   .body .callout + .callout { margin-top: 16px; }
   .body .callout summary, .body .callout-title { display: block; padding-bottom: 8px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: var(--t-meta); font-weight: 600; letter-spacing: .04em; }
-  .body .callout summary { cursor: pointer; }
+  /* 접히는 콜아웃: 제목 줄 오른쪽 꺾쇠가 펼칠 수 있음을 알린다. 접힌 동안은 제목 아래 선을 걷어 빈 절의 머리처럼 보이지 않게 한다.
+     summary가 display: block이면 크롬·파이어폭스는 기본 삼각형을 지우지만 사파리는 -webkit 마커를 따로 그린다. */
+  .body details.callout > summary { position: relative; padding-right: 24px; cursor: pointer; }
+  .body details.callout > summary::-webkit-details-marker { display: none; }
+  .body details.callout > summary::after { position: absolute; top: 6px; right: 4px; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg); transition: transform .15s ease; content: ""; }
+  .body details.callout[open] > summary::after { transform: translateY(5px) rotate(-135deg); }
+  .body details.callout > summary:hover { color: var(--ink); }
+  .body details.callout:not([open]) { padding-bottom: 12px; }
+  .body details.callout:not([open]) > summary { padding-bottom: 0; border-bottom: 0; }
+  @media (prefers-reduced-motion: reduce) { .body details.callout > summary::after { transition: none; } }
   .body .callout-body { margin-top: 12px; }
   .body .callout-body > :first-child { margin-top: 0; }
   .body .callout-body > :last-child { margin-bottom: 0; }
