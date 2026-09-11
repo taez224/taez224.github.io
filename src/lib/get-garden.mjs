@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { assembleGarden, parseFrontmatter } from './garden.mjs';
+import { assembleGarden } from './garden.mjs';
 
 // npm dev/build/test는 프로젝트 루트에서 실행한다. 번들 경로 깊이에 의존하지 않는다.
 const projectRoot = path.resolve(process.env.GARDEN_PROJECT_ROOT ?? process.cwd());
@@ -15,11 +15,6 @@ export function invalidateGarden() { pending = null; assembledAt = 0; }
 
 export function projectPaths() {
   return { projectRoot, vaultRoot };
-}
-
-// vault의 노트 한 편을 frontmatter와 본문으로 읽는다. 소개 페이지처럼 공개 목록 밖의 노트를 그릴 때 쓴다.
-export async function readVaultNote(relativePath) {
-  return parseFrontmatter(await fs.readFile(path.join(vaultRoot, relativePath), 'utf8'));
 }
 
 export function getGarden() {

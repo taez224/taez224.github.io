@@ -9,6 +9,7 @@ TaeZ's Thinking Garden(https://taez224.github.io/)을 짓는 Astro 7 정적 사�
 - 로컬: vault는 옆 폴더 `../obsidian`에 클론돼 있다. 다른 위치면 `GARDEN_VAULT_ROOT`로 지정한다. dev와 build 모두 vault가 있어야 돈다.
 - CI(`.github/workflows/deploy.yml`): vault를 `vault/`에 두 번째 checkout하고 `GARDEN_VAULT_ROOT`로 넘긴다. main push, 매일 04:00 KST, 수동 실행(`gh workflow run deploy.yml`)으로 돈다. **vault만 바뀌면 다음 예약 빌드까지 사이트에 반영되지 않는다.**
 - 노트 작성 규칙(frontmatter 속성, 허용 값)의 정본은 vault의 `99_Templates/_property-schema.md`다. 사이트 쪽 표시 규칙은 `AUTHORING.md`에 있다. 콘텐츠 렌더링을 바꾸기 전에 먼저 읽는다.
+- 방문자용 소개 원고는 `src/content/about.md`에서 관리한다. `src/pages/about.astro`가 일반 Markdown으로 렌더링하며, vault 노트 컬렉션에는 포함하지 않는다.
 
 ## 명령
 
