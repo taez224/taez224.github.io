@@ -559,6 +559,22 @@ test('a series hub stays off the site until one of its posts is published', asyn
   assert.deepEqual(garden.blog.series.map((s) => s.title), ['시작한 연재']);
 });
 
+test('a series is dated by its latest published episode, not by the hub last_published field', async () => {
+  // 허브의 last_published는 손으로 적는 값이라 새 편을 발행하고 고치지 않으면 옛 날짜로 남는다.
+  const hub = (name, lastPublished) => `---\ncreated: 2026-01-01\ntype: series\nlast_published: ${lastPublished}\n---\n# ${name}\n연재 소개.`;
+  const episode = (name, order, published) => `---\ncreated: 2026-01-01\npublished: ${published}\nstatus: published\nseries: ${name}\nseries_order: ${order}\n---\n# ${name} ${order}화\n본문.`;
+  const vaultRoot = await makeVault({ ...files,
+    '20_Projects/blog/잊힌 허브.md': hub('잊힌 허브', '2020-01-01'),
+    '20_Projects/blog/잊힌 허브 1화.md': episode('잊힌 허브', 1, '2026-09-05'),
+    '20_Projects/blog/잊힌 허브 2화.md': episode('잊힌 허브', 2, '2026-08-01'),
+    '20_Projects/blog/앞선 허브.md': hub('앞선 허브', '2026-09-10'),
+    '20_Projects/blog/앞선 허브 1화.md': episode('앞선 허브', 1, '2026-01-01')
+  });
+  const garden = await assembleGarden({ vaultRoot, config, today: '2026-09-11' });
+  assert.deepEqual(garden.blog.series.map((s) => [s.title, s.lastPublished]), [['잊힌 허브', '2026-09-05'], ['앞선 허브', '2026-01-01']],
+    '편의 순서가 아니라 가장 늦은 발행일을 쓰고, 그 날짜로 연재를 정렬한다');
+});
+
 test('an author-only section is cut from the published body but stays in the vault file', async () => {
   const hub = [
     '---', 'created: 2026-09-01', 'type: series', 'status: active', 'summary: 연재 소개', '---',

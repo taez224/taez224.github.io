@@ -1,5 +1,6 @@
 import { KINDS } from './kinds.mjs';
 import { inlineJson } from './format.mjs';
+import { newestFirst } from './dates.mjs';
 // 검색 엔진과 답변 엔진이 읽는 구조화 데이터. 페이지가 이미 가진 제목·요약·날짜·URL만 쓰고 새 정보를 만들지 않는다.
 const AUTHOR_NAME = 'TaeZ';
 const ARTICLE_TYPES = { blog: 'BlogPosting', development: 'TechArticle' };
@@ -42,7 +43,7 @@ export function llmsText(notes, { site, basePath = '', title, description }) {
     const label = KINDS[kind].label;
     const items = notes
       .filter((note) => note.kind === kind && note.url)
-      .sort((a, b) => String(b.date ?? '').localeCompare(String(a.date ?? '')) || oneLine(a.title).localeCompare(oneLine(b.title), 'ko'));
+      .sort(newestFirst((note) => note.date, (note) => oneLine(note.title)));
     if (!items.length) continue;
     lines.push('', `## ${label}`, '');
     for (const note of items) {

@@ -9,6 +9,7 @@ import { formatDate, withBase, firstSentence, inlineJson } from '../lib/format.m
 import { inlineGraph } from '../lib/graph-data.mjs';
 import { parentLink } from '../lib/note-nav.mjs';
 import { latestSeries } from '../lib/blog.mjs';
+import { recentByKind } from '../lib/home.mjs';
 import { kindPrefix } from '../lib/slug.mjs';
 import { KINDS } from '../lib/kinds.mjs';
 import { layoutGraph, ATLAS_LAYOUT } from '../graph/layout.mjs';
@@ -20,12 +21,9 @@ const featured = byPath.get(garden.home.featured[0]);
 const featuredEntry = featured ? await getEntry('notes', `${kindPrefix(featured.kind)}/${featured.slug}`) : null;
 const thumbnail = featuredEntry?.data.thumbnail;
 const softThumbnail = featured?.thumbnailStyle === 'soft';
-// 최근 기록은 종류마다 최신 한 편. 한 종류를 하루에 몰아 올려도 다른 종류가 목록에서 밀리지 않는다. 대표 글은 후보에서 뺀다.
-// 연재의 각 편은 여기 넣지 않는다. 새 편이 나올 때마다 아래 최근 연재와 같은 연재를 두 번 가리키게 된다.
-const HOME_KINDS = ['slipbox', 'development', 'blog'].map((kind) => [kind, KINDS[kind].label]);
-const seriesPaths = new Set(garden.blog.series.flatMap((s) => s.posts.map((post) => post.path)));
-const dated = garden.notes.filter((n) => n.date && n.type !== 'series' && !seriesPaths.has(n.path) && n.path !== featured?.path).sort((a, b) => b.date.localeCompare(a.date) || a.title.localeCompare(b.title, 'ko'));
-const recent = HOME_KINDS.map(([kind, label]) => { const note = dated.find((n) => n.kind === kind); return note && { note, label, listUrl: withBase(parentLink(note).path) }; }).filter(Boolean).sort((a, b) => b.note.date.localeCompare(a.note.date));
+// 최근 기록은 종류마다 최신 한 편이다. 고르는 규칙은 recentByKind에 있고, 대표 글은 위에 따로 보이므로 뺀다.
+const recent = recentByKind(garden.notes, { kinds: ['slipbox', 'development', 'blog'], series: garden.blog.series, exclude: [featured?.path] })
+  .map((note) => ({ note, label: KINDS[note.kind].label, listUrl: withBase(parentLink(note).path) }));
 // 공개된 마지막 편이 가장 최근인 연재 하나. 없으면 이 영역을 그리지 않는다.
 const series = latestSeries(garden.blog.series);
 const seriesUrl = series && (series.noteUrl || series.posts[0]?.url);

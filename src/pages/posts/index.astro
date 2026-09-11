@@ -2,15 +2,11 @@
 import Shell from '../../layouts/Shell.astro';
 import { getGarden } from '../../lib/get-garden.mjs';
 import { formatDate, firstSentence } from '../../lib/format.mjs';
+import { blogLedger } from '../../lib/blog.mjs';
 const { blog } = await getGarden();
-// 단독 글과 연재를 한 장부에 넣고 연도로 묶는다. 연재는 링 표시가 붙은 한 행이고 마지막 편이 나온 연도에 들어간다.
-const standalone = blog.publications.flatMap((group) => group.posts).map((post) => ({ kind: 'post', date: post.published, post }));
+// 연재는 링 표시가 붙은 한 행이다. 장부를 짜는 규칙은 blogLedger에 있다.
 const finished = (series) => Boolean(series.ended);
-const seriesRows = blog.series.map((series) => ({ kind: 'series', date: series.lastPublished || series.posts.at(-1)?.published || series.started, series }));
-const rows = [...standalone, ...seriesRows].filter((row) => row.date).sort((a, b) => b.date.localeCompare(a.date));
-// 연도 옆 편수는 그해에 발행된 글 수(연재의 각 편 포함)라 상단 총계와 기준이 같다. 행 수가 아니다.
-const publishedIn = (year) => standalone.filter((row) => row.date.startsWith(year)).length + blog.series.flatMap((series) => series.posts).filter((post) => (post.published || '').startsWith(year)).length;
-const years = [...new Set(rows.map((row) => row.date.slice(0, 4)))].map((year) => ({ year, rows: rows.filter((row) => row.date.startsWith(year)), count: publishedIn(year) }));
+const years = blogLedger(blog);
 ---
 <Shell title="글" description="TaeZ가 발행한 글과 연재." path="/posts/" active="posts">
   <div class="wrap posts-page">

@@ -9,7 +9,8 @@ import { selectGraphNodes } from '../graph/select.mjs';
 import { slugFor, slugify, kindPrefix, noteUrl, assertUniqueSlugs } from './slug.mjs';
 import { plainText } from './text.mjs';
 import { publicTags, cleanTitle } from './format.mjs';
-import { dateOnly, kstDate, noteDates } from './dates.mjs';
+import { dateOnly, kstDate, newestFirst, noteDates } from './dates.mjs';
+import { lastPublishedOf } from './blog.mjs';
 
 const normalize = (value) => value.replace(/\\/g, '/').replace(/^\.\//, '');
 
@@ -26,6 +27,7 @@ async function walk(directory, accept = () => true) {
   }
   return files;
 }
+
 // 폴더 자체가 없을 때만 null을 돌려준다. 권한 오류나 파일을 폴더로 잘못 적은 경우까지 건너뛰면
 // 하위 폴더 하나 때문에 공개 폴더 전체가 조용히 사이트에서 빠진다.
 async function walkIfPresent(directory, accept) {
@@ -353,13 +355,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
   for (const [relativePath, note] of candidateFiles) {
     if (kindFor(relativePath) !== 'blog' || note.meta.type !== 'series') continue;
     const record = blogRecord(relativePath, note);
-    blogHubRecords.set(record.title, {
-      ...record,
-      started: String(note.meta.started ?? ''),
-      ended: String(note.meta.ended ?? ''),
-      lastPublished: String(note.meta.last_published ?? ''),
-      nextAction: String(note.meta.next_action ?? '')
-    });
+    blogHubRecords.set(record.title, { ...record, ended: String(note.meta.ended ?? '') });
   }
 
   const publishedBlogPosts = [...candidateFiles]
@@ -377,13 +373,12 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
       noteUrl: hub?.url ?? '',
       summary: hub?.summary ?? '',
       status: hub?.status ?? '',
-      started: hub?.started ?? '',
       ended: hub?.ended ?? '',
-      lastPublished: hub?.lastPublished ?? '',
-      nextAction: hub?.nextAction ?? '',
+      // 허브의 last_published와 started는 vault Base가 쓰는 작성 필드다. 사이트는 발행된 편에서 계산해 홈·글 목록이 같은 날짜를 본다.
+      lastPublished: lastPublishedOf(posts),
       posts
     };
-  }).sort((left, right) => right.lastPublished.localeCompare(left.lastPublished) || left.title.localeCompare(right.title, 'ko'));
+  }).sort(newestFirst((series) => series.lastPublished));
 
   const standaloneByPublication = new Map();
   for (const post of publishedBlogPosts.filter((candidate) => !candidate.series)) {
@@ -393,7 +388,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
   const blogPublications = [...standaloneByPublication.entries()]
     .map(([publication, posts]) => ({
       publication,
-      posts: posts.sort((left, right) => right.published.localeCompare(left.published) || left.title.localeCompare(right.title, 'ko'))
+      posts: posts.sort(newestFirst((post) => post.published))
     }))
     .sort((left, right) => left.publication.localeCompare(right.publication, 'ko'));
 
@@ -410,7 +405,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
   const developmentRecords = [...candidateFiles]
     .filter(([relativePath]) => kindFor(relativePath) === 'development')
     .map(([relativePath, note]) => baseRecord(relativePath, note))
-    .sort((left, right) => right.date.localeCompare(left.date) || left.title.localeCompare(right.title, 'ko'));
+    .sort(newestFirst());
 
   const development = {
     concepts: developmentRecords.filter((record) => record.category === 'Concepts'),
@@ -462,7 +457,8 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
       created: dateOnly(parsed.meta.created)
     });
   }
-  books.sort((left, right) => right.rate - left.rate || right.created.localeCompare(left.created) || left.title.localeCompare(right.title, 'ko'));
+  const newestCreated = newestFirst((book) => book.created);
+  books.sort((left, right) => right.rate - left.rate || newestCreated(left, right));
   assertUniqueSlugs(books.map((book) => ({ kind: 'book', slug: book.slug, path: book.path })));
 
   function publicEntry(relativePath, note) {

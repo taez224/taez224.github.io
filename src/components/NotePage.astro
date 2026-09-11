@@ -40,10 +40,10 @@ const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slic
       <div class="meta note-meta">
         <a class="kicker" href={parentUrl}>{parent.label}</a>
         {note.type === 'hub' && <span><i class="hub-mark" aria-hidden="true"></i>허브</span>}
-        {note.date && <span class="note-dates">
+        <span class="note-dates">
           {note.updated && `${note.published ? (note.kind === 'blog' ? '발행' : '공개') : '작성'} `}<time datetime={note.date}>{formatDate(note.date)}</time>
           {note.updated && <span class="modified-date">수정 <time datetime={note.updated}>{formatDate(note.updated)}</time></span>}
-        </span>}
+        </span>
         {note.readingMinutes > 0 && <span>{note.readingMinutes}분</span>}
         {topics.map((t) => <span><i class="topic-dot" style={`background:${t.color}`} aria-hidden="true"></i>{t.label}</span>)}
         {note.publishedUrl && <a href={note.publishedUrl} target="_blank" rel="noreferrer">{note.publication || '원문'}에서 읽기 ↗</a>}

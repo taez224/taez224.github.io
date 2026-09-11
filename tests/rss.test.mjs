@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { feedEntries, feedItems, renderFeed } from '../src/lib/rss.mjs';
+import { feedItems, renderFeed } from '../src/lib/rss.mjs';
 import { SITE_DESCRIPTION } from '../src/lib/site-meta.mjs';
 const options = { site: 'https://example.com', basePath: '/obsidian' };
 const note = extra => ({ title: '생각', kind: 'slipbox', type: 'permanent', date: '2026-09-01', url: '/obsidian/notes/test/', summary: '요약', ...extra });
@@ -40,11 +40,6 @@ test('default feed identity matches the site title and About description', () =>
  assert.ok(xml.includes('<title>TaeZ’s Thinking Garden</title>'));
  assert.ok(xml.includes(`<description>${SITE_DESCRIPTION}</description>`), '피드 설명은 사이트 설명을 그대로 쓴다');
 });
-test('only notes present in public garden selection are enriched', () => {
- const garden = { notes: [note({path:'a'})], blog: { series: [{posts:[{path:'a',published:'2026-09-02'}]}], publications:[{posts:[{path:'private',published:'2026-09-03'}]}] } };
- assert.equal(feedEntries(garden).length, 1);
- assert.equal(feedEntries(garden)[0].published, '2026-09-02');
-});
 
 test('XML invalid characters do not corrupt a feed and valid emoji survive', () => {
  const xml = renderFeed([note({ title: '메모\uFFFF\uFFFE\uD800📝', summary: '앞\uDC00뒤\n다음' })], options);
@@ -76,4 +71,9 @@ test('filtered feeds declare their own identity and escape feed metadata', () =>
  assert.ok(xml.includes('<title>글 &amp; 기록</title>'));
  assert.ok(xml.includes('<category>글</category>'));
  assert.ok(!xml.includes('<category>노트</category>'));
+});
+test('items from the same day are ordered by their guid, so editing a title does not reorder the feed', () => {
+ const order = (titles) => feedItems([note({ title: titles[0], url: '/obsidian/notes/b/' }), note({ title: titles[1], url: '/obsidian/notes/a/' })], options).map(x => x.url);
+ assert.deepEqual(order(['가을', '하늘']), ['https://example.com/obsidian/notes/a/', 'https://example.com/obsidian/notes/b/']);
+ assert.deepEqual(order(['하늘', '가을']), order(['가을', '하늘']), '제목을 바꿔도 순서가 같다');
 });

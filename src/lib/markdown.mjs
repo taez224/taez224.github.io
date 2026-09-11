@@ -54,7 +54,7 @@ const ALLOWED_ATTRIBUTES = {
 };
 
 
-export function stripInlineMarkup(value) {
+function stripInlineMarkup(value) {
   return String(value ?? '')
     .replace(/\\([!-\/:-@[-`{-~])/g, '$1')
     .replace(/!?(\[\[|\]\])/g, '')
@@ -70,7 +70,7 @@ export function headingTextForId(value) {
     .replace(/(^|[ \t]+)\^([A-Za-z0-9-]+)[ \t]*$/, '$1')));
 }
 
-export function slugifyHeading(value) {
+function slugifyHeading(value) {
   const slug = stripInlineMarkup(value)
     .normalize('NFKC')
     .toLowerCase()

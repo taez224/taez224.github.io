@@ -48,11 +48,11 @@ export function wrapLabel(title, maxChars = 20) {
   return lines;
 }
 
-export const boxesOverlap = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+const boxesOverlap = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
 export const nodeBox = (p, r) => ({ left: p.x - r, right: p.x + r, top: p.y - r, bottom: p.y + r });
 
 // 제목 자리 후보. 아래·위·오른쪽·왼쪽, 그다음 대각선 넷.
-export const PLACEMENTS = ['below', 'above', 'right', 'left', 'below-right', 'below-left', 'above-right', 'above-left'];
+const PLACEMENTS = ['below', 'above', 'right', 'left', 'below-right', 'below-left', 'above-right', 'above-left'];
 
 // 제목 상자의 기하. p: 노드 중심, r: 노드 반지름(장면 단위), u: 화면 1px의 장면 단위. 글자 13px·줄 간격 18px·간격 8px을 화면 기준으로 고정한다.
 export function labelGeometry(p, r, lines, placement, u) {

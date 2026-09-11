@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { dateOnly, kstDate, noteDates } from '../src/lib/dates.mjs';
+import { dateOnly, kstDate, newestFirst, noteDates } from '../src/lib/dates.mjs';
 
 const path = '01_Slipbox/노트.md';
 const today = '2026-09-11';
@@ -52,4 +52,15 @@ test('dateOnly keeps the day from a value that also carries a time', () => {
   assert.equal(dateOnly('2025-08-12 18:40'), '2025-08-12');
   assert.equal(dateOnly(''), '');
   assert.equal(dateOnly(null), '');
+});
+
+test('newestFirst puts the latest date first and breaks a same-day tie by title in Korean order', () => {
+  const items = [{ title: '하늘', date: '2026-09-01' }, { title: '가을', date: '2026-09-01' }, { title: '옛 글', date: '2025-01-01' }, { title: '새 글', date: '2026-09-10' }];
+  assert.deepEqual([...items].sort(newestFirst()).map((item) => item.title), ['새 글', '가을', '하늘', '옛 글']);
+});
+
+test('newestFirst reads the date and title through the given accessors and puts undated items last', () => {
+  const rows = [{ day: '', post: { title: '나' } }, { day: '2026-01-01', post: { title: '다' } }, { day: '2026-01-01', post: { title: '가' } }];
+  const sorted = [...rows].sort(newestFirst((row) => row.day, (row) => row.post.title));
+  assert.deepEqual(sorted.map((row) => row.post.title), ['가', '다', '나']);
 });

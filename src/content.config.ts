@@ -22,7 +22,7 @@ export const collections = {
       articleCards: z.array(z.object({ url: z.string(), title: z.string(), caption: z.string() })).default([]),
       headings: z.array(heading), publishedUrl: z.string(), bodyText: z.string(),
       outgoing: z.array(z.string()), incoming: z.array(z.string())
-    }).passthrough()
+    }).loose()
   }),
-  books: defineCollection({ loader: bookLoader(), schema: z.object({ slug: z.string(), title: z.string() }).passthrough() })
+  books: defineCollection({ loader: bookLoader(), schema: z.object({ slug: z.string(), title: z.string() }).loose() })
 };

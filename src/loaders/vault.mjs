@@ -96,6 +96,7 @@ function attachWatcher(watcher, config) {
 export function vaultLoader({ garden = getGarden } = {}) {
   return {
     name: 'vault-notes',
+    /** @param {import('astro/loaders').LoaderContext} context 정적 빌드에서는 watcher가 없다. */
     async load({ store, parseData, watcher, logger }) {
       coordinator.setLogger(logger);
       const fill = fillNotesStore({ store, parseData });
@@ -110,6 +111,7 @@ export function vaultLoader({ garden = getGarden } = {}) {
 export function bookLoader({ garden = getGarden } = {}) {
   return {
     name: 'vault-books',
+    /** @param {import('astro/loaders').LoaderContext} context 정적 빌드에서는 watcher가 없다. */
     async load({ store, parseData, watcher, logger }) {
       coordinator.setLogger(logger);
       const fill = fillBooksStore({ store, parseData });

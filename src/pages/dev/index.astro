@@ -18,7 +18,7 @@ const groups = ['Concepts', 'Troubleshooting', 'Tools'].map((id) => ({ id, label
       <div class="ledger-rows">{g.records.map((r) => <article class="ledger-row is-compact">
         <div>
           <h3><a href={r.url}>{r.title}</a></h3>
-          <div class="meta">{technologyTags(r.tags).length > 0 && <span>{technologyTags(r.tags).join(' · ')}</span>}{r.date && <time datetime={r.date}>{formatDate(r.date)}</time>}</div>
+          <div class="meta">{technologyTags(r.tags).length > 0 && <span>{technologyTags(r.tags).join(' · ')}</span>}<time datetime={r.date}>{formatDate(r.date)}</time></div>
         </div>
         {r.summary ? <p class="summary">{firstSentence(r.summary)}</p> : <div></div>}
       </article>)}</div>

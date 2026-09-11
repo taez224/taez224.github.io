@@ -13,6 +13,13 @@ export function dateOnly(value) {
   return String(value ?? '').match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? '';
 }
 
+// 목록의 정렬 기준. 최신 날짜가 먼저 오고, 같은 날이면 제목 가나다순이라 빌드마다 순서가 같다.
+// 날짜가 YYYY-MM-DD 문자열이라 문자열 비교가 곧 시간 비교이고, 날짜가 없는 항목은 맨 뒤로 간다.
+export function newestFirst(dateOf = (item) => item.date, titleOf = (item) => item.title) {
+  return (left, right) => String(dateOf(right) ?? '').localeCompare(String(dateOf(left) ?? ''))
+    || String(titleOf(left) ?? '').localeCompare(String(titleOf(right) ?? ''), 'ko');
+}
+
 // 2026-02-30은 Date가 3월로 넘기거나 거부한다. 되돌린 문자열이 같아야 달력에 있는 날이다.
 function isCalendarDay(value) {
   if (!DAY_PATTERN.test(value)) return false;
