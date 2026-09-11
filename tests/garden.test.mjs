@@ -513,36 +513,6 @@ test('frontmatter normalizes null values and scalar whitespace', async () => {
   assert.equal(note.publication, '');
 });
 
-const aboutPath = '20_Projects/obsidian-garden/이 위키에 대해.md';
-
-test('renderPage links public notes and marks unpublished ones instead of failing the build', async () => {
-  const vaultRoot = await makeVault(files);
-  const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
-  const target = garden.notes.find((note) => note.path === '01_Slipbox/생각 B.md');
-  const html = garden.renderPage({ sourcePath: aboutPath, title: '이 위키에 대해', body: '# 이 위키에 대해\n[[생각 B]]와 [[초안]]을 가리킨다.' });
-  assert.match(html, new RegExp(`href="${target.url}"`));
-  assert.match(html, /private-note/);
-  assert.doesNotMatch(html, /DRAFT_SENTINEL/, '비공개 노트의 본문은 새지 않는다');
-  assert.doesNotMatch(html, /<h1/, '페이지가 제목을 직접 그리므로 본문의 첫 제목은 뺀다');
-});
-
-test('renderPage turns a section link to the page itself into an anchor', async () => {
-  const vaultRoot = await makeVault(files);
-  const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
-  const html = garden.renderPage({ sourcePath: aboutPath, title: '이 위키에 대해', body: '## 기록을 다루는 방식\n[[#기록을 다루는 방식]]으로 돌아간다.' });
-  assert.match(html, /href="#기록을-다루는-방식"/);
-});
-
-test('renderPage collects article cards the way a note body does', async () => {
-  const vaultRoot = await makeVault(files);
-  const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
-  const target = garden.notes.find((note) => note.path === '01_Slipbox/생각 B.md');
-  const articleCards = [];
-  const html = garden.renderPage({ sourcePath: aboutPath, title: '이 위키에 대해', body: '> [!article] 함께 읽기\n> [[생각 B]]', articleCards });
-  assert.match(html, /article-card-slot/);
-  assert.deepEqual(articleCards, [{ url: target.url, title: target.title, caption: '함께 읽기' }]);
-});
-
 test('a series hub stays off the site until one of its posts is published', async () => {
   const hub = (name) => `---\ncreated: 2026-09-01\ntype: series\nstatus: active\nsummary: ${name} 소개\n---\n# ${name}\n연재 소개.`;
   const episode = (name, status) => `---\ncreated: 2026-09-02\nstatus: ${status}\nseries: ${name}\nseries_order: 1\nsource: https://example.com/${status}\n---\n# ${name} 1화\n본문.`;

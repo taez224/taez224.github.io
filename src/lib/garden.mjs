@@ -423,7 +423,6 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
   }
 
   const books = [];
-  const bookSources = new Map();
   const booksDirectory = path.join(vaultRoot, '30_Resources/References/Books');
   const bookFiles = await walkIfPresent(booksDirectory, isMarkdown);
   if (!bookFiles) console.warn('Skipped missing books directory');
@@ -432,7 +431,6 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
     if (path.posix.basename(relativePath).startsWith('_')) continue;
     const source = await fs.readFile(absoluteFile, 'utf8');
     const parsed = parseFrontmatter(source);
-    bookSources.set(relativePath, parsed);
     const rate = numberValue(parsed.meta.my_rate);
     const author = Array.isArray(parsed.meta.author)
       ? parsed.meta.author.join(', ')
@@ -483,30 +481,9 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
   const publicEntries = new Map(
     [...candidateFiles].map(([relativePath, note]) => [relativePath, publicEntry(relativePath, note)])
   );
-  for (const book of books) {
-    const source = bookSources.get(book.path);
-    publicEntries.set(book.path, {
-      path: book.path,
-      fileTitle: book.fileTitle,
-      title: book.title,
-      displayTitle: book.fileTitle,
-      kind: 'book',
-      status: book.status,
-      type: 'book',
-      tags: Array.isArray(source?.meta.tags) ? source.meta.tags : [],
-      slug: book.slug,
-      publicTags: [],
-      bodyText: plainText(source?.body ?? ''),
-      topic: topicFor(Array.isArray(source?.meta.tags) ? source.meta.tags : []),
-      date: book.created,
-      summary: book.note || excerpt(source?.body ?? ''),
-      summaryIsExplicit: Boolean(book.note),
-      headings: headingsFor(source?.body ?? ''),
-      url: book.url,
-      publication: '',
-      body: source?.body ?? ''
-    });
-  }
+  // 책은 링크 해석에서 "공개된 책"으로 알아보기만 한다. 링크와 참조 간선은 책을 건너뛰고 노트 목록과 지도에도
+  // 넣지 않으므로 본문·목차·요약은 만들지 않는다.
+  for (const book of books) publicEntries.set(book.path, { path: book.path, kind: 'book' });
 
   for (const relativePath of publicEntries.keys()) knownNotePaths.add(relativePath);
   const knownByBasename = indexByBasename(knownNotePaths);
@@ -571,19 +548,6 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
     resolveAsset: resolvePublicAsset,
     resolveNote: resolvePublicNote
   });
-
-  // 소개처럼 노트 목록에는 없지만 vault 원고로 쓰는 페이지. 노트와 같은 링크·자산·콜아웃 규칙을 쓰되,
-  // 공개 색인에 없는 경로라 같은 문서 안의 절 링크만 페이지 앵커로 돌린다. 해석에 실패한 링크는 노트와 똑같이
-  // 자물쇠나 평문으로 낮춘다. 페이지 하나 때문에 빌드가 멈추지 않는다.
-  function renderPage({ sourcePath, title, body, articleCards = [] }) {
-    const render = createMarkdownRenderer({
-      resolveAsset: resolvePublicAsset,
-      resolveNote: (source, target, fragment = '') => (target === sourcePath
-        ? { title, url: fragment ? `#${fragment}` : '' }
-        : resolvePublicNote(source, target, fragment))
-    });
-    return render(sourcePath, stripLeadingTitle(body), { articleCards });
-  }
 
   const allPublicEdges = [];
   for (const [relativePath, note] of candidateFiles) {
@@ -674,7 +638,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
       contacts: config.home?.contacts || [],
       about: String(config.home?.about ?? '')
     },
-    notes, nodes, edges, noteEdges: allPublicEdges, blog, development, books, topicFold, renderPage,
+    notes, nodes, edges, noteEdges: allPublicEdges, blog, development, books, topicFold,
     stats: {
       candidates: graphCandidateFiles.size, nodes: nodes.length, edges: edges.length,
       blogPosts: blog.stats.posts, blogSeries: blog.stats.series, developmentNotes: developmentRecords.length
