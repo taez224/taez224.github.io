@@ -128,3 +128,7 @@ main { min-height: 60vh; }
 .search-item a { display: block; color: var(--ink); font-size: 15px; font-weight: 600; }
 .search-item small { display: block; margin-top: 3px; overflow: hidden; color: var(--muted); font-size: var(--t-meta); line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
 .search-empty { padding: 18px 0 8px; color: var(--muted); font-size: var(--t-meta); }
+@media (max-width: 720px) {
+  .search-item { grid-template-columns: 48px minmax(0, 1fr); gap: 8px; }
+  .search-kind { word-break: keep-all; }
+}
