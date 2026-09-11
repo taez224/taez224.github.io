@@ -20,14 +20,15 @@ export function createRefreshCoordinator({
   cancel = (handle) => clearTimeout(handle),
   logger
 } = {}) {
-  const fillers = new Map();
+  const preparers = new Map();
   let timer = null;
   let tail = Promise.resolve();
   let currentLogger = logger;
   let pendingPath = null;
 
-  function register(name, fill) {
-    fillers.set(name, fill);
+  // prepare(garden)는 새 항목을 검증하고, 스토어를 바꾸는 함수를 돌려준다. 바꾸기는 runOnce가 한꺼번에 한다.
+  function register(name, prepare) {
+    preparers.set(name, prepare);
   }
 
   // Astro's LoaderContext.logger is only available inside a loader's load(),
@@ -50,9 +51,11 @@ export function createRefreshCoordinator({
   async function runOnce() {
     invalidate();
     const garden = await load();
-    for (const fill of fillers.values()) {
-      await fill(garden);
-    }
+    // 모든 스토어의 검증을 마친 뒤에 바꾼다. 하나씩 바꾸면 책 검증이 실패했을 때 노트만 새 상태가 되어
+    // 두 컬렉션이 서로 다른 조립 결과를 보여 준다.
+    const commits = [];
+    for (const prepare of preparers.values()) commits.push(await prepare(garden));
+    for (const commit of commits) commit();
     return garden;
   }
 

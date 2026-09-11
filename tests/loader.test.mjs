@@ -103,8 +103,8 @@ test('refresh coordinator serializes overlapping refreshes so a slow older run c
       return generation;
     }
   });
-  coordinator.register('notes', async (garden) => { applied.push(['notes', garden]); });
-  coordinator.register('books', async (garden) => { applied.push(['books', garden]); });
+  coordinator.register('notes', async (garden) => () => { applied.push(['notes', garden]); });
+  coordinator.register('books', async (garden) => () => { applied.push(['books', garden]); });
 
   const first = coordinator.run();
   const second = coordinator.run();
@@ -116,6 +116,23 @@ test('refresh coordinator serializes overlapping refreshes so a slow older run c
   // run 1 finishing after run 2 started would violate this.
   assert.deepEqual(applied.map(([name]) => name), ['notes', 'books', 'notes', 'books']);
   assert.deepEqual(applied.map(([, garden]) => garden), [1, 1, 2, 2]);
+});
+
+test('refresh coordinator replaces the stores together, and none of them when one store fails validation', async () => {
+  let broken = false;
+  const applied = [];
+  const coordinator = createRefreshCoordinator({ invalidate() {}, async load() { return broken ? 'broken' : 'fresh'; } });
+  // 등록한 함수는 새 항목을 검증하고 스토어를 바꿀 함수를 돌려준다. 바꾸기는 모든 스토어의 검증이 끝난 뒤에 한다.
+  coordinator.register('notes', async (garden) => () => { applied.push(['notes', garden]); });
+  coordinator.register('books', async (garden) => {
+    if (garden === 'broken') throw new Error('book schema mismatch');
+    return () => { applied.push(['books', garden]); };
+  });
+  await coordinator.run();
+  assert.deepEqual(applied, [['notes', 'fresh'], ['books', 'fresh']]);
+  broken = true;
+  await assert.rejects(coordinator.run(), /book schema mismatch/);
+  assert.deepEqual(applied, [['notes', 'fresh'], ['books', 'fresh']], '책 검증이 실패하면 노트 스토어도 새 상태로 바꾸지 않는다');
 });
 
 test('refresh coordinator reports a failed refresh through the logger, and a later successful refresh still applies', async () => {
@@ -135,7 +152,7 @@ test('refresh coordinator reports a failed refresh through the logger, and a lat
     cancel() {},
     logger: fakeLogger
   });
-  coordinator.register('notes', async (garden) => { applied.push(garden); });
+  coordinator.register('notes', async (garden) => () => { applied.push(garden); });
 
   coordinator.scheduleRefresh('01_Slipbox/broken.md');
   await scheduledFn();

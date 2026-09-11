@@ -41,7 +41,8 @@ function replaceStore(store, entries) {
   for (const entry of entries) store.set(entry);
 }
 
-function fillNotesStore({ store, parseData }) {
+// 새 항목을 검증하고 스토어를 바꿀 함수를 돌려준다. 여러 스토어를 함께 바꾸는 순서는 refresh-coordinator가 정한다.
+function prepareNotes({ store, parseData }) {
   return async (garden) => {
     const { projectRoot, vaultRoot } = projectPaths();
     const entries = [];
@@ -60,15 +61,15 @@ function fillNotesStore({ store, parseData }) {
         }
       });
     }
-    replaceStore(store, entries);
+    return () => replaceStore(store, entries);
   };
 }
 
-function fillBooksStore({ store, parseData }) {
+function prepareBooks({ store, parseData }) {
   return async (garden) => {
     const entries = [];
     for (const book of garden.books) entries.push({ id: book.slug, data: await parseData({ id: book.slug, data: book }) });
-    replaceStore(store, entries);
+    return () => replaceStore(store, entries);
   };
 }
 
@@ -95,25 +96,25 @@ function attachWatcher(watcher, config) {
 }
 
 // 두 컬렉션 로더는 같은 조립 결과를 읽고 채우는 방식만 다르다. key는 coordinator가 재조립 뒤 다시 채울 스토어의 이름이다.
-function gardenLoader({ name, key, fillStore, garden }) {
+function gardenLoader({ name, key, prepareStore, garden }) {
   return {
     name,
     /** @param {import('astro/loaders').LoaderContext} context 정적 빌드에서는 watcher가 없다. */
     async load({ store, parseData, watcher, logger }) {
       coordinator.setLogger(logger);
-      const fill = fillStore({ store, parseData });
-      coordinator.register(key, fill);
+      const prepare = prepareStore({ store, parseData });
+      coordinator.register(key, prepare);
       const data = await garden();
-      await fill(data);
+      (await prepare(data))();
       attachWatcher(watcher, data.config);
     }
   };
 }
 
 export function vaultLoader({ garden = getGarden } = {}) {
-  return gardenLoader({ name: 'vault-notes', key: 'notes', fillStore: fillNotesStore, garden });
+  return gardenLoader({ name: 'vault-notes', key: 'notes', prepareStore: prepareNotes, garden });
 }
 
 export function bookLoader({ garden = getGarden } = {}) {
-  return gardenLoader({ name: 'vault-books', key: 'books', fillStore: fillBooksStore, garden });
+  return gardenLoader({ name: 'vault-books', key: 'books', prepareStore: prepareBooks, garden });
 }
