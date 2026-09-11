@@ -58,7 +58,7 @@ config.json ──▶ publication.mjs (공개 판정)
 
 ### 공개 범위 규칙 (바꿀 때 주의)
 
-- `config.json`의 `include`/`exclude`가 폴더 단위 규칙이고, `src/lib/publication.mjs`의 `privateRoots`는 config와 무관하게 항상 비공개다. Development 폴더는 `_`나 `.`로 시작하는 경로 조각이 있으면 뺀다.
+- `config.json`의 `include`/`exclude`가 폴더 단위 규칙이고, `src/lib/publication.mjs`의 `privateRoots`는 config와 무관하게 항상 비공개다. Development 폴더는 `_`나 `.`로 시작하는 경로 조각이 있으면 뺀다. `include`에 적은 폴더가 vault에 없으면 빌드가 멈추므로, vault에서 공개 폴더의 이름을 바꾸면 `config.json`도 함께 고친다.
 - 블로그(`20_Projects/blog`)는 `status: published`이거나 `type: series`만 들어온다. 발행된 편이 없는 연재 허브는 조립 단계에서 뺀다.
 - `externalPublications`에 걸리는 글은 `contentMode: 'external'`이 돼 본문·목차·검색 텍스트 없이 소개 페이지만 낸다. 규칙에 걸리면 `source`가 그 호스트의 유효한 https URL이어야 하고 아니면 빌드가 실패한다.
 - 링크·카드로 비공개 노트가 새지 않도록 설계돼 있다. 비공개 대상은 존재 여부만 기록하고 제목·요약·본문을 절대 출력하지 않는다. HTML, 검색 데이터, 그래프 데이터 어디로도 비공개 메타데이터와 외부 발행 글 본문을 내보내지 않는다.

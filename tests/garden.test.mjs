@@ -638,7 +638,7 @@ test('public notes carry updated only when it is later than their date, and exte
   assert.equal(byPath('20_Projects/blog/외부 원문.md').updated, '', '본문을 싣지 않는 외부 발행 글은 수정일을 내보내지 않는다');
 });
 
-// 폴더가 없는 것(ENOENT)만 건너뛴다. 그 밖의 읽기 오류를 건너뛰면 공개할 노트가 조용히 사이트에서 빠진다.
+// 없어도 되는 폴더는 Books뿐이다. 공개 폴더가 없거나 그 밖의 읽기 오류를 건너뛰면 공개할 노트가 조용히 사이트에서 빠진다.
 const rootIgnoresPermissions = process.getuid?.() === 0 && 'root는 파일 권한 검사를 받지 않는다';
 
 test('a missing books folder is skipped with a warning', async () => {
@@ -646,6 +646,13 @@ test('a missing books folder is skipped with a warning', async () => {
   const vaultRoot = await makeVault(withoutBooks);
   const garden = await assembleGarden({ vaultRoot, config });
   assert.deepEqual(garden.books, []);
+});
+
+test('a public folder listed in config.json but missing from the vault fails the build', async () => {
+  // vault에서 폴더 이름만 바꿔도 그 폴더의 노트가 전부 빠진 사이트가 배포되지 않게 한다.
+  const withoutSlipbox = Object.fromEntries(Object.entries(files).filter(([file]) => !file.startsWith('01_Slipbox/')));
+  const vaultRoot = await makeVault(withoutSlipbox);
+  await assert.rejects(assembleGarden({ vaultRoot, config }), /Include path does not exist: 01_Slipbox/);
 });
 
 test('an include path that is a file fails the build instead of being skipped as missing', async () => {

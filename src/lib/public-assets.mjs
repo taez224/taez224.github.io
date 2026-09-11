@@ -17,7 +17,7 @@ export async function createAssetResolver({ vaultRoot, config, base }) {
     if (!info.isFile()) throw new Error(`Reviewed asset is not a file: ${asset}`);
     publicPaths.add(asset);
   }
-  // 없는 폴더는 공개 후보를 읽는 단계가 이미 경고한다.
+  // 공개 폴더가 없으면 공개 후보를 읽는 단계가 이미 빌드를 멈춘다. 여기서 없을 수 있는 폴더는 Books뿐이다.
   for (const root of [...config.include.map((include) => include.path), BOOKS_PATH]) {
     for (const absoluteFile of (await walkIfPresent(path.join(vaultRoot, root))) ?? []) {
       const relativePath = normalize(path.relative(vaultRoot, absoluteFile));

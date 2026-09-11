@@ -71,11 +71,9 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
   // 공개 후보를 읽는 동안 파일 존재 여부만 기록한다. 비공개 본문·메타는 출력하지 않는다.
   const knownNotePaths = new Set();
   for (const include of config.include) {
+    // 설정에 적은 공개 폴더가 없으면 vault에서 이름을 바꾸거나 옮긴 것이다. 건너뛰면 그 폴더의 노트가 전부 빠진 사이트가 배포된다.
     const files = await walkIfPresent(path.join(vaultRoot, include.path), isMarkdown);
-    if (!files) {
-      console.warn(`Skipped missing include path: ${include.path}`);
-      continue;
-    }
+    if (!files) throw new Error(`Include path does not exist: ${include.path}. Restore the folder or update config.json.`);
     for (const absoluteFile of files) {
       const relativePath = normalize(path.relative(vaultRoot, absoluteFile));
       knownNotePaths.add(relativePath);
