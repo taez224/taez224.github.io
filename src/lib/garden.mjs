@@ -3,13 +3,14 @@ import path from 'node:path';
 import { createMarkdownRenderer } from './markdown.mjs';
 import { developmentCategory, externalPublicationFor, pathMatches, publicUrl, isExcluded as excludedByPolicy, isIncluded as includedByPolicy, validatePublicationConfig } from './publication.mjs';
 import { isImagePath } from './image-types.mjs';
-import { bookTier, coverUrl } from './books.mjs';
+import { BOOKS_PATH, readBooks } from './books.mjs';
 import { selectGraphNodes } from '../graph/select.mjs';
-import { slugFor, slugify, kindPrefix, noteUrl, assertUniqueSlugs } from './slug.mjs';
+import { slugFor, kindPrefix, noteUrl, assertUniqueSlugs } from './slug.mjs';
 import { plainText } from './text.mjs';
 import { publicTags, cleanTitle, topicFor } from './format.mjs';
-import { dateOnly, kstDate, newestFirst, noteDates } from './dates.mjs';
-import { lastPublishedOf } from './blog.mjs';
+import { kstDate, noteDates } from './dates.mjs';
+import { groupDevelopment } from './development.mjs';
+import { assembleBlog } from './blog.mjs';
 import { kindFor } from './kinds.mjs';
 import { isMarkdown, normalize, numberValue, parseFrontmatter, stringList, tagList, walkIfPresent } from './vault-files.mjs';
 import { explicitSummary, firstHeading, headingsFor, publicBody, summaryFor } from './note-body.mjs';
@@ -127,67 +128,20 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
     return rule?.graph !== false;
   }));
 
-  const blogHubRecords = new Map();
-  for (const [relativePath, note] of candidateFiles) {
-    if (kindFor(relativePath) !== 'blog' || note.meta.type !== 'series') continue;
-    const record = blogRecord(relativePath, note);
-    blogHubRecords.set(record.title, { ...record, ended: String(note.meta.ended ?? '') });
-  }
-
-  const publishedBlogPosts = [...candidateFiles]
-    .filter(([relativePath, note]) => kindFor(relativePath) === 'blog' && note.meta.status === 'published')
-    .map(([relativePath, note]) => blogRecord(relativePath, note));
-
-  const blogSeriesNames = [...new Set(publishedBlogPosts.map((post) => post.series).filter(Boolean))];
-  const blogSeries = blogSeriesNames.map((seriesName) => {
-    const hub = blogHubRecords.get(seriesName);
-    const posts = publishedBlogPosts
-      .filter((post) => post.series === seriesName)
-      .sort((left, right) => left.seriesOrder - right.seriesOrder || left.published.localeCompare(right.published));
-    return {
-      title: seriesName,
-      noteUrl: hub?.url ?? '',
-      summary: hub?.summary ?? '',
-      status: hub?.status ?? '',
-      ended: hub?.ended ?? '',
-      // 허브의 last_published와 started는 vault Base가 쓰는 작성 필드다. 사이트는 발행된 편에서 계산해 홈·글 목록이 같은 날짜를 본다.
-      lastPublished: lastPublishedOf(posts),
-      posts
-    };
-  }).sort(newestFirst((series) => series.lastPublished));
-
-  const standaloneByPublication = new Map();
-  for (const post of publishedBlogPosts.filter((candidate) => !candidate.series)) {
-    const publication = post.publication || '발행처 미상';
-    addTo(standaloneByPublication, publication, post);
-  }
-  const blogPublications = [...standaloneByPublication.entries()]
-    .map(([publication, posts]) => ({
-      publication,
-      posts: posts.sort(newestFirst((post) => post.published))
-    }))
-    .sort((left, right) => left.publication.localeCompare(right.publication, 'ko'));
-
-  const blog = {
-    series: blogSeries,
-    publications: blogPublications,
-    stats: {
-      posts: publishedBlogPosts.length,
-      series: blogSeries.length,
-      standalone: publishedBlogPosts.filter((post) => !post.series).length
-    }
-  };
+  const blogCandidates = [...candidateFiles].filter(([relativePath]) => kindFor(relativePath) === 'blog');
+  const blog = assembleBlog({
+    hubs: blogCandidates
+      .filter(([, note]) => note.meta.type === 'series')
+      .map(([relativePath, note]) => ({ ...blogRecord(relativePath, note), ended: String(note.meta.ended ?? '') })),
+    posts: blogCandidates
+      .filter(([, note]) => note.meta.status === 'published')
+      .map(([relativePath, note]) => blogRecord(relativePath, note))
+  });
 
   const developmentRecords = [...candidateFiles]
     .filter(([relativePath]) => kindFor(relativePath) === 'development')
-    .map(([relativePath, note]) => baseRecord(relativePath, note))
-    .sort(newestFirst());
-
-  const development = {
-    concepts: developmentRecords.filter((record) => record.category === 'Concepts'),
-    troubleshooting: developmentRecords.filter((record) => record.category === 'Troubleshooting'),
-    tools: developmentRecords.filter((record) => record.category === 'Tools')
-  };
+    .map(([relativePath, note]) => baseRecord(relativePath, note));
+  const development = groupDevelopment(developmentRecords);
 
   const byBasename = indexByBasename(graphCandidateFiles.keys());
 
@@ -198,42 +152,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
     }
   }
 
-  const books = [];
-  const booksDirectory = path.join(vaultRoot, '30_Resources/References/Books');
-  const bookFiles = await walkIfPresent(booksDirectory, isMarkdown);
-  if (!bookFiles) console.warn('Skipped missing books directory');
-  for (const absoluteFile of bookFiles ?? []) {
-    const relativePath = normalize(path.relative(vaultRoot, absoluteFile));
-    if (path.posix.basename(relativePath).startsWith('_')) continue;
-    const source = await fs.readFile(absoluteFile, 'utf8');
-    const parsed = parseFrontmatter(source);
-    const rate = numberValue(parsed.meta.my_rate);
-    const author = Array.isArray(parsed.meta.author)
-      ? parsed.meta.author.join(', ')
-      : String(parsed.meta.author ?? '');
-    books.push({
-      path: relativePath,
-      fileTitle: path.posix.basename(relativePath, '.md'),
-      title: String(parsed.meta.title ?? firstHeading(parsed.body, path.posix.basename(relativePath, '.md'))),
-      slug: slugify(path.posix.basename(relativePath, '.md')),
-      url: `${base}/books/#book-${slugify(path.posix.basename(relativePath, '.md'))}`,
-      author,
-      publisher: String(parsed.meta.publisher ?? ''),
-      category: String(parsed.meta.category ?? ''),
-      publishDate: String(parsed.meta.publish_date ?? ''),
-      coverUrl: coverUrl(parsed.meta.cover_url),
-      status: String(parsed.meta.status ?? ''),
-      startDate: String(parsed.meta.start_read_date ?? ''),
-      finishDate: String(parsed.meta.finish_read_date ?? ''),
-      rate,
-      tier: bookTier(rate),
-      note: String(parsed.meta.book_note ?? ''),
-      created: dateOnly(parsed.meta.created)
-    });
-  }
-  const newestCreated = newestFirst((book) => book.created);
-  books.sort((left, right) => right.rate - left.rate || newestCreated(left, right));
-  assertUniqueSlugs(books.map((book) => ({ kind: 'book', slug: book.slug, path: book.path })));
+  const books = await readBooks({ vaultRoot, base });
 
   function publicEntry(relativePath, note) {
     const record = baseRecord(relativePath, note);
@@ -279,7 +198,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
       if (!relativePath.endsWith('.md') && !isExcluded(relativePath)) publicAssetPaths.add(relativePath);
     }
   }
-  for (const absoluteFile of (await walkIfPresent(booksDirectory)) ?? []) {
+  for (const absoluteFile of (await walkIfPresent(path.join(vaultRoot, BOOKS_PATH))) ?? []) {
     const relativePath = normalize(path.relative(vaultRoot, absoluteFile));
     if (!relativePath.endsWith('.md') && !isExcluded(relativePath)) publicAssetPaths.add(relativePath);
   }

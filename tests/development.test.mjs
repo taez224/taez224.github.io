@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { technologyTags, selectDevelopmentRecords } from '../src/lib/development.mjs';
+import { groupDevelopment, technologyTags, selectDevelopmentRecords } from '../src/lib/development.mjs';
 
 const record = (category, title, tag, date) => ({ category, title, path: `${title}.md`, date, tags: [`개발/${tag}`] });
 const records = [
@@ -19,4 +19,15 @@ test('selectDevelopmentRecords filters by category and technology, newest first'
   assert.deepEqual(selectDevelopmentRecords(records, 'Troubleshooting', 'all').map((r) => r.title), ['ZIP', 'Async']);
   assert.deepEqual(selectDevelopmentRecords(records, 'all', 'Spring').map((r) => r.title), ['Async']);
   assert.deepEqual(selectDevelopmentRecords(records, 'Concepts', 'Spring'), []);
+});
+
+test('groupDevelopment splits notes into the three categories, each newest first', () => {
+  const grouped = groupDevelopment([
+    record('Concepts', '옛 개념', '설계', '2026-01-01'),
+    record('Tools', '도구', '도구', '2026-03-01'),
+    record('Concepts', '새 개념', '설계', '2026-05-01'),
+    record('Troubleshooting', '문제', 'Java', '2026-02-01')
+  ]);
+  const titles = (items) => items.map((item) => item.title);
+  assert.deepEqual([titles(grouped.concepts), titles(grouped.troubleshooting), titles(grouped.tools)], [['새 개념', '옛 개념'], ['문제'], ['도구']]);
 });

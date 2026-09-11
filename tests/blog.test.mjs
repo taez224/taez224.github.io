@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { blogLedger, lastPublishedOf, latestSeries } from '../src/lib/blog.mjs';
+import { assembleBlog, blogLedger, lastPublishedOf, latestSeries } from '../src/lib/blog.mjs';
 
 // 조립 단계처럼 연재의 lastPublished를 편에서 계산해 둔다.
 const series = (title, ...published) => {
@@ -76,4 +76,27 @@ test('blogLedger orders rows from the same day by title, whether they are posts 
     series: [{ title: '가나다 연재', lastPublished: '2026-05-05', posts: [post('1편', '2026-05-05')] }]
   });
   assert.deepEqual(ledger[0].rows.map(rowTitle), ['가나다 연재', '나중 제목']);
+});
+
+test('assembleBlog puts series episodes in episode order and groups the other posts by publication', () => {
+  const record = (title, extra) => ({ title, series: '', seriesOrder: 0, published: '', publication: '', ...extra });
+  const hubs = [record('연재', { url: '/posts/series/', summary: '연재 소개', ended: '2026-02-01' })];
+  const posts = [
+    record('2편', { series: '연재', seriesOrder: 2, published: '2026-02-01' }),
+    record('1편', { series: '연재', seriesOrder: 1, published: '2026-01-01' }),
+    record('허브 없는 연재 1편', { series: '허브 없는 연재', seriesOrder: 1, published: '2025-06-01' }),
+    record('단독 옛 글', { published: '2025-01-01', publication: 'Velog' }),
+    record('단독 새 글', { published: '2026-03-01', publication: 'Velog' }),
+    record('발행처 없는 글', { published: '2024-01-01' })
+  ];
+  const blog = assembleBlog({ hubs, posts });
+  assert.deepEqual(blog.series.map((item) => [item.title, item.noteUrl, item.ended, item.lastPublished, item.posts.map((post) => post.title)]), [
+    ['연재', '/posts/series/', '2026-02-01', '2026-02-01', ['1편', '2편']],
+    ['허브 없는 연재', '', '', '2025-06-01', ['허브 없는 연재 1편']]
+  ], '연재는 최근 발행일 순이고, 허브가 없는 연재도 편만으로 만든다');
+  assert.deepEqual(blog.publications.map((group) => [group.publication, group.posts.map((post) => post.title)]), [
+    ['발행처 미상', ['발행처 없는 글']],
+    ['Velog', ['단독 새 글', '단독 옛 글']]
+  ], '발행처는 이름순이고 발행처 안은 최신순이다');
+  assert.deepEqual(blog.stats, { posts: 6, series: 2, standalone: 3 });
 });

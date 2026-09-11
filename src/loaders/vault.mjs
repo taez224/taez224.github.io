@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { getGarden, invalidateGarden, projectPaths } from '../lib/get-garden.mjs';
 import { kindPrefix } from '../lib/slug.mjs';
+import { BOOKS_PATH } from '../lib/books.mjs';
 import { createRefreshCoordinator } from './refresh-coordinator.mjs';
 
 export function noteEntryId(note) {
@@ -27,7 +28,7 @@ export function watchPathsFor(config, { vaultRoot, projectRoot }) {
   for (const include of config.include ?? []) {
     if (!isIgnoredWatchPath(include.path)) paths.add(path.join(vaultRoot, include.path));
   }
-  paths.add(path.join(vaultRoot, '30_Resources/References/Books'));
+  paths.add(path.join(vaultRoot, BOOKS_PATH));
   paths.add(path.join(projectRoot, 'config.json'));
   for (const asset of config.assets ?? []) paths.add(path.join(vaultRoot, asset));
   return [...paths];
