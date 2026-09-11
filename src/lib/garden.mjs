@@ -1,9 +1,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createMarkdownRenderer } from './markdown.mjs';
-import { developmentCategory, externalPublicationFor, pathMatches, publicUrl, isExcluded as excludedByPolicy, isIncluded as includedByPolicy, validatePublicationConfig } from './publication.mjs';
-import { isImagePath } from './image-types.mjs';
-import { BOOKS_PATH, readBooks } from './books.mjs';
+import { developmentCategory, externalPublicationFor, pathMatches, publicUrl, isIncluded as includedByPolicy, validatePublicationConfig } from './publication.mjs';
+import { readBooks } from './books.mjs';
+import { createAssetResolver } from './public-assets.mjs';
 import { selectGraphNodes } from '../graph/select.mjs';
 import { slugFor, kindPrefix, noteUrl, assertUniqueSlugs } from './slug.mjs';
 import { plainText } from './text.mjs';
@@ -23,7 +23,6 @@ const MIN_TOPIC_NODES = 3;
 export async function assembleGarden({ vaultRoot, config, basePath = '', today = kstDate() }) {
   validatePublicationConfig(config);
   const base = String(basePath).replace(/\/$/, '');
-  const isExcluded = (relativePath) => excludedByPolicy(config, relativePath);
   const isIncluded = (relativePath, meta) => includedByPolicy(config, relativePath, meta);
 
   // 글 목록·개발 노트 목록·공개 엔트리가 같은 노트를 각자 계산하지 않도록, 공통 필드는 노트마다 한 번만 만든다.
@@ -184,48 +183,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
   const knownByBasename = indexByBasename(knownNotePaths);
   const publicByBasename = indexByBasename(publicEntries.keys());
 
-  const publicAssetPaths = new Set();
-  // General vault attachments are available only after explicit review.
-  for (const asset of config.assets ?? []) {
-    const info = await fs.stat(path.join(vaultRoot, asset));
-    if (!info.isFile()) throw new Error(`Reviewed asset is not a file: ${asset}`);
-    publicAssetPaths.add(asset);
-  }
-  // 없는 폴더는 위의 Markdown 탐색이 이미 경고했다.
-  for (const include of config.include) {
-    for (const absoluteFile of (await walkIfPresent(path.join(vaultRoot, include.path))) ?? []) {
-      const relativePath = normalize(path.relative(vaultRoot, absoluteFile));
-      if (!relativePath.endsWith('.md') && !isExcluded(relativePath)) publicAssetPaths.add(relativePath);
-    }
-  }
-  for (const absoluteFile of (await walkIfPresent(path.join(vaultRoot, BOOKS_PATH))) ?? []) {
-    const relativePath = normalize(path.relative(vaultRoot, absoluteFile));
-    if (!relativePath.endsWith('.md') && !isExcluded(relativePath)) publicAssetPaths.add(relativePath);
-  }
-
-  const publicAssetsByBasename = indexByBasename(publicAssetPaths);
-
-  const assetCopies = new Map();
-
-  function resolvePublicAsset(sourcePath, rawTarget, { copy = true } = {}) {
-    const target = String(rawTarget ?? '').split('#')[0].trim();
-    if (/^(?:https?:)?\/\//i.test(target)) return { url: target };
-    if (!target || !isImagePath(target)) return null;
-    const cleanTarget = target.replace(/^\//, '');
-    const candidates = [
-      normalize(path.posix.join(path.posix.dirname(sourcePath), cleanTarget)),
-      normalize(cleanTarget)
-    ];
-    let assetPath = candidates.find((candidate) => publicAssetPaths.has(candidate));
-    if (!assetPath) {
-      const matches = publicAssetsByBasename.get(path.posix.basename(cleanTarget).toLowerCase()) ?? [];
-      if (matches.length === 1) assetPath = matches[0];
-    }
-    if (!assetPath) return null;
-    const destination = `assets/vault/${assetPath.split('/').map(encodeURIComponent).join('/')}`;
-    if (copy) assetCopies.set(assetPath, destination);
-    return { url: `${base}/${destination}`, sourcePath: assetPath };
-  }
+  const assets = await createAssetResolver({ vaultRoot, config, base });
 
   function resolvePublicNote(sourcePath, rawTarget, fragment = '') {
     const target = String(rawTarget ?? '').trim();
@@ -240,7 +198,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
   }
 
   const renderMarkdown = createMarkdownRenderer({
-    resolveAsset: resolvePublicAsset,
+    resolveAsset: assets.resolve,
     resolveNote: resolvePublicNote
   });
 
@@ -266,7 +224,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
       let thumbnail = null;
       if (reference) {
         const target = reference.match(/^!?\[\[([^\]|#]+)(?:\|[^\]]*)?\]\]$/)?.[1] ?? reference;
-        thumbnail = resolvePublicAsset(entry.path, target, { copy: false })?.sourcePath ?? null;
+        thumbnail = assets.resolve(entry.path, target, { copy: false })?.sourcePath ?? null;
         if (!thumbnail) throw new Error(`Missing or unreviewed thumbnail for ${entry.path}: ${reference}`);
       }
       const thumbnailStyle = String(meta.thumbnail_style ?? 'plain');
@@ -338,6 +296,6 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
       candidates: graphCandidateFiles.size, nodes: nodes.length, edges: edges.length,
       blogPosts: blog.stats.posts, blogSeries: blog.stats.series, developmentNotes: developmentRecords.length
     },
-    assetCopies
+    assetCopies: assets.copies
   };
 }
