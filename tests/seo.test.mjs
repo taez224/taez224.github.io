@@ -25,6 +25,12 @@ test('blog and development notes get article types with their published date', (
   assert.equal('datePublished' in slipbox, false, '날짜가 없으면 필드를 만들지 않는다');
 });
 
+test('articles carry dateModified only when the page has a modification date', () => {
+  const article = { ...base, ogType: 'article', kind: 'slipbox', title: '노트', url: `${siteUrl}notes/c/`, published: '2026-09-01' };
+  assert.equal(structuredData({ ...article, updated: '2026-09-05' }).dateModified, '2026-09-05');
+  assert.equal('dateModified' in structuredData(article), false, '수정일이 없으면 필드를 만들지 않는다');
+});
+
 test('list pages are WebPages inside the site', () => {
   const data = structuredData({ ...base, title: '책장', url: `${siteUrl}books/` });
   assert.equal(data['@type'], 'WebPage');

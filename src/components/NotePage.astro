@@ -34,16 +34,19 @@ const aboutUrl = withBase('/about/');
 const siteBase = String(garden.config.basePath ?? '').replace(/\/$/, '');
 const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slice(siteBase.length) : note.url;
 ---
-<Shell title={title} description={note.summary} path={sitePath} kind={note.kind} published={note.date || null} ogImage={withBase(`/og/${kindPrefix(note.kind)}/${note.slug}.png`)} active={note.kind === 'blog' ? 'posts' : note.kind === 'development' ? 'dev' : 'map'} ogType="article">
+<Shell title={title} description={note.summary} path={sitePath} kind={note.kind} published={note.date || null} updated={note.updated || null} ogImage={withBase(`/og/${kindPrefix(note.kind)}/${note.slug}.png`)} active={note.kind === 'blog' ? 'posts' : note.kind === 'development' ? 'dev' : 'map'} ogType="article">
   <div class="wrap note-view" style={`--topic:${topicColor(note.topic)}`}>
     <article class="note-article">
       <div class="meta note-meta">
         <a class="kicker" href={parentUrl}>{parent.label}</a>
-        {note.type === 'hub' && <><span>·</span><span><i class="hub-mark" aria-hidden="true"></i>허브</span></>}
-        {note.date && <><span>·</span><time datetime={note.date}>{formatDate(note.date)}</time></>}
-        {note.readingMinutes > 0 && <><span>·</span><span>{note.readingMinutes}분</span></>}
-        {topics.map((t) => <><span>·</span><span><i class="topic-dot" style={`background:${t.color}`} aria-hidden="true"></i>{t.label}</span></>)}
-        {note.publishedUrl && <><span>·</span><a href={note.publishedUrl} target="_blank" rel="noreferrer">{note.publication || '원문'}에 발행 ↗</a></>}
+        {note.type === 'hub' && <span><i class="hub-mark" aria-hidden="true"></i>허브</span>}
+        {note.date && <span class="note-dates">
+          {note.updated && `${note.published ? (note.kind === 'blog' ? '발행' : '공개') : '작성'} `}<time datetime={note.date}>{formatDate(note.date)}</time>
+          {note.updated && <span class="modified-date">수정 <time datetime={note.updated}>{formatDate(note.updated)}</time></span>}
+        </span>}
+        {note.readingMinutes > 0 && <span>{note.readingMinutes}분</span>}
+        {topics.map((t) => <span><i class="topic-dot" style={`background:${t.color}`} aria-hidden="true"></i>{t.label}</span>)}
+        {note.publishedUrl && <a href={note.publishedUrl} target="_blank" rel="noreferrer">{note.publication || '원문'}에서 읽기 ↗</a>}
       </div>
       <h1 class="display note-title">{title}</h1>
       {note.kind === 'development' && note.summary?.trim() && <p class="note-lead">{note.summary}</p>}
@@ -76,6 +79,11 @@ const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slic
   .note-view { display: grid; grid-template-columns: minmax(0, 720px) 310px; justify-content: space-between; gap: 40px; align-items: start; padding: 56px 0 96px; }
   .note-side { position: sticky; top: 100px; max-height: calc(100dvh - 120px); overflow-y: auto; padding-top: 82px; scrollbar-gutter: stable; }
   .note-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  /* 구분점은 항목의 앞에 붙인다. 별도 span이면 좁은 화면에서 줄 끝에 점만 남고 항목은 다음 줄로 넘어간다. */
+  .note-meta > * + *::before { content: '·'; margin-right: 8px; }
+  /* 두 날짜는 함께 읽히게 묶는다. 공간이 부족하면 날짜 묶음이나 다른 메타 항목이 통째로 다음 줄로 간다. */
+  .note-dates { white-space: nowrap; }
+  .modified-date::before { content: '·'; margin: 0 8px; }
   .note-meta .kicker { color: var(--accent); }
   /* 제목 아래 요약: 본문의 요약 콜아웃과 같은 왼쪽 선과 세리프를 써서 독자가 같은 종류의 블록으로 알아본다. 큰 제목과 무게가 겹치지 않게 사방 테두리와 배경은 뺀다. */
   .note-lead { margin: -12px 0 36px; padding-left: 18px; border-left: 3px solid var(--accent); color: var(--ink); font-family: var(--display); font-size: 18.5px; line-height: 1.65; letter-spacing: -.01em; }

@@ -4,7 +4,7 @@ import { inlineJson } from './format.mjs';
 const AUTHOR_NAME = 'TaeZ';
 const ARTICLE_TYPES = { blog: 'BlogPosting', development: 'TechArticle' };
 
-export function structuredData({ ogType = 'website', kind = null, pageType = null, title, description, url, image = null, published = null, siteTitle, siteUrl, sameAs = [] }) {
+export function structuredData({ ogType = 'website', kind = null, pageType = null, title, description, url, image = null, published = null, updated = null, siteTitle, siteUrl, sameAs = [] }) {
   const author = { '@type': 'Person', name: AUTHOR_NAME, ...(sameAs.length ? { sameAs } : {}) };
   const website = { '@type': 'WebSite', name: siteTitle, url: siteUrl };
   if (url === siteUrl) return { '@context': 'https://schema.org', ...website, description, inLanguage: 'ko', author };
@@ -17,6 +17,7 @@ export function structuredData({ ogType = 'website', kind = null, pageType = nul
       url,
       ...(image ? { image } : {}),
       ...(published ? { datePublished: published } : {}),
+      ...(updated ? { dateModified: updated } : {}),
       inLanguage: 'ko',
       author,
       isPartOf: website

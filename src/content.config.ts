@@ -16,7 +16,7 @@ export const collections = {
       contentMode: z.enum(['full', 'external']).default('full'),
       externalPublisher: z.string().default(''), published: z.string().default(''),
       tags: z.array(z.string()), publicTags: z.array(z.string()), topic: z.string(),
-      date: z.string(), summary: z.string(), summaryIsExplicit: z.boolean(),
+      date: z.string(), updated: z.string().default(''), summary: z.string(), summaryIsExplicit: z.boolean(),
       thumbnail: image().nullable().optional(),
       thumbnailStyle: z.enum(['plain', 'soft']).default('plain'),
       articleCards: z.array(z.object({ url: z.string(), title: z.string(), caption: z.string() })).default([]),
