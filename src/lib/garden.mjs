@@ -9,6 +9,7 @@ import { selectGraphNodes } from '../graph/select.mjs';
 import { slugFor, slugify, kindPrefix, noteUrl, assertUniqueSlugs } from './slug.mjs';
 import { plainText } from './text.mjs';
 import { publicTags, cleanTitle } from './format.mjs';
+import { dateOnly, kstDate, noteDates } from './dates.mjs';
 
 const normalize = (value) => value.replace(/\\/g, '/').replace(/^\.\//, '');
 
@@ -143,11 +144,6 @@ function bookTier(rate) {
   return ({ 5: 'S', 4: 'A', 3: 'B', 2: 'C', 1: 'D' })[Math.floor(rate)] ?? '미분류';
 }
 
-function firstDate(meta) {
-  const value = [meta.published, meta.created, meta.date].find(Boolean);
-  return String(value ?? '').match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? '';
-}
-
 function kindFor(relativePath) {
   if (relativePath.startsWith('01_Slipbox/')) return 'slipbox';
   if (relativePath.startsWith('20_Projects/blog/')) return 'blog';
@@ -234,7 +230,8 @@ function publicBody(body) {
   return stripAuthorSections(stripLeadingTitle(stripObsidianComments(body)));
 }
 
-export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
+// today는 미래 날짜 검사의 기준일이다. 테스트가 날짜를 고정할 수 있게 인자로 받는다.
+export async function assembleGarden({ vaultRoot, config, basePath = '', today = kstDate() }) {
   validatePublicationConfig(config);
   const base = String(basePath).replace(/\/$/, '');
   const isExcluded = (relativePath) => excludedByPolicy(config, relativePath);
@@ -250,6 +247,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
     const externalPublisher = externalPublicationFor(config, relativePath, note.meta);
     const contentMode = externalPublisher ? 'external' : 'full';
     const tags = tagList(note.meta);
+    const dates = noteDates(note.meta, { path: relativePath, today });
     const record = {
       path: relativePath,
       fileTitle,
@@ -260,13 +258,15 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
       url: siteUrl(relativePath),
       publishedUrl: kind === 'blog' ? publicUrl(note.meta.source, '') : '',
       publication: String(note.meta.publication ?? ''),
-      published: String(note.meta.published ?? ''),
+      published: dates.published,
       contentMode,
       externalPublisher,
       status: String(note.meta.status ?? ''),
       type: String(note.meta.type ?? ''),
       tags,
-      date: firstDate(note.meta),
+      date: dates.date,
+      // 외부 발행 글은 본문을 싣지 않아 독자가 무엇이 고쳐졌는지 볼 수 없다.
+      updated: contentMode === 'external' ? '' : dates.updated,
       summary: summaryFor(note, { kind, contentMode }),
       summaryIsExplicit: Boolean(explicitSummary(note))
     };
@@ -276,7 +276,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
 
   function blogRecord(relativePath, note) {
     const base = baseRecord(relativePath, note);
-    return { ...base, series: String(note.meta.series ?? ''), seriesOrder: numberValue(note.meta.series_order), created: base.date };
+    return { ...base, series: String(note.meta.series ?? ''), seriesOrder: numberValue(note.meta.series_order) };
   }
 
   const candidateFiles = new Map();
@@ -451,7 +451,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '' }) {
         rate,
         tier: bookTier(rate),
         note: String(parsed.meta.book_note ?? ''),
-        created: firstDate(parsed.meta)
+        created: dateOnly(parsed.meta.created)
       });
     }
   } catch {

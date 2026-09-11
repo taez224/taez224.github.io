@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { feedEntries, feedItems, renderFeed } from '../src/lib/rss.mjs';
 import { SITE_DESCRIPTION } from '../src/lib/site-meta.mjs';
-const options = { site: 'https://example.com', basePath: '/obsidian', now: new Date('2026-09-06T12:00:00Z') };
+const options = { site: 'https://example.com', basePath: '/obsidian' };
 const note = extra => ({ title: '생각', kind: 'slipbox', type: 'permanent', date: '2026-09-01', url: '/obsidian/notes/test/', summary: '요약', ...extra });
 const post = extra => note({ kind: 'blog', status: 'published', published: '2026-09-02', url: '/obsidian/posts/test/', publishedUrl: 'https://publisher.test/article', ...extra });
 const external = extra => post({ contentMode: 'external', url: '/obsidian/posts/ext/', published: '2026-09-03', ...extra });
@@ -21,8 +21,9 @@ test('articles require a publication date; only external articles also need a va
  const gardenOnly = feedItems([post({ publishedUrl: '' }), post({ publishedUrl: 'javascript:alert(1)' })], options);
  assert.deepEqual(gardenOnly.map(x => x.url), ['https://example.com/obsidian/posts/test/'], '전문 공개 글은 원문 주소가 없거나 이상해도 가든 주소로 나간다');
 });
-test('ignores modification dates and excludes invalid or future dates, deduplicates and limits', () => {
- const items = [note({ updated: '2026-09-06' }), post(), post(), note({ date: '2026-02-30' }), note({ date: '2027-01-01' }), note({ date: '' })];
+// 잘못된 날짜와 미래 날짜는 조립 단계에서 빌드가 멈추므로 dates.test.mjs가 검증한다.
+test('ignores modification dates, deduplicates and limits', () => {
+ const items = [note({ updated: '2026-09-06' }), post(), post()];
  assert.equal(feedItems(items, options).length, 2);
  assert.equal(feedItems(items, {...options, limit: 1})[0].kind, 'blog');
 });

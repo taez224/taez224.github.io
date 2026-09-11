@@ -14,17 +14,16 @@ export function feedEntries(garden) {
 const FEED_KINDS = ['blog', 'slipbox', 'development'];
 
 // quota: 종류별 몫({ kind: n }). 주면 종류마다 최근 n편을 뽑은 뒤 합쳐 날짜순으로 놓는다. 종류별 피드는 몫 없이 limit만 쓴다.
-export function feedItems(notes, { site, basePath = '', limit = 30, kinds = FEED_KINDS, quota = null, now = new Date() }) {
+export function feedItems(notes, { site, basePath = '', limit = 30, kinds = FEED_KINDS, quota = null }) {
   const home = new URL(`${basePath.replace(/\/$/, '')}/`, site);
   const items = notes.flatMap(note => {
     if (!kinds.includes(note.kind) || !FEED_KINDS.includes(note.kind) || ['series', 'hub', 'moc'].includes(note.type)) return [];
     const blog = note.kind === 'blog';
     if (blog && note.status !== 'published') return [];
+    // 글은 발행일이 있어야 피드에 들어간다. 날짜가 실제로 있는 날인지, 빌드한 날보다 늦지 않은지는 조립 단계(dates.mjs)가 보장한다.
     const day = blog ? note.published : note.date;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(day ?? '')) return [];
     const date = new Date(`${day}T00:00:00+09:00`);
-    if (!Number.isFinite(date.getTime()) || date > now) return [];
-    if (new Date(date.getTime() + 9 * 3600000).toISOString().slice(0, 10) !== day) return [];
     // 전문을 가든에서 읽는 글과 노트는 가든 주소(canonical)로, 외부 발행처에서만 읽는 글은 원문 주소로 보낸다.
     const external = blog && note.contentMode === 'external';
     let url;

@@ -226,10 +226,10 @@ test('automatic summaries and references use only the public body without modify
 
 test('series and publication summaries exclude author-only sections and retain explicit summaries', async () => {
   const vaultRoot = await makeVault({ ...files,
-    '20_Projects/blog/연재 S.md': '---\ntype: series\n---\n# 연재 S\n```md\n## 연재 목적\n코드 속 가짜 소개.\n```\n## 운영 메모\nHUB_SENTINEL\n## 연재 목적\n연재 소개.\n## 운영 메모\nHUB_TAIL_SENTINEL',
-    '20_Projects/blog/S1.md': '---\nstatus: published\nseries: 연재 S\nseries_order: 1\n---\n# S1\n## 운영 메모\nPOST_SENTINEL\n## 공개 절\n첫 편 소개.',
-    '20_Projects/blog/공개 글.md': '---\nstatus: published\n---\n# 공개 글\n## 운영 메모\nSTANDALONE_SENTINEL\n## 공개 절\n독립 글 소개.',
-    '01_Slipbox/생각 B.md': '---\nsummary: 명시한 요약\n---\n# 생각 B\n자동 요약과 다른 본문.'
+    '20_Projects/blog/연재 S.md': '---\ncreated: 2026-09-01\ntype: series\n---\n# 연재 S\n```md\n## 연재 목적\n코드 속 가짜 소개.\n```\n## 운영 메모\nHUB_SENTINEL\n## 연재 목적\n연재 소개.\n## 운영 메모\nHUB_TAIL_SENTINEL',
+    '20_Projects/blog/S1.md': '---\ncreated: 2026-09-01\nstatus: published\nseries: 연재 S\nseries_order: 1\n---\n# S1\n## 운영 메모\nPOST_SENTINEL\n## 공개 절\n첫 편 소개.',
+    '20_Projects/blog/공개 글.md': '---\ncreated: 2026-09-01\nstatus: published\n---\n# 공개 글\n## 운영 메모\nSTANDALONE_SENTINEL\n## 공개 절\n독립 글 소개.',
+    '01_Slipbox/생각 B.md': '---\ncreated: 2026-09-01\nsummary: 명시한 요약\n---\n# 생각 B\n자동 요약과 다른 본문.'
   });
   const garden = await assembleGarden({ vaultRoot, config });
   assert.equal(garden.blog.series[0].summary, '연재 소개.');
@@ -242,7 +242,7 @@ test('series and publication summaries exclude author-only sections and retain e
 test('graph and references ignore comments and code while keeping visible links and related', async () => {
   const vaultRoot = await makeVault({ ...files,
     '01_Slipbox/생각 A.md': [
-      '---', 'related:', '  - "[[속성 연결]]"', '---', '# 생각 A',
+      '---', 'created: 2026-09-01', 'related:', '  - "[[속성 연결]]"', '---', '# 생각 A',
       '%% [[생각 B]] %%', '<!-- [[생각 B]] -->',
       '`[[생각 B]]`와 ``[예시](생각 B.md)``', '\\[[생각 B]]', '',
       '```md', '[[생각 B]]', '```', '',
@@ -252,10 +252,10 @@ test('graph and references ignore comments and code while keeping visible links 
       '> [!article]', '> [[카드 연결]]', '',
       '> [!note]', '> [[인용 연결]]'
     ].join('\n'),
-    '01_Slipbox/본문연결.md': '---\ntitle: 본문 연결\n---\n# 본문 연결\n공개 본문.',
-    '01_Slipbox/카드 연결.md': '# 카드 연결\n카드 대상.',
-    '01_Slipbox/인용 연결.md': '# 인용 연결\n인용 대상.',
-    '01_Slipbox/속성 연결.md': '# 속성 연결\n속성 대상.'
+    '01_Slipbox/본문연결.md': '---\ncreated: 2026-09-01\ntitle: 본문 연결\n---\n# 본문 연결\n공개 본문.',
+    '01_Slipbox/카드 연결.md': '---\ncreated: 2026-09-01\n---\n# 카드 연결\n카드 대상.',
+    '01_Slipbox/인용 연결.md': '---\ncreated: 2026-09-01\n---\n# 인용 연결\n인용 대상.',
+    '01_Slipbox/속성 연결.md': '---\ncreated: 2026-09-01\n---\n# 속성 연결\n속성 대상.'
   });
   const garden = await assembleGarden({ vaultRoot, config });
   const note = garden.notes.find((note) => note.path === '01_Slipbox/생각 A.md');
@@ -302,7 +302,7 @@ test('blog body lists and code mentioning 이전 or 다음 글 are preserved', a
 
 test('related links use the public graph candidates and ignore plain text and unpublished targets', async () => {
   const vaultRoot = await makeVault({ ...files,
-    '01_Slipbox/생각 A.md': '---\nrelated:\n  - "[[생각 B]]"\n  - "[[생각 B#절|별칭]]"\n  - "[[30_Resources/Development/Concepts/연결된 개념]]"\n  - "[[20_Projects/blog/초안]]"\n  - "[[20_Projects/blog/공개 글]]"\n  - "[[비공개 개념]]"\n  - 고립된 개념\n---\n# 생각 A\n연결은 속성에만 둔다.'
+    '01_Slipbox/생각 A.md': '---\ncreated: 2026-09-01\nrelated:\n  - "[[생각 B]]"\n  - "[[생각 B#절|별칭]]"\n  - "[[30_Resources/Development/Concepts/연결된 개념]]"\n  - "[[20_Projects/blog/초안]]"\n  - "[[20_Projects/blog/공개 글]]"\n  - "[[비공개 개념]]"\n  - 고립된 개념\n---\n# 생각 A\n연결은 속성에만 둔다.'
   });
   const garden = await assembleGarden({ vaultRoot, config });
   const a = garden.notes.find((note) => note.path === '01_Slipbox/생각 A.md');
@@ -598,4 +598,55 @@ test('an author-only section ends at the next heading, not at a comment line ins
   const note = garden.notes.find((item) => item.path === '20_Projects/blog/검증 연재.md');
   assert.doesNotMatch(note.bodyHtml, /운영 메모|OPERATIONAL_SENTINEL|TAIL_SENTINEL/, '코드 블록 안의 # 줄에서 절이 끝나지 않는다');
   assert.match(note.bodyHtml, /연관된 노트/, '다음 절은 남는다');
+});
+
+test('a note date that is not a real day fails the build and names the file', async () => {
+  const vaultRoot = await makeVault({ ...files, '01_Slipbox/생각 B.md': files['01_Slipbox/생각 B.md'].replace('created: 2026-09-02', 'created: 2026-02-30') });
+  await assert.rejects(assembleGarden({ vaultRoot, config }), /created[\s\S]*2026-02-30[\s\S]*01_Slipbox\/생각 B\.md/);
+});
+
+test('blank optional YAML dates are accepted while blank created is rejected', async () => {
+  const notePath = '01_Slipbox/생각 B.md';
+  const vaultRoot = await makeVault({ ...files, [notePath]: '---\ncreated: 2026-09-02\npublished:\nupdated:\n---\n# 생각 B\n공개 본문.' });
+  const garden = await assembleGarden({ vaultRoot, config, today: '2026-09-11' });
+  const note = garden.notes.find((note) => note.path === notePath);
+  assert.equal(note.date, '2026-09-02');
+  assert.equal(note.published, '');
+  assert.equal(note.updated, '');
+  await fs.writeFile(path.join(vaultRoot, notePath), '---\ncreated:\n---\n# 생각 B\n공개 본문.');
+  await assert.rejects(assembleGarden({ vaultRoot, config, today: '2026-09-11' }), /Missing created date.*생각 B/);
+});
+
+test('assembly uses first publication dates for blog, slipbox and development notes', async () => {
+  const metadata = 'created: 2026-09-01\npublished: 2026-09-10\nupdated: 2026-09-08';
+  const vaultRoot = await makeVault({ ...files,
+    '01_Slipbox/생각 B.md': `---\n${metadata}\n---\n# 생각 B\n공개 본문.`,
+    [`${dev}/Concepts/연결된 개념.md`]: `---\n${metadata}\nsummary: 개념 요약\n---\n# 연결된 개념\n공개 본문.`,
+    '20_Projects/blog/공개 글.md': `---\n${metadata}\nstatus: published\n---\n# 공개 글\n공개 본문.`
+  });
+  const garden = await assembleGarden({ vaultRoot, config, today: '2026-09-11' });
+  for (const notePath of ['01_Slipbox/생각 B.md', `${dev}/Concepts/연결된 개념.md`, '20_Projects/blog/공개 글.md']) {
+    const note = garden.notes.find((note) => note.path === notePath);
+    assert.equal(note.date, '2026-09-10');
+    assert.equal(note.updated, '');
+  }
+});
+
+test('a note dated after the given build day fails the build', async () => {
+  const vaultRoot = await makeVault(files);
+  await assert.rejects(assembleGarden({ vaultRoot, config, today: '2026-09-03' }), /created[\s\S]*2026-09-0[45]/);
+  await assert.doesNotReject(assembleGarden({ vaultRoot, config, today: '2026-09-05' }));
+});
+
+test('public notes carry updated only when it is later than their date, and external articles never do', async () => {
+  const vaultRoot = await makeVault({
+    ...files,
+    '01_Slipbox/생각 A.md': files['01_Slipbox/생각 A.md'].replace('created: 2026-09-01', 'created: 2026-09-01\nupdated: 2026-09-08'),
+    '20_Projects/blog/외부 원문.md': '---\ncreated: 2026-09-06\npublished: 2026-09-07\nupdated: 2026-09-09\nstatus: published\nsource: https://www.nextree.io/external-post\npublication: Nextree 기술 블로그\nsummary: 외부 글 요약\n---\n# 외부 원문\n본문.'
+  });
+  const garden = await assembleGarden({ vaultRoot, config: nextreeConfig, today: '2026-09-11' });
+  const byPath = (notePath) => garden.notes.find((note) => note.path === notePath);
+  assert.equal(byPath('01_Slipbox/생각 A.md').updated, '2026-09-08');
+  assert.equal(byPath('01_Slipbox/생각 B.md').updated, '');
+  assert.equal(byPath('20_Projects/blog/외부 원문.md').updated, '', '본문을 싣지 않는 외부 발행 글은 수정일을 내보내지 않는다');
 });
