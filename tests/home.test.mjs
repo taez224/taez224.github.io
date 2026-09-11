@@ -38,7 +38,7 @@ test('recentByKind skips notes without a date, even when a kind has no other not
   assert.deepEqual(titles(recentByKind(notes, { kinds: ['slipbox', 'development'] })), ['날짜 있음']);
 });
 
-test('recentByKind leaves out hub and MOC notes, like the feeds, so a new hub does not push out the newest note', () => {
-  const notes = [note('slipbox', '새 허브', '2026-09-10', { type: 'hub' }), note('slipbox', '목차', '2026-09-09', { type: 'moc' }), note('slipbox', '새 생각', '2026-09-08')];
+test('recentByKind leaves out hub notes (the vault writes MOCs as hubs), like the feeds, so a new hub does not push out the newest note', () => {
+  const notes = [note('slipbox', '새 허브', '2026-09-10', { type: 'hub' }), note('slipbox', '새 생각', '2026-09-08')];
   assert.deepEqual(titles(recentByKind(notes, { kinds: ['slipbox'] })), ['새 생각']);
 });

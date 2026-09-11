@@ -13,6 +13,7 @@ export function kindFor(relativePath) {
   return 'development';
 }
 
-// 다른 노트를 묶어 안내하는 노트의 type. 연재 허브, 슬립박스 허브, MOC다. 만든 날이 새 생각이 생긴 날이 아니므로
-// 새 글을 알리는 곳(홈 최근 기록, 피드)에는 넣지 않는다. 두 곳이 같은 목록을 써서 규칙이 어긋나지 않게 한다.
-export const NAVIGATION_TYPES = new Set(['series', 'hub', 'moc']);
+// 다른 노트를 묶어 안내하는 노트의 type. 연재 허브(series)와 허브(hub)다. vault 속성 스키마는 MOC를 따로 두지 않고
+// hub로 쓴다. 만든 날이 새 생각이 생긴 날이 아니므로 새 글을 알리는 곳(홈 최근 기록, 피드)에는 넣지 않는다.
+// 두 곳이 같은 목록을 써서 규칙이 어긋나지 않게 한다.
+export const NAVIGATION_TYPES = new Set(['series', 'hub']);

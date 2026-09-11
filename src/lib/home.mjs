@@ -2,7 +2,7 @@ import { newestFirst } from './dates.mjs';
 import { NAVIGATION_TYPES } from './kinds.mjs';
 
 // 홈의 최근 기록. 종류마다 최신 한 편이라 한 종류를 하루에 몰아 올려도 다른 종류가 목록에서 밀리지 않는다.
-// 허브·연재 허브·MOC는 피드처럼 넣지 않는다. 연재의 각 편도 빼는데, 새 편이 나올 때마다 홈의 최근 연재와 같은 연재를 두 번 가리키게 되기 때문이다.
+// 허브(MOC)와 연재 허브는 피드처럼 넣지 않는다. 연재의 각 편도 빼는데, 새 편이 나올 때마다 홈의 최근 연재와 같은 연재를 두 번 가리키게 되기 때문이다.
 // exclude에는 홈에 이미 따로 보이는 노트(대표 글)의 경로를 넘긴다.
 export function recentByKind(notes, { kinds, series = [], exclude = [] }) {
   const seriesPaths = new Set(series.flatMap((item) => item.posts.map((post) => post.path)));
