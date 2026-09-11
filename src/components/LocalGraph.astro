@@ -1,24 +1,22 @@
 ---
 import { localGraphLayout } from './local-graph-layout.mjs';
+import { offsetLine } from '../graph/engine.mjs';
 import { cleanTitle } from '../lib/format.mjs';
 const { note, outgoing, incoming, mapUrl } = Astro.props;
 const width = 310, height = 190;
 const layout = localGraphLayout(note, outgoing, incoming, { width, height });
 const short = (title) => ([...title].length > 12 ? [...title].slice(0, 11).join('') + '…' : title);
-const offset = (edge, sign) => {
-  const dx = edge.x2 - edge.x1, dy = edge.y2 - edge.y1, d = Math.hypot(dx, dy) || 1;
-  return { x: (-dy / d) * 2.5 * sign, y: (dx / d) * 2.5 * sign };
+// 서로 참조하는 이웃은 지도처럼 선 두 개를 벌려 그려 두 방향을 모두 보인다. 벌리는 폭도 지도 엔진과 같다.
+const lines = (edge) => {
+  if (edge.direction !== 'both') return [edge];
+  const center = { x: edge.x1, y: edge.y1 }, neighbor = { x: edge.x2, y: edge.y2 };
+  return [{ ...offsetLine(center, neighbor, 1), direction: 'out' }, { ...offsetLine(center, neighbor, -1), direction: 'in' }];
 };
 ---
 <div class="local-graph">
   <svg viewBox={`0 0 ${width} ${height}`} role="group" aria-label="이 노트의 연결">
     <g>
-      {layout.edges.map((edge) => edge.direction === 'both'
-        ? <>
-            <line class="edge is-out" x1={edge.x1 + offset(edge, 1).x} y1={edge.y1 + offset(edge, 1).y} x2={edge.x2 + offset(edge, 1).x} y2={edge.y2 + offset(edge, 1).y} />
-            <line class="edge is-in" x1={edge.x1 + offset(edge, -1).x} y1={edge.y1 + offset(edge, -1).y} x2={edge.x2 + offset(edge, -1).x} y2={edge.y2 + offset(edge, -1).y} />
-          </>
-        : <line class={`edge is-${edge.direction}`} x1={edge.x1} y1={edge.y1} x2={edge.x2} y2={edge.y2} />)}
+      {layout.edges.flatMap(lines).map((line) => <line class={`edge is-${line.direction}`} x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} />)}
       {layout.nodes.map((node) => node.current
         ? <g class="node is-current">
             <circle cx={node.x} cy={node.y} r="16" class="ring" />

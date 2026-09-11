@@ -94,14 +94,15 @@ function attachWatcher(watcher, config) {
   watcher.on('unlink', onFsEvent);
 }
 
-export function vaultLoader({ garden = getGarden } = {}) {
+// 두 컬렉션 로더는 같은 조립 결과를 읽고 채우는 방식만 다르다. key는 coordinator가 재조립 뒤 다시 채울 스토어의 이름이다.
+function gardenLoader({ name, key, fillStore, garden }) {
   return {
-    name: 'vault-notes',
+    name,
     /** @param {import('astro/loaders').LoaderContext} context 정적 빌드에서는 watcher가 없다. */
     async load({ store, parseData, watcher, logger }) {
       coordinator.setLogger(logger);
-      const fill = fillNotesStore({ store, parseData });
-      coordinator.register('notes', fill);
+      const fill = fillStore({ store, parseData });
+      coordinator.register(key, fill);
       const data = await garden();
       await fill(data);
       attachWatcher(watcher, data.config);
@@ -109,17 +110,10 @@ export function vaultLoader({ garden = getGarden } = {}) {
   };
 }
 
+export function vaultLoader({ garden = getGarden } = {}) {
+  return gardenLoader({ name: 'vault-notes', key: 'notes', fillStore: fillNotesStore, garden });
+}
+
 export function bookLoader({ garden = getGarden } = {}) {
-  return {
-    name: 'vault-books',
-    /** @param {import('astro/loaders').LoaderContext} context 정적 빌드에서는 watcher가 없다. */
-    async load({ store, parseData, watcher, logger }) {
-      coordinator.setLogger(logger);
-      const fill = fillBooksStore({ store, parseData });
-      coordinator.register('books', fill);
-      const data = await garden();
-      await fill(data);
-      attachWatcher(watcher, data.config);
-    }
-  };
+  return gardenLoader({ name: 'vault-books', key: 'books', fillStore: fillBooksStore, garden });
 }

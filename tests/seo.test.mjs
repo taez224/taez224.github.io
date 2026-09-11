@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { structuredData, jsonLdScript, llmsText } from '../src/lib/seo.mjs';
+import { structuredData, jsonLdScript, llmsText, articleMeta } from '../src/lib/seo.mjs';
 
 const siteUrl = 'https://example.com/obsidian/';
 const base = { siteTitle: '정원', siteUrl, description: '소개', sameAs: ['https://github.com/taez224'] };
@@ -29,6 +29,12 @@ test('articles carry dateModified only when the page has a modification date', (
   const article = { ...base, ogType: 'article', kind: 'slipbox', title: '노트', url: `${siteUrl}notes/c/`, published: '2026-09-01' };
   assert.equal(structuredData({ ...article, updated: '2026-09-05' }).dateModified, '2026-09-05');
   assert.equal('dateModified' in structuredData(article), false, '수정일이 없으면 필드를 만들지 않는다');
+});
+
+test('note pages describe themselves by kind and slug, not by the base-prefixed note url', () => {
+  const note = { kind: 'development', slug: 'vault-with-ai', url: '/obsidian/dev/vault-with-ai/', date: '2026-09-01' };
+  assert.deepEqual(articleMeta(note), { path: '/dev/vault-with-ai/', kind: 'development', published: '2026-09-01', ogType: 'article', ogImage: '/og/dev/vault-with-ai.png' });
+  assert.equal(articleMeta({ ...note, date: '' }).published, null, '날짜가 없으면 발행일 메타를 만들지 않는다');
 });
 
 test('list pages are WebPages inside the site', () => {

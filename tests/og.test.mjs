@@ -116,6 +116,14 @@ test('ogSvg uses a contained thumbnail in place of the local graph', () => {
   assert.doesNotMatch(svg, /<circle /, 'thumbnail cards do not render the local graph');
 });
 
+test('ogSvg escapes card text as XML and drops characters an SVG cannot hold', () => {
+  // resvg는 SVG를 XML로 읽는다. 제목에 섞인 제어 문자 하나가 카드 렌더링과 빌드를 멈추게 하면 안 된다.
+  const svg = ogSvg({ note: { title: 'A & <B> "C"\u0008', displayTitle: 'A & <B> "C"\u0008', kind: 'blog' }, outgoing: [], incoming: [], siteLabel: 'example.com' });
+  assert.match(svg, />A &amp; &lt;B&gt; &quot;C&quot;<\/text>/);
+  assert.doesNotMatch(svg, /\u0008/);
+  assert.doesNotThrow(() => new Resvg(svg));
+});
+
 test('ogSvg keeps the local graph when a note has no thumbnail', () => {
   const svg = ogSvg({
     note: { title: 'Graph note', displayTitle: 'Graph note', kind: 'blog' },

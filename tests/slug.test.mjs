@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { slugify, slugFor, kindPrefix, noteUrl, assertUniqueSlugs } from '../src/lib/slug.mjs';
+import { slugify, slugFor, kindPrefix, noteUrl, siteHome, assertUniqueSlugs } from '../src/lib/slug.mjs';
 
 test('slugify keeps Korean, lowercases Latin, and joins with hyphens', () => {
   assert.equal(slugify('AI Agent 시대의 Human Agency'), 'ai-agent-시대의-human-agency');
@@ -35,6 +35,13 @@ test('kindPrefix and noteUrl build kind-scoped urls under the base path', () => 
   assert.equal(noteUrl('/obsidian', 'blog', 'human-agency'), '/obsidian/posts/human-agency/');
   assert.equal(noteUrl('/obsidian', 'slipbox', 'ai-활용', '갈래'), '/obsidian/notes/ai-활용/#갈래');
   assert.equal(noteUrl('', 'development', 'x'), '/dev/x/');
+});
+
+test('siteHome is the absolute home url whether or not the base path ends with a slash', () => {
+  assert.equal(siteHome('https://example.com', '/obsidian').href, 'https://example.com/obsidian/');
+  assert.equal(siteHome('https://example.com', '/obsidian/').href, 'https://example.com/obsidian/');
+  assert.equal(siteHome('https://example.com').href, 'https://example.com/');
+  assert.equal(siteHome(new URL('https://example.com'), null).href, 'https://example.com/', 'Astro.site는 URL 객체이고 config에 basePath가 없을 수 있다');
 });
 
 test('assertUniqueSlugs fails on a collision within one kind only', () => {

@@ -12,6 +12,8 @@ export function topicFor(tags) { const topic = publicTags(tags).find(Boolean); r
 export function displayTag(tag) { return tag.startsWith('개발/') ? tag.slice(3) : tag; }
 export function cleanTitle(title) { return String(title ?? '').replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]\s*/gu, '').trim(); }
 export function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); }
+// 피드와 OG 카드 SVG는 XML이다. XML 1.0이 담지 못하는 제어 문자는 지우고, 이모지 같은 보충 평면 문자는 남긴다.
+export function escapeXml(value) { return String(value ?? '').replace(/[^\u0009\u000A\u000D\u0020-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}]/gu, '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[c]); }
 // <script type="application/json"> 안에 넣는 JSON. 제목의 '<'가 태그를 닫지 못하게 이스케이프한다.
 export function inlineJson(data) { return JSON.stringify(data).replace(/</g, '\\u003c'); }
 export function formatDate(iso) { return String(iso ?? '').slice(0, 10).replaceAll('-', '.'); }

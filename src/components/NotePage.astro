@@ -6,7 +6,7 @@ import ArticleBody from './ArticleBody.astro';
 import { getGarden } from '../lib/get-garden.mjs';
 import { formatDate, displayTag, withBase, cleanTitle, topicColor } from '../lib/format.mjs';
 import { parentLink, seriesNeighbors } from '../lib/note-nav.mjs';
-import { kindPrefix } from '../lib/slug.mjs';
+import { articleMeta } from '../lib/seo.mjs';
 import '../styles/body.css';
 const { entry } = Astro.props;
 const note = entry.data;
@@ -32,10 +32,8 @@ const hasSeriesNav = Boolean(series && (series.prev || series.next));
 const endLink = note.kind === 'slipbox' ? null : parent.listLabel;
 // 다 읽은 자리에서 저자에게 닿는 길. 검색이나 SNS로 상세 페이지에 바로 들어온 사람에게는 이것이 유일한 경로다.
 const aboutUrl = withBase('/about/');
-const siteBase = String(garden.config.basePath ?? '').replace(/\/$/, '');
-const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slice(siteBase.length) : note.url;
 ---
-<Shell title={title} description={note.summary} path={sitePath} kind={note.kind} published={note.date || null} updated={note.updated || null} ogImage={withBase(`/og/${kindPrefix(note.kind)}/${note.slug}.png`)} active={note.kind === 'blog' ? 'posts' : note.kind === 'development' ? 'dev' : 'map'} ogType="article">
+<Shell title={title} description={note.summary} {...articleMeta(note)} updated={note.updated || null} active={note.kind === 'blog' ? 'posts' : note.kind === 'development' ? 'dev' : 'map'}>
   <div class="wrap note-view" style={`--topic:${topicColor(note.topic)}`}>
     <article class="note-article">
       <div class="meta note-meta">

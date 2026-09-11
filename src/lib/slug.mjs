@@ -37,6 +37,11 @@ export function noteUrl(basePath, kind, slug, fragment = '') {
   return fragment ? `${url}#${fragment}` : url;
 }
 
+// 사이트 첫 화면의 절대 주소. 피드와 llms.txt가 사이트 주소로 싣고, 피드는 항목 주소가 이 아래에 있는지 검사한다.
+export function siteHome(site, basePath = '') {
+  return new URL(`${String(basePath ?? '').replace(/\/$/, '')}/`, site);
+}
+
 export function assertUniqueSlugs(entries) {
   const seen = new Map();
   for (const entry of entries) {

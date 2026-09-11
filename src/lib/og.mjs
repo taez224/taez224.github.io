@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { Resvg } from '@resvg/resvg-js';
 import imageService from 'astro/assets/services/sharp';
-import { kindLabel, formatDate, cleanTitle } from './format.mjs';
+import { kindLabel, formatDate, cleanTitle, escapeXml as esc } from './format.mjs';
 import { estimateTextWidth } from '../graph/label.mjs';
 import { localGraphLayout } from '../components/local-graph-layout.mjs';
 import { layoutGraph, nodeRadius } from '../graph/layout.mjs';
@@ -14,7 +14,6 @@ import { pngDimensions } from './png.mjs';
 import { imageMimeType } from './image-types.mjs';
 
 const PAPER = '#f7f7f2', INK = '#252e29', MUTED = '#626d64', FAINT = '#747c73', ACCENT = '#252e29', LINE = '#9aab9d';
-const esc = (value) => String(value).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
 // ---- PNG 캐시 ----
 // 키는 최종 SVG 문자열 + 폰트 파일 정체 + resvg 버전에서 계산한다. 카드를 바꾸는 코드(템플릿·제목 접기·색상표·배치)는
