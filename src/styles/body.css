@@ -1,0 +1,65 @@
+/* 렌더링한 Markdown 본문(.body). 노트 본문(NotePage)과 소개 페이지(about)가 함께 불러온다.
+   콜아웃·비공개 표시처럼 사이트 렌더러(markdown.mjs)만 만드는 요소도 여기에 둔다. */
+.body { font-size: var(--t-body); line-height: 1.85; }
+.body p { margin: 0 0 22px; }
+/* 본문의 외부 링크는 사이트 다른 곳(발행처·출처)과 같이 ↗를 붙여 노트 링크와 구분한다. */
+/* 링크 색이 먹색이라 본문 링크는 밑줄로 구분한다. */
+.body a { text-decoration: underline; text-decoration-color: rgba(37,46,41,.35); text-decoration-thickness: 1px; text-underline-offset: .18em; }
+.body a:hover { text-decoration-color: var(--ink); }
+.body .private-note { color: var(--muted); }
+.body .visibility-mark { position: relative; display: inline-block; width: 22px; height: 22px; margin-left: 2px; color: var(--muted); vertical-align: -.2em; cursor: help; }
+.body .visibility-mark::before { position: absolute; left: 5px; top: 10px; width: 10px; height: 8px; border: 1px solid currentColor; border-radius: 2px; content: ""; }
+.body .visibility-mark::after { position: absolute; left: 8px; top: 5px; width: 4px; height: 6px; border: 1px solid currentColor; border-bottom: 0; border-radius: 4px 4px 0 0; content: ""; }
+.body .visibility-hint { position: absolute; z-index: 2; right: 0; bottom: calc(100% + 5px); width: max-content; padding: 5px 8px; border-radius: 3px; background: var(--ink); color: var(--paper); font-size: 12px; line-height: 1.5; visibility: hidden; }
+.body .visibility-mark:hover .visibility-hint, .body .visibility-mark:focus .visibility-hint { visibility: visible; }
+.body a[href^="http"]::after { content: "↗"; margin-left: .15em; font-size: .78em; vertical-align: .1em; }
+.body h2, .body h3, .body h4 { font-family: var(--display); font-weight: 700; letter-spacing: -.02em; scroll-margin-top: 110px; }
+.body h2 { margin: 44px 0 14px; font-size: 26px; line-height: 1.4; }
+.body h3 { margin: 32px 0 10px; font-size: 21px; }
+.body h4 { margin: 24px 0 8px; font-size: 17px; }
+.body ul, .body ol { margin: 0 0 22px; padding-left: 22px; }
+.body li { margin: 6px 0; }
+.body blockquote { margin: 18px 0; padding: 4px 16px; border-left: 3px solid var(--line); color: var(--muted); }
+.body pre { overflow-x: auto; margin: 18px 0; padding: 14px 16px; border: 1px solid var(--line); background: var(--paper-strong); font-size: 14px; line-height: 1.6; }
+.body code { padding: 1px 4px; background: rgba(36,39,32,.08); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .88em; }
+.body pre code { padding: 0; background: transparent; }
+.body table { display: block; overflow-x: auto; width: 100%; margin: 18px 0; border-collapse: collapse; font-size: 14px; }
+.body th, .body td { min-width: 100px; padding: 7px 10px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
+.body th { background: var(--paper-strong); font-weight: 650; }
+.body hr { margin: 30px 0; border: 0; border-top: 1px solid var(--line); }
+.body mark { padding: 0 3px; background: #e7d99b; }
+.body .mermaid { overflow-x: auto; margin: 22px 0; padding: 12px; border: 1px solid var(--line); background: var(--paper-strong); text-align: center; }
+.body img { display: block; max-width: 100%; height: auto; margin: 18px auto; }
+.body figure { margin: 18px 0 22px; }
+.body figure img { margin: 0 auto; }
+.body figcaption { margin-top: 8px; color: var(--muted); font-size: var(--t-meta); line-height: 1.6; text-align: center; }
+/* 콜아웃은 코드 블록·표와 같은 그릇(종이색 판 + 1px 선)을 쓴다. 종류는 색 채움이 아니라 제목 아래 선, 왼쪽 막대, 활자로 구분한다.
+   요약·인용은 먹색 막대에 명조로 흘리고, 경고·버그만 막대에 색을 준다. 팁은 제목 앞 화살표, 질문은 점선 막대. */
+.body .callout { margin: 26px 0; padding: 12px 18px 16px; border: 1px solid var(--line); background: var(--paper-strong); }
+.body .callout + .callout { margin-top: 16px; }
+.body .callout summary, .body .callout-title { display: block; padding-bottom: 8px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: var(--t-meta); font-weight: 600; letter-spacing: .04em; }
+/* 접히는 콜아웃: 제목 줄 오른쪽 꺾쇠가 펼칠 수 있음을 알린다. 접힌 동안은 제목 아래 선을 걷어 빈 절의 머리처럼 보이지 않게 한다.
+   summary가 display: block이면 크롬·파이어폭스는 기본 삼각형을 지우지만 사파리는 -webkit 마커를 따로 그린다. */
+.body details.callout > summary { position: relative; padding-right: 24px; cursor: pointer; }
+.body details.callout > summary::-webkit-details-marker { display: none; }
+.body details.callout > summary::after { position: absolute; top: 6px; right: 4px; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg); transition: transform .15s ease; content: ""; }
+.body details.callout[open] > summary::after { transform: translateY(5px) rotate(-135deg); }
+.body details.callout > summary:hover { color: var(--ink); }
+.body details.callout:not([open]) { padding-bottom: 12px; }
+.body details.callout:not([open]) > summary { padding-bottom: 0; border-bottom: 0; }
+@media (prefers-reduced-motion: reduce) { .body details.callout > summary::after { transition: none; } }
+.body .callout-body { margin-top: 12px; }
+.body .callout-body > :first-child { margin-top: 0; }
+.body .callout-body > :last-child { margin-bottom: 0; }
+.body :is(.callout-summary, .callout-abstract, .callout-tldr, .callout-quote) { border-left: 3px solid var(--accent); }
+.body :is(.callout-summary, .callout-abstract, .callout-tldr, .callout-quote) .callout-body { font-family: var(--display); font-size: 18.5px; line-height: 1.65; letter-spacing: -.01em; }
+.body :is(.callout-question, .callout-faq) { border-left: 3px dashed var(--line); }
+.body .callout-tip :is(.callout-title, summary)::before { content: "→ "; }
+.body :is(.callout-warning, .callout-danger, .callout-failure) { border-left: 3px solid #a66a38; }
+.body :is(.callout-warning, .callout-danger, .callout-failure) :is(.callout-title, summary) { color: #a66a38; }
+.body .callout-bug { border-left: 3px solid #9c6e6e; }
+.body .callout-bug :is(.callout-title, summary) { color: #9c6e6e; }
+@media (max-width: 720px) {
+  /* 설명 열이 지나치게 잘게 접히지 않도록 너비를 확보하고 표 안에서 가로로 읽는다. */
+  .body th:not(:first-child), .body td:not(:first-child) { min-width: 180px; }
+}

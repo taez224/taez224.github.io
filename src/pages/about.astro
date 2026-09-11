@@ -3,6 +3,7 @@ import Shell from '../layouts/Shell.astro';
 import { Content, frontmatter } from '../content/about.md';
 import Contacts from '../components/Contacts.astro';
 import { getGarden } from '../lib/get-garden.mjs';
+import '../styles/body.css';
 
 const title = frontmatter.title;
 const garden = await getGarden();
@@ -21,7 +22,7 @@ const contacts = (garden.home.contacts || []).filter((contact) => contact.name !
 
   .wiki-about { max-width: 720px; padding-top: 64px; padding-bottom: 96px; }
   h1 { margin: 0 0 32px; font-size: clamp(28px, 4vw, 38px); }
-  .intro-body { font-size: var(--t-body); line-height: 1.9; }
+  .intro-body { line-height: 1.9; }
   .intro-body :global(h2) { margin: 44px 0 18px; font-size: 23px; line-height: 1.5; }
   .intro-body :global(p) { margin: 0 0 18px; }
   .intro-body :global(a) { text-decoration: underline; text-underline-offset: 4px; }
