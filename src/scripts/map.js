@@ -4,6 +4,7 @@ import { panelModel } from '../lib/panel.mjs';
 import { setupScrollFades } from './scroll-fades.js';
 import { escapeHtml as escape } from '../lib/format.mjs';
 import { REF_ICONS } from '../lib/ref-icons.mjs';
+import { loopTabFocus } from './focus-loop.mjs';
 
 const page = document.querySelector('.map-page');
 const svg = document.querySelector('svg[data-map]');
@@ -148,6 +149,10 @@ document.querySelector('[data-graph-zoom="fit"]').addEventListener('click', () =
 document.querySelector('[data-panel-close]')?.addEventListener('click', closeSheet);
 backdrop?.addEventListener('click', closeSheet);
 narrow.addEventListener('change', syncSheet);
+// aria-modal만으로는 배경의 건너뛰기 링크로 이동하는 Tab을 막을 수 없다.
+document.addEventListener('keydown', (event) => {
+  if (narrow.matches && 'open' in panel.dataset && !document.querySelector('dialog[open]')) loopTabFocus(event, panel);
+});
 // Escape: 시트가 열려 있으면 닫고, 아니면 선택을 푼다(빈 곳 클릭과 같다). 검색 다이얼로그의 Escape는 건드리지 않는다.
 document.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape' || document.querySelector('dialog[open]')) return;
