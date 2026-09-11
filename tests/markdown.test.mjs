@@ -322,3 +322,8 @@ test('a paragraph that only starts or ends with italics is not a caption and nev
   const tail = render('x.md', '![카드](https://example.com/a.png)\n\n앞은 평문 *뒤만 기울임*\n\n## 다음 헤딩');
   assert.doesNotMatch(tail, /<figure>/);
 });
+
+test('strikethrough keeps its tag instead of flattening into plain text', () => {
+  // markdown-it은 ~~ ~~를 <s>로 그린다. 허용 태그에서 빠지면 취소선이 사라지고 글자만 남는다.
+  assert.match(render('x.md', '앞 ~~지운 글~~ 뒤'), /앞 <s>지운 글<\/s> 뒤/);
+});

@@ -21,10 +21,11 @@ const CALLOUT_TITLES = {
   warning: '주의'
 };
 
+// markdown-it은 ~~취소선~~을 <s>로 그리므로 del과 함께 s도 허용한다.
 const ALLOWED_TAGS = [
   'a', 'aside', 'blockquote', 'br', 'code', 'del', 'details', 'div', 'em', 'figcaption',
   'figure', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'img', 'kbd', 'li', 'mark', 'ol',
-  'p', 'pre', 'section', 'small', 'span', 'strong', 'sub', 'summary', 'sup', 'table',
+  'p', 'pre', 's', 'section', 'small', 'span', 'strong', 'sub', 'summary', 'sup', 'table',
   'tbody', 'td', 'tfoot', 'th', 'thead', 'tr', 'ul'
 ];
 
