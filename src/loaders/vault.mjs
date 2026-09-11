@@ -33,16 +33,23 @@ export function watchPathsFor(config, { vaultRoot, projectRoot }) {
   return [...paths];
 }
 
+// 새 항목을 모두 검증한 뒤에 스토어를 바꾼다. 먼저 비우면 개발 중 한 항목의 검증이 실패했을 때
+// 이미 보이던 페이지까지 사라지고 앞쪽 새 항목만 남는다.
+function replaceStore(store, entries) {
+  store.clear();
+  for (const entry of entries) store.set(entry);
+}
+
 function fillNotesStore({ store, parseData }) {
   return async (garden) => {
-    store.clear();
     const { projectRoot, vaultRoot } = projectPaths();
+    const entries = [];
     for (const note of garden.notes) {
       const { bodyHtml, ...rest } = note;
       const id = noteEntryId(note);
       const filePath = path.join(vaultRoot, note.path);
       const data = await parseData({ id, data: { ...rest, thumbnail: note.thumbnail ? path.join(vaultRoot, note.thumbnail) : null }, filePath });
-      store.set({
+      entries.push({
         id,
         data,
         filePath: path.relative(projectRoot, filePath).split(path.sep).join('/'),
@@ -52,16 +59,15 @@ function fillNotesStore({ store, parseData }) {
         }
       });
     }
+    replaceStore(store, entries);
   };
 }
 
 function fillBooksStore({ store, parseData }) {
   return async (garden) => {
-    store.clear();
-    for (const book of garden.books) {
-      const data = await parseData({ id: book.slug, data: book });
-      store.set({ id: book.slug, data });
-    }
+    const entries = [];
+    for (const book of garden.books) entries.push({ id: book.slug, data: await parseData({ id: book.slug, data: book }) });
+    replaceStore(store, entries);
   };
 }
 

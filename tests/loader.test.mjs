@@ -33,6 +33,20 @@ test('bookLoader stores books by slug', async () => {
   assert.deepEqual(store.entries.map((entry) => entry.id), ['b']);
 });
 
+test('a validation failure while refreshing keeps the previous entries instead of a half-filled store', async () => {
+  // 개발 서버에서 편집 중 한 항목의 검증이 실패해도, 이미 보이던 페이지가 사라지지 않아야 한다.
+  const twoNotes = { ...garden, notes: [garden.notes[0], { ...garden.notes[0], path: '20_Projects/blog/y.md', slug: 'y' }] };
+  const twoBooks = { ...garden, books: [garden.books[0], { ...garden.books[0], path: '30_Resources/References/Books/c.md', slug: 'c' }] };
+  for (const [loader, data] of [[vaultLoader, twoNotes], [bookLoader, twoBooks]]) {
+    const store = fakeStore();
+    store.set({ id: 'previous' });
+    let calls = 0;
+    const failSecond = async ({ data: item }) => { calls += 1; if (calls === 2) throw new Error('schema mismatch'); return item; };
+    await assert.rejects(loader({ garden: async () => data }).load({ store, parseData: failSecond }), /schema mismatch/);
+    assert.deepEqual(store.entries.map((entry) => entry.id), ['previous']);
+  }
+});
+
 test('vaultLoader gives Astro an absolute thumbnail and a site-relative entry path', async () => {
   const store = fakeStore();
   let parsed;
