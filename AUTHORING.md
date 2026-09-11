@@ -114,4 +114,4 @@ thumbnail: "[[thumbnail-ai-harness-loop.jpg]]"
 - 새로운 작성 문법이나 표시 조건을 추가하면 이 문서와 관련 테스트를 함께 수정한다.
 - 공개 범위를 바꾸려면 `config.json`의 게시 규칙과 이미지 허용 목록을 확인한다. 링크나 카드 지정만으로 비공개 자료를 공개하지 않는다.
 
-구현 위치는 `src/lib/markdown.mjs`(문법), `src/lib/slug.mjs`(주소), `src/lib/garden.mjs`(공개 문서 연결), `src/components/ArticleBody.astro`와 `src/lib/article-card.mjs`(카드 출력), `src/styles/article-card.css`(배치), `src/lib/og.mjs`(공유 카드), `src/lib/rss.mjs`(피드)다.
+구현 위치는 `src/lib/markdown.mjs`(문법), `src/lib/slug.mjs`(주소), `src/lib/garden.mjs`(공개 문서 조립), `src/lib/links.mjs`(위키 링크 해석), `src/lib/note-body.mjs`(공개 본문과 요약), `src/components/ArticleBody.astro`와 `src/lib/article-card.mjs`(카드 출력), `src/styles/article-card.css`(배치), `src/lib/og.mjs`(공유 카드), `src/lib/rss.mjs`(피드)다.

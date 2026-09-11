@@ -1,246 +1,22 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import MarkdownIt from 'markdown-it';
-import { createMarkdownRenderer, extractNoteTargets, headingTextForId, headingId, stripObsidianComments } from './markdown.mjs';
-import { developmentCategory, externalPublicationFor, pathMatches, isExcluded as excludedByPolicy, isIncluded as includedByPolicy, validatePublicationConfig } from './publication.mjs';
+import { createMarkdownRenderer } from './markdown.mjs';
+import { developmentCategory, externalPublicationFor, pathMatches, publicUrl, isExcluded as excludedByPolicy, isIncluded as includedByPolicy, validatePublicationConfig } from './publication.mjs';
 import { isImagePath } from './image-types.mjs';
-import { coverUrl } from './books.mjs';
+import { bookTier, coverUrl } from './books.mjs';
 import { selectGraphNodes } from '../graph/select.mjs';
 import { slugFor, slugify, kindPrefix, noteUrl, assertUniqueSlugs } from './slug.mjs';
 import { plainText } from './text.mjs';
-import { publicTags, cleanTitle } from './format.mjs';
+import { publicTags, cleanTitle, topicFor } from './format.mjs';
 import { dateOnly, kstDate, newestFirst, noteDates } from './dates.mjs';
 import { lastPublishedOf } from './blog.mjs';
-
-const normalize = (value) => value.replace(/\\/g, '/').replace(/^\.\//, '');
-
-const isMarkdown = (name) => name.endsWith('.md');
-
-async function walk(directory, accept = () => true) {
-  const entries = await fs.readdir(directory, { withFileTypes: true });
-  const files = [];
-  for (const entry of entries) {
-    if (entry.name.startsWith('.')) continue;
-    const absolute = path.join(directory, entry.name);
-    if (entry.isDirectory()) files.push(...await walk(absolute, accept));
-    else if (entry.isFile() && accept(entry.name)) files.push(absolute);
-  }
-  return files;
-}
-
-// 폴더 자체가 없을 때만 null을 돌려준다. 권한 오류나 파일을 폴더로 잘못 적은 경우까지 건너뛰면
-// 하위 폴더 하나 때문에 공개 폴더 전체가 조용히 사이트에서 빠진다.
-async function walkIfPresent(directory, accept) {
-  try {
-    return await walk(directory, accept);
-  } catch (error) {
-    if (error.code === 'ENOENT' && error.path === directory) return null;
-    throw error;
-  }
-}
-
-export function parseFrontmatter(source) {
-  if (!source.startsWith('---')) return { body: source, meta: {} };
-  const end = source.indexOf('\n---', 3);
-  if (end < 0) return { body: source, meta: {} };
-
-  const frontmatter = source.slice(3, end).replace(/^\n/, '');
-  const meta = {};
-  let activeListKey = null;
-  const parseValue = (rawValue) => {
-    const value = String(rawValue ?? '').trim();
-    if (value === 'null' || value === '~') return null;
-    const quoted = value.match(/^(['"])([\s\S]*)\1$/);
-    return quoted ? quoted[2] : value;
-  };
-  for (const line of frontmatter.split('\n')) {
-    const listItem = line.match(/^\s*-\s*(.*?)\s*$/);
-    if (activeListKey && listItem) {
-      meta[activeListKey] ??= [];
-      const value = parseValue(listItem[1]);
-      if (value !== null && value !== '') meta[activeListKey].push(value);
-      continue;
-    }
-    const field = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
-    if (!field) continue;
-    const [, key, rawValue] = field;
-    if (rawValue.trim() === '') {
-      activeListKey = key;
-      meta[key] = [];
-      continue;
-    }
-    activeListKey = null;
-    meta[key] = parseValue(rawValue);
-  }
-  return { body: source.slice(end + 4), meta };
-}
-
-function firstHeading(body, fallback) {
-  const heading = body.match(/^#\s+(.+)$/m);
-  return heading ? heading[1].trim() : fallback;
-}
-
-// 목차·검색용 헤딩. 개수 제한은 두지 않는다(사이드바가 스크롤한다). 제목의 굵게·코드·위키링크 표시는 지운다.
-// 본문 흐름의 헤딩만 센다. 인용·콜아웃·목록 안의 헤딩(token.level > 0)은 인용한 남의 글이라 목차에 넣지 않는다.
-// 렌더러도 같은 규칙으로 id를 매기므로 목차 id와 실제 id가 어긋나지 않는다.
-const contentParser = new MarkdownIt({ html: true });
-function bodyHeadings(body) {
-  const tokens = contentParser.parse(body, {});
-  return tokens.flatMap((token, index) => token.type === 'heading_open' && token.level === 0
-    ? [{ start: token.map[0], end: token.map[1], level: Number(token.tag.slice(1)), text: tokens[index + 1].content.trim() }]
-    : []);
-}
-
-export function headingsFor(body) {
-  const headingIds = new Map();
-  const headings = [];
-  for (const { text, level } of bodyHeadings(stripObsidianComments(body))) {
-    const id = headingId(headingIds, text);
-    if (level >= 2 && level <= 4) headings.push({ id, level, title: headingTextForId(text) });
-  }
-  return headings;
-}
-
-function excerpt(body) {
-  const withoutHeadings = String(body ?? '').replace(/^#{1,6}\s+.+$/gm, ' ');
-  const cleaned = plainText(withoutHeadings, { includeCodeBlocks: false });
-  if (cleaned.length <= 220) return cleaned;
-  return `${cleaned.slice(0, 220).replace(/\s+\S*$/, '')}…`;
-}
-
-// 노트 한 편의 요약 규칙. 목록·카드·노트 엔트리가 모두 이 함수를 부른다.
-// 외부 발행 글은 원문을 옮기지 않기로 했으므로 명시 요약만 쓰고, 없으면 요약을 비운다.
-function summaryFor(note, { kind = '', contentMode = 'full' } = {}) {
-  const explicit = explicitSummary(note);
-  if (contentMode === 'external') return explicit;
-  if (kind === 'blog' && note.meta.type === 'series') return explicit || sectionExcerpt(note.publicContent, ['연재 목적', '시리즈 소개']) || excerpt(note.publicContent);
-  return explicit || excerpt(note.publicContent);
-}
-
-// frontmatter의 tags. 목록이 아니면 빈 배열로 본다.
-function tagList(meta) {
-  return Array.isArray(meta.tags) ? meta.tags : [];
-}
-
-function explicitSummary(note) {
-  return String(note.meta.summary ?? '').trim();
-}
-
-function sectionExcerpt(body, sectionNames) {
-  const wanted = sectionNames.map((name) => name.toLowerCase());
-  const headings = bodyHeadings(body).filter((heading) => heading.level <= 2);
-  const index = headings.findIndex((heading) => heading.level === 2 && wanted.includes(heading.text.toLowerCase()));
-  if (index < 0) return '';
-  return excerpt(body.split('\n').slice(headings[index].end, headings[index + 1]?.start).join('\n'));
-}
+import { kindFor } from './kinds.mjs';
+import { isMarkdown, normalize, numberValue, parseFrontmatter, stringList, tagList, walkIfPresent } from './vault-files.mjs';
+import { explicitSummary, firstHeading, headingsFor, publicBody, summaryFor } from './note-body.mjs';
+import { addTo, indexByBasename, noteTargets, resolveTarget, resolveTargets } from './links.mjs';
 
 // 지도에서 노드가 이보다 적은 주제는 색과 영역을 기타로 접는다. 범례가 길어지고 팔레트가 바닥나는 걸 막는다. 원래 주제는 topicTag에 남는다.
 const MIN_TOPIC_NODES = 3;
-
-function topicFor(tags) {
-  const topic = publicTags(tags).find(Boolean);
-  return topic ? topic.split('/')[0] : '기타';
-}
-
-function numberValue(value) {
-  const number = Number(value);
-  return Number.isFinite(number) ? number : 0;
-}
-
-function stringList(value) {
-  const values = Array.isArray(value) ? value : value ? [value] : [];
-  return values.map((item) => String(item).trim()).filter(Boolean);
-}
-
-function bookTier(rate) {
-  return ({ 5: 'S', 4: 'A', 3: 'B', 2: 'C', 1: 'D' })[Math.floor(rate)] ?? '미분류';
-}
-
-function kindFor(relativePath) {
-  if (relativePath.startsWith('01_Slipbox/')) return 'slipbox';
-  if (relativePath.startsWith('20_Projects/blog/')) return 'blog';
-  return 'development';
-}
-
-function publicUrl(value, fallback) {
-  try {
-    const url = new URL(String(value ?? '').trim());
-    return url.protocol === 'https:' && !url.username && !url.password ? url.href : fallback;
-  } catch { return fallback; }
-}
-
-function stripLinkTarget(rawTarget) {
-  return rawTarget.split('|')[0].split('#')[0].trim().replace(/^!/, '');
-}
-
-// 같은 열쇠에 값을 모은다. 붙일 때마다 배열을 통째로 복사하지 않는다.
-function addTo(map, key, value) {
-  const bucket = map.get(key);
-  if (bucket) bucket.push(value);
-  else map.set(key, [value]);
-}
-
-// 경로를 소문자 파일명으로 묶은 색인. 위키 링크가 폴더를 안 밝힐 때 후보를 찾는 데 쓴다.
-function indexByBasename(paths) {
-  const index = new Map();
-  for (const relativePath of paths) addTo(index, path.posix.basename(relativePath).toLowerCase(), relativePath);
-  return index;
-}
-
-function resolveTarget(sourcePath, rawTarget, byPath, byBasename, preferred = null) {
-  const target = stripLinkTarget(rawTarget);
-  if (!target || target.startsWith('http://') || target.startsWith('https://')) return null;
-  const sourceDirectory = path.posix.dirname(sourcePath);
-  const withExtension = target.endsWith('.md') ? target : `${target}.md`;
-  const relativeCandidate = normalize(path.posix.join(sourceDirectory, withExtension));
-  if (byPath.has(relativeCandidate)) return relativeCandidate;
-  const rootCandidate = normalize(withExtension);
-  if (byPath.has(rootCandidate)) return rootCandidate;
-  const basename = path.posix.basename(withExtension).toLowerCase();
-  const matches = byBasename.get(basename) ?? [];
-  if (matches.length === 1) return matches[0];
-  // 이름이 겹치면 공개 노트를 먼저 고른다. 같은 이름의 초안이 생겨도 공개 노트의 링크가 평문으로 떨어지지 않는다.
-  const preferredMatches = preferred ? matches.filter((item) => preferred.has(item)) : [];
-  return preferredMatches.length === 1 ? preferredMatches[0] : null;
-}
-
-function noteTargets(body, related = []) {
-  const targets = new Set(extractNoteTargets(body));
-  for (const value of Array.isArray(related) ? related : []) {
-    const target = typeof value === 'string' ? value.trim().match(/^\[\[([^\]\n]+)\]\]$/)?.[1] : null;
-    if (target) targets.add(target);
-  }
-  return [...targets];
-}
-
-// 링크 문법은 한 번만 해석하고, 전체 공개 목록과 그래프 후보에 맞춰 각각 대상을 찾는다.
-function resolveTargets(sourcePath, targets, byPath, byBasename) {
-  return [...new Set(targets.map((target) => resolveTarget(sourcePath, target, byPath, byBasename)).filter(Boolean))];
-}
-
-function stripLeadingTitle(body) {
-  return String(body ?? '').replace(/^\s*#\s+.+(?:\r?\n){1,2}/, '');
-}
-
-// 저자만 보는 절. vault 원문은 그대로 두고 사이트로 나가는 사본에서만 제목과 그 아래 내용을 뺀다.
-// 연재 허브의 "운영 메모"가 frontmatter·정본 같은 작업 용어를 독자에게 보여주고 있었다. 절 이름을 여기 늘리면 함께 빠진다.
-const AUTHOR_ONLY_SECTIONS = ['운영 메모'];
-// 절의 끝은 다음 헤딩이다. 코드 블록 안의 `# 주석` 줄은 헤딩이 아니므로 펜스 안에서는 헤딩을 보지 않는다.
-function stripAuthorSections(body) {
-  const lines = body.split('\n'), kept = [];
-  const headings = bodyHeadings(body);
-  let start = 0;
-  for (const [index, heading] of headings.entries()) {
-    if (!AUTHOR_ONLY_SECTIONS.includes(heading.text)) continue;
-    kept.push(...lines.slice(start, heading.start));
-    start = headings[index + 1]?.start ?? lines.length;
-  }
-  return [...kept, ...lines.slice(start)].join('\n');
-}
-
-function publicBody(body) {
-  return stripAuthorSections(stripLeadingTitle(stripObsidianComments(body)));
-}
 
 // today는 미래 날짜 검사의 기준일이다. 테스트가 날짜를 고정할 수 있게 인자로 받는다.
 export async function assembleGarden({ vaultRoot, config, basePath = '', today = kstDate() }) {
@@ -287,8 +63,8 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
   }
 
   function blogRecord(relativePath, note) {
-    const base = baseRecord(relativePath, note);
-    return { ...base, series: String(note.meta.series ?? ''), seriesOrder: numberValue(note.meta.series_order) };
+    const record = baseRecord(relativePath, note);
+    return { ...record, series: String(note.meta.series ?? ''), seriesOrder: numberValue(note.meta.series_order) };
   }
 
   const candidateFiles = new Map();
@@ -460,20 +236,20 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
   assertUniqueSlugs(books.map((book) => ({ kind: 'book', slug: book.slug, path: book.path })));
 
   function publicEntry(relativePath, note) {
-    const base = baseRecord(relativePath, note);
+    const record = baseRecord(relativePath, note);
     const publicContent = note.publicContent;
-    const bodyText = base.contentMode === 'external' ? '' : plainText(publicContent);
+    const bodyText = record.contentMode === 'external' ? '' : plainText(publicContent);
     return {
-      ...base,
+      ...record,
       isEntry: relativePath === config.entry,
       aliases: stringList(note.meta.aliases),
       slug: slugByPath.get(relativePath),
-      publicTags: publicTags(base.tags),
+      publicTags: publicTags(record.tags),
       bodyText,
       // 한국어 평균 읽기 속도 분당 600자 기준. 리더 메타 줄의 "N분".
-      readingMinutes: base.contentMode === 'external' ? 0 : Math.max(1, Math.round([...bodyText].length / 600)),
-      topic: topicFor(base.tags),
-      headings: base.contentMode === 'external' ? [] : headingsFor(publicContent),
+      readingMinutes: record.contentMode === 'external' ? 0 : Math.max(1, Math.round([...bodyText].length / 600)),
+      topic: topicFor(record.tags),
+      headings: record.contentMode === 'external' ? [] : headingsFor(publicContent),
       publicContent
     };
   }

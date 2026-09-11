@@ -21,6 +21,11 @@ export function statusFilters(books) {
   ];
 }
 
+// 평점을 책장의 등급으로 바꾼다. 소수점은 버리고, 평점이 없으면 미분류다.
+export function bookTier(rate) {
+  return ({ 5: 'S', 4: 'A', 3: 'B', 2: 'C', 1: 'D' })[Math.floor(rate)] ?? '미분류';
+}
+
 // 표지는 88x128 상자에 들어간다. yes24의 XL은 823x1200이라 화면에 쓰이는 것보다 스무 배 넓고 한 장에 90KB다.
 // L(274x400)이면 2배 해상도까지 덮는다. 아는 형태가 아니면 그대로 둔다.
 export function coverUrl(url) {

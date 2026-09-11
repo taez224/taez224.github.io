@@ -28,6 +28,14 @@ function sourceHostname(source) {
   }
 }
 
+// 원문 주소로 내보내도 되는 값인지 본다. https이고 주소에 사용자 정보가 없어야 하며, 아니면 fallback을 돌려준다.
+export function publicUrl(value, fallback) {
+  try {
+    const url = new URL(String(value ?? '').trim());
+    return url.protocol === 'https:' && !url.username && !url.password ? url.href : fallback;
+  } catch { return fallback; }
+}
+
 // A matching publication rule deliberately requires a valid source on one of
 // that rule's hosts. This keeps a display label from publishing arbitrary or
 // missing source URLs as trusted external articles.

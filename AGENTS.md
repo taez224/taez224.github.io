@@ -51,6 +51,7 @@ config.json ──▶ publication.mjs (공개 판정)
 ```
 
 - **페이지**(`src/pages/**`)는 `getCollection('notes'|'books')`로 읽고, **엔드포인트**(`data/*.json.ts`, `og/*.png.ts`, `rss.xml.js`, `llms.txt.ts`)는 `getGarden()`을 직접 부른다. 둘 다 같은 조립 결과다.
+- **조립 모듈**: `garden.mjs`는 조립 순서와 공개 색인을 맡는다. 파일 탐색과 frontmatter는 `vault-files.mjs`, 공개 본문·목차·요약은 `note-body.mjs`, 위키 링크 해석은 `links.mjs`가 맡는다. 이 모듈들은 `garden.mjs`를 import하지 않으므로, 조립 단계를 떼어 낼 때도 순환 의존이 생기지 않는다.
 - **클라이언트 JS**: 홈(`hero.js`)과 지도(`map.js`)는 페이지에 인라인된 노드·간선(`data-hero-data`, `data-map-data`, `graph-data.mjs`)으로 스크립트 실행 즉시 그래프를 올린다. 홈은 빌드 때 계산한 좌표까지 싣고, 지도는 무대 크기에 맞춰 배치한다. 지도 패널이 쓰는 노트 정보·참조 관계도 같은 JSON에 실어 fetch가 없다. 검색만 `search.json`을 열 때 fetch한다. `data/site.json`은 공개 데이터 엔드포인트이자 check-dist의 기준 자료로 남는다. `integrations/module-preload.mjs`가 빌드 산출물의 정적 import를 따라가 엔진 청크에 `modulepreload`를 달고, 지도 페이지 스크립트는 `<head>`로 옮겨 `blocking="render"`를 달아 그래프가 올라간 뒤에 첫 화면을 그린다(지도는 무대 크기가 화면마다 달라 스냅샷을 둘 수 없다). 그 전에 보이는 데스크톱 스냅샷(`snapshot.mjs`의 `desktop` 프리셋)은 엔진과 같은 배치 규칙(`label.mjs`의 `placeLabels`)과 같은 맞춤으로 그려서 교체가 눈에 띄지 않는다. 제목 배치 규칙을 바꾸면 두 쪽이 같이 바뀐다. 그래프는 프레임워크 없는 SVG 엔진 `src/graph/engine.mjs`가 그린다. `src/graph`의 나머지 모듈은 DOM을 만지지 않는 순수 함수이고 각각 단위 테스트가 있다.
 - **dev 감시**: `loaders/vault.mjs`가 include 루트·Books·`config.json`·검토된 자산을 watcher에 등록하고, `refresh-coordinator.mjs`가 디바운스와 직렬화를 맡아 notes·books 스토어를 한 번의 재조립으로 채운다.
 - **OG 카드**: `src/lib/og.mjs`. 최종 SVG 문자열 + 폰트 정체 + resvg 버전의 해시가 캐시 키라 수동 버전 상수가 없다. 캐시는 `node_modules/.cache/garden-og-images`와 `garden-og-fonts`이고 CI가 복원한다.
@@ -64,7 +65,7 @@ config.json ──▶ publication.mjs (공개 판정)
 
 ### 공개 본문 변환
 
-vault 원문은 건드리지 않고 사이트로 나가는 사본만 바꾼다(`garden.mjs`의 `publicBody`).
+vault 원문은 건드리지 않고 사이트로 나가는 사본만 바꾼다(`note-body.mjs`의 `publicBody`).
 
 - 첫 H1, Obsidian 주석(`%% %%`), `AUTHOR_ONLY_SECTIONS`(현재 `운영 메모`) 절을 뺀다.
 - 정리한 공개 본문으로 자동 요약·검색 텍스트·목차·본문 링크를 계산한다. 명시한 `summary`를 우선하며, 외부 발행 글에는 본문 발췌 요약을 만들지 않는다.

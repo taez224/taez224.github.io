@@ -7,6 +7,8 @@ const HIDDEN_TAGS = new Set(['slipbox', 'blog', 'inbox', 'clippings']);
 
 export function topicColor(topic) { return GRAPH_COLORS[topic] ?? GRAPH_COLORS.기타; }
 export function publicTags(tags = []) { return tags.filter((tag) => !HIDDEN_TAGS.has(tag) && !tag.startsWith('프로젝트/')); }
+// 노트의 주제는 첫 공개 태그의 앞 조각이다. 공개 태그가 없으면 기타다.
+export function topicFor(tags) { const topic = publicTags(tags).find(Boolean); return topic ? topic.split('/')[0] : '기타'; }
 export function displayTag(tag) { return tag.startsWith('개발/') ? tag.slice(3) : tag; }
 export function cleanTitle(title) { return String(title ?? '').replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]\s*/gu, '').trim(); }
 export function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); }
