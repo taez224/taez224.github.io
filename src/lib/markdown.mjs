@@ -365,6 +365,43 @@ function createMarkdownIt() {
     return true;
   });
 
+  // 이미지 하나뿐인 문단 바로 뒤에 통째로 기울임인 문단이 오면 그림(figure)과 캡션(figcaption)으로 묶는다.
+  // 다른 확장처럼 토큰 단계에서 문단 구조를 보고 판단하므로, `*강조*로 시작`하는 문단이나 뒤 블록을 잘못 끌어안지 않는다.
+  // 이미지는 markdown-it의 image 토큰이거나 vault_links가 만든 <img> html_inline 토큰이다.
+  const isImageOnly = (inline) => {
+    const only = inline.children?.length === 1 ? inline.children[0] : null;
+    return Boolean(only) && (only.type === 'image' || (only.type === 'html_inline' && /^<img\b/i.test(only.content)));
+  };
+  const isWhollyItalic = (inline) => {
+    const kids = inline.children ?? [];
+    if (kids.length < 3 || kids[0].type !== 'em_open' || kids[kids.length - 1].type !== 'em_close') return false;
+    let depth = 0;
+    for (let i = 0; i < kids.length; i += 1) {
+      if (kids[i].type === 'em_open') depth += 1;
+      else if (kids[i].type === 'em_close') depth -= 1;
+      if (depth === 0 && i < kids.length - 1) return false; // 첫 기울임이 문단 끝 전에 닫히면 문단 전체가 기울임이 아니다
+    }
+    return depth === 0;
+  };
+  markdown.core.ruler.push('image_caption', (state) => {
+    const tokens = state.tokens;
+    for (let i = 0; i + 5 < tokens.length; i += 1) {
+      const [pOpen, image, pClose, cOpen, caption, cClose] = tokens.slice(i, i + 6);
+      if (pOpen.type !== 'paragraph_open' || image.type !== 'inline' || pClose.type !== 'paragraph_close') continue;
+      if (cOpen.type !== 'paragraph_open' || caption.type !== 'inline' || cClose.type !== 'paragraph_close') continue;
+      if (pOpen.level !== cOpen.level || !isImageOnly(image) || !isWhollyItalic(caption)) continue;
+      pOpen.type = 'figure_open'; pOpen.tag = 'figure';
+      pClose.type = 'figcaption_open'; pClose.tag = 'figcaption'; pClose.nesting = 1;
+      cClose.type = 'figcaption_close'; cClose.tag = 'figcaption';
+      caption.children = caption.children.slice(1, -1);
+      const figureClose = new state.Token('figure_close', 'figure', -1);
+      figureClose.block = true;
+      tokens.splice(i + 3, 1); // 캡션 문단의 paragraph_open은 필요 없다
+      tokens.splice(i + 5, 0, figureClose);
+      i += 5;
+    }
+  });
+
   // 문서의 목차를 소유한 렌더만 headingIds를 넘긴다. 콜아웃 본문은 따로 렌더하므로 번호를 다시 매기지 않고 id도 두지 않는다.
   // 인용·목록 안의 헤딩(level > 0)도 같은 이유로 건너뛴다. garden.mjs의 headingsFor가 쓰는 규칙과 같다.
   const defaultHeadingOpen = markdown.renderer.rules.heading_open;
