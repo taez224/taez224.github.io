@@ -26,6 +26,16 @@ async function walk(directory, accept = () => true) {
   }
   return files;
 }
+// 폴더 자체가 없을 때만 null을 돌려준다. 권한 오류나 파일을 폴더로 잘못 적은 경우까지 건너뛰면
+// 하위 폴더 하나 때문에 공개 폴더 전체가 조용히 사이트에서 빠진다.
+async function walkIfPresent(directory, accept) {
+  try {
+    return await walk(directory, accept);
+  } catch (error) {
+    if (error.code === 'ENOENT' && error.path === directory) return null;
+    throw error;
+  }
+}
 
 export function parseFrontmatter(source) {
   if (!source.startsWith('---')) return { body: source, meta: {} };
@@ -283,11 +293,8 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
   // 공개 후보를 읽는 동안 파일 존재 여부만 기록한다. 비공개 본문·메타는 출력하지 않는다.
   const knownNotePaths = new Set();
   for (const include of config.include) {
-    const absoluteDirectory = path.join(vaultRoot, include.path);
-    let files = [];
-    try {
-      files = await walk(absoluteDirectory, isMarkdown);
-    } catch {
+    const files = await walkIfPresent(path.join(vaultRoot, include.path), isMarkdown);
+    if (!files) {
       console.warn(`Skipped missing include path: ${include.path}`);
       continue;
     }
@@ -423,39 +430,37 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
   const books = [];
   const bookSources = new Map();
   const booksDirectory = path.join(vaultRoot, '30_Resources/References/Books');
-  try {
-    for (const absoluteFile of await walk(booksDirectory, isMarkdown)) {
-      const relativePath = normalize(path.relative(vaultRoot, absoluteFile));
-      if (path.posix.basename(relativePath).startsWith('_')) continue;
-      const source = await fs.readFile(absoluteFile, 'utf8');
-      const parsed = parseFrontmatter(source);
-      bookSources.set(relativePath, parsed);
-      const rate = numberValue(parsed.meta.my_rate);
-      const author = Array.isArray(parsed.meta.author)
-        ? parsed.meta.author.join(', ')
-        : String(parsed.meta.author ?? '');
-      books.push({
-        path: relativePath,
-        fileTitle: path.posix.basename(relativePath, '.md'),
-        title: String(parsed.meta.title ?? firstHeading(parsed.body, path.posix.basename(relativePath, '.md'))),
-        slug: slugify(path.posix.basename(relativePath, '.md')),
-        url: `${base}/books/#book-${slugify(path.posix.basename(relativePath, '.md'))}`,
-        author,
-        publisher: String(parsed.meta.publisher ?? ''),
-        category: String(parsed.meta.category ?? ''),
-        publishDate: String(parsed.meta.publish_date ?? ''),
-        coverUrl: coverUrl(parsed.meta.cover_url),
-        status: String(parsed.meta.status ?? ''),
-        startDate: String(parsed.meta.start_read_date ?? ''),
-        finishDate: String(parsed.meta.finish_read_date ?? ''),
-        rate,
-        tier: bookTier(rate),
-        note: String(parsed.meta.book_note ?? ''),
-        created: dateOnly(parsed.meta.created)
-      });
-    }
-  } catch {
-    console.warn('Skipped missing books directory');
+  const bookFiles = await walkIfPresent(booksDirectory, isMarkdown);
+  if (!bookFiles) console.warn('Skipped missing books directory');
+  for (const absoluteFile of bookFiles ?? []) {
+    const relativePath = normalize(path.relative(vaultRoot, absoluteFile));
+    if (path.posix.basename(relativePath).startsWith('_')) continue;
+    const source = await fs.readFile(absoluteFile, 'utf8');
+    const parsed = parseFrontmatter(source);
+    bookSources.set(relativePath, parsed);
+    const rate = numberValue(parsed.meta.my_rate);
+    const author = Array.isArray(parsed.meta.author)
+      ? parsed.meta.author.join(', ')
+      : String(parsed.meta.author ?? '');
+    books.push({
+      path: relativePath,
+      fileTitle: path.posix.basename(relativePath, '.md'),
+      title: String(parsed.meta.title ?? firstHeading(parsed.body, path.posix.basename(relativePath, '.md'))),
+      slug: slugify(path.posix.basename(relativePath, '.md')),
+      url: `${base}/books/#book-${slugify(path.posix.basename(relativePath, '.md'))}`,
+      author,
+      publisher: String(parsed.meta.publisher ?? ''),
+      category: String(parsed.meta.category ?? ''),
+      publishDate: String(parsed.meta.publish_date ?? ''),
+      coverUrl: coverUrl(parsed.meta.cover_url),
+      status: String(parsed.meta.status ?? ''),
+      startDate: String(parsed.meta.start_read_date ?? ''),
+      finishDate: String(parsed.meta.finish_read_date ?? ''),
+      rate,
+      tier: bookTier(rate),
+      note: String(parsed.meta.book_note ?? ''),
+      created: dateOnly(parsed.meta.created)
+    });
   }
   books.sort((left, right) => right.rate - left.rate || right.created.localeCompare(left.created) || left.title.localeCompare(right.title, 'ko'));
   assertUniqueSlugs(books.map((book) => ({ kind: 'book', slug: book.slug, path: book.path })));
@@ -518,18 +523,14 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
     if (!info.isFile()) throw new Error(`Reviewed asset is not a file: ${asset}`);
     publicAssetPaths.add(asset);
   }
+  // 없는 폴더는 위의 Markdown 탐색이 이미 경고했다.
   for (const include of config.include) {
-    const absoluteDirectory = path.join(vaultRoot, include.path);
-    try {
-      for (const absoluteFile of await walk(absoluteDirectory)) {
-        const relativePath = normalize(path.relative(vaultRoot, absoluteFile));
-        if (!relativePath.endsWith('.md') && !isExcluded(relativePath)) publicAssetPaths.add(relativePath);
-      }
-    } catch {
-      // The Markdown include loop already reports missing public directories.
+    for (const absoluteFile of (await walkIfPresent(path.join(vaultRoot, include.path))) ?? []) {
+      const relativePath = normalize(path.relative(vaultRoot, absoluteFile));
+      if (!relativePath.endsWith('.md') && !isExcluded(relativePath)) publicAssetPaths.add(relativePath);
     }
   }
-  for (const absoluteFile of await walk(booksDirectory).catch(() => [])) {
+  for (const absoluteFile of (await walkIfPresent(booksDirectory)) ?? []) {
     const relativePath = normalize(path.relative(vaultRoot, absoluteFile));
     if (!relativePath.endsWith('.md') && !isExcluded(relativePath)) publicAssetPaths.add(relativePath);
   }

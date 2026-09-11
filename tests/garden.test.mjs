@@ -650,3 +650,40 @@ test('public notes carry updated only when it is later than their date, and exte
   assert.equal(byPath('01_Slipbox/생각 B.md').updated, '');
   assert.equal(byPath('20_Projects/blog/외부 원문.md').updated, '', '본문을 싣지 않는 외부 발행 글은 수정일을 내보내지 않는다');
 });
+
+// 폴더가 없는 것(ENOENT)만 건너뛴다. 그 밖의 읽기 오류를 건너뛰면 공개할 노트가 조용히 사이트에서 빠진다.
+const rootIgnoresPermissions = process.getuid?.() === 0 && 'root는 파일 권한 검사를 받지 않는다';
+
+test('a missing books folder is skipped with a warning', async () => {
+  const withoutBooks = Object.fromEntries(Object.entries(files).filter(([file]) => !file.startsWith('30_Resources/References/Books/')));
+  const vaultRoot = await makeVault(withoutBooks);
+  const garden = await assembleGarden({ vaultRoot, config });
+  assert.deepEqual(garden.books, []);
+});
+
+test('an include path that is a file fails the build instead of being skipped as missing', async () => {
+  const vaultRoot = await makeVault({ ...files, '00_Inbox/파일.md': '---\ncreated: 2026-09-01\n---\n# 파일' });
+  await assert.rejects(assembleGarden({ vaultRoot, config: { ...config, include: [...config.include, { path: '00_Inbox/파일.md', mode: 'all' }] } }), { code: 'ENOTDIR' });
+});
+
+test('an unreadable folder inside a public folder fails the build instead of dropping the whole folder', { skip: rootIgnoresPermissions }, async () => {
+  const vaultRoot = await makeVault({ ...files, '01_Slipbox/잠긴 폴더/노트.md': '---\ncreated: 2026-09-01\n---\n# 노트' });
+  const locked = path.join(vaultRoot, '01_Slipbox/잠긴 폴더');
+  await fs.chmod(locked, 0o000);
+  try {
+    await assert.rejects(assembleGarden({ vaultRoot, config }), { code: 'EACCES' });
+  } finally {
+    await fs.chmod(locked, 0o755);
+  }
+});
+
+test('an unreadable book fails the build instead of leaving the shelf half full', { skip: rootIgnoresPermissions }, async () => {
+  const vaultRoot = await makeVault({ ...files, '30_Resources/References/Books/잠긴 책.md': '---\ntitle: 잠긴 책\ncreated: 2026-08-01\n---\n# 잠긴 책' });
+  const locked = path.join(vaultRoot, '30_Resources/References/Books/잠긴 책.md');
+  await fs.chmod(locked, 0o000);
+  try {
+    await assert.rejects(assembleGarden({ vaultRoot, config }), { code: 'EACCES' });
+  } finally {
+    await fs.chmod(locked, 0o644);
+  }
+});
