@@ -55,7 +55,7 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
   </section>}
   <section class="wrap recent" aria-labelledby="recent-heading">
     <h2 id="recent-heading" class="display">최근 기록</h2>
-    <ol>{recent.map(({ note, label, listUrl }) => <li><time class="meta" datetime={note.date}>{formatDate(note.date)}</time><a href={note.url}>{note.type === 'hub' && <i class="hub-mark" aria-hidden="true"></i>}{note.title}</a><a class="meta kind" href={listUrl}>{label}</a></li>)}</ol>
+    <ol>{recent.map(({ note, label, listUrl }) => <li><time class="meta" datetime={note.date}>{formatDate(note.date)}</time><a href={note.url}>{note.title}</a><a class="meta kind" href={listUrl}>{label}</a></li>)}</ol>
   </section>
   {series && seriesUrl && <section class="wrap latest-series" aria-labelledby="series-heading">
     <h2 id="series-heading" class="display">최근 연재</h2>
