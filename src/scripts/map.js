@@ -107,6 +107,10 @@ function select(id, pushUrl, { open = true } = {}) {
     window.history.replaceState(null, '', `${window.location.pathname}${params.size ? `?${params}` : ''}`);
   }
   syncSheet();
+  if (node && open && narrow.matches) {
+    panel.scrollTop = 0;
+    panel.querySelector('[data-panel-close]')?.focus({ preventScroll: true });
+  }
   if (node && open) keepNodeAboveSheet(node.id);
   updateCount();
 }

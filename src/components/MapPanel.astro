@@ -32,8 +32,9 @@ const { startpoints, hubs = [] } = Astro.props;
     .sheet-grip { display: block; flex: 0 0 auto; margin: -4px 0 0; padding: 8px 0 6px; touch-action: none; cursor: grab; }
     .sheet-grip::before { display: block; width: 36px; height: 4px; margin: 0 auto; border-radius: 2px; background: var(--line); content: ""; }
     .panel-close { display: inline-flex; align-self: flex-end; min-height: 32px; margin-top: -8px; padding: 0 8px; border: 0; background: transparent; color: var(--muted); font-size: var(--t-meta); }
-    /* 시트는 제목·요약·노트 읽기까지만 보인다. 참조·역참조는 노트 페이지의 사이드바에서 본다. */
-    .map-panel .panel-lists { display: none; }
-    .map-panel .panel-head { padding-bottom: 0; border-bottom: 0; }
+    /* 본문 전체를 한 번에 스크롤해 긴 참조 목록에서도 역참조까지 이동할 수 있게 한다. */
+    .map-panel [data-panel-body] { flex: 0 0 auto; }
+    .map-panel[data-panel] { max-height: 55dvh; overscroll-behavior-y: contain; }
+    .map-panel .side-list a { display: block; padding-block: 10px; }
   }
 </style>
