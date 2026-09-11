@@ -13,7 +13,7 @@ TaeZ's Thinking Garden(https://taez224.github.io/)을 짓는 Astro 7 정적 사�
 
 ## 명령
 
-Node 22와 커밋된 `package-lock.json`을 쓴다. CI와 같다.
+Node 22(22.12 이상, `package.json`의 `engines`)와 커밋된 `package-lock.json`을 쓴다. CI와 같다. `sharp`는 Astro가 선택 의존성으로만 가져오지만 썸네일 최적화와 OG 카드의 썸네일 변환이 쓰므로 직접 의존성으로 선언한다.
 
 ```bash
 npm ci                       # 잠근 의존성 설치
