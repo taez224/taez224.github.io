@@ -55,3 +55,19 @@ test('placeLabels avoids slots outside the visible area', () => {
   const inside = (box) => box.top >= 0 && box.bottom <= 640;
   assert.equal(placeLabels([{ node: a, mustPlace: true }], { positions, radius, inside }).get('a').placement, 'above');
 });
+
+test('label spacing separates nearby titles at each zoom while keeping their full text', () => {
+  for (const u of [0.5, 1, 2]) {
+    const a = { id: 'a', title: '에이' }, b = { id: 'b', title: '비' };
+    const positions = new Map([['a', at(100 * u, 100 * u)], ['b', at(122 * u, 100 * u)]]);
+    const order = [a, b].map((node) => ({ node, mustPlace: false }));
+    const options = { positions, radius: () => 6 * u, u };
+    const tight = placeLabels(order, options);
+    assert.equal(tight.get('b').placement, 'below');
+    const spaced = placeLabels(order, { ...options, labelGap: 8 });
+    assert.equal(spaced.size, 2);
+    assert.deepEqual(spaced.get('b').lines, ['비']);
+    const x = spaced.get('a').g.box, y = spaced.get('b').g.box;
+    assert.ok(x.right + 8 * u <= y.left || y.right + 8 * u <= x.left || x.bottom + 8 * u <= y.top || y.bottom + 8 * u <= x.top);
+  }
+});

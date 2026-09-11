@@ -212,7 +212,7 @@ export function createGraph(svg, { nodes, edges, positions, mode = 'map', nodeSc
     }
     // 호버한 노드는 이미 자리가 있으면 그대로 두고, 숨어 있던 노드면 그때만 빈자리(없으면 아래)에 얹는다. 맨 위에 그려지므로 겹쳐도 읽힌다.
     if (state.hovered) { const node = byId.get(state.hovered); if (node) order.push({ node, mustPlace: true }); }
-    return placeLabels(order, { positions, radius, u, obstacles, inside });
+    return placeLabels(order, { positions, radius, u, obstacles, inside, labelGap: mode === 'map' && (state.selected || preview) ? 8 : 0 });
   };
   const drawLabels = () => {
     labelLayer.replaceChildren();

@@ -78,7 +78,7 @@ export function labelGeometry(p, r, lines, placement, u) {
 // 제목 배치. order는 우선순위 순의 [{ node, mustPlace }]. 후보 자리를 차례로 시도해 이미 놓인 제목·장애물과 겹치지 않고
 // 보이는 범위(inside) 안에 드는 첫 자리를 준다. mustPlace는 자리가 없어도 아래에 둔다. 같은 노드는 한 번만 놓는다.
 // 결과는 id → { placement, lines, g }. 엔진(살아 있는 지도)과 스냅샷(정적 SVG)이 같은 규칙으로 그린다.
-export function placeLabels(order, { positions, radius, u = 1, obstacles = [], inside = () => true }) {
+export function placeLabels(order, { positions, radius, u = 1, obstacles = [], inside = () => true, labelGap = 0 }) {
   const placed = [], plan = new Map();
   for (const { node, mustPlace } of order) {
     if (plan.has(node.id)) continue;
@@ -88,7 +88,11 @@ export function placeLabels(order, { positions, radius, u = 1, obstacles = [], i
       .find(({ g }) => inside(g.box) && !placed.some((b) => boxesOverlap(b, g.box)) && !obstacles.some((b) => boxesOverlap(b, g.box)));
     const chosen = free ?? (mustPlace ? { placement: 'below', g: labelGeometry(p, r, lines, 'below', u) } : null);
     if (!chosen) continue;
-    placed.push(chosen.g.box); plan.set(node.id, { placement: chosen.placement, lines, g: chosen.g });
+    // 간격은 화면 픽셀 기준으로 예약해 확대해도 제목 사이의 여유가 일정하게 남는다.
+    const gap = labelGap * u;
+    const { left, right, top, bottom } = chosen.g.box;
+    placed.push({ left: left - gap, right: right + gap, top: top - gap, bottom: bottom + gap });
+    plan.set(node.id, { placement: chosen.placement, lines, g: chosen.g });
   }
   return plan;
 }
