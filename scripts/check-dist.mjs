@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pngDimensions } from '../src/lib/png.mjs';
 import { kindPrefix } from '../src/lib/slug.mjs';
+import { FEED_LINKS } from '../src/lib/feeds.mjs';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const config = JSON.parse(await fs.readFile(path.join(projectRoot, 'config.json'), 'utf8'));
@@ -51,7 +52,7 @@ const checks = [
   },
   async () => {
     const about = await checkShell('about/index.html');
-    check(/<article[^>]*class="[^"]*wiki-about[^"]*"[^>]*>[\s\S]*<h1[^>]*>이 위키에 대해<\/h1>[\s\S]*<div[^>]*class="[^"]*body intro-body[^"]*"[^>]*>\s*\S/.test(about), 'about/index.html: 소개 본문이 비어 있거나 공통 본문 스타일이 없다');
+    check(/<article\b[^>]*>[\s\S]*?<h1\b[^>]*>\s*\S[\s\S]*?<\/h1>[\s\S]*?<p\b[^>]*>\s*\S/.test(about), 'about/index.html: 소개 제목 또는 본문이 비어 있다');
     check(about.includes('"@type":"AboutPage"'), 'about/index.html: AboutPage 구조화 데이터 없음');
   },
   async () => { check(await exists('sitemap-index.xml'), 'sitemap-index.xml 없음'); }
@@ -68,17 +69,11 @@ checks.push(async () => {
     const html = await checkShell(file);
     const record = search.find((entry) => entry.url === note.url);
     check(record?.summary === note.summary, `${file}: 검색 요약이 공개 요약과 다름`);
-    const hasLead = /<h1[^>]*>[\s\S]*?<\/h1>\s*<p class="note-lead">\s*\S/.test(html);
-    if (note.kind === 'development' && String(note.summary ?? '').trim()) {
-      check(hasLead, `${file}: 개발 노트 제목 아래 summary 없음`);
-    } else {
-      check(!hasLead, `${file}: 개발 노트 외 summary 문단 노출`);
-    }
     check(/"@type":"(BlogPosting|TechArticle|Article)"/.test(html), `${file}: 글 구조화 데이터 없음`);
     if (note.contentMode === 'external') {
       check(html.includes('class="external-article"'), `${file}: 외부 발행 글 소개 페이지 없음`);
       check(!/class="(?:body|note-side|mobile-toc|article-card|rail)\b/.test(html), `${file}: 외부 발행 글에 본문 또는 독서 UI 잔존`);
-      check(html.includes('read-original') && html.includes('전문 읽기'), `${file}: 원문 읽기 링크 없음`);
+      check(html.includes('read-original'), `${file}: 원문 읽기 링크 없음`);
       check(record && record.text === '' && record.headings.length === 0, `${file}: 검색 데이터에 본문 또는 목차 잔존`);
       check(note.headings.length === 0, `${file}: 지도 데이터에 본문 목차 잔존`);
     }
@@ -88,12 +83,7 @@ checks.push(async () => {
   }
 });
 checks.push(async () => {
-  for (const file of ['posts/index.html', 'dev/index.html', 'books/index.html']) {
-    const html = await checkShell(file);
-    check(!/\b0[1-9]\s*<\/span>/.test(html), `${file}: 서수 라벨 잔존`);
-    check(!html.includes('노트 읽기 →'), `${file}: "노트 읽기 →" 잔존`);
-  }
-  check(home.includes('id="series-heading"') && home.includes('최근 연재'), '홈: 최근 연재 영역 없음');
+  for (const file of ['posts/index.html', 'dev/index.html', 'books/index.html']) await checkShell(file);
 });
 checks.push(async () => {
   check(!/"(?:bodyHtml|publicContent|linkTargets)":/.test(JSON.stringify(site)), 'site.json에 본문 또는 처리 중인 링크 정보가 들어 있다');
@@ -120,46 +110,29 @@ checks.push(async () => {
   await checkCard('og/site.png');
 });
 checks.push(async () => {
-  for (const file of ['rss.xml', 'feeds/posts.xml', 'feeds/notes.xml', 'feeds/dev.xml', 'favicon.svg', 'apple-touch-icon.png', 'robots.txt', 'map/index.html', '404.html']) check(await exists(file), `${file} 없음`);
-  const postsFeed = await read('feeds/posts.xml').catch(() => '');
-  check(/<link>https?:\/\/[^<]+\/posts\/[^<]+<\/link>/.test(postsFeed), 'feeds/posts.xml: 전문 공개 글이 가든 주소로 연결되지 않음');
+  const feeds = FEED_LINKS.map((feed) => feed.path.replace(/^\//, ''));
+  for (const file of [...feeds, 'favicon.svg', 'apple-touch-icon.png', 'robots.txt', 'map/index.html', '404.html']) check(await exists(file), `${file} 없음`);
   for (const page of ['index.html', 'posts/index.html', 'dev/index.html', 'map/index.html']) {
     const html = page === 'index.html' ? home : await read(page);
-    for (const feed of ['rss.xml', 'feeds/posts.xml', 'feeds/notes.xml', 'feeds/dev.xml']) check(html.includes(`/${feed}"`), `${page}: ${feed} 피드 링크 없음`);
+    for (const feed of feeds) check(html.includes(`/${feed}"`), `${page}: ${feed} 피드 링크 없음`);
   }
-  const unified = await read('rss.xml');
-  for (const label of ['글', '노트', '개발 노트']) check(unified.includes(`<category>${label}</category>`), `rss.xml: ${label} 항목 없음`);
-  check(home.includes('생각의 정원으로'), 'index: 생각의 정원 버튼 없음');
-  check(!home.includes('Velog'), 'index: Velog 링크 잔존');
-  check(!/노트 \d+개 · 연결 \d+개/.test(home.replace(/alt="[^"]*"/g, '')), 'index: 히어로 집계 잔존');
-  // 최근 기록 절 안의 항목만 센다. 다른 곳에 목록이 생겨도 이 검사는 흔들리지 않는다.
-  const recentSection = home.match(/<section[^>]*class="[^"]*\brecent\b[^"]*"[^>]*>[\s\S]*?<\/section>/)?.[0] ?? '';
-  const recentRows = (recentSection.match(/<li[\s>]/g) || []).length;
-  check(recentRows === 3, `index: 최근 기록은 종류별 한 편(3개)이어야 하는데 ${recentRows}개`);
-  for (const label of ['>노트</a>', '>개발 노트</a>', '>글</a>']) check(home.includes(label), `index: 최근 기록에 ${label.slice(1, -4)} 링크 없음`);
 });
 checks.push(async () => {
   const map = await read('map/index.html');
   check(map.includes('data-map') && map.includes('data-panel'), 'map: 그래프·패널 요소 없음');
-  check(!map.includes('marker-end'), 'map: 화살표 마커 잔존');
-  check(/노트 \d+ · 연결 \d+/.test(map), 'map: 집계 라벨 형식');
-  check(map.includes('>허브</div>') && map.includes('data-sheet-grip') && map.includes('hub-mark'), 'map: 빈 패널 허브 목록, 시트 손잡이 또는 허브 링 없음');
-  check(home.includes('data-graph') && home.includes('class="hero-snapshot"'), 'index: 히어로 그래프 마운트 지점 또는 스냅샷 링크 없음');
+  check(home.includes('data-graph'), 'index: 히어로 그래프 마운트 지점 없음');
   const heroJson = home.match(/<script type="application\/json" data-hero-data>([\s\S]*?)<\/script>/)?.[1] ?? '';
   const hero = heroJson ? JSON.parse(heroJson) : null;
   check(hero && hero.nodes.length === site.nodes.length && hero.positions.length === hero.nodes.length, 'index: 인라인 히어로 데이터가 없거나 지도 노드 수와 다름');
   check(hero && !/"(bodyText|summary|tags|path)"/.test(heroJson), 'index: 히어로 데이터에 그리기와 무관한 필드가 들어 있음');
-  check(!home.includes('data-site='), 'index: 히어로가 여전히 site.json을 가리킴');
   const mapJson = map.match(/<script type="application\/json" data-map-data>([\s\S]*?)<\/script>/)?.[1] ?? '';
   const mapData = mapJson ? JSON.parse(mapJson) : null;
   check(mapData && mapData.nodes.length === site.nodes.length && mapData.nodes.every((node) => node.mapKey && node.path), 'map: 인라인 그래프 데이터가 없거나 노드 수·필드가 다름');
   check(mapData && mapData.notes.length === site.notes.length && mapData.noteEdges.length === site.noteEdges.length, 'map: 인라인 패널 노트·참조 관계가 site.json과 다름');
-  check(!map.includes('data-site=') && !/"(bodyText|headings)"/.test(mapJson), 'map: 여전히 site.json을 가리키거나 패널에 불필요한 필드가 실림');
+  check(!/"(bodyText|headings)"/.test(mapJson), 'map: 패널에 불필요한 본문·목차가 실림');
   for (const [name, html] of [['index.html', home], ['map/index.html', map]]) check(html.includes('rel="modulepreload"'), `${name}: 그래프 엔진 청크 modulepreload 없음`);
-  check(/<script type="module" blocking="render" src="[^"]+"><\/script><\/head>/.test(map), 'map: 페이지 스크립트가 head에서 렌더링을 막지 않음');
-  check(home.includes('family=Gowun+Batang'), 'index: Gowun Batang 폰트 링크 없음');
-  check(!/🗺|🌱/.test(home), 'index: 허브 이모지 잔존');
-  check(home.includes('class="snap is-desktop"') && home.includes('class="snap is-mobile"') && home.includes('data-regions'), 'index: 데스크톱·모바일 스냅샷 또는 주제 영역 없음');
+  const head = map.match(/<head\b[^>]*>[\s\S]*?<\/head>/)?.[0] ?? '';
+  check(/<script\b(?=[^>]*\btype="module")(?=[^>]*\bblocking="render")(?=[^>]*\bsrc=")[^>]*>/.test(head), 'map: 페이지 스크립트가 head에서 렌더링을 막지 않음');
 });
 for (const run of checks) await run();
 if (failures.length) {

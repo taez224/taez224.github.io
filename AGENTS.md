@@ -24,7 +24,7 @@ npm run build                # astro build && node scripts/check-dist.mjs
 npm run preview              # dist를 서빙한다. 먼저 build가 있어야 한다
 ```
 
-`npm run build`는 dist를 검사하는 `scripts/check-dist.mjs`까지 통과해야 성공이다. 이 스크립트가 사이트 출력의 계약서다: 메타 태그·구조화 데이터·OG PNG 크기·외부 발행 글에 본문이 새지 않는지·독자 UI에 내부 메타데이터가 안 보이는지·홈/지도의 필수 요소를 검사한다. 표시 규칙을 바꾸면 여기도 같이 바꾼다.
+`npm run build`는 dist를 검사하는 `scripts/check-dist.mjs`까지 통과해야 성공이다. 메타데이터·OG PNG·공개 범위·페이지와 데이터 연결·그래프 초기화에 필요한 산출물을 검사한다. 문구·폰트·아이콘·배치·콘텐츠 개수는 고정하지 않는다. Markdown 문법은 임시 입력을 쓰는 단위 테스트로 검증한다.
 
 환경 변수: `GARDEN_VAULT_ROOT`(vault 경로), `GARDEN_PROJECT_ROOT`(기본 cwd), `GARDEN_OG_CACHE_DIR`, `GARDEN_DIST_DIR`(check-dist 대상).
 
@@ -119,10 +119,10 @@ Codex는 이 절만 읽고, Claude Code는 여기에 더해 위의 output-style 
 
 ## 작업 규칙
 
-- 새 표시 문법이나 조건을 추가하면 `AUTHORING.md`, 관련 테스트, `check-dist.mjs`를 함께 고친다. frontmatter 속성을 바꾸면 vault의 속성 스키마도 고친다.
+- 새 표시 문법이나 조건을 추가하면 `AUTHORING.md`와 관련 테스트를 고친다. 공개 범위나 배포 산출물의 필수 조건이 바뀔 때만 `check-dist.mjs`를 고친다. frontmatter 속성을 바꾸면 vault의 속성 스키마도 고친다.
 - 생성물인 `dist/`와 `.astro/`는 편집하지 않는다.
 - `docs/`(리디자인 스펙·계획서)는 `.git/info/exclude`로 로컬 전용이다. `git add` 하지 않는다. 사이트가 vault 안에 있던 시절(`basePath: /obsidian`) 기준이라 경로가 낡았다.
-- 독자에게 `published`·`slipbox`·`blog`·`프로젝트/*`·`status` 값을 보이지 않는다. 서수 라벨(01/02), "노트 읽기 →" 같은 문구는 check-dist가 잡는다.
+- 독자에게 `published`·`slipbox`·`blog`·`프로젝트/*`·`status` 같은 내부 메타데이터 값을 보이지 않는다. 문구와 배치 변경은 화면에서 검토한다.
 
 ## 커밋 규칙
 
