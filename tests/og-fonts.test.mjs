@@ -1,4 +1,4 @@
-import test from 'node:test';
+import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -8,7 +8,10 @@ import { ensureOgFonts } from '../src/lib/og-fonts.mjs';
 // 캐시가 받아들이는 하한(200KB)을 넘는 가짜 폰트. 실제 폰트 서버에는 접속하지 않는다.
 const FONT = Buffer.alloc(200_000, 1);
 const fonts = [{ file: 'A.ttf', url: 'https://fonts.test/A.ttf' }, { file: 'B.otf', url: 'https://fonts.test/B.otf' }];
-const makeCacheDir = () => fs.mkdtemp(path.join(os.tmpdir(), 'garden-og-fonts-'));
+// 가짜 폰트가 테스트마다 수백 KB라 캐시 폴더를 한 폴더 아래에 만들고 실행이 끝나면 지운다.
+const root = await fs.mkdtemp(path.join(os.tmpdir(), 'garden-og-fonts-'));
+after(() => fs.rm(root, { recursive: true, force: true }));
+const makeCacheDir = () => fs.mkdtemp(path.join(root, 'cache-'));
 
 // url마다 시도 순서대로 응답을 준다. 'ok'는 온전한 폰트, 'truncated'는 잘린 본문, 숫자는 HTTP 상태, Error는 네트워크 실패다.
 function fakeFetch(plan) {
