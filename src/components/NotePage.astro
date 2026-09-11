@@ -179,6 +179,8 @@ const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slic
     .note-title { font-size: 32px; margin-bottom: 28px; }
     /* 목차를 누르는 영역은 유지하고 제목·본문과의 바깥 여백만 줄인다. */
     .mobile-toc { margin: -12px 0 16px; }
+    /* 설명 열이 지나치게 잘게 접히지 않도록 너비를 확보하고 표 안에서 가로로 읽는다. */
+    .body th:not(:first-child), .body td:not(:first-child) { min-width: 180px; }
     /* 이 폭에서는 제목 아래 여백이 28px로 줄어들어 위쪽 당김을 완화한다 */
     .note-lead { margin-top: -4px; }
     .note-end { margin-top: 40px; }
