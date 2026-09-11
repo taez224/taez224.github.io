@@ -1,0 +1,38 @@
+---
+// 현재 페이지를 공유 시트로 넘기거나 주소를 클립보드에 복사하는 헤더 아이콘. 주소는 클릭 시점의 현재 URL이고 제목·설명은 <head>에서 읽으므로 prop이 없다.
+// 스크립트는 아래에서 함께 싣고, Astro가 페이지당 한 번만 렌더한다.
+// 모든 페이지의 sticky 헤더에서 검색 옆에 있다. 360px 미만 헤더는 워드마크·내비·검색으로 꽉 차서 아이콘이 더 들어갈 자리가 없으므로
+// 그 폭에서만 숨기고 브라우저의 공유 기능에 맡긴다. 이름은 숨긴 텍스트와 툴팁이 맡는다.
+// 복사되면 2초 동안 체크 아이콘을, 실패하면 5초 동안 대안이 담긴 안내를 표시한다.
+// JS 없이는 아무것도 못 하므로 hidden으로 내고 스크립트가 푼다.
+// 검색 버튼(.search-trigger svg)과 같은 선 굵기.
+const icon = (body) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+const icons = {
+  share: icon('<path d="M12 3v12"></path><path d="m8 7 4-4 4 4"></path><path d="M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8"></path>'),
+  done: icon('<path d="m5 12 5 5 9-10"></path>')
+};
+---
+<span class="share-control" data-share-control hidden>
+  <button type="button" class="share-link" data-share data-umami-event="share" title="링크 복사">
+    <span class="share-icon is-share" set:html={icons.share} />
+    <span class="share-icon is-done" set:html={icons.done} />
+    <span class="share-label visually-hidden">링크 복사</span>
+  </button>
+  <span class="share-feedback visually-hidden" data-share-feedback role="status" aria-live="polite"></span>
+</span>
+<style>
+  .share-control { position: relative; display: inline-flex; flex: none; margin-left: 12px; }
+  /* 검색 버튼(.search-trigger)과 같은 44px 상자, 18px 아이콘, 같은 여백. */
+  .share-link { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font: inherit; cursor: pointer; }
+  .share-link:hover { background: var(--accent-soft); }
+  .share-link:hover, .share-link[data-state="done"] { color: var(--accent); }
+  .share-icon { width: 18px; height: 18px; }
+  .share-icon :global(svg) { display: block; width: 100%; height: 100%; }
+  /* 아이콘은 평소에 공유, 복사된 2초 동안 체크만 보인다. */
+  .share-icon.is-done, .share-link[data-state="done"] .share-icon.is-share { display: none; }
+  .share-link[data-state="done"] .share-icon.is-done { display: block; }
+  .share-feedback:not(.visually-hidden) { position: absolute; z-index: 1; top: calc(100% + 6px); right: 0; width: 260px; max-width: calc(100vw - 32px); padding: 12px 14px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper-strong); color: var(--ink); font-size: var(--t-meta); line-height: 1.6; white-space: pre-line; box-shadow: 0 3px 12px rgba(36,39,32,.10); pointer-events: none; }
+  @media (max-width: 720px) { .share-control { margin-left: 6px; } }
+  @media (max-width: 359px) { .share-control { display: none; } }
+</style>
+<script src="../scripts/share.js"></script>

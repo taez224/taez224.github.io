@@ -95,7 +95,8 @@ const sitePath = siteBase && note.url.startsWith(`${siteBase}/`) ? note.url.slic
   .series-title { font-size: 15px; font-weight: 600; line-height: 1.5; transition: color .15s ease; }
   .end-links { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 24px; }
   .end-link { align-self: flex-start; font-size: var(--t-side); }
-  .end-link.is-about { color: var(--muted); }
+  /* 왼쪽은 목록으로 돌아가는 주 행동, 오른쪽은 저자와 사이트 소개. 목록 링크가 없는 노트(slipbox)에서도 소개 링크는 오른쪽에 둔다. */
+  .end-link.is-about { margin-left: auto; color: var(--muted); }
   .note-title { margin: 0 0 40px; font-size: var(--t-h1); line-height: 1.3; letter-spacing: -.03em; }
   .mobile-toc { display: none; }
   .body { font-size: var(--t-body); line-height: 1.85; }

@@ -87,6 +87,10 @@ h1, h2, h3, p { margin-top: 0; }
 .site-nav a[aria-current="page"] { color: var(--ink); }
 .search-trigger { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin-left: 12px; margin-right: -13px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); }
 .search-trigger:hover { background: var(--accent-soft); color: var(--accent); }
+/* 공유 아이콘이 앞에 보이면 상자를 붙인다. 상자 안 여백만으로 그림 사이가 내비 간격과 비슷해진다.
+   360px 미만에서는 헤더 공유 아이콘이 숨고, JS가 없으면 hidden으로 남으므로 그때는 검색 버튼의 원래 여백을 둔다.
+   ShareLink의 스크립트가 컨트롤 바로 뒤에 렌더되므로 인접(+)이 아니라 일반 형제(~)로 고른다. */
+@media (min-width: 360px) { .share-control:not([hidden]) ~ .search-trigger { margin-left: 0; } }
 .search-trigger svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 main { min-height: 60vh; }
 /* 본문 그림. 노트 본문(NotePage)과 소개 페이지(about)가 같은 렌더러 출력을 .body에 담으므로 여기서 함께 꾸민다. */
