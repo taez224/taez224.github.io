@@ -1,4 +1,5 @@
 // 노트 날짜 규칙. 조립 단계가 여기서 한 번 검증하고, 페이지·목록·RSS·OG 카드는 결과를 다시 검사하지 않는다.
+// vault-lint(vault의 .agents/skills/vault-lint/scripts/lint_scan.py)가 같은 규칙으로 쓰는 단계에서 먼저 알린다. 규칙을 바꾸면 함께 고친다.
 const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const KST_OFFSET_MS = 9 * 3600000;
 
