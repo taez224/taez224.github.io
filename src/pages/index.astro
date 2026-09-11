@@ -40,8 +40,9 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
   <section class="hero" aria-label="소개와 생각 지도">
     <div class="hero-about"><About about={garden.home.about} contacts={garden.home.contacts} entryUrl={entry?.url ?? withBase('/map/')} aboutUrl={withBase('/about/')} /></div>
     {/* 살아 있는 지도가 첫 화면 전에 올라오도록 데이터와 좌표를 페이지에 둔다. hero.js는 fetch 없이 이걸 읽는다. */}
-    <div class="hero-graph" data-graph><script type="application/json" data-hero-data is:inline set:html={inlineJson(inlineGraph(garden.nodes, garden.edges, { positions }))}></script><a class="hero-snapshot" href={withBase('/map/')} aria-label="생각 지도 열기"><Fragment set:html={snapshotDesktop} /><Fragment set:html={snapshot} /></a></div>
+    <div class="hero-graph" data-graph><script type="application/json" data-hero-data is:inline set:html={inlineJson(inlineGraph(garden.nodes, garden.edges, { positions }))}></script><a class="hero-snapshot" href={withBase('/map/')} aria-label="생각 지도 보기"><Fragment set:html={snapshotDesktop} /><Fragment set:html={snapshot} /></a></div>
     <div class="hero-fade" aria-hidden="true"></div>
+    <a class="hero-map-link" href={withBase('/map/')}>생각 지도 보기 <span aria-hidden="true">→</span></a>
   </section>
   {/* 대표 글 썸네일은 데스크톱 첫 화면 안에 있다. lazy로 두면 LCP 후보가 늦게 시작한다. */}
   {featured && <section class:list={['wrap', 'featured', { 'has-thumbnail': thumbnail }]}>
@@ -66,6 +67,7 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
 </Shell>
 <style>
   .hero { position: relative; height: clamp(400px, calc(100svh - 280px), 500px); overflow: hidden; }
+  .hero-map-link { position: absolute; z-index: 1; right: max(24px, calc(50% - 590px)); bottom: 16px; padding: 10px 0; font-size: var(--t-side); text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 4px; }
   /* 그래프 상자는 뷰포트 안에 다 들어온다. 1600px 미만에서는 오른쪽 끝까지, 그 이상은 940px. 맞춤 배율이 상자에 맞춘다. */
   .hero-graph { position: absolute; top: 0; left: calc(50% - 160px); width: min(940px, 50% + 160px); height: 100%; }
   .hero-graph :global(svg), .hero-snapshot { display: block; width: 100%; height: 100%; }
@@ -117,6 +119,7 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
     .hero-about { position: relative; top: auto; left: auto; width: calc(100% - 48px); max-width: 640px; margin: 36px auto 12px; }
   }
   @media (max-width: 720px) {
+    .hero-map-link { position: static; display: block; width: fit-content; margin: -12px 20px 16px auto; }
     .hero-graph { height: clamp(220px, 55vw, 320px); margin: 4px 0 16px; }
     .hero-about { width: calc(100% - 40px); margin: 28px auto 8px; }
     .featured { padding: 32px 0 36px; }
