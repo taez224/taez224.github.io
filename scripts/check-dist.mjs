@@ -118,6 +118,29 @@ checks.push(async () => {
   }
 });
 checks.push(async () => {
+  // 사이트 안 링크는 실제 페이지나 파일을 가리켜야 한다. 소개 원고(about.md)처럼 위키링크 해석을 거치지 않는 링크와
+  // slug·basePath가 바뀐 뒤 남은 옛 주소는 이 검사에서만 드러난다. 다른 사이트 주소와 같은 페이지 안의 조각은 보지 않는다.
+  const base = String(config.basePath ?? '').replace(/\/$/, '');
+  const origin = 'https://site.invalid';
+  const found = new Map();
+  const reachable = async (pathname) => {
+    if (base && pathname !== `${base}/` && !pathname.startsWith(`${base}/`)) return false;
+    const file = pathname.slice(base.length).replace(/^\//, '');
+    if (!found.has(file)) found.set(file, file === '' || file.endsWith('/') ? await exists(`${file}index.html`) : (await exists(file)) || (await exists(`${file}/index.html`)));
+    return found.get(file);
+  };
+  const pages = (await fs.readdir(dist, { recursive: true })).filter((file) => file.endsWith('.html')).map((file) => file.split(path.sep).join('/'));
+  for (const page of pages) {
+    const pageUrl = new URL(`${base}/${page.replace(/(^|\/)index\.html$/, '$1')}`, origin);
+    for (const [, raw] of (await read(page)).matchAll(/<a\b[^>]*?\shref="([^"]*)"/g)) {
+      if (raw.startsWith('#')) continue;
+      const url = new URL(raw.replaceAll('&amp;', '&'), pageUrl);
+      if (url.origin !== origin) continue;
+      if (!(await reachable(decodeURIComponent(url.pathname)))) failures.push(`${page}: 없는 페이지로 가는 링크 ${raw}`);
+    }
+  }
+});
+checks.push(async () => {
   const map = await read('map/index.html');
   check(map.includes('data-map') && map.includes('data-panel'), 'map: 그래프·패널 요소 없음');
   check(home.includes('data-graph'), 'index: 히어로 그래프 마운트 지점 없음');

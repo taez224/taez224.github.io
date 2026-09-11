@@ -25,7 +25,7 @@ npm run build                # astro build && node scripts/check-dist.mjs
 npm run preview              # dist를 서빙한다. 먼저 build가 있어야 한다
 ```
 
-`npm run build`는 dist를 검사하는 `scripts/check-dist.mjs`까지 통과해야 성공이다. 메타데이터·OG PNG·공개 범위·페이지와 데이터 연결·그래프 초기화에 필요한 산출물을 검사한다. 문구·폰트·아이콘·배치·콘텐츠 개수는 고정하지 않는다. Markdown 문법은 임시 입력을 쓰는 단위 테스트로 검증한다.
+`npm run build`는 dist를 검사하는 `scripts/check-dist.mjs`까지 통과해야 성공이다. 메타데이터·OG PNG·공개 범위·페이지와 데이터 연결·그래프 초기화에 필요한 산출물을 검사하고, 사이트 안 링크가 실제 페이지를 가리키는지 확인한다. 문구·폰트·아이콘·배치·콘텐츠 개수는 고정하지 않는다. Markdown 문법은 임시 입력을 쓰는 단위 테스트로 검증한다.
 
 환경 변수: `GARDEN_VAULT_ROOT`(vault 경로), `GARDEN_PROJECT_ROOT`(기본 cwd), `GARDEN_OG_CACHE_DIR`, `GARDEN_DIST_DIR`(check-dist 대상).
 
