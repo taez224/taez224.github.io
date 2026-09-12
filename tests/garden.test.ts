@@ -681,3 +681,19 @@ test('an unreadable book fails the build instead of leaving the shelf half full'
     await fs.chmod(locked, 0o644);
   }
 });
+
+test('series hubs keep their own reviewed thumbnail without inheriting an episode image', async () => {
+  const hub = (name: string, thumbnail = '') => `---\ncreated: 2026-01-01\ntype: series\n${thumbnail}\n---\n# ${name}`;
+  const episode = (name: string) => `---\ncreated: 2026-01-02\npublished: 2026-01-02\nstatus: published\nseries: ${name}\nthumbnail: "[[_attachments/reviewed.svg]]"\n---\n# ${name} 첫 편`;
+  const vaultRoot = await makeVault({ ...files,
+    '20_Projects/blog/표지 있는 연재.md': hub('표지 있는 연재', 'thumbnail: "[[_attachments/reviewed.svg]]"\nthumbnail_style: soft'),
+    '20_Projects/blog/표지 있는 연재 첫 편.md': episode('표지 있는 연재'),
+    '20_Projects/blog/표지 없는 연재.md': hub('표지 없는 연재'),
+    '20_Projects/blog/표지 없는 연재 첫 편.md': episode('표지 없는 연재')
+  });
+  const garden = await assembleGarden({ vaultRoot, config, today: '2026-09-12' });
+  const withCover = garden.notes.find((note) => note.title === '표지 있는 연재');
+  assert.equal(withCover?.thumbnail, '_attachments/reviewed.svg');
+  assert.equal(withCover?.thumbnailStyle, 'soft');
+  assert.equal(garden.notes.find((note) => note.title === '표지 없는 연재')?.thumbnail, null);
+});
