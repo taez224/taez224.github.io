@@ -23,6 +23,8 @@ const { about, contacts, entryUrl, aboutUrl } = Astro.props;
   .making-of { font-size: var(--t-side); text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 4px; }
   @media (max-width: 720px) {
     .about { gap: 14px; }
-    .about-actions { margin-top: 6px; }
+    .about-actions { margin-top: 6px; column-gap: 16px; }
+    /* 모바일 첫 화면은 글과 지도 탐색에 집중한다. 연락처는 소개 페이지에서 볼 수 있다. */
+    .about :global(.contacts) { display: none; }
   }
 </style>
