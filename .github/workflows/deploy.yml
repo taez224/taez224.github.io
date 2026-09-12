@@ -47,7 +47,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: node_modules/.cache/garden-og-fonts
-          key: garden-og-fonts-${{ hashFiles('src/lib/og-fonts.mjs') }}
+          key: garden-og-fonts-${{ hashFiles('src/lib/og-fonts.ts') }}
 
       # 카드 파일은 최종 SVG·폰트·resvg 버전의 해시로 스스로 유효성을 갖는다. 실행마다 저장하고 가장 최근 것을 복원한다.
       - name: Restore OG card cache
@@ -61,7 +61,7 @@ jobs:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Type check migrated modules
+      - name: Type check TypeScript
         run: npm run check
 
       - name: Type check Astro

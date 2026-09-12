@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { panelModel } from '../src/lib/panel.mjs';
+import { panelModel } from '../src/lib/panel.ts';
 
 const notes = new Map([
   ['a.md', { path: 'a.md', title: 'A', displayTitle: 'A', url: '/obsidian/notes/a/', kind: 'slipbox', type: 'hub', date: '2026-07-12', topic: 'AI', publicTags: ['AI', '소프트웨어공학'], summary: '자동 발췌', summaryIsExplicit: false }],

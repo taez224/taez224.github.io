@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { staticImports, withModulePreloads } from '../src/integrations/module-preload.mjs';
+import { staticImports, withModulePreloads } from '../src/integrations/module-preload.ts';
 
 test('staticImports lists the relative static imports of a built module and ignores dynamic ones', () => {
   const js = 'import{a}from"./engine.B1.js";import"./side.C2.js";const x=await import("./lazy.D3.js");export{a};';
@@ -15,7 +15,7 @@ test('withModulePreloads adds one preload per dependency before the first module
   assert.equal(withModulePreloads(html, []), html);
 });
 
-import { withRenderBlocking } from '../src/integrations/module-preload.mjs';
+import { withRenderBlocking } from '../src/integrations/module-preload.ts';
 
 test('withRenderBlocking moves the page script into <head> with blocking="render" and leaves other module scripts alone', () => {
   const html = '<html><head><meta charset="utf-8"></head><body><svg></svg><script type="module" src="/_astro/index.astro_astro_type_script_index_0_lang.A1.js"></script><script type="module" src="/_astro/SearchDialog.astro_astro_type_script_index_0_lang.B2.js"></script></body></html>';

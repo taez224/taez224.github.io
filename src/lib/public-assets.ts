@@ -4,7 +4,7 @@ export interface ResolvedAsset { url: string; sourcePath?: string }
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { BOOKS_PATH } from './books.ts';
-import { isImagePath } from './image-types.mjs';
+import { isImagePath } from './image-types.ts';
 import { indexByBasename } from './links.ts';
 import { isExcluded } from './publication.ts';
 import { normalize, walkIfPresent } from './vault-files.ts';

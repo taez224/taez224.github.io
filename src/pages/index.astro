@@ -5,15 +5,15 @@ import { getEntry } from 'astro:content';
 import '../styles/graph.css';
 import About from '../components/About.astro';
 import { getGarden } from '../lib/get-garden.ts';
-import { formatDate, withBase, firstSentence, inlineJson } from '../lib/format.mjs';
+import { formatDate, withBase, firstSentence, inlineJson } from '../lib/format.ts';
 import { inlineGraph } from '../lib/graph-data.ts';
-import { parentLink } from '../lib/note-nav.mjs';
+import { parentLink } from '../lib/note-nav.ts';
 import { latestSeries } from '../lib/blog.ts';
 import { recentByKind } from '../lib/home.ts';
 import { kindPrefix } from '../lib/slug.ts';
 import { KINDS } from '../lib/kinds.ts';
-import { layoutGraph, ATLAS_LAYOUT } from '../graph/layout.mjs';
-import { renderSnapshotSvg } from '../graph/snapshot.mjs';
+import { layoutGraph, ATLAS_LAYOUT } from '../graph/layout.ts';
+import { renderSnapshotSvg } from '../graph/snapshot.ts';
 const garden = await getGarden();
 const byPath = new Map(garden.notes.map((n) => [n.path, n]));
 const entry = byPath.get(garden.config.entry ?? '');
@@ -130,4 +130,4 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
     .recent li a.kind { text-align: left; }
   }
 </style>
-<script src="../scripts/hero.js"></script>
+<script src="../scripts/hero.ts"></script>

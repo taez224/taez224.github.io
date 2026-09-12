@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
-import { isPathInside, decodedAssetTargetPath, resolveDevAssetRequest, mimeTypeFor } from '../src/integrations/vault-assets.mjs';
+import { isPathInside, decodedAssetTargetPath, resolveDevAssetRequest, mimeTypeFor } from '../src/integrations/vault-assets.ts';
 
 test('isPathInside accepts a nested path and the root itself, rejects anything that escapes', () => {
   const root = '/vault';

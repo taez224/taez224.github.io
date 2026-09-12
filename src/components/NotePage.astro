@@ -4,9 +4,9 @@ import Shell from '../layouts/Shell.astro';
 import NoteSidebar from './NoteSidebar.astro';
 import ArticleBody from './ArticleBody.astro';
 import { getGarden } from '../lib/get-garden.ts';
-import { formatDate, displayTag, withBase, cleanTitle, topicColor } from '../lib/format.mjs';
-import { parentLink, seriesNeighbors } from '../lib/note-nav.mjs';
-import { articleMeta } from '../lib/seo.mjs';
+import { formatDate, displayTag, withBase, cleanTitle, topicColor } from '../lib/format.ts';
+import { parentLink, seriesNeighbors } from '../lib/note-nav.ts';
+import { articleMeta } from '../lib/seo.ts';
 import '../styles/body.css';
 import type { NoteEntry, PublicNote } from '../lib/content-model.ts';
 interface Props { entry: NoteEntry }
@@ -133,4 +133,4 @@ const aboutUrl = withBase('/about/');
     .series-start { align-items: flex-start; flex-direction: column; gap: 16px; }
   }
 </style>
-<script src="../scripts/mermaid.js"></script>
+<script src="../scripts/mermaid.ts"></script>

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { ensureOgFonts } from '../src/lib/og-fonts.mjs';
+import { ensureOgFonts } from '../src/lib/og-fonts.ts';
 
 // 캐시가 받아들이는 하한(200KB)을 넘는 가짜 폰트. 실제 폰트 서버에는 접속하지 않는다.
 const FONT = Buffer.alloc(200_000, 1);

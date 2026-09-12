@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { articleCardHtml, replaceArticleCards } from '../src/lib/article-card.mjs';
+import { articleCardHtml, replaceArticleCards } from '../src/lib/article-card.ts';
 
 const note = { title: '연결한 글', url: '/obsidian/posts/linked/', summary: '첫 문장입니다. 두 번째 문장입니다.' };
 

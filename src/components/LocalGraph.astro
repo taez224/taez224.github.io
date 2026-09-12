@@ -1,7 +1,7 @@
 ---
-import { localGraphLayout } from './local-graph-layout.mjs';
-import { offsetLine } from '../graph/engine.mjs';
-import { cleanTitle } from '../lib/format.mjs';
+import { localGraphLayout } from './local-graph-layout.ts';
+import { offsetLine } from '../graph/engine.ts';
+import { cleanTitle } from '../lib/format.ts';
 import type { PublicNote, CollectionNote } from '../lib/content-model.ts';
 interface Props { note: PublicNote | CollectionNote; outgoing: PublicNote[]; incoming: PublicNote[]; mapUrl?: string }
 const { note, outgoing, incoming, mapUrl } = Astro.props;

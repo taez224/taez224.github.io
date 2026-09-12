@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createMarkdownRenderer, extractNoteTargets } from '../src/lib/markdown.mjs';
+import { createMarkdownRenderer, extractNoteTargets } from '../src/lib/markdown.ts';
 
 const render = createMarkdownRenderer({ resolveNote: () => null, resolveAsset: () => null });
 

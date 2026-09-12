@@ -2,7 +2,7 @@
 import Shell from '../../layouts/Shell.astro';
 import { getGarden } from '../../lib/get-garden.ts';
 import { technologyTags, selectDevelopmentRecords } from '../../lib/development.ts';
-import { developmentCategoryLabel, formatDate, firstSentence } from '../../lib/format.mjs';
+import { developmentCategoryLabel, formatDate, firstSentence } from '../../lib/format.ts';
 const { development } = await getGarden();
 const records = selectDevelopmentRecords([...development.concepts, ...development.troubleshooting, ...development.tools]);
 // 분류가 여백 라벨이 된다. 탭과 기술 칩으로 거르던 것은 메타 줄의 기술명과 검색으로 대신한다.

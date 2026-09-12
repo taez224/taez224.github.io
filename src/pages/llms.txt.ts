@@ -1,6 +1,6 @@
 import { getGarden } from '../lib/get-garden.ts';
-import { llmsText } from '../lib/seo.mjs';
-import { SITE_DESCRIPTION, SITE_TITLE } from '../lib/site-meta.mjs';
+import { llmsText } from '../lib/seo.ts';
+import { SITE_DESCRIPTION, SITE_TITLE } from '../lib/site-meta.ts';
 
 export async function GET({ site }: { site: URL | undefined }) {
   const garden = await getGarden();

@@ -2,7 +2,7 @@
 import Shell from '../../layouts/Shell.astro';
 import MapPanel from '../../components/MapPanel.astro';
 import { getGarden } from '../../lib/get-garden.ts';
-import { topicColor, inlineJson } from '../../lib/format.mjs';
+import { topicColor, inlineJson } from '../../lib/format.ts';
 import { inlineGraph, inlinePanelNotes } from '../../lib/graph-data.ts';
 import '../../styles/graph.css';
 const { nodes, edges, notes, noteEdges, stats, topicFold } = await getGarden();
@@ -24,7 +24,7 @@ const topics = [...topicCounts].map(([name, count]) => ({ name, color: topicColo
     <div class="map-layout">
       <div class="map-stage">
         <div class="map-toolbar">
-          {/* 범례 줄에는 누르면 거르는 필터만 둔다. 실선·점선은 노드를 골랐을 때만 나오고, 그때 뜨는 패널 목록의 아이콘(ref-icons.mjs)이 선 범례를 맡는다. */}
+          {/* 범례 줄에는 누르면 거르는 필터만 둔다. 실선·점선은 노드를 골랐을 때만 나오고, 그때 뜨는 패널 목록의 아이콘(ref-icons.ts)이 선 범례를 맡는다. */}
           <div class="legend">
             {topics.map((t) => <button type="button" class="legend-item" data-topic={t.name} aria-pressed="false" title={t.name === '기타' && folded.length > 0 ? `기타로 접힌 주제: ${folded.join(', ')}` : undefined}><i style={`width:10px;height:10px;border-radius:50%;background:${t.color}`}></i>{t.name}{t.name === '기타' && folded.length > 0 && <span class="legend-fold">· {foldedLabel}</span>}</button>)}
             <button type="button" class="legend-item" data-hub-filter aria-pressed="false"><i style="width:10px;height:10px;border-radius:50%;border:1.2px solid var(--accent)"></i>허브</button>
@@ -78,4 +78,4 @@ const topics = [...topicCounts].map(([name, count]) => ({ name, color: topicColo
     .map-toolbar .legend-item { flex: 0 0 auto; min-height: 36px; }
   }
 </style>
-<script src="../../scripts/map.js"></script>
+<script src="../../scripts/map.ts"></script>

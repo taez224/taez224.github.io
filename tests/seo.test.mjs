@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { structuredData, jsonLdScript, llmsText, articleMeta } from '../src/lib/seo.mjs';
+import { structuredData, jsonLdScript, llmsText, articleMeta } from '../src/lib/seo.ts';
 
 const siteUrl = 'https://example.com/obsidian/';
 const base = { siteTitle: '정원', siteUrl, description: '소개', sameAs: ['https://github.com/taez224'] };

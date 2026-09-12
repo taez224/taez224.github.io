@@ -2,10 +2,10 @@
 import '../styles/site.css';
 import Header from '../components/Header.astro';
 import SearchDialog from '../components/SearchDialog.astro';
-import { withBase } from '../lib/format.mjs';
-import { SITE_TITLE } from '../lib/site-meta.mjs';
-import { FEED_LINKS } from '../lib/feeds.mjs';
-import { structuredData, jsonLdScript } from '../lib/seo.mjs';
+import { withBase } from '../lib/format.ts';
+import { SITE_TITLE } from '../lib/site-meta.ts';
+import { FEED_LINKS } from '../lib/feeds.ts';
+import { structuredData, jsonLdScript } from '../lib/seo.ts';
 import siteConfig from '../../config.json';
 interface Props { title: string; description: string; path: string; active?: string; ogType?: string; ogImage?: string | null; kind?: string | null; pageType?: string | null; published?: string | null; updated?: string | null }
 const umami = siteConfig.analytics?.umami?.websiteId ? siteConfig.analytics.umami : null;

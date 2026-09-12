@@ -1,5 +1,5 @@
 ---
-import { withBase } from '../lib/format.mjs';
+import { withBase } from '../lib/format.ts';
 ---
 <dialog id="search" class="search" aria-labelledby="search-title" data-index={withBase('/data/search.json')}>
   <form class="search-head">
@@ -10,4 +10,4 @@ import { withBase } from '../lib/format.mjs';
   </form>
   <div id="search-results" class="search-results" aria-live="polite"></div>
 </dialog>
-<script src="../scripts/search.js"></script>
+<script src="../scripts/search.ts"></script>

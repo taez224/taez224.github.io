@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { localGraphLayout } from '../src/components/local-graph-layout.mjs';
+import { localGraphLayout } from '../src/components/local-graph-layout.ts';
 
 const note = (id) => ({ path: id, displayTitle: id, topic: 'AI', kind: 'slipbox' });
 

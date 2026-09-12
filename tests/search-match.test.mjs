@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { matchRecord, normalizeQuery } from '../src/lib/search-match.mjs';
+import { matchRecord, normalizeQuery } from '../src/lib/search-match.ts';
 
 const record = { kind: 'development', label: '문제 해결', url: '/x/', title: 'ZIP 엔트리 크기', aliases: ['스트리밍 압축'], summary: '스트림 ZIP', tags: ['Java'], headings: ['원인'], text: '앞부분 문장. ZipInputStream은 엔트리 크기를 미리 알 수 없다. 뒷부분 문장이 길게 이어진다.' };
 

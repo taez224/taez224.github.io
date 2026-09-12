@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { selectGraphNodes } from '../src/graph/select.mjs';
+import { selectGraphNodes } from '../src/graph/select.ts';
 
 const edge = (source, target) => ({ source, target });
 const candidates = (...paths) => new Set(paths);

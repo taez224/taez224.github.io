@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { inlineGraph } from '../src/lib/graph-data.ts';
-import { inlineJson } from '../src/lib/format.mjs';
+import { inlineJson } from '../src/lib/format.ts';
 
 const nodes = [
   { id: 'a.md', title: 'A', displayTitle: 'A', url: '/notes/a/', type: 'hub', topic: 'AI', degree: 9, isEntry: true, path: 'a.md', mapKey: 'notes/a', tags: ['AI'], date: '2026-01-01', summaryIsExplicit: true },

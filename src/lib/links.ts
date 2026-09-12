@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { extractNoteTargets } from './markdown.mjs';
+import { extractNoteTargets } from './markdown.ts';
 import { normalize } from './vault-files.ts';
 
 // 위키 링크를 vault 경로로 해석한다. 공개 여부는 판정하지 않고, 어느 경로 집합에서 찾을지는 부르는 쪽이 넘긴다.

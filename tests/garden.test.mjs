@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { assembleGarden } from '../src/lib/garden.ts';
 import { headingsFor } from '../src/lib/note-body.ts';
-import { seriesNeighbors } from '../src/lib/note-nav.mjs';
+import { seriesNeighbors } from '../src/lib/note-nav.ts';
 
 test('table of contents excludes headings inside multiline Obsidian comments', () => {
   assert.deepEqual(headingsFor('## 공개\n\n%%\n## 숨김\n%%\n\n## 끝'), [

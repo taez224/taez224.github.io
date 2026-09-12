@@ -13,14 +13,14 @@ type PublicEntry = Omit<PublicNote, 'thumbnail' | 'thumbnailStyle' | 'articleCar
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { createMarkdownRenderer } from './markdown.mjs';
+import { createMarkdownRenderer } from './markdown.ts';
 import { developmentCategory, externalPublicationFor, pathMatches, publicUrl, isIncluded as includedByPolicy, validatePublicationConfig } from './publication.ts';
 import { readBooks } from './books.ts';
 import { createAssetResolver } from './public-assets.ts';
-import { selectGraphNodes } from '../graph/select.mjs';
+import { selectGraphNodes } from '../graph/select.ts';
 import { slugFor, kindPrefix, noteUrl, assertUniqueSlugs } from './slug.ts';
-import { plainText } from './text.mjs';
-import { publicTags, cleanTitle, topicFor } from './format.mjs';
+import { plainText } from './text.ts';
+import { publicTags, cleanTitle, topicFor } from './format.ts';
 import { kstDate, noteDates } from './dates.ts';
 import { groupDevelopment } from './development.ts';
 import { assembleBlog } from './blog.ts';
@@ -202,7 +202,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
       ? sourcePath
       : resolveTarget(sourcePath, target, knownNotePaths, knownByBasename, publicEntries);
     if (!resolved) return null;
-    if (!publicEntries.has(resolved)) return { visibility: 'private' };
+    if (!publicEntries.has(resolved)) return { visibility: 'private' as const };
     const entry = publicEntries.get(resolved)!;
     if (entry.kind === 'book') return null;
     return { title: entry.displayTitle || entry.title, url: siteUrl(resolved, entry.contentMode === 'external' ? '' : fragment) };

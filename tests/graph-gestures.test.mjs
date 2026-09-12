@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGraphGesture } from '../src/graph/gestures.mjs';
+import { createGraphGesture } from '../src/graph/gestures.ts';
 const initial = { x: 0, y: 0, scale: 1 };
 const touch = (id, x, y = 100) => ({ id, x, y, touch: true, onNode: true });
 const near = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-8, `${actual} != ${expected}`);

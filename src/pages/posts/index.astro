@@ -1,7 +1,7 @@
 ---
 import Shell from '../../layouts/Shell.astro';
 import { getGarden } from '../../lib/get-garden.ts';
-import { formatDate, firstSentence } from '../../lib/format.mjs';
+import { formatDate, firstSentence } from '../../lib/format.ts';
 import { blogLedger } from '../../lib/blog.ts';
 const { blog } = await getGarden();
 // 연재는 링 표시가 붙은 한 행이다. 장부를 짜는 규칙은 blogLedger에 있다.

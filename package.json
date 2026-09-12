@@ -7,10 +7,10 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build && node scripts/check-dist.mjs",
+    "build": "astro build && node scripts/check-dist.ts",
     "preview": "astro preview",
     "test": "node --test tests/*.test.mjs",
-    "check": "tsc --project tsconfig.migration.json",
+    "check": "tsc --project tsconfig.check.json",
     "check:astro": "astro check"
   },
   "dependencies": {
@@ -23,8 +23,8 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
-    "@types/markdown-it": "^14.2.0",
     "@types/node": "^26.5.1",
+    "@types/sanitize-html": "^2.16.1",
     "typescript": "^6.0.3"
   }
 }

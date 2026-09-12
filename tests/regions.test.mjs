@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { convexHull, topicRegions, regionPath, placeRegionLabels } from '../src/graph/regions.mjs';
+import { convexHull, topicRegions, regionPath, placeRegionLabels } from '../src/graph/regions.ts';
 
 test('convexHull drops interior points and keeps corners', () => {
   const hull = convexHull([{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }, { x: 0, y: 10 }, { x: 5, y: 5 }]);

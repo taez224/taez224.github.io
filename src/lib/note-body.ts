@@ -5,8 +5,8 @@ interface BodyNote { meta: Frontmatter; publicContent: string }
 interface BodyHeading { start: number; end: number; level: number; text: string }
 
 import MarkdownIt from 'markdown-it';
-import { headingTextForId, headingId, stripObsidianComments } from './markdown.mjs';
-import { plainText } from './text.mjs';
+import { headingTextForId, headingId, stripObsidianComments } from './markdown.ts';
+import { plainText } from './text.ts';
 
 // 사이트로 나가는 본문 사본과 거기서 계산하는 제목·목차·요약. vault 원문은 바꾸지 않는다.
 export function firstHeading(body: string, fallback: string): string {

@@ -2,8 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import vm from 'node:vm';
+import { stripTypeScriptTypes } from 'node:module';
 
-const source = await fs.readFile(new URL('../src/scripts/share.js', import.meta.url), 'utf8');
+// 브라우저 스크립트를 Node와 같은 타입 제거 방식으로 읽고, vm의 script 문맥에 맞춰 모듈 표식만 뺀다.
+const source = stripTypeScriptTypes(await fs.readFile(new URL('../src/scripts/share.ts', import.meta.url), 'utf8')).replace(/^export \{\};\s*/, '');
 
 function setup({ clipboard, share } = {}) {
   const classes = new Set(['visually-hidden']);

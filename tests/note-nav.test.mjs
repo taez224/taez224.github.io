@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parentLink, seriesNeighbors } from '../src/lib/note-nav.mjs';
+import { parentLink, seriesNeighbors } from '../src/lib/note-nav.ts';
 
 test('parentLink: 글은 글 목록, 개발 노트는 개발 노트 목록, 노트는 생각 지도(이 노트 선택)로 간다', () => {
   assert.deepEqual(parentLink({ kind: 'blog' }), { label: '글', path: '/posts/', listLabel: '글 목록' });

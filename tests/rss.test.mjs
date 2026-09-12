@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { feedItems, renderFeed } from '../src/lib/rss.mjs';
-import { SITE_DESCRIPTION } from '../src/lib/site-meta.mjs';
+import { feedItems, renderFeed } from '../src/lib/rss.ts';
+import { SITE_DESCRIPTION } from '../src/lib/site-meta.ts';
 const options = { site: 'https://example.com', basePath: '/obsidian' };
 const note = extra => ({ title: '생각', kind: 'slipbox', type: 'permanent', date: '2026-09-01', url: '/obsidian/notes/test/', summary: '요약', ...extra });
 const post = extra => note({ kind: 'blog', status: 'published', published: '2026-09-02', url: '/obsidian/posts/test/', publishedUrl: 'https://publisher.test/article', ...extra });

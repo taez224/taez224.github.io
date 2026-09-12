@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyEdges, hoverLabelCandidates, fitTransform, offsetLine, isFilteredOut } from '../src/graph/engine.mjs';
-import { labelIds, wrapLabel } from '../src/graph/label.mjs';
+import { classifyEdges, hoverLabelCandidates, fitTransform, offsetLine, isFilteredOut } from '../src/graph/engine.ts';
+import { labelIds, wrapLabel } from '../src/graph/label.ts';
 
 const edges = [{ source: 'a', target: 'b' }, { source: 'b', target: 'a' }, { source: 'a', target: 'c' }, { source: 'd', target: 'e' }];
 const nodes = [

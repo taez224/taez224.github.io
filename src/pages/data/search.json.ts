@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { getGarden } from '../../lib/get-garden.ts';
-import { kindLabel, displayTag, cleanTitle } from '../../lib/format.mjs';
+import { kindLabel, displayTag, cleanTitle } from '../../lib/format.ts';
 
 export const GET: APIRoute = async () => {
   const garden = await getGarden();

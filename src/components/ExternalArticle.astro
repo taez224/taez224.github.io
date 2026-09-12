@@ -2,8 +2,8 @@
 import Shell from '../layouts/Shell.astro';
 import { Image } from 'astro:assets';
 import { getGarden } from '../lib/get-garden.ts';
-import { cleanTitle, formatDate, kindLabel, withBase } from '../lib/format.mjs';
-import { articleMeta } from '../lib/seo.mjs';
+import { cleanTitle, formatDate, kindLabel, withBase } from '../lib/format.ts';
+import { articleMeta } from '../lib/seo.ts';
 
 import type { NoteEntry, PublicNote } from '../lib/content-model.ts';
 interface Props { entry: NoteEntry }

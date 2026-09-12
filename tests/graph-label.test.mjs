@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { estimateTextWidth, graphTitleLines } from '../src/graph/label.mjs';
+import { estimateTextWidth, graphTitleLines } from '../src/graph/label.ts';
 
 test('full titles wrap between words when possible', () => {
   assert.deepEqual(graphTitleLines('가능해야 한다', 10), ['가능해야 한다']);
@@ -15,7 +15,7 @@ test('estimateTextWidth weighs hangul, latin and punctuation differently and sca
   assert.equal(estimateTextWidth('가', 26), 25);
 });
 
-import { placeLabels, labelGeometry } from '../src/graph/label.mjs';
+import { placeLabels, labelGeometry } from '../src/graph/label.ts';
 
 const radius = () => 6;
 const at = (x, y) => ({ x, y });

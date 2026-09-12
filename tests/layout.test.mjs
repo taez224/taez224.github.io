@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { layoutGraph, nodeRadius } from '../src/graph/layout.mjs';
-import { renderSnapshotSvg } from '../src/graph/snapshot.mjs';
+import { layoutGraph, nodeRadius } from '../src/graph/layout.ts';
+import { renderSnapshotSvg } from '../src/graph/snapshot.ts';
 
 const nodes = [{ id: 'a', degree: 2, type: 'hub', displayTitle: 'A', topic: 'AI' }, { id: 'b', degree: 1, displayTitle: 'B', topic: '개발' }, { id: 'c', degree: 1, displayTitle: '아주 긴 제목이라 라벨이 되지 않는 노드', topic: '기타' }];
 const edges = [{ source: 'a', target: 'b' }, { source: 'a', target: 'c' }];

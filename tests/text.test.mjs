@@ -1,7 +1,7 @@
 import test from 'node:test';
 
 import assert from 'node:assert/strict';
-import { plainText } from '../src/lib/text.mjs';
+import { plainText } from '../src/lib/text.ts';
 
 test('search text excludes Obsidian comments but retains literal code examples', () => {
   const text = plainText('공개\n%%\n비공개 메모\n%%\n\n`%%코드 예시%%`');

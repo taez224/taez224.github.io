@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { loopTabFocus } from '../src/scripts/focus-loop.mjs';
+import { loopTabFocus } from '../src/scripts/focus-loop.ts';
 
 function fixture() {
   const doc = { activeElement: null };
