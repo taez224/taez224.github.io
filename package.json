@@ -9,6 +9,7 @@
     "dev": "astro dev",
     "build": "astro build && node scripts/check-dist.ts",
     "preview": "astro preview",
+    "design:lint": "npx --yes --package=@google/design.md@0.4.0 designmd lint DESIGN.md",
     "test": "node --test tests/*.test.ts",
     "check": "tsc --project tsconfig.check.json",
     "check:astro": "astro check"
