@@ -1,9 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assembleBlog, blogLedger, lastPublishedOf, latestSeries } from '../src/lib/blog.ts';
+import { assembleBlog, blogLedger, lastPublishedOf, latestSeries, type BlogPost, type BlogSeries } from '../src/lib/blog.ts';
+
+// 장부 한 줄의 타입은 blogLedger의 반환값에서 그대로 가져온다.
+type LedgerRow = ReturnType<typeof blogLedger>[number]['rows'][number];
+// 장부와 목록이 읽지 않는 필드는 빈 값으로 채운다. 채운 값이 결과를 바꾸지 않는지는 아래 단언이 지킨다.
+const blogPost = (title: string, published: string, date = published): BlogPost => ({
+  title, published, date, path: `${title}.md`, url: `/posts/${title}/`,
+  publication: '', publishedUrl: '', summary: '', status: '', series: '', seriesOrder: 0
+});
+const blogSeries = (title: string, lastPublished: string, posts: BlogPost[]): BlogSeries => ({
+  title, noteUrl: `/posts/${title}/`, summary: '', status: '', ended: '', lastPublished, posts
+});
 
 // 조립 단계처럼 연재의 lastPublished를 편에서 계산해 둔다.
-const series = (title, ...published) => {
+const series = (title: string, ...published: string[]) => {
   const posts = published.map((date, index) => ({ title: `${title} ${index + 1}`, published: date }));
   return { title, posts, lastPublished: lastPublishedOf(posts) };
 };
@@ -14,21 +25,25 @@ test('latestSeries picks the series whose last published post is the most recent
     series('이어지는 연재', '2025-06-01', '2026-01-22'),
     series('오래된 연재', '2023-04-08')
   ]);
+  assert.ok(chosen, '연재를 하나 고른다');
   assert.equal(chosen.title, '이어지는 연재');
 });
 
 test('latestSeries reads the last published post, not the order the posts arrive in', () => {
   const chosen = latestSeries([series('뒤섞인 연재', '2026-02-01', '2024-01-01'), series('최근 연재', '2026-03-01')]);
+  assert.ok(chosen, '연재를 하나 고른다');
   assert.equal(chosen.title, '최근 연재');
 });
 
 test('latestSeries uses the lastPublished that assembly computed instead of recomputing it', () => {
   const chosen = latestSeries([{ title: '필드가 앞선 연재', lastPublished: '2026-05-01', posts: [] }, series('편이 있는 연재', '2026-01-01')]);
+  assert.ok(chosen, '연재를 하나 고른다');
   assert.equal(chosen.title, '필드가 앞선 연재');
 });
 
 test('latestSeries skips a series whose posts are not published yet', () => {
   const chosen = latestSeries([series('발행 전 연재', '', ''), series('발행한 연재', '2024-05-05')]);
+  assert.ok(chosen, '연재를 하나 고른다');
   assert.equal(chosen.title, '발행한 연재');
 });
 
@@ -45,15 +60,16 @@ test('lastPublishedOf returns the latest publication date among the posts, whate
 });
 
 // date는 조립 단계가 검증한 표시 날짜다. published가 있으면 그 값, 없으면 created다.
-const post = (title, published, date = published) => ({ title, published, date });
+const post = blogPost;
 const ledgerInput = {
   publications: [{ publication: 'Velog', posts: [post('단독 새 글', '2026-03-01'), post('발행일 없는 글', '', '2026-04-01'), post('단독 옛 글', '2025-05-01')] }],
   series: [
-    { title: '연재', lastPublished: '2026-01-10', posts: [post('1편', '2025-12-01'), post('2편', '2026-01-10')] },
-    { title: '날짜 없는 연재', lastPublished: '', started: '2020-01-01', posts: [post('1편', '', '2024-02-02'), post('2편', '', '2024-01-01')] }
+    blogSeries('연재', '2026-01-10', [post('1편', '2025-12-01'), post('2편', '2026-01-10')]),
+    // started는 손으로 쓰는 필드다. 장부가 읽지 않는다는 것을 보이려고 일부러 얹는다.
+    { ...blogSeries('날짜 없는 연재', '', [post('1편', '', '2024-02-02'), post('2편', '', '2024-01-01')]), started: '2020-01-01' }
   ]
 };
-const rowTitle = (row) => (row.kind === 'post' ? row.post.title : row.series.title);
+const rowTitle = (row: LedgerRow) => (row.kind === 'post' ? row.post.title : row.series.title);
 
 test('blogLedger puts standalone posts and one row per series into years, newest first', () => {
   const ledger = blogLedger(ledgerInput);
@@ -67,19 +83,22 @@ test('blogLedger puts standalone posts and one row per series into years, newest
 
 test('a series without any publication date is dated by its latest episode date, never by the hand-written started field', () => {
   const row = blogLedger(ledgerInput).flatMap((year) => year.rows).find((item) => rowTitle(item) === '날짜 없는 연재');
+  assert.ok(row, '날짜 없는 연재도 장부에 한 줄로 들어간다');
   assert.equal(row.date, '2024-02-02', '허브의 started는 검증되지 않은 작성 필드라 쓰지 않는다');
 });
 
 test('blogLedger orders rows from the same day by title, whether they are posts or series', () => {
   const ledger = blogLedger({
     publications: [{ publication: 'Velog', posts: [post('나중 제목', '2026-05-05')] }],
-    series: [{ title: '가나다 연재', lastPublished: '2026-05-05', posts: [post('1편', '2026-05-05')] }]
+    series: [blogSeries('가나다 연재', '2026-05-05', [post('1편', '2026-05-05')])]
   });
   assert.deepEqual(ledger[0].rows.map(rowTitle), ['가나다 연재', '나중 제목']);
 });
 
 test('assembleBlog puts series episodes in episode order and groups the other posts by publication', () => {
-  const record = (title, extra) => ({ title, series: '', seriesOrder: 0, published: '', publication: '', ...extra });
+  const record = (title: string, extra: Partial<BlogPost & { ended: string }> = {}) => ({
+    ...blogPost(title, ''), status: '', ended: '', ...extra
+  });
   const hubs = [record('연재', { url: '/posts/series/', summary: '연재 소개', ended: '2026-02-01' })];
   const posts = [
     record('2편', { series: '연재', seriesOrder: 2, published: '2026-02-01' }),

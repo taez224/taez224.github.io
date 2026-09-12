@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { groupDevelopment, technologyTags, selectDevelopmentRecords } from '../src/lib/development.ts';
+import { groupDevelopment, technologyTags, selectDevelopmentRecords, type DevelopmentCategory } from '../src/lib/development.ts';
 
-const record = (category, title, tag, date) => ({ category, title, path: `${title}.md`, date, tags: [`개발/${tag}`] });
+const record = (category: DevelopmentCategory, title: string, tag: string, date: string) => ({ category, title, path: `${title}.md`, date, tags: [`개발/${tag}`] });
 const records = [
   record('Concepts', '멀티테넌시', '데이터베이스', '2026-09-06'),
   record('Troubleshooting', 'ZIP', 'Java', '2026-08-25'),
@@ -28,6 +28,6 @@ test('groupDevelopment splits notes into the three categories, each newest first
     record('Concepts', '새 개념', '설계', '2026-05-01'),
     record('Troubleshooting', '문제', 'Java', '2026-02-01')
   ]);
-  const titles = (items) => items.map((item) => item.title);
+  const titles = (items: readonly { title: string }[]) => items.map((item) => item.title);
   assert.deepEqual([titles(grouped.concepts), titles(grouped.troubleshooting), titles(grouped.tools)], [['새 개념', '옛 개념'], ['문제'], ['도구']]);
 });

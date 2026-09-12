@@ -1,5 +1,12 @@
 import type { NoteKind } from './kinds.ts';
 import type { PublicNote } from './content-model.ts';
+// JSON-LD로 나가는 값. 홈·글·목록 페이지가 쓰는 필드가 달라서 페이지마다 없는 항목은 선택으로 둔다.
+interface StructuredData {
+  '@context': string; '@type': string; description: string; url: string; inLanguage: string;
+  name?: string; headline?: string; image?: string; datePublished?: string; dateModified?: string;
+  author?: { '@type': string; name: string; sameAs?: string[] };
+  isPartOf?: { '@type': string; name: string; url: string };
+}
 interface StructuredInput { ogType?: string; kind?: string | null; pageType?: string | null; title: string; description: string; url: string; image?: string | null; published?: string | null; updated?: string | null; siteTitle: string; siteUrl: string; sameAs?: string[] }
 
 import { KINDS } from './kinds.ts';
@@ -10,7 +17,7 @@ import { kindPrefix, noteUrl, siteHome } from './slug.ts';
 const AUTHOR_NAME = 'TaeZ';
 const ARTICLE_TYPES: Record<string, string> = { blog: 'BlogPosting', development: 'TechArticle' };
 
-export function structuredData({ ogType = 'website', kind = null, pageType = null, title, description, url, image = null, published = null, updated = null, siteTitle, siteUrl, sameAs = [] }: StructuredInput) {
+export function structuredData({ ogType = 'website', kind = null, pageType = null, title, description, url, image = null, published = null, updated = null, siteTitle, siteUrl, sameAs = [] }: StructuredInput): StructuredData {
   const author = { '@type': 'Person', name: AUTHOR_NAME, ...(sameAs.length ? { sameAs } : {}) };
   const website = { '@type': 'WebSite', name: siteTitle, url: siteUrl };
   if (url === siteUrl) return { '@context': 'https://schema.org', ...website, description, inLanguage: 'ko', author };
@@ -47,7 +54,8 @@ export function jsonLdScript(data: unknown): string {
 const LLMS_ORDER: NoteKind[] = ['blog', 'development', 'slipbox'];
 const oneLine = (value: unknown) => String(value ?? '').replace(/\s+/g, ' ').trim();
 
-export function llmsText(notes: readonly Pick<PublicNote, 'kind' | 'url' | 'date' | 'title' | 'summary'>[], { site, basePath = '', title, description }: { site: string | URL; basePath?: string; title: string; description: string }): string {
+// kind에는 공개 노트 종류 밖의 값(책)이 섞여 들어올 수 있다. 목록에 넣을 종류만 고르므로 그대로 걸러진다.
+export function llmsText(notes: readonly (Pick<PublicNote, 'url' | 'date' | 'title' | 'summary'> & { kind: string })[], { site, basePath = '', title, description }: { site: string | URL; basePath?: string; title: string; description: string }): string {
   const home = siteHome(site, basePath).href;
   const lines = [`# ${oneLine(title)}`, '', `> ${oneLine(description)}`, '', `사이트: ${home}`];
   for (const kind of LLMS_ORDER) {

@@ -1,5 +1,9 @@
 import type { PublicNote, GardenGraphNode, GraphEdge } from './content-model.ts';
-type OgGarden = { notes: PublicNote[]; nodes: GardenGraphNode[]; edges: GraphEdge[] };
+// 카드가 읽는 값. 지도 그림에 쓰는 path·url·topic·displayTitle은 있어야 하고, 날짜·분량·썸네일은 없을 수 있다.
+type CardNote = Pick<PublicNote, 'path' | 'title' | 'displayTitle' | 'url' | 'topic' | 'kind'>
+  & Partial<Pick<PublicNote, 'category' | 'date' | 'readingMinutes' | 'thumbnail' | 'thumbnailStyle' | 'outgoing' | 'incoming'>>;
+type NoteGarden = { notes: CardNote[] };
+type OgGarden = NoteGarden & { nodes: GardenGraphNode[]; edges: GraphEdge[] };
 type RenderPng = () => Buffer | Promise<Buffer>;
 
 import { createHash, randomUUID } from 'node:crypto';
@@ -157,7 +161,7 @@ export async function thumbnailDataUri(thumbnail: string | null | undefined, { v
 }
 
 // 왼쪽에 제목·메타, 오른쪽에 썸네일 또는 로컬 그래프를 둔다.
-export function ogSvg({ note, outgoing, incoming, siteLabel, thumbnailDataUri: thumbnail, thumbnailRatio = 1 }: { note: PublicNote; outgoing: PublicNote[]; incoming: PublicNote[]; siteLabel: string; thumbnailDataUri?: string | null; thumbnailRatio?: number }): string {
+export function ogSvg({ note, outgoing, incoming, siteLabel, thumbnailDataUri: thumbnail, thumbnailRatio = 1 }: { note: CardNote; outgoing: CardNote[]; incoming: CardNote[]; siteLabel: string; thumbnailDataUri?: string | null; thumbnailRatio?: number }): string {
   const title = cleanTitle(note.displayTitle || note.title);
   const { size, lines } = fitTitle(title);
   const lineHeight = Math.round(size * 1.34);
@@ -198,14 +202,14 @@ export function siteLabelFor(config: { basePath?: string }, site?: string | URL)
   return `${new URL(site ?? 'https://taez224.github.io').host}${base}`;
 }
 
-export async function renderOgPng(garden: OgGarden, notePath: string, { siteLabel }: { siteLabel: string }): Promise<Buffer> {
+export async function renderOgPng(garden: NoteGarden, notePath: string, { siteLabel }: { siteLabel: string }): Promise<Buffer> {
   const byPath = new Map(garden.notes.map((n) => [n.path, n]));
   const note = byPath.get(notePath);
   if (!note) throw new Error(`OG: unknown note ${notePath}`);
-  const resolve = (paths: string[]) => paths.map((p) => byPath.get(p)).filter((note): note is PublicNote => note !== undefined);
+  const resolve = (paths: string[]) => paths.map((p) => byPath.get(p)).filter((note): note is CardNote => note !== undefined);
   const thumbnail = await thumbnailDataUri(note.thumbnail);
   const dimensions = thumbnail?.startsWith('data:image/png;') ? pngDimensions(Buffer.from(thumbnail.split(',')[1], 'base64')) : null;
-  return renderCard(ogSvg({ note, outgoing: resolve(note.outgoing), incoming: resolve(note.incoming), siteLabel, thumbnailDataUri: thumbnail, thumbnailRatio: dimensions ? dimensions.width / dimensions.height : 1 }));
+  return renderCard(ogSvg({ note, outgoing: resolve(note.outgoing ?? []), incoming: resolve(note.incoming ?? []), siteLabel, thumbnailDataUri: thumbnail, thumbnailRatio: dimensions ? dimensions.width / dimensions.height : 1 }));
 }
 
 // 사이트 카드: 홈·목록·지도처럼 노트가 아닌 페이지에 쓴다. 오른쪽에 전체 노트 지도를 얹는다.

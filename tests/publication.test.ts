@@ -20,7 +20,7 @@ test('development file-list mode still requires explicit selection', () => {
     { path: `${root}/Concepts`, mode: 'all', files: [] },
     { path: `${root}/Concepts`, statuses: ['published'], files: [] },
     { path: `${root}/Concepts`, files: [`${root}/Concepts/../DevLog/private.md`] }
-  ]) assert.throws(() => validatePublicationConfig({ include: [rule] }));
+  ]) assert.throws(() => validatePublicationConfig({ include: [rule], exclude: [] }));
 });
 
 test('development folder mode includes ordinary Markdown and honors exclusions', () => {

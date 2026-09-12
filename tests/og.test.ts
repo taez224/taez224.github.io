@@ -7,6 +7,9 @@ import { Resvg } from '@resvg/resvg-js';
 import imageService from 'astro/assets/services/sharp';
 import { crc32, deflateSync } from 'node:zlib';
 
+// Astro 이미지 서비스는 사이트 전체 이미지 설정을 받는다. 여기서는 변환만 쓰므로 쓰는 항목만 채운다.
+const imageConfig = { service: { entrypoint: '', config: {} } } as Parameters<typeof imageService.transform>[2];
+
 const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'garden-og-'));
 process.env.GARDEN_OG_CACHE_DIR = dir;
 const { cachedPng, pruneOgCache, fitTitle, ogSvg, renderOgPng, thumbnailDataUri } = await import('../src/lib/og.ts');
@@ -20,7 +23,7 @@ function pngFixture(width = 1200, height = 630) {
   return Buffer.from(fixtures.get(key));
 }
 
-function replaceImageData(png, data) {
+function replaceImageData(png: Buffer, data: Buffer) {
   const chunks = [png.subarray(0, 8)];
   let inserted = false;
   for (let at = 8; at < png.length;) {
@@ -106,7 +109,7 @@ test('fitTitle picks the largest size that fits three lines and truncates the re
 
 test('ogSvg uses a contained thumbnail in place of the local graph', () => {
   const svg = ogSvg({
-    note: { title: 'Thumbnail note', displayTitle: 'Thumbnail note', kind: 'blog' },
+    note: { title: 'Thumbnail note', displayTitle: 'Thumbnail note', kind: 'blog', path: 'thumbnail.md', url: '/posts/thumbnail/', topic: 'AI' },
     outgoing: [],
     incoming: [],
     siteLabel: 'example.com',
@@ -118,7 +121,7 @@ test('ogSvg uses a contained thumbnail in place of the local graph', () => {
 
 test('ogSvg escapes card text as XML and drops characters an SVG cannot hold', () => {
   // resvg는 SVG를 XML로 읽는다. 제목에 섞인 제어 문자 하나가 카드 렌더링과 빌드를 멈추게 하면 안 된다.
-  const svg = ogSvg({ note: { title: 'A & <B> "C"\u0008', displayTitle: 'A & <B> "C"\u0008', kind: 'blog' }, outgoing: [], incoming: [], siteLabel: 'example.com' });
+  const svg = ogSvg({ note: { title: 'A & <B> "C"\u0008', displayTitle: 'A & <B> "C"\u0008', kind: 'blog', path: 'escape.md', url: '/posts/escape/', topic: 'AI' }, outgoing: [], incoming: [], siteLabel: 'example.com' });
   assert.match(svg, />A &amp; &lt;B&gt; &quot;C&quot;<\/text>/);
   assert.doesNotMatch(svg, /\u0008/);
   assert.doesNotThrow(() => new Resvg(svg));
@@ -126,7 +129,7 @@ test('ogSvg escapes card text as XML and drops characters an SVG cannot hold', (
 
 test('ogSvg keeps the local graph when a note has no thumbnail', () => {
   const svg = ogSvg({
-    note: { title: 'Graph note', displayTitle: 'Graph note', kind: 'blog' },
+    note: { title: 'Graph note', displayTitle: 'Graph note', kind: 'blog', path: 'graph.md', url: '/posts/graph/', topic: 'AI' },
     outgoing: [],
     incoming: [],
     siteLabel: 'example.com'
@@ -137,19 +140,22 @@ test('ogSvg keeps the local graph when a note has no thumbnail', () => {
 });
 
 test('thumbnail normalization supports JPEG and WebP and same-path replacements change the card', async () => {
-  const render = (uri) => new Resvg(ogSvg({ note: { title: 'Thumbnail', kind: 'blog' }, outgoing: [], incoming: [], siteLabel: 'example.com', thumbnailDataUri: uri })).render().asPng();
+  const render = (uri: string) => new Resvg(ogSvg({ note: { title: 'Thumbnail', displayTitle: 'Thumbnail', kind: 'blog', path: 'thumb.md', url: '/posts/thumb/', topic: 'AI' }, outgoing: [], incoming: [], siteLabel: 'example.com', thumbnailDataUri: uri })).render().asPng();
   for (const format of ['jpg', 'webp']) {
-    const raster = await imageService.transform(pngFixture(), { src: 'fixture.png', format }, { service: { config: {} } }, console);
+    const raster = await imageService.transform(pngFixture(), { src: 'fixture.png', format }, imageConfig, console);
     await fs.writeFile(path.join(dir, `cover.${format}`), raster.data);
     const uri = await thumbnailDataUri(`cover.${format}`, { vaultRoot: dir });
+    assert.ok(uri, '변환한 썸네일은 데이터 URI로 돌아온다');
     assert.match(uri, /^data:image\/png;base64,/);
     assert.deepEqual(pngDimensions(render(uri)), { width: 1200, height: 630 });
   }
   const imagePath = path.join(dir, 'replace.png');
   await fs.writeFile(imagePath, pngFixture());
   const before = await thumbnailDataUri('replace.png', { vaultRoot: dir });
+  assert.ok(before, '바꾸기 전 썸네일을 읽는다');
   await fs.writeFile(imagePath, new Resvg('<svg xmlns="http://www.w3.org/2000/svg" width="80" height="60"><rect width="80" height="60" fill="red"/></svg>').render().asPng());
   const after = await thumbnailDataUri('replace.png', { vaultRoot: dir });
+  assert.ok(after, '바꾼 뒤 썸네일도 읽는다');
   assert.notEqual(before, after, '같은 경로라도 이미지 내용이 SVG 캐시 키에 반영된다');
   assert.notDeepEqual(render(before), render(after));
 });
@@ -159,7 +165,9 @@ test('renderOgPng rejects unsupported or escaping thumbnail paths explicitly', a
     notes: [{
       path: '20_Projects/blog/thumbnail-test.md',
       slug: 'thumbnail-test',
-      kind: 'blog',
+      kind: 'blog' as const,
+      url: '/posts/thumbnail-test/',
+      topic: 'AI',
       title: 'Thumbnail test',
       displayTitle: 'Thumbnail test',
       thumbnail: '20_Projects/blog/assets/unsupported.txt',
@@ -175,5 +183,6 @@ test('renderOgPng rejects unsupported or escaping thumbnail paths explicitly', a
 test('a gif thumbnail reviewed by the note pipeline also renders an OG card', async () => {
   await fs.writeFile(path.join(dir, 'cover.gif'), Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64'));
   const uri = await thumbnailDataUri('cover.gif', { vaultRoot: dir });
+  assert.ok(uri, 'gif 썸네일도 데이터 URI로 돌아온다');
   assert.match(uri, /^data:image\/png;base64,/);
 });

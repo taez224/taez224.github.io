@@ -35,8 +35,8 @@ import { inlinePanelNotes } from '../src/lib/graph-data.ts';
 
 test('inlinePanelNotes keeps the panel fields, only explicit summaries, and indexes note edges by position', () => {
   const notes = [
-    { path: 'a.md', title: 'A', displayTitle: 'A', url: '/notes/a/', kind: 'slipbox', category: null, date: '2026-01-01', publicTags: ['AI'], summary: '명시한 요약', summaryIsExplicit: true, headings: [{ id: 'x' }], bodyText: 'LONG', slug: 'a' },
-    { path: 'b.md', title: 'B', displayTitle: 'B', url: '/dev/b/', kind: 'development', category: 'Tools', date: '2026-01-02', publicTags: [], summary: '본문에서 뽑은 요약', summaryIsExplicit: false, headings: [] }
+    { path: 'a.md', title: 'A', displayTitle: 'A', url: '/notes/a/', kind: 'slipbox' as const, category: null, date: '2026-01-01', publicTags: ['AI'], summary: '명시한 요약', summaryIsExplicit: true, headings: [{ id: 'x' }], bodyText: 'LONG', slug: 'a' },
+    { path: 'b.md', title: 'B', displayTitle: 'B', url: '/dev/b/', kind: 'development' as const, category: 'Tools' as const, date: '2026-01-02', publicTags: [], summary: '본문에서 뽑은 요약', summaryIsExplicit: false, headings: [] }
   ];
   const noteEdges = [{ source: 'a.md', target: 'b.md' }, { source: 'b.md', target: 'missing.md' }];
   const data = inlinePanelNotes(notes, noteEdges, { 글쓰기: '기타' });

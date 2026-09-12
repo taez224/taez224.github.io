@@ -14,9 +14,10 @@ after(() => fs.rm(root, { recursive: true, force: true }));
 const makeCacheDir = () => fs.mkdtemp(path.join(root, 'cache-'));
 
 // url마다 시도 순서대로 응답을 준다. 'ok'는 온전한 폰트, 'truncated'는 잘린 본문, 숫자는 HTTP 상태, Error는 네트워크 실패다.
-function fakeFetch(plan) {
-  const calls = [];
-  const fetch = async (url) => {
+function fakeFetch(plan: Record<string, (string | number | Error)[]>) {
+  const calls: string[] = [];
+  const fetch = async (input: RequestInfo | URL) => {
+    const url = String(input);
     calls.push(url);
     const next = plan[url]?.shift();
     if (next === undefined) throw new Error(`unexpected request ${url}`);
@@ -51,8 +52,9 @@ test('a truncated cached font is downloaded again and replaced as a whole file',
 test('an error status or a truncated response is retried with a growing wait', async () => {
   const cacheDir = await makeCacheDir();
   const { fetch, calls } = fakeFetch({ 'https://fonts.test/A.ttf': [503, 'truncated', 'ok'], 'https://fonts.test/B.otf': ['ok'] });
-  const waits = [];
+  const waits: number[] = [];
   const paths = await ensureOgFonts({ cacheDir, fonts, fetch, wait: async (ms) => { waits.push(ms); }, ci: false });
+  assert.ok(paths, '재시도 끝에 두 폰트를 모두 받는다');
   assert.equal(paths.length, 2);
   assert.equal(calls.filter((url) => url.endsWith('A.ttf')).length, 3);
   assert.deepEqual(waits, [1000, 2000]);

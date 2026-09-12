@@ -7,18 +7,23 @@ import { stripTypeScriptTypes } from 'node:module';
 // 브라우저 스크립트를 Node와 같은 타입 제거 방식으로 읽고, vm의 script 문맥에 맞춰 모듈 표식만 뺀다.
 const source = stripTypeScriptTypes(await fs.readFile(new URL('../src/scripts/share.ts', import.meta.url), 'utf8')).replace(/^export \{\};\s*/, '');
 
-function setup({ clipboard, share } = {}) {
+// vm 문맥에 넣는 가짜 브라우저. 공유 스크립트가 실제로 부르는 것만 갖춘다.
+interface FakeNavigator {
+  clipboard?: { writeText: (url: string) => Promise<void> };
+  share?: (data: { title: string; text: string; url: string }) => Promise<void>;
+}
+function setup({ clipboard, share }: FakeNavigator = {}) {
   const classes = new Set(['visually-hidden']);
   const feedback = {
     textContent: '', style: {},
-    classList: { add: (name) => classes.add(name), toggle: (name, on) => on ? classes.add(name) : classes.delete(name) },
+    classList: { add: (name: string) => classes.add(name), toggle: (name: string, on: boolean) => on ? classes.add(name) : classes.delete(name) },
     getBoundingClientRect: () => ({ left: 40, right: 300 })
   };
   const label = { textContent: '' };
   const control = { hidden: true, querySelector: () => feedback };
-  let click;
-  const button = { dataset: {}, title: '', querySelector: () => label, closest: () => control, hasAttribute: () => true, addEventListener: (_event, listener) => { click = listener; } };
-  const timers = new Map();
+  let click: () => unknown | Promise<unknown>;
+  const button = { dataset: {} as Record<string, string>, title: '', querySelector: () => label, closest: () => control, hasAttribute: () => true, addEventListener: (_event: string, listener: () => unknown) => { click = listener; } };
+  const timers = new Map<number, { fn: () => void; delay: number }>();
   let nextTimer = 0;
   vm.runInNewContext(source, {
     navigator: { clipboard, share },
@@ -26,8 +31,8 @@ function setup({ clipboard, share } = {}) {
     window: {
       location: { href: 'https://taez224.github.io/map/?node=notes%2Fai-usage#detail' },
       innerWidth: 360, matchMedia: () => ({ matches: true }),
-      setTimeout(fn, delay) { const id = ++nextTimer; timers.set(id, { fn, delay }); return id; },
-      clearTimeout(id) { timers.delete(id); }
+      setTimeout(fn: () => void, delay: number) { const id = ++nextTimer; timers.set(id, { fn, delay }); return id; },
+      clearTimeout(id: number) { timers.delete(id); }
     }
   });
   return { click: () => click(), feedback, label, control, button, classes, timers };

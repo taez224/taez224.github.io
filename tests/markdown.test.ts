@@ -1,5 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import type { ResolvedNote } from '../src/lib/markdown.ts';
+import type { PublicNote } from '../src/lib/content-model.ts';
+// 비공개 노트의 해석 결과는 제목·주소를 담지 않는 것이 계약이다(ResolvedNote). 계약을 어긴 값이 들어와도
+// 렌더러가 그 값을 출력하지 않는지 보려고, 아래 두 곳에서만 계약을 깨뜨린 값을 만든다.
+const offContractPrivate = (note: { visibility: 'private'; title: string; url: string }) => note as unknown as ResolvedNote;
 import { createMarkdownRenderer, extractNoteTargets } from '../src/lib/markdown.ts';
 
 const render = createMarkdownRenderer({ resolveNote: () => null, resolveAsset: () => null });
@@ -125,7 +130,7 @@ test('Korean emphasis preserves native nesting and code and escaped delimiters',
 function renderWithVisibility() {
   return createMarkdownRenderer({
     resolveNote: (_source, target) => target.startsWith('hidden/')
-      ? { visibility: 'private', title: 'NEVER_SHOW_SECRET_TITLE', url: '/NEVER_SHOW_SECRET_URL' }
+      ? offContractPrivate({ visibility: 'private', title: 'NEVER_SHOW_SECRET_TITLE', url: '/NEVER_SHOW_SECRET_URL' })
       : target === 'public.md' ? { title: '공개 제목', url: '/notes/public/' } : null,
     resolveAsset: (_source, target) => target === 'picture.png' ? { url: '/assets/picture.png' } : null
   });
@@ -212,7 +217,7 @@ function renderWithArticles() {
   return createMarkdownRenderer({
     resolveNote: (_source, target, fragment) => {
       if (target === 'public.md') return { title: 'Canonical & <title>', url: `/notes/public/${fragment ? `#${fragment}` : ''}` };
-      if (target === 'hidden.md') return { visibility: 'private', title: 'SECRET TITLE', url: '/secret/' };
+      if (target === 'hidden.md') return offContractPrivate({ visibility: 'private', title: 'SECRET TITLE', url: '/secret/' });
       return null;
     },
     resolveAsset: () => null
@@ -220,7 +225,7 @@ function renderWithArticles() {
 }
 
 test('public article callouts register canonical card metadata and a safe fallback link', () => {
-  const articleCards = [];
+  const articleCards: PublicNote['articleCards'] = [];
   const html = renderWithArticles()('x.md', '> [!article] <img src=x onerror=alert(1)>\n> [[public.md|authored alias]]', { articleCards });
   assert.deepEqual(articleCards, [{ url: '/notes/public/', title: 'Canonical & <title>', caption: '<img src=x onerror=alert(1)>' }]);
   assert.match(html, /<aside class="article-card-slot" data-article-card="0"><a class="internal-note-link" href="\/notes\/public\/">Canonical &amp; &lt;title&gt;<\/a><\/aside>/);
@@ -229,7 +234,7 @@ test('public article callouts register canonical card metadata and a safe fallba
 
 test('article cards preserve heading and block destinations while using canonical metadata', () => {
   for (const [target, fragment] of [['public.md#설명과 예시', '설명과-예시'], ['public.md#^source-proof|별칭', 'source-proof']]) {
-    const articleCards = [];
+    const articleCards: PublicNote['articleCards'] = [];
     const html = renderWithArticles()('x.md', `> [!article] 연결 근거\n> [[${target}]]`, { articleCards });
     assert.deepEqual(articleCards, [{ url: `/notes/public/#${fragment}`, title: 'Canonical & <title>', caption: '연결 근거' }]);
     assert.ok(html.includes(`href="/notes/public/#${fragment}"`));
@@ -246,7 +251,7 @@ test('invalid article callouts fall back to ordinary callouts without discarding
     '> [!article]\n> [[hidden.md]]',
     '> [!article]\n> [[missing.md]]'
   ]) {
-    const articleCards = [];
+    const articleCards: PublicNote['articleCards'] = [];
     const html = renderer('x.md', source, { articleCards });
     assert.equal(articleCards.length, 0, source);
     assert.match(html, /callout-article/, source);
@@ -256,7 +261,7 @@ test('invalid article callouts fall back to ordinary callouts without discarding
 });
 
 test('article syntax is protected in fenced, indented and inline code', () => {
-  const articleCards = [];
+  const articleCards: PublicNote['articleCards'] = [];
   const html = renderWithArticles()('x.md', [
     '```md',
     '> [!article]',
@@ -279,7 +284,7 @@ test('article syntax is protected in fenced, indented and inline code', () => {
 });
 
 test('ordinary wiki links remain ordinary links and nested article callouts still register cards', () => {
-  const articleCards = [];
+  const articleCards: PublicNote['articleCards'] = [];
   const html = renderWithArticles()('x.md', [
     '[[public.md]]',
     '',

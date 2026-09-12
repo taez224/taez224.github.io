@@ -11,7 +11,7 @@ export const ATLAS_LAYOUT = { topicGravity: 0.12, crossRepel: 2 };
 
 // topicGravity: 같은 주제 무게중심으로 당기는 힘. crossRepel: 주제가 다른 노드 쌍의 척력 배수.
 const SEED = 7, ITERATIONS = 700, REPEL_RANGE = 1.5, GRAVITY = 0.08;
-export function layoutGraph(nodes: readonly GraphNode[], edges: readonly GraphEdge[], { width, height, pad = 56, topicGravity = 0, crossRepel = 1 }: { width: number; height: number; pad?: number; topicGravity?: number; crossRepel?: number }): Map<string, Point> {
+export function layoutGraph(nodes: readonly Pick<GraphNode, 'id' | 'topic'>[], edges: readonly GraphEdge[], { width, height, pad = 56, topicGravity = 0, crossRepel = 1 }: { width: number; height: number; pad?: number; topicGravity?: number; crossRepel?: number }): Map<string, Point> {
   let state = SEED;
   const random = () => { state = (state * 1664525 + 1013904223) % 4294967296; return state / 4294967296; };
   const index = new Map(nodes.map((node, i) => [node.id, i]));

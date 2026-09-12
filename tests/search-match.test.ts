@@ -15,20 +15,24 @@ test('matchRecord finds body-only words and returns a snippet around the first h
 test('matchRecord requires every term and scores title matches higher', () => {
   assert.equal(matchRecord(record, normalizeQuery('zip 없는단어')), null);
   const hit = matchRecord(record, normalizeQuery('zip java'));
+  assert.ok(hit, '제목과 태그가 모두 걸리는 질의는 결과가 있다');
   assert.equal(hit.score, 11);
   assert.equal(hit.snippet, '');
 });
 
 test('matchRecord scores aliases above summary and body matches', () => {
   const aliasHit = matchRecord(record, normalizeQuery('스트리밍 압축'));
+  const summaryHit = matchRecord(record, normalizeQuery('스트림'));
+  assert.ok(aliasHit && summaryHit, '별칭과 요약 질의는 모두 결과가 있다');
   assert.equal(aliasHit.score, 20);
-  assert.equal(matchRecord(record, normalizeQuery('스트림')).score, 4);
+  assert.equal(summaryHit.score, 4);
 });
 
 test('matchRecord adds a phrase bonus only when all terms share one field', () => {
   const splitRecord = { ...record, title: 'AI 도구', aliases: ['PKM 운영'] };
   const phraseHit = matchRecord(record, normalizeQuery('스트리밍 압축'));
   const splitHit = matchRecord(splitRecord, normalizeQuery('AI PKM'));
+  assert.ok(phraseHit && splitHit, '두 질의는 모두 결과가 있다');
   assert.equal(splitHit.score, 14);
   assert.ok(phraseHit.score > splitHit.score);
 });

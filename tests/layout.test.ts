@@ -2,8 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { layoutGraph, nodeRadius } from '../src/graph/layout.ts';
 import { renderSnapshotSvg } from '../src/graph/snapshot.ts';
+import type { GraphNode, Point } from '../src/lib/content-model.ts';
 
-const nodes = [{ id: 'a', degree: 2, type: 'hub', displayTitle: 'A', topic: 'AI' }, { id: 'b', degree: 1, displayTitle: 'B', topic: '개발' }, { id: 'c', degree: 1, displayTitle: '아주 긴 제목이라 라벨이 되지 않는 노드', topic: '기타' }];
+const nodes: GraphNode[] = [{ id: 'a', degree: 2, type: 'hub', displayTitle: 'A', topic: 'AI', title: '', url: '', isEntry: false }, { id: 'b', degree: 1, displayTitle: 'B', topic: '개발', type: '', title: '', url: '', isEntry: false }, { id: 'c', degree: 1, displayTitle: '아주 긴 제목이라 라벨이 되지 않는 노드', topic: '기타', type: '', title: '', url: '', isEntry: false }];
 const edges = [{ source: 'a', target: 'b' }, { source: 'a', target: 'c' }];
 
 test('layoutGraph is deterministic and keeps nodes inside the padded box', () => {
@@ -18,9 +19,9 @@ test('layoutGraph is deterministic and keeps nodes inside the padded box', () =>
 
 test('topicGravity pulls same-topic nodes together', () => {
   const many = Array.from({ length: 12 }, (_, i) => ({ id: `n${i}`, degree: 1, topic: i % 2 ? 'AI' : '개발' }));
-  const spread = (positions) => {
+  const spread = (positions: ReadonlyMap<string, Point>) => {
     let sum = 0, count = 0;
-    for (const a of many) for (const b of many) { if (a.id < b.id && a.topic === b.topic) { const p = positions.get(a.id), q = positions.get(b.id); sum += Math.hypot(p.x - q.x, p.y - q.y); count += 1; } }
+    for (const a of many) for (const b of many) { if (a.id < b.id && a.topic === b.topic) { const p = positions.get(a.id)!, q = positions.get(b.id)!; sum += Math.hypot(p.x - q.x, p.y - q.y); count += 1; } }
     return sum / count;
   };
   const plain = spread(layoutGraph(many, [], { width: 1000, height: 640 }));
@@ -34,15 +35,15 @@ test('renderSnapshotSvg labels hubs only and colors by topic', () => {
   assert.match(svg, />A<\/text>/);
   assert.doesNotMatch(svg, /아주 긴 제목/);
   assert.match(svg, /fill="#80698f"/);
-  assert.match(svg, /fill="#5d7897"/); // 개발 = 옛 소프트웨어공학의 파란색
+  assert.match(svg, /fill="#5d7897"/); // 개발의 주제색
   assert.equal((svg.match(/<line /g) || []).length, 2);
 });
 
 test('renderSnapshotSvg desktop preset matches the live hero: entry halo, 13px-equivalent labels, hub labels placed by the shared rule', () => {
-  const nodes = [
-    { id: 'entry', title: '생각의 정원', type: 'hub', topic: 'AI', degree: 12, isEntry: true },
-    { id: 'hub', title: '지식관리와 글쓰기', type: 'hub', topic: '지식관리', degree: 10 },
-    { id: 'leaf', title: '잎', type: 'permanent', topic: 'AI', degree: 1 }
+  const nodes: GraphNode[] = [
+    { id: 'entry', title: '생각의 정원', type: 'hub', topic: 'AI', degree: 12, isEntry: true, url: '' },
+    { id: 'hub', title: '지식관리와 글쓰기', type: 'hub', topic: '지식관리', degree: 10, isEntry: false, url: '' },
+    { id: 'leaf', title: '잎', type: 'permanent', topic: 'AI', degree: 1, isEntry: false, url: '' }
   ];
   const edges = [{ source: 'entry', target: 'leaf' }, { source: 'hub', target: 'leaf' }];
   const positions = layoutGraph(nodes, edges, { width: 1000, height: 640 });

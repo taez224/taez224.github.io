@@ -18,6 +18,7 @@ test('blog and development notes get article types with their published date', (
   assert.equal(blog.headline, '글');
   assert.equal(blog.datePublished, '2026-09-01');
   assert.equal(blog.image, `${siteUrl}og/a.png`);
+  assert.ok(blog.isPartOf, '글은 사이트에 속한다');
   assert.equal(blog.isPartOf.url, siteUrl);
   assert.equal(structuredData({ ...base, ogType: 'article', kind: 'development', title: '개발', url: `${siteUrl}dev/b/` })['@type'], 'TechArticle');
   const slipbox = structuredData({ ...base, ogType: 'article', kind: 'slipbox', title: '노트', url: `${siteUrl}notes/c/` });
@@ -32,7 +33,7 @@ test('articles carry dateModified only when the page has a modification date', (
 });
 
 test('note pages describe themselves by kind and slug, not by the base-prefixed note url', () => {
-  const note = { kind: 'development', slug: 'vault-with-ai', url: '/obsidian/dev/vault-with-ai/', date: '2026-09-01' };
+  const note = { kind: 'development' as const, slug: 'vault-with-ai', url: '/obsidian/dev/vault-with-ai/', date: '2026-09-01' };
   assert.deepEqual(articleMeta(note), { path: '/dev/vault-with-ai/', kind: 'development', published: '2026-09-01', ogType: 'article', ogImage: '/og/dev/vault-with-ai.png' });
   assert.equal(articleMeta({ ...note, date: '' }).published, null, '날짜가 없으면 발행일 메타를 만들지 않는다');
 });
@@ -40,12 +41,14 @@ test('note pages describe themselves by kind and slug, not by the base-prefixed 
 test('list pages are WebPages inside the site', () => {
   const data = structuredData({ ...base, title: '책장', url: `${siteUrl}books/` });
   assert.equal(data['@type'], 'WebPage');
+  assert.ok(data.isPartOf, '목록 페이지도 사이트에 속한다');
   assert.equal(data.isPartOf['@type'], 'WebSite');
 });
 
 test('about pages can use the specific AboutPage type', () => {
   const data = structuredData({ ...base, pageType: 'AboutPage', title: '이 위키에 대해', url: `${siteUrl}about/` });
   assert.equal(data['@type'], 'AboutPage');
+  assert.ok(data.isPartOf, '소개 페이지도 사이트에 속한다');
   assert.equal(data.isPartOf['@type'], 'WebSite');
 });
 
@@ -57,10 +60,10 @@ test('jsonLdScript cannot close the script tag from inside a string', () => {
 
 test('llms.txt lists public notes by kind, newest first, with absolute urls', () => {
   const notes = [
-    { kind: 'slipbox', title: '생각', url: '/obsidian/notes/생각/', summary: '한 줄\n요약', date: '2026-08-01' },
-    { kind: 'blog', title: '옛 글', url: '/obsidian/posts/old/', summary: '', date: '2026-01-01' },
-    { kind: 'blog', title: '새 글', url: '/obsidian/posts/new/', summary: '요약', date: '2026-09-01' },
-    { kind: 'book', title: '책', url: '/obsidian/books/#b', summary: '', date: '2026-09-02' }
+    { kind: 'slipbox' as const, title: '생각', url: '/obsidian/notes/생각/', summary: '한 줄\n요약', date: '2026-08-01' },
+    { kind: 'blog' as const, title: '옛 글', url: '/obsidian/posts/old/', summary: '', date: '2026-01-01' },
+    { kind: 'blog' as const, title: '새 글', url: '/obsidian/posts/new/', summary: '요약', date: '2026-09-01' },
+    { kind: 'book' as const, title: '책', url: '/obsidian/books/#b', summary: '', date: '2026-09-02' }
   ];
   const text = llmsText(notes, { site: 'https://example.com', basePath: '/obsidian', title: '정원', description: '소개' });
   const lines = text.split('\n');
