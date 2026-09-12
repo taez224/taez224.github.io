@@ -10,8 +10,8 @@ colors:
   faint: '#687267'
   line: '#d8ded4'
   accent-soft: '#e7e9e3'
-  warning: '#a66a38'
-  bug: '#9c6e6e'
+  warning: '#985d2f'
+  bug: '#8e5d5d'
   highlight: '#e7d99b'
 typography:
   reader-title:
@@ -26,12 +26,58 @@ typography:
     fontWeight: 700
     lineHeight: 1.3
     letterSpacing: -0.03em
+  page-title:
+    fontFamily: Gowun Batang
+    fontSize: 28px
+    fontWeight: 700
+    lineHeight: 1.4
+    letterSpacing: -0.02em
+  section-title:
+    fontFamily: Gowun Batang
+    fontSize: 24px
+    fontWeight: 700
+    lineHeight: 1.4
+    letterSpacing: -0.02em
+  featured-title:
+    fontFamily: Gowun Batang
+    fontSize: 34px
+    fontWeight: 700
+    lineHeight: 1.3
+    letterSpacing: -0.02em
+  featured-title-tablet:
+    fontFamily: Gowun Batang
+    fontSize: 28px
+    fontWeight: 700
+    lineHeight: 1.3
+    letterSpacing: -0.02em
+  featured-title-mobile:
+    fontFamily: Gowun Batang
+    fontSize: 24px
+    fontWeight: 700
+    lineHeight: 1.3
+    letterSpacing: -0.02em
   article-h2:
     fontFamily: Gowun Batang
     fontSize: 26px
     fontWeight: 700
     lineHeight: 1.4
     letterSpacing: -0.02em
+  lead:
+    fontFamily: Gowun Batang
+    fontSize: 18.5px
+    fontWeight: 400
+    lineHeight: 1.65
+    letterSpacing: -0.01em
+  control:
+    fontFamily: Pretendard Variable
+    fontSize: 15px
+    fontWeight: 600
+    lineHeight: 1.2
+  control-small:
+    fontFamily: Pretendard Variable
+    fontSize: 14px
+    fontWeight: 600
+    lineHeight: 1.2
   list-title:
     fontFamily: Pretendard Variable
     fontSize: 20px
@@ -60,6 +106,11 @@ spacing:
   reader-column: 720px
   sidebar: 310px
   paragraph-gap: 22px
+  side-list-gap: 8px
+  header-height: 72px
+  header-height-mobile: 56px
+  title-gap: 40px
+  title-gap-mobile: 28px
 rounded:
   none: 0px
   control: 4px
@@ -72,11 +123,24 @@ components:
   button-primary:
     backgroundColor: '{colors.primary}'
     textColor: '{colors.paper-strong}'
+    typography: '{typography.control}'
     rounded: '{rounded.control}'
+    padding: '0 20px'
     height: 44px
+  button-primary-small:
+    backgroundColor: '{colors.primary}'
+    textColor: '{colors.paper-strong}'
+    typography: '{typography.control-small}'
+    rounded: '{rounded.control}'
+    padding: '0 18px'
+    height: 40px
   button-primary-hover:
     backgroundColor: '{colors.muted}'
     textColor: '{colors.paper-strong}'
+  header-icon-button:
+    backgroundColor: '{colors.paper}'
+    textColor: '{colors.muted}'
+    rounded: '{rounded.control}'
   header-icon-button-hover:
     backgroundColor: '{colors.accent-soft}'
     textColor: '{colors.primary}'
@@ -88,17 +152,19 @@ components:
     backgroundColor: '{colors.paper}'
     textColor: '{colors.faint}'
     typography: '{typography.meta}'
-  series-card:
+  series-link:
     backgroundColor: '{colors.paper}'
     textColor: '{colors.primary}'
     rounded: '{rounded.control}'
-  series-card-hover:
+    padding: '14px 18px'
+  series-link-hover:
     backgroundColor: '{colors.accent-soft}'
     textColor: '{colors.primary}'
   callout:
     backgroundColor: '{colors.paper-strong}'
     textColor: '{colors.primary}'
     rounded: '{rounded.none}'
+    padding: '12px 18px 16px'
   callout-warning-title:
     backgroundColor: '{colors.paper-strong}'
     textColor: '{colors.warning}'
@@ -112,17 +178,28 @@ components:
     backgroundColor: '{colors.paper-strong}'
     textColor: '{colors.primary}'
     rounded: '{rounded.overlay}'
+  search-dialog-empty:
+    backgroundColor: '{colors.paper-strong}'
+    textColor: '{colors.muted}'
+  map-panel:
+    backgroundColor: '{colors.paper-strong}'
+    textColor: '{colors.primary}'
+    rounded: '{rounded.none}'
+  divider:
+    backgroundColor: '{colors.line}'
+    rounded: '{rounded.none}'
+    height: 1px
 ---
 
 ## Overview
 
-Thinking Garden은 한국어 글을 읽고 관련 노트를 찾아가는 개인 위키다. 홈에서는 노트 지도로 주제와 연결을 살펴보고, 목록에서는 제목과 요약으로 글을 고르며, 리더에서는 본문을 읽다가 참조·역참조를 따라 이동한다. 따뜻한 밝은 배경, 먹색 글자, 명조 제목과 고딕 본문으로 긴 글을 편안하게 읽는 분위기를 만든다. 지도에는 주제별 색을 사용해 탐색을 돕는다.
+Thinking Garden은 글과 개발 노트를 읽으며 관련 생각으로 이어지는 개인 위키다. 대상은 검색이나 링크로 들어와 한 편을 읽고 다른 노트로 이동하려는 독자다. 인쇄된 기록장과 개인 서재의 장부를 참고해, 첫인상을 만드는 장식보다 긴 글의 읽기 흐름과 노트 사이의 관계를 우선한다. 마케팅 랜딩 페이지나 데이터 대시보드처럼 한 화면에 정보를 채우는 방향은 사용하지 않는다. 홈에서는 노트 지도로 주제와 연결을 살펴보고, 목록에서는 제목과 요약으로 글을 고르며, 리더에서는 본문을 읽다가 참조·역참조를 따라 이동한다.
 
 이 문서는 현재 디자인의 값과 의도를 기록한다. YAML은 대표 토큰이고 본문은 용도·배치·상태를 설명한다. 디자인을 개선할 때는 바뀐 의도를 문서에 적고 구현도 함께 갱신한다. 공통 스타일은 [site.css](src/styles/site.css), 본문은 [body.css](src/styles/body.css), 주제색은 [GRAPH_COLORS](src/lib/format.ts), 개별 배치는 해당 Astro 컴포넌트와 대조한다.
 
 ## Colors
 
-`primary`는 `--ink`와 `--accent`에 대응하며 글자와 주요 조작을 표시한다. `paper`는 페이지 배경, `paper-strong`은 코드·표 머리·콜아웃·대화상자 배경이다. `muted`와 `faint`는 보조 정보의 위계를, `line`은 내용의 구획을 나타낸다. `accent-soft`는 호버·선택 배경에 사용한다. 본문 링크는 먹색 글자에 밑줄을 더해 주변 문장과 구분한다.
+`primary`는 `--ink`와 `--accent`에 대응하며 글자와 주요 조작을 표시한다. `paper`는 페이지 배경, `paper-strong`은 코드·표 머리·콜아웃·대화상자 배경이다. `muted`와 `faint`는 보조 정보의 위계를, `line`은 내용의 구획을 나타낸다. `accent-soft`는 호버·선택 배경에 사용한다. `warning`, `bug`, `highlight`는 각각 `--warning`, `--bug`, `--highlight`로 연결해 본문 상태와 강조를 표현한다. 본문 링크는 먹색 글자에 밑줄을 더해 주변 문장과 구분한다.
 
 주제색은 노드·영역·태그 점·지도 영역 이름·현재 목차 위치에 사용한다. 색과 함께 주제 이름, 허브 링, 연결 목록을 제공해 의미를 읽을 수 있게 한다. 아래 값은 `GRAPH_COLORS`와 대응한다.
 
@@ -134,27 +211,27 @@ Thinking Garden은 한국어 글을 읽고 관련 노트를 찾아가는 개인 
 | 조직 | `#4a8791` | 심리 | `#a4617f` |
 | 기타 | `#817f72` |  |  |
 
-`warning`과 `bug`는 본문 콜아웃의 제목·왼쪽 선에, `highlight`는 형광 표시에 사용한다. 버그와 글쓰기의 색상값은 같으며 의미는 각각의 용도로 구분한다. 그래프 간선의 색과 투명도는 [graph.css](src/styles/graph.css), Mermaid의 테마 색은 [mermaid.ts](src/scripts/mermaid.ts)에서 관리한다.
+`warning`과 `bug`는 본문 콜아웃의 제목·왼쪽 선에, `highlight`는 형광 표시에 사용한다. 개발은 통합된 주제색을 사용하고, 버그와 글쓰기는 같은 색상 계열을 공유하지만 용도로 구분한다. 그래프 간선의 색과 투명도는 [graph.css](src/styles/graph.css), Mermaid의 테마 색은 [mermaid.ts](src/scripts/mermaid.ts)에서 관리한다.
 
 ## Typography
 
-Gowun Batang 700은 제목과 요약·인용을, Pretendard Variable은 본문·목록·조작 요소를 표현한다. 대체 서체는 `site.css`의 `--display`와 `--sans`를 따르며 코드는 시스템 고정폭 서체를 사용한다. 긴 한국어 문장은 `keep-all`로 단어를 묶고 긴 URL은 가용 폭에 맞춰 줄바꿈한다.
+Gowun Batang은 제목과 요약·인용 콜아웃에, Pretendard Variable은 본문·목록·조작 요소에 사용한다. 제목은 700 굵기로 두고 요약·인용은 읽기 흐름에 맞춰 별도 굵기를 쓴다. 대체 서체는 `site.css`의 `--display`와 `--sans`를 따르며 코드는 시스템 고정폭 서체를 사용한다. 긴 한국어 문장은 `keep-all`로 단어를 묶고 긴 URL은 가용 폭에 맞춰 줄바꿈한다.
 
-리더 제목은 `reader-title`, 720px 이하에서는 `reader-title-mobile`을 사용한다. 본문은 모바일에서도 `body`의 17px/1.85를 유지한다. 일반 UI의 모바일 기본 글자 크기는 16px다. 목록 제목은 기본 20px, 모바일 18px이며 메타데이터는 13px와 표 형식 숫자를 사용한다.
+리더와 페이지 제목은 화면의 역할에 따라 `reader-title`, `page-title`, `section-title`, `featured-title` 토큰을 사용한다. 본문·목록·보조 정보는 `body`, `list-title`, `side`, `meta` 토큰으로 위계를 나눈다. 일반 UI의 모바일 기본 글자 크기는 16px이며 본문은 `body` 토큰을 유지한다.
 
 리더 제목과 홈 대표 글·연재 제목은 `text-wrap: balance`로 줄 길이를 고르게 배분한다. 제목 원문과 글자 크기는 유지하며 지원하지 않는 브라우저에서는 기본 줄바꿈을 사용한다.
 
-역할에 따라 제목 크기를 구분한다. 본문 H2/H3/H4는 26/21/17px, 목록 페이지 제목은 28px, 홈 절 제목과 지도 패널 제목은 24px다. 홈의 왼쪽 절 제목인 대표 글·최근 기록·최근 연재는 모두 명조 24px를 사용한다. 대표 글의 실제 글 제목은 34px에서 모바일 24px로 바뀐다. 제목 아래 요약과 요약 콜아웃은 명조 18.5px/1.65다. 세부 굵기와 줄높이는 각 컴포넌트에 정의한다.
+본문의 제목, 목록의 제목, 홈의 절 제목과 대표 글 제목은 서로 다른 역할의 토큰으로 구분한다. 제목 아래 요약과 요약 콜아웃은 `lead` 토큰을 사용한다. 본문 H3·H4처럼 상위 토큰으로 묶지 않은 요소는 `body.css`의 해당 규칙을 따르며, 역할이 늘어나면 토큰을 추가한다.
 
 ## Layout
 
-공통 컨테이너는 최대 1180px이며 좌우 여백은 각각 24px다. 720px 이하에서는 각각 20px다. 리더는 최대 720px 본문과 310px 사이드바를 40px 간격으로 배치한다. 1000px 이하에서는 한 열로 바뀌고 참조·역참조가 본문 뒤로 이동한다. 접힘 목차는 제목 아래에서 열어 볼 수 있다.
+공통 컨테이너와 리더 열은 `content-max`, `page-gutter`, `reader-column`, `sidebar`, `column-gap` 토큰을 따른다. 1000px 이하에서는 한 열로 바뀌고 참조·역참조가 본문 뒤로 이동한다. 720px 이하에서는 좌우 여백과 접힘 목차·하단 시트 규칙을 모바일 값으로 바꾼다.
 
 모바일 목록은 열을 세로로 쌓고, 긴 표·코드는 블록 안에서 가로로 스크롤한다. 지도 주제 필터는 한 줄로 스크롤하며, 노트를 선택하면 720px 이하에서 하단 시트가 열린다. 상세 노트에서는 태그와 연결 목록으로 주제·관계를 확인한다. [NotePage](src/components/NotePage.astro)와 [지도 페이지](src/pages/map/index.astro)가 폭에 따른 배치를 정한다.
 
 모바일 홈은 첫 글까지의 이동을 줄이기 위해 소개 위 여백을 20px로 두고 지도를 `clamp(200px, 50vw, 280px)` 높이로 표시한다. 소셜 링크는 소개 페이지에서 제공하며 데스크톱 홈에도 유지한다.
 
-여백은 관계에 따라 구분한다. 사이드 목록 항목 사이는 8px, 본문 문단 사이는 22px, 큰 열 사이는 40px다. 헤더는 상단에 고정되며 데스크톱 72px, 모바일 56px 높이다. 노트 제목 아래 여백은 데스크톱 40px, 모바일 28px다.
+여백은 관계에 따라 구분한다. 사이드 목록은 `side-list-gap`, 본문 문단은 `paragraph-gap`, 헤더는 `header-height`, 노트 제목 아래는 `title-gap`을 사용하며, 720px 이하에서는 `page-gutter-mobile`·`header-height-mobile`·`title-gap-mobile`로 바뀐다. `column-gap`은 리더 본문과 사이드바, 지도와 패널, 홈의 안내 열과 콘텐츠 사이에 쓴다. 목록 페이지의 장부 격자는 24px과 36px의 자체 간격을 쓰고 토큰으로 묶지 않는다. 목록과 본문 사이에는 충분한 여백을 두고, 서로 다른 정보 덩어리는 얇은 선으로 나눈다.
 
 홈의 대표 글·최근 기록·최근 연재는 왼쪽 120px 안내 열과 오른쪽 콘텐츠를 40px 간격으로 맞춘다. 대표 글은 왼쪽에 절 제목·날짜·발행처, 오른쪽에 글 제목·명시한 요약 전체·썸네일을 둔다. 최근 기록은 종류마다 한 편씩 유지하고 날짜·종류(노트·개발 노트·글)·제목·주제 순으로 표시하며 건수는 적지 않는다. 주제는 지도와 같은 색의 점과 이름으로 표시한다. 721~1000px에서는 안내 열을 100px로 줄이고 주제를 제목 아래에 둔다. 720px 이하에서는 절 제목을 위에 두고, 각 최근 기록의 제목 아래에 날짜·종류·주제를 배치한다.
 
@@ -170,25 +247,36 @@ Gowun Batang 700은 제목과 요약·인용을, Pretendard Variable은 본문·
 
 ## Shapes
 
-본문 표·코드·콜아웃은 직각, 버튼·연재 탐색 카드는 4px, 검색창·공유 안내·지도 확대 컨트롤의 바깥 상자는 6px 모서리를 사용한다. 주제 점과 지도 노드는 원형이고 허브·선택 상태는 링으로 표시한다. 세부 아이콘에는 역할에 맞는 곡률을 사용하며, 썸네일의 가장자리 처리는 이미지 유형별 스타일을 따른다.
+본문 표·코드·콜아웃은 직각, 버튼·연재 탐색 링크는 4px, 검색창·공유 안내·지도 확대 컨트롤의 바깥 상자는 6px 모서리를 사용한다. 주제 점과 지도 노드는 원형이고 허브·선택 상태는 링으로 표시한다. 세부 아이콘에는 역할에 맞는 곡률을 사용하며, 썸네일의 가장자리 처리는 이미지 유형별 스타일을 따른다.
 
 ## Components
 
 - **버튼:** `.btn`은 높이 44px, 좌우 여백 20px, 글자 15px/600이다. 작은 변형은 높이 40px, 좌우 여백 18px, 글자 14px다. 호버에서는 배경이 `muted`로 바뀐다.
 - **헤더 조작:** 검색·공유는 44px 조작 영역 안에 18px 선 아이콘을 둔다. 호버 시 밝은 배경과 먹색 아이콘으로 반응한다. 검색은 접근 가능한 이름을, 공유는 숨긴 텍스트 이름을 제공한다.
 - **지도 조작:** 확대·축소·맞춤 버튼은 데스크톱 최소 36px, 모바일 최소 40px 크기다. 주제 필터의 선택 상태는 배경색과 `aria-pressed`로 나타낸다.
-- **목록:** 왼쪽에 연도·분류·등급을 두고 오른쪽에 제목·메타·요약을 배치한다. 요약은 세 줄까지 표시한다. 메타 줄의 구분점은 다음 항목과 함께 줄바꿈되도록 붙인다.
+- **목록:** 장부 격자를 두 단계로 나눈다. 왼쪽 열에는 연도·분류·등급 라벨을 명조로 크게 두고(등급 40px, 연도 32px, 분류 18px), 오른쪽 블록의 각 행이 다시 제목·메타와 요약을 좌우로 나눈다. 요약은 세 줄까지 표시하며, 720px 이하에서는 두 단계가 모두 세로로 쌓인다. 메타 줄의 구분점은 다음 항목과 함께 줄바꿈되도록 붙인다.
 - **연재 탐색:** 이전·다음 링크는 1px 테두리와 `14px 18px` 여백을 사용한다. 호버·키보드 포커스에서 먹색 테두리와 밝은 배경으로 강조한다.
 - **콜아웃:** 기본 여백은 `12px 18px 16px`다. 제목과 아래 선, 왼쪽 막대가 종류를 구분한다. 요약·인용은 명조, 질문은 점선, 팁은 화살표, 경고·버그는 의미별 색을 사용한다. 접힌 콜아웃은 제목 줄만 표시한다.
 - **검색:** 최대 650px 대화상자에서 입력·로딩·결과·빈 상태·실패 상태를 구분한다. 실패 시 재시도 버튼을 제공하고, 단축키 안내는 운영체제에 맞게 표시한다.
 - **공유:** 복사 성공은 체크 아이콘과 스크린리더 안내로 전달한다. 실패는 버튼 아래에 대안을 담은 짧은 안내를 표시한다. [ShareLink](src/components/ShareLink.astro)가 안내의 위치·폭·표시 시간을 설명한다.
 - **연결 탐색:** 선택한 노트의 참조는 실선, 역참조는 점선으로 나타낸다. 전체 연결은 목록에서도 읽을 수 있다. 노드 선택과 키보드 포커스는 링으로, 목차의 현재 위치는 주제색 선과 굵은 글자로 표시한다.
+- **구분선:** 정보 덩어리 사이에는 `line` 색상의 1px 선을 사용한다. 목록의 항목 사이와 절 사이의 선을 구분해 마지막 항목 뒤에는 불필요한 선을 두지 않는다.
+
+## Do's and Don'ts
+
+- 아래는 현재 화면에서 확인한 패턴과 앞으로 변경할 때 유지할 기준이다. 모든 항목을 코드가 자동으로 강제하는 것은 아니므로 구현과 화면 검토를 함께 대조한다.
+- **Do** 장식보다 제목·본문·참조 관계의 읽기 순서를 우선한다.
+- **Do** 색·선·링을 함께 사용해 주제와 상태를 표현한다.
+- **Don't** 의미 없는 장식 요소, 글로우, 장식용 그라디언트와 그림자를 기본값으로 추가하지 않는다.
+- **Don't** 주제색을 본문 문장이나 메타데이터 장식으로 확대하지 않는다.
+- **Don't** 긴 제목·표·연결 목록을 고정 폭으로 두어 화면 밖으로 밀어내지 않는다. 제목은 줄바꿈하고, 표·코드는 내부에서 가로로 스크롤하며, 긴 연결 목록은 사이드바 안에서 읽게 한다.
+- **Don't** 상태 변화나 사용자 조작을 설명하지 않는 장식용 움직임을 추가하지 않는다.
 
 ## Motion & Accessibility
 
-호버와 선택은 색·선·링으로 즉시 알아볼 수 있게 한다. 키보드 포커스는 기본 2px 윤곽선과 4px 간격으로 표시하고, 연재 링크와 그래프는 각자의 테두리·링을 사용한다. 이동·접힘 효과는 `prefers-reduced-motion`에 맞춰 줄인다. 모바일에서는 조작 영역과 주변 간격을 함께 확인한다.
+호버와 선택은 색·선·링으로 즉시 알아볼 수 있게 한다. 키보드 포커스는 전역 2px 윤곽선과 4px 간격으로 표시하고, 연재 링크와 그래프는 각자의 테두리·링을 사용한다. 본문과 조작 요소의 상태 변화는 150ms, 모바일 지도 패널의 열림·닫힘은 200ms, 그래프의 선택 이동은 320ms 안에서 처리한다. 그래프의 드래그·확대는 장식용 자동 모션이 아니라 사용자의 입력에 따른 조작이다. `prefers-reduced-motion`에서는 전환과 부드러운 스크롤을 끄고, 모바일에서는 조작 영역과 주변 간격을 함께 확인한다.
 
-현재 콜아웃 경고·버그 제목의 대비는 각각 4.35:1, 4.23:1로 일반 텍스트의 4.5:1 기준보다 낮다. 이는 현재 구현의 미해결 항목이며, 해당 색 조합을 YAML에 포함해 lint에서 계속 확인한다.
+콜아웃 경고·버그 제목 색은 `--warning`, `--bug` 변수와 YAML 토큰을 함께 사용한다. 공식 린터는 컴포넌트에 선언한 배경·글자 색의 대비만 검사하므로, 포커스 표시·아이콘·선의 비텍스트 대비와 키보드 동작은 실제 화면에서 별도로 확인한다.
 
 ## Maintenance & Validation
 
@@ -198,6 +286,6 @@ Gowun Batang 700은 제목과 요약·인용을, Pretendard Variable은 본문·
 npx --yes --package=@google/design.md@0.4.0 designmd lint DESIGN.md
 ```
 
-lint는 문서 구조·참조·명시한 색 조합을 검사한다. 구분선의 `orphaned-tokens` 경고는 실제 용도로 판단하고, 대비 경고는 해당 글자의 배경·크기와 함께 검토한다. 토큰 변경이 클 때는 같은 버전의 `designmd diff <이전 파일> DESIGN.md`를 함께 사용한다.
+lint는 문서 구조·참조·명시한 색 조합을 검사한다. `line`은 `divider` 컴포넌트에서 사용하며, 대비 경고가 나오면 해당 글자의 배경·크기와 함께 검토한다. 이 검사는 문서와 구현 코드의 값이 같은지까지 보장하지 않으므로, 토큰을 바꿀 때는 구현과 문서를 함께 검토한다. 토큰 변경이 클 때는 같은 버전의 `designmd diff <이전 파일> DESIGN.md`를 함께 사용한다.
 
 화면 변경은 홈·긴 노트·목록·지도·검색을 320px, 390px, 1440px와 주요 전환 폭인 720px·1000px 전후에서 확인한다. 긴 제목, 썸네일 유무, 검색·공유 실패, 키보드 탐색을 포함한다. 문서 검사와 실제 화면 검증의 결과는 구분해 기록한다. 프로젝트 명령은 [AGENTS.md](AGENTS.md), 콘텐츠 표시 규칙은 [AUTHORING.md](AUTHORING.md)에서 관리한다.
