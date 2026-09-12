@@ -102,11 +102,11 @@ TypeScript는 `astro check`가 지원하는 6.x를 쓴다. 현재 TypeScript 7�
 
 ## 디자인
 
-화면의 색, 서체, 여백, 그리고 지키기로 한 규칙은 `DESIGN.md`가 정본이다. 화면을 만들거나 고치기 전에 그 파일의 Overview와 Do's and Don'ts를 읽는다. Google Labs의 DESIGN.md 포맷을 따르므로 앞의 YAML은 디자인 토큰이고 뒤의 본문은 그 값을 왜 그렇게 정했는지 적은 근거다.
+`DESIGN.md`는 현재 디자인의 값과 의도를 관리하는 문서다. 화면 작업 전에 Overview와 관련 컴포넌트·반응형·접근성·검증 절을 읽는다. Google Labs의 DESIGN.md 포맷을 따라 YAML에는 대표 토큰을, 본문에는 용도와 적용 이유를 기록한다.
 
-- 값이 실제로 사는 곳은 `src/styles/site.css`의 `:root`와 `src/lib/format.ts`의 `GRAPH_COLORS`다. 둘과 `DESIGN.md`가 어긋나면 동작하는 CSS가 맞고 `DESIGN.md`를 고친다.
-- 새 색이나 새 서체 크기를 들이기 전에 기존 토큰으로 되는지 본다. 주제색은 노트의 주제를 가리킬 때만 쓰고 UI에는 먹색 하나만 쓴다.
-- `npx @google/design.md lint DESIGN.md`로 명세 위반과 명암 대비를 확인한다. 오류가 0이면 통과다. 주제색이 컴포넌트에서 참조되지 않는다는 `orphaned-tokens` 경고는 주제색을 코드에서 데이터로 매기기 때문이라 정상이다.
+- 공통 값은 `src/styles/site.css`의 `:root`와 `src/lib/format.ts`의 `GRAPH_COLORS`에 있고, 본문·그래프·개별 화면의 값은 해당 CSS와 Astro 파일에 있다. 문서와 구현이 어긋나면 의도한 변경인지 확인하고, 문서가 낡은 경우 현재 구현에 맞춘다.
+- 디자인을 개선할 때는 기존 컴포넌트를 출발점으로 삼고, 달라지는 값과 동작을 관련 구현 및 `DESIGN.md`에 함께 반영한다.
+- `npx --yes --package=@google/design.md@0.4.0 designmd lint DESIGN.md`로 문서 형식과 명시된 색 조합을 검사한다. 오류가 0이어도 대비 경고와 실제 화면은 별도로 확인한다. `orphaned-tokens` 경고는 실제 사용처를 대조해 판단한다.
 
 ## 한국어 문체
 

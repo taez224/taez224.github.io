@@ -3,10 +3,9 @@
   --paper: #f7f7f2; --paper-strong: #fdfdfa; --ink: #252e29; --muted: #626d64; --faint: #687267;
   /* UI는 먹색 하나. 색은 주제색(GRAPH_COLORS)으로만 들어온다. accent 토큰은 이름만 남기고 값은 먹색이다(2026-09-07). */
   --line: #d8ded4; --accent: #252e29; --accent-soft: #e7e9e3;
-  --slipbox: #3d7158; --blog: #a66a38; --development: #5f8184;
   --display: 'Gowun Batang', 'Apple Myungjo', 'Nanum Myeongjo', serif;
   --sans: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
-  --t-meta: 13px; --t-side: 14px; --t-body: 17px; --t-list: 20px; --t-h2: 24px; --t-h1: 46px; --t-hero: 58px;
+  --t-meta: 13px; --t-side: 14px; --t-body: 17px; --t-list: 20px; --t-h2: 24px; --t-h1: 46px;
 }
 * { box-sizing: border-box; }
 :where([hidden]) { display: none !important; }
