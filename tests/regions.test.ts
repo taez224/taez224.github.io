@@ -32,10 +32,10 @@ test('placeRegionLabels moves a name off nodes and other names', () => {
   const hull = [{ x: 100, y: 100 }, { x: 200, y: 100 }, { x: 200, y: 200 }, { x: 100, y: 200 }];
   const regions = [{ topic: 'AI', count: 4, hull, label: { x: 100, y: 100 } }, { topic: '개발', count: 3, hull, label: { x: 100, y: 100 } }];
   const free = placeRegionLabels([regions[0]], []);
-  assert.equal(free.get('AI').anchor, 'middle');
-  assert.ok(free.get('AI').y < 100, '막힌 곳이 없으면 위');
+  assert.equal(free.get('AI')!.anchor, 'middle');
+  assert.ok(free.get('AI')!.y < 100, '막힌 곳이 없으면 위');
   const blockedTop = placeRegionLabels([regions[0]], [{ x: 100, y: 70, r: 30 }]);
-  assert.ok(blockedTop.get('AI').y > 200, '위가 막히면 아래');
+  assert.ok(blockedTop.get('AI')!.y > 200, '위가 막히면 아래');
   const both = placeRegionLabels(regions, []);
   assert.notDeepEqual(both.get('AI'), both.get('개발'), '두 이름은 같은 자리를 쓰지 않는다');
 });
@@ -43,7 +43,7 @@ test('placeRegionLabels moves a name off nodes and other names', () => {
 test('placeRegionLabels keeps names inside the given bounds', () => {
   const hull = [{ x: 100, y: 20 }, { x: 200, y: 20 }, { x: 200, y: 120 }, { x: 100, y: 120 }];
   const at = placeRegionLabels([{ topic: 'AI', count: 3, hull, label: { x: 100, y: 20 } }], [], { bounds: { width: 300, height: 130 } });
-  assert.equal(at.get('AI').anchor, 'end', '위는 무대 밖, 아래도 밖이면 왼쪽');
+  assert.equal(at.get('AI')!.anchor, 'end', '위는 무대 밖, 아래도 밖이면 왼쪽');
 });
 
 test('topicRegions never draws a territory for 기타', () => {

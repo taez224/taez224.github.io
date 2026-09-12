@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { selectGraphNodes } from '../src/graph/select.ts';
 
-const edge = (source, target) => ({ source, target });
-const candidates = (...paths) => new Set(paths);
-const isEndpoint = (item) => item.startsWith('dev/');
+const edge = (source: string, target: string) => ({ source, target });
+const candidates = (...paths: string[]) => new Set(paths);
+const isEndpoint = (item: string) => item.startsWith('dev/');
 
 test('every candidate is on the map, in candidate order', () => {
   const { paths } = selectGraphNodes({ candidates: candidates('b', 'a'), edges: [edge('a', 'b')] });

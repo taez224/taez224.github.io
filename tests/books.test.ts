@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { statusFilters, coverUrl } from '../src/lib/books.ts';
 
-const shelf = (...statuses) => statuses.map((status, index) => ({ title: `책 ${index}`, status }));
+const shelf = (...statuses: string[]) => statuses.map((status, index) => ({ title: `책 ${index}`, status }));
 
 test('statusFilters puts 전체 first and then reads in shelf order', () => {
   const filters = statusFilters(shelf('중단', '읽는 중', '완독'));

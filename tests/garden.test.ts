@@ -53,25 +53,25 @@ test('assembleGarden publishes reviewed notes with slug urls and no private stri
     '01_Slipbox/생각 A.md', '01_Slipbox/생각 B.md', '20_Projects/blog/공개 글.md',
     `${dev}/Concepts/고립된 개념.md`, `${dev}/Concepts/연결된 개념.md`
   ].sort());
-  assert.equal(byPath.get('20_Projects/blog/공개 글.md').url, '/obsidian/posts/공개-글/');
-  assert.equal(byPath.get('01_Slipbox/생각 A.md').url, '/obsidian/notes/생각-a/');
-  assert.equal(byPath.get(`${dev}/Concepts/연결된 개념.md`).url, '/obsidian/dev/연결된-개념/');
+  assert.equal(byPath.get('20_Projects/blog/공개 글.md')!.url, '/obsidian/posts/공개-글/');
+  assert.equal(byPath.get('01_Slipbox/생각 A.md')!.url, '/obsidian/notes/생각-a/');
+  assert.equal(byPath.get(`${dev}/Concepts/연결된 개념.md`)!.url, '/obsidian/dev/연결된-개념/');
   const a = byPath.get('01_Slipbox/생각 A.md');
   assert.match(a.bodyHtml, /href="\/obsidian\/notes\/생각-b\/"/);
   assert.match(a.bodyHtml, /src="\/obsidian\/assets\/vault\/_attachments\/reviewed\.svg"/);
   assert.deepEqual(a.publicTags, ['AI']);
   assert.deepEqual(a.outgoing, ['01_Slipbox/생각 B.md']);
-  assert.deepEqual(byPath.get('01_Slipbox/생각 B.md').incoming.sort(), ['01_Slipbox/생각 A.md']);
-  assert.match(byPath.get('01_Slipbox/생각 B.md').bodyText, /UNIQUE_BODY_WORD/);
-  assert.deepEqual(byPath.get('01_Slipbox/생각 B.md').aliases, ['별칭 B']);
+  assert.deepEqual(byPath.get('01_Slipbox/생각 B.md')!.incoming.sort(), ['01_Slipbox/생각 A.md']);
+  assert.match(byPath.get('01_Slipbox/생각 B.md')!.bodyText, /UNIQUE_BODY_WORD/);
+  assert.deepEqual(byPath.get('01_Slipbox/생각 B.md')!.aliases, ['별칭 B']);
   assert.equal(JSON.stringify(garden).includes('DRAFT_SENTINEL'), false);
   assert.equal(JSON.stringify(garden).includes('WITHHELD_SENTINEL'), false);
   assert.equal(garden.assetCopies.get('_attachments/reviewed.svg'), 'assets/vault/_attachments/reviewed.svg');
   assert.equal(garden.home.about, '소개 문장');
   assert.equal(garden.books[0].url, '/obsidian/books/#book-좋은-책');
-  assert.equal(byPath.get('20_Projects/blog/공개 글.md').publication, 'Nextree');
-  assert.equal(byPath.get('20_Projects/blog/공개 글.md').topicTag, 'AI', 'blog 태그가 주제로 사용되지 않는다');
-  assert.equal(byPath.get('01_Slipbox/생각 A.md').publication, '');
+  assert.equal(byPath.get('20_Projects/blog/공개 글.md')!.publication, 'Nextree');
+  assert.equal(byPath.get('20_Projects/blog/공개 글.md')!.topicTag, 'AI', 'blog 태그가 주제로 사용되지 않는다');
+  assert.equal(byPath.get('01_Slipbox/생각 A.md')!.publication, '');
 });
 
 test('graphRule linked stops at the first development note: a dev note linked only from another dev note stays out', async () => {
@@ -92,7 +92,7 @@ test('private references are labelled without exposing their metadata, body or l
     '20_Projects/blog/공개 글.md': files['20_Projects/blog/공개 글.md'] + '\n[[20_Projects/blog/초안|작업 메모]]와 [이전 기록](초안.md), [[없는 문서]]를 참고했다.'
   });
   const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
-  const html = garden.notes.find((note) => note.path === '20_Projects/blog/공개 글.md').bodyHtml;
+  const html = garden.notes.find((note) => note.path === '20_Projects/blog/공개 글.md')!.bodyHtml;
   assert.equal((html.match(/class="visibility-mark"/g) ?? []).length, 2);
   assert.match(html, /작업 메모/);
   assert.match(html, /이전 기록/);
@@ -114,8 +114,8 @@ test('thumbnail frontmatter resolves reviewed assets separately from body images
   assert.equal(note.thumbnailStyle, 'soft');
   assert.doesNotMatch(note.bodyHtml, /<img/);
   assert.ok(!garden.assetCopies.has(note.thumbnail), '썸네일만 지정한 원본은 본문 에셋으로 복사하지 않는다');
-  assert.equal(garden.notes.find((note) => note.path === '01_Slipbox/생각 A.md').thumbnail, null);
-  assert.equal(garden.notes.find((note) => note.path === '01_Slipbox/생각 A.md').thumbnailStyle, 'plain');
+  assert.equal(garden.notes.find((note) => note.path === '01_Slipbox/생각 A.md')!.thumbnail, null);
+  assert.equal(garden.notes.find((note) => note.path === '01_Slipbox/생각 A.md')!.thumbnailStyle, 'plain');
 });
 
 test('thumbnails cannot bypass the reviewed asset list and invalid styles fail the build', async () => {
@@ -236,7 +236,7 @@ test('series and publication summaries exclude author-only sections and retain e
   assert.equal(garden.blog.series[0].summary, '연재 소개.');
   assert.equal(garden.blog.series[0].posts[0].summary, '첫 편 소개.');
   assert.equal(garden.blog.publications[0].posts[0].summary, '독립 글 소개.');
-  assert.equal(garden.notes.find((note) => note.path === '01_Slipbox/생각 B.md').summary, '명시한 요약');
+  assert.equal(garden.notes.find((note) => note.path === '01_Slipbox/생각 B.md')!.summary, '명시한 요약');
   assert.doesNotMatch(JSON.stringify(garden), /HUB_SENTINEL|HUB_TAIL_SENTINEL|POST_SENTINEL|STANDALONE_SENTINEL/);
 });
 
@@ -263,7 +263,7 @@ test('graph and references ignore comments and code while keeping visible links 
   const expected = ['본문연결', '카드 연결', '인용 연결', '속성 연결'].map((name) => `01_Slipbox/${name}.md`).sort();
   assert.deepEqual(note.outgoing.toSorted(), expected);
   assert.deepEqual(garden.edges.filter((edge) => edge.source === note.path).map((edge) => edge.target).sort(), expected);
-  assert.deepEqual(garden.notes.find((note) => note.path === '01_Slipbox/생각 B.md').incoming, []);
+  assert.deepEqual(garden.notes.find((note) => note.path === '01_Slipbox/생각 B.md')!.incoming, []);
   assert.match(note.bodyHtml, /<code>\[\[생각 B\]\]<\/code>/);
   assert.equal(note.articleCards.length, 1);
 });

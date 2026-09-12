@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { recentByKind } from '../src/lib/home.ts';
+import type { NoteKind } from '../src/lib/kinds.ts';
 
-const note = (kind, title, date, extra = {}) => ({ kind, title, date, path: `${kind}/${title}.md`, type: 'permanent', ...extra });
-const titles = (notes) => notes.map((item) => item.title);
+const note = (kind: NoteKind, title: string, date: string, extra: Record<string, string> = {}) => ({ kind, title, date, path: `${kind}/${title}.md`, type: 'permanent', ...extra });
+const titles = (notes: readonly { title: string }[]) => notes.map((item) => item.title);
 
 test('recentByKind picks the newest note of each kind and orders the picks newest first', () => {
   const notes = [

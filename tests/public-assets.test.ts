@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createAssetResolver } from '../src/lib/public-assets.ts';
 
-async function makeVault(files) {
+async function makeVault(files: Record<string, string>) {
   const vaultRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'garden-assets-'));
   for (const [file, content] of Object.entries(files)) {
     await fs.mkdir(path.dirname(path.join(vaultRoot, file)), { recursive: true });

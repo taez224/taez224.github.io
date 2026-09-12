@@ -20,9 +20,9 @@ nvm use                      # .nvmrc에 고정한 Node 버전 선택
 npm ci                       # 잠근 의존성 설치
 npm run check                # TS 소스·설정·빌드 도구·타입 계약 검사
 npm run check:astro          # Astro 컴포넌트·페이지 전체 타입 검사
-npm test                     # node --test tests/*.test.mjs
-node --test tests/garden.test.mjs                                  # 파일 하나
-node --test --test-name-pattern="slug" tests/garden.test.mjs       # 이름으로 골라 실행
+npm test                     # node --test tests/*.test.ts
+node --test tests/garden.test.ts                                  # 파일 하나
+node --test --test-name-pattern="slug" tests/garden.test.ts       # 이름으로 골라 실행
 npm run dev                  # astro dev. vault 파일을 감시해 다시 조립한다
 npm run build                # astro build && node scripts/check-dist.ts
 npm run preview              # dist를 서빙한다. 먼저 build가 있어야 한다
@@ -89,7 +89,7 @@ vault 원문은 건드리지 않고 사이트로 나가는 사본만 바꾼다(`
 
 `content-model.ts`는 노트 컬렉션 필드를 Zod 스키마로 공유하고 공개 노트·책·그래프·패널·컬렉션 엔트리 타입을 정의한다. 조립 노트의 썸네일 경로와 Astro 컬렉션의 이미지 메타데이터는 구분한다. 임시 vault 통합 테스트로 실제 조립 결과를 대조한다.
 
-TypeScript는 `astro check`가 지원하는 6.x를 쓴다. 현재 TypeScript 7은 검사 도구에 필요한 programmatic API를 제공하지 않는다. 상대 import에는 실제 `.ts` 확장자를 적고 타입은 `import type`으로 가져온다. 테스트는 기존 `.test.mjs`와 `node:test`를 유지하며 Node 26의 타입 스트리핑으로 TS 모듈을 직접 읽는다. `erasableSyntaxOnly`로 실행 코드 변환이 필요한 enum·매개변수 프로퍼티를 막는다. 원격 Mermaid 모듈은 `remote-modules.d.ts`에 사용하는 API만 선언한다.
+TypeScript는 `astro check`가 지원하는 6.x를 쓴다. 현재 TypeScript 7은 검사 도구에 필요한 programmatic API를 제공하지 않는다. 상대 import에는 실제 `.ts` 확장자를 적고 타입은 `import type`으로 가져온다. 테스트도 TypeScript이고 `node:test`를 그대로 쓰며, Node 26의 타입 스트리핑으로 빌드 단계 없이 실행한다. 타입을 아직 맞추지 못한 테스트는 `tsconfig.check.json`의 `exclude`에 적어 두고 한 파일씩 고쳐 목록을 비운다. `erasableSyntaxOnly`로 실행 코드 변환이 필요한 enum·매개변수 프로퍼티를 막는다. 원격 Mermaid 모듈은 `remote-modules.d.ts`에 사용하는 API만 선언한다.
 
 ## 코드 스타일
 
@@ -133,8 +133,8 @@ Codex는 이 절만 읽고, Claude Code는 여기에 더해 위의 output-style 
 
 ## 테스트
 
-- `node:test`와 `node:assert/strict`를 쓰고 파일 이름은 `*.test.mjs`다. 테스트 이름은 관찰 가능한 동작을 서술한다.
-- **테스트는 임시 vault로 돈다.** `tests/garden.test.mjs`의 `makeVault()`처럼 `os.tmpdir()`에 최소 파일을 만들어 검증한다. 실제 `../obsidian`을 테스트에서 읽지 않는다.
+- `node:test`와 `node:assert/strict`를 쓰고 파일 이름은 `*.test.ts`다. 테스트 이름은 관찰 가능한 동작을 서술한다.
+- **테스트는 임시 vault로 돈다.** `tests/garden.test.ts`의 `makeVault()`처럼 `os.tmpdir()`에 최소 파일을 만들어 검증한다. 실제 `../obsidian`을 테스트에서 읽지 않는다.
 - 동작을 바꾸면 회귀 테스트를 더한다. 특히 Markdown 렌더링, 링크 해석, 공개 판정은 빠짐없이.
 - 코드를 넘기기 전에 `npm run check`, `npm run check:astro`, `npm test`, `npm run build`를 모두 돌린다. UI 변경은 데스크톱과 모바일 폭을 확인한다.
 

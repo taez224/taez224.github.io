@@ -9,7 +9,7 @@
     "dev": "astro dev",
     "build": "astro build && node scripts/check-dist.ts",
     "preview": "astro preview",
-    "test": "node --test tests/*.test.mjs",
+    "test": "node --test tests/*.test.ts",
     "check": "tsc --project tsconfig.check.json",
     "check:astro": "astro check"
   },

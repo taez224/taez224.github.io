@@ -26,8 +26,8 @@ test('classifyEdges marks out, in, dim and offsets mutual edges apart when selec
   const ba = selected.find((e) => e.source === 'b' && e.target === 'a');
   assert.deepEqual([ab.state, ab.mutual, ab.offset], ['out', true, 1]);
   assert.deepEqual([ba.state, ba.mutual, ba.offset], ['in', true, 1]);
-  assert.equal(selected.find((e) => e.source === 'a' && e.target === 'c').state, 'out');
-  assert.equal(selected.find((e) => e.source === 'd').state, 'dim');
+  assert.equal(selected.find((e) => e.source === 'a' && e.target === 'c')!.state, 'out');
+  assert.equal(selected.find((e) => e.source === 'd')!.state, 'dim');
 });
 
 test('labelIds follows the idle, selected and hovered rules', () => {

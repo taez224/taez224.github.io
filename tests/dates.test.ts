@@ -4,8 +4,8 @@ import { dateOnly, kstDate, newestFirst, noteDates } from '../src/lib/dates.ts';
 
 const path = '01_Slipbox/노트.md';
 const today = '2026-09-11';
-const dates = (meta) => noteDates(meta, { path, today });
-const failsWith = (meta, ...parts) => assert.throws(() => dates(meta), (error) => parts.every((part) => error.message.includes(part)), parts.join(' '));
+const dates = (meta: Record<string, unknown>) => noteDates(meta, { path, today });
+const failsWith = (meta: Record<string, unknown>, ...parts: string[]) => assert.throws(() => dates(meta), (error: unknown) => error instanceof Error && parts.every((part) => error.message.includes(part)), parts.join(' '));
 
 test('the build day is the calendar day in Korea, not in UTC', () => {
   assert.equal(kstDate(new Date('2026-09-10T19:00:00Z')), '2026-09-11', '04:00 KST 예약 빌드는 UTC로 전날 19:00이다');

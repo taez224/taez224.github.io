@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { articleCardHtml, replaceArticleCards } from '../src/lib/article-card.ts';
 
-const note = { title: '연결한 글', url: '/obsidian/posts/linked/', summary: '첫 문장입니다. 두 번째 문장입니다.' };
+// displayTitle이 비면 카드가 title로 넘어간다. 각 테스트가 title만 바꿔도 그대로 반영된다.
+const note = { title: '연결한 글', displayTitle: '', url: '/obsidian/posts/linked/', summary: '첫 문장입니다. 두 번째 문장입니다.', contentMode: 'full' as const, publication: '' };
 
 test('article card renders linked metadata and responsive thumbnail without extra links', () => {
   const html = articleCardHtml({ note, caption: '지난 글', image: { src: '/cover.webp', srcset: '/small.webp 160w, /large.webp 320w', sizes: '160px', width: 320, height: 180 } });

@@ -26,6 +26,6 @@ test('assembled notes and books satisfy their shared contracts and panel data ex
   for (const book of garden.books) assert.deepEqual(bookSchema.strict().parse(book), book);
   const panel = inlinePanelNotes(garden.notes, garden.noteEdges);
   assert.doesNotMatch(JSON.stringify(panel), /BODY_ONLY_SENTINEL|bodyHtml|bodyText/);
-  assert.equal(panel.notes.find((note) => note.title === 'B').summary, '명시한 요약');
+  assert.equal(panel.notes.find((note) => note.title === 'B')!.summary, '명시한 요약');
   assert.equal(inlineGraph(garden.nodes, garden.edges).nodes.length, garden.nodes.length);
 });

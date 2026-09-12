@@ -9,6 +9,33 @@
     "src/**/*.ts",
     "astro.config.ts",
     "scripts/**/*.ts",
-    "tests/types/**/*.ts"
+    "tests/**/*.ts"
+  ],
+  // 아직 타입을 맞추지 못한 테스트다. 한 파일씩 고쳐 목록에서 빼고, 비면 이 항목을 지운다.
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".astro",
+    "tests/blog.test.ts",
+    "tests/development.test.ts",
+    "tests/engine.test.ts",
+    "tests/focus-loop.test.ts",
+    "tests/garden.test.ts",
+    "tests/graph-data.test.ts",
+    "tests/graph-gestures.test.ts",
+    "tests/graph-label.test.ts",
+    "tests/layout.test.ts",
+    "tests/loader.test.ts",
+    "tests/local-graph.test.ts",
+    "tests/markdown.test.ts",
+    "tests/note-nav.test.ts",
+    "tests/og-fonts.test.ts",
+    "tests/og.test.ts",
+    "tests/panel.test.ts",
+    "tests/publication.test.ts",
+    "tests/rss.test.ts",
+    "tests/search-match.test.ts",
+    "tests/seo.test.ts",
+    "tests/share.test.ts"
   ]
 }
