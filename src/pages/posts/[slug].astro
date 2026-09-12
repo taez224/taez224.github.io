@@ -1,10 +1,12 @@
 ---
 import { getCollection } from 'astro:content';
+import type { NoteEntry } from '../../lib/content-model.ts';
+interface Props { entry: NoteEntry }
 import NotePage from '../../components/NotePage.astro';
 import ExternalArticle from '../../components/ExternalArticle.astro';
 export async function getStaticPaths() {
-  const notes = await getCollection('notes', ({ data }) => data.kind === 'blog');
-  return notes.map((entry) => ({ params: { slug: entry.data.slug }, props: { entry } }));
+  const notes = await getCollection('notes', ({ data }: NoteEntry) => data.kind === 'blog');
+  return notes.map((entry: NoteEntry) => ({ params: { slug: entry.data.slug }, props: { entry } }));
 }
 const { entry } = Astro.props;
 ---

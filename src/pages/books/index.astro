@@ -1,8 +1,8 @@
 ---
 import Shell from '../../layouts/Shell.astro';
 import BookCard from '../../components/BookCard.astro';
-import { getGarden } from '../../lib/get-garden.mjs';
-import { statusFilters } from '../../lib/books.mjs';
+import { getGarden } from '../../lib/get-garden.ts';
+import { statusFilters } from '../../lib/books.ts';
 const { books } = await getGarden();
 const tiers = ['S', 'A', 'B', 'C', 'D', '미분류'].map((tier) => ({ tier, books: books.filter((b) => b.tier === tier) })).filter((t) => t.books.length);
 const filters = statusFilters(books);
@@ -10,7 +10,7 @@ const filters = statusFilters(books);
 <Shell title="책장" description="읽은 책과 한 줄 평." path="/books/" active="books">
   <div class="wrap books-page">
     <div class="page-head"><h1 class="display">책장</h1>
-      <nav class="status-filter meta" aria-label="읽기 상태">{filters.map((f) => <button type="button" data-book-status={f.value} aria-pressed={String(f.value === 'all')}>{f.label} <span class="count">{f.count}</span></button>)}</nav>
+      <nav class="status-filter meta" aria-label="읽기 상태">{filters.map((f) => <button type="button" data-book-status={f.value} aria-pressed={f.value === 'all'}>{f.label} <span class="count">{f.count}</span></button>)}</nav>
     </div>
     {tiers.map((t) => <section class="ledger-group" data-tier>
       <div class="ledger-head"><h2 class:list={['display', { 'unrated': t.tier === '미분류' }]}>{t.tier}</h2><span class="meta" data-tier-count>{t.books.length}권</span></div>

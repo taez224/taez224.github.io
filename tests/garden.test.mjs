@@ -4,8 +4,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { assembleGarden } from '../src/lib/garden.mjs';
-import { headingsFor } from '../src/lib/note-body.mjs';
+import { assembleGarden } from '../src/lib/garden.ts';
+import { headingsFor } from '../src/lib/note-body.ts';
 import { seriesNeighbors } from '../src/lib/note-nav.mjs';
 
 test('table of contents excludes headings inside multiline Obsidian comments', () => {

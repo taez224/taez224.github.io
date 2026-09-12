@@ -1,9 +1,10 @@
 import type { APIRoute } from 'astro';
-import { getGarden } from '../../lib/get-garden.mjs';
+import type { PublicNote } from '../../lib/content-model.ts';
+import { getGarden } from '../../lib/get-garden.ts';
 
 export const GET: APIRoute = async () => {
   const garden = await getGarden();
-  const pick = (note) => ({ path: note.path, slug: note.slug, url: note.url, kind: note.kind, category: note.category, title: note.title, displayTitle: note.displayTitle, date: note.date, updated: note.updated, topic: note.topic, publicTags: note.publicTags, summary: note.summary, summaryIsExplicit: note.summaryIsExplicit, headings: note.headings, contentMode: note.contentMode });
+  const pick = (note: PublicNote) => ({ path: note.path, slug: note.slug, url: note.url, kind: note.kind, category: note.category, title: note.title, displayTitle: note.displayTitle, date: note.date, updated: note.updated, topic: note.topic, publicTags: note.publicTags, summary: note.summary, summaryIsExplicit: note.summaryIsExplicit, headings: note.headings, contentMode: note.contentMode });
   const body = {
     home: garden.home,
     notes: garden.notes.map(pick),

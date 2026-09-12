@@ -6,7 +6,7 @@
 // 복사되면 2초 동안 체크 아이콘을, 실패하면 5초 동안 대안이 담긴 안내를 표시한다.
 // JS 없이는 아무것도 못 하므로 hidden으로 내고 스크립트가 푼다.
 // 검색 버튼(.search-trigger svg)과 같은 선 굵기.
-const icon = (body) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+const icon = (body: string) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
 const icons = {
   share: icon('<path d="M12 3v12"></path><path d="m8 7 4-4 4 4"></path><path d="M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8"></path>'),
   done: icon('<path d="m5 12 5 5 9-10"></path>')

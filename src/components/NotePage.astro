@@ -3,11 +3,13 @@ import { render } from 'astro:content';
 import Shell from '../layouts/Shell.astro';
 import NoteSidebar from './NoteSidebar.astro';
 import ArticleBody from './ArticleBody.astro';
-import { getGarden } from '../lib/get-garden.mjs';
+import { getGarden } from '../lib/get-garden.ts';
 import { formatDate, displayTag, withBase, cleanTitle, topicColor } from '../lib/format.mjs';
 import { parentLink, seriesNeighbors } from '../lib/note-nav.mjs';
 import { articleMeta } from '../lib/seo.mjs';
 import '../styles/body.css';
+import type { NoteEntry, PublicNote } from '../lib/content-model.ts';
+interface Props { entry: NoteEntry }
 const { entry } = Astro.props;
 const note = entry.data;
 const mobileToc = note.headings.filter((heading) => heading.level === 2 || heading.level === 3);
@@ -15,7 +17,7 @@ const title = cleanTitle(note.title); // 허브 노트의 🗺 같은 이모지�
 const { Content } = await render(entry);
 const garden = await getGarden();
 const byPath = new Map(garden.notes.map((n) => [n.path, n]));
-const resolve = (paths) => paths.map((p) => byPath.get(p)).filter(Boolean);
+const resolve = (paths: string[]): PublicNote[] => paths.map((p) => byPath.get(p)).filter((note): note is PublicNote => note !== undefined);
 const outgoing = resolve(note.outgoing);
 const incoming = resolve(note.incoming);
 const mapNode = garden.nodes.find((node) => node.path === note.path);
@@ -26,7 +28,7 @@ const topics = note.publicTags.slice(0, 2).map((tag) => { const head = tag.split
 const parent = parentLink(note, mapNode?.mapKey);
 const parentUrl = withBase(parent.path);
 const series = note.kind === 'blog' ? seriesNeighbors(note, garden.blog.series) : null;
-const hasSeriesNav = Boolean(series && (series.prev || series.next));
+const hasSeriesNav = series && (series.prev || series.next);
 // 노트(Slipbox)는 사이드바의 "생각 지도에서 보기"가 같은 곳으로 가므로 페이지 끝에 목록 링크를 두지 않는다.
 // 사이드바는 모바일에서도 보이므로 여기서 한 번 더 두면 같은 링크가 두 개가 된다.
 const endLink = note.kind === 'slipbox' ? null : parent.listLabel;
@@ -58,9 +60,9 @@ const aboutUrl = withBase('/about/');
         <a class="btn" href={series.first.url}>1편부터 읽기 <span aria-hidden="true">→</span></a>
       </nav>}
       <div class="body">{note.articleCards?.length
-        ? <ArticleBody html={byPath.get(note.path).bodyHtml} cards={note.articleCards} notes={garden.notes} />
+        ? <ArticleBody html={byPath.get(note.path)!.bodyHtml} cards={note.articleCards} notes={garden.notes} />
         : <Content />}</div>
-      {hasSeriesNav && <nav class:list={['note-end', 'series-links', { 'is-single': !series.prev || !series.next }]} aria-label="이어서 읽기">
+      {series && hasSeriesNav && <nav class:list={['note-end', 'series-links', { 'is-single': !series.prev || !series.next }]} aria-label="이어서 읽기">
         {series.prev && <a class="series-link" href={series.prev.url}><span class="series-direction"><span aria-hidden="true">←</span> 이전 편</span><span class="series-title">{series.prev.title}</span></a>}
         {series.next && <a class="series-link is-next" href={series.next.url}><span class="series-direction">{series.isHub ? '1편부터 읽기' : '다음 편'} <span aria-hidden="true">→</span></span><span class="series-title">{series.next.title}</span></a>}
       </nav>}

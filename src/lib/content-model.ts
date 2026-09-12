@@ -1,5 +1,6 @@
 import { z } from 'astro/zod';
 import type { ImageMetadata } from 'astro';
+import type { CollectionEntry } from 'astro:content';
 import type { DevelopmentCategory } from './development.ts';
 import type { NoteKind } from './kinds.ts';
 
@@ -32,6 +33,8 @@ export type PublicNote = z.infer<typeof publicNoteSchema>;
 
 // 파일 경로를 Astro가 이미지 정보로 바꾼 뒤의 컬렉션 데이터다.
 export type CollectionNote = Omit<PublicNote, 'bodyHtml' | 'thumbnail'> & { thumbnail?: ImageMetadata | null };
+
+export type NoteEntry = Omit<CollectionEntry<'notes'>, 'data'> & { data: CollectionNote };
 
 export const bookSchema = z.object({
   path: z.string(), fileTitle: z.string(), title: z.string(), slug: z.string(), url: z.string(),

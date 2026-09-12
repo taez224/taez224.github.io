@@ -1,14 +1,14 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-// vault 파일을 찾고 frontmatter를 읽는다. 조립 단계와 책 로딩이 함께 쓰므로 garden.mjs를 import하지 않는다.
-export const normalize = (value) => value.replace(/\\/g, '/').replace(/^\.\//, '');
+// vault 파일을 찾고 frontmatter를 읽는다. 조립 단계와 책 로딩이 함께 쓰므로 garden.ts를 import하지 않는다.
+export const normalize = (value: string) => value.replace(/\\/g, '/').replace(/^\.\//, '');
 
-export const isMarkdown = (name) => name.endsWith('.md');
+export const isMarkdown = (name: string) => name.endsWith('.md');
 
-async function walk(directory, accept = () => true) {
+async function walk(directory: string, accept: (name: string) => boolean = () => true): Promise<string[]> {
   const entries = await fs.readdir(directory, { withFileTypes: true });
-  const files = [];
+  const files: string[] = [];
   for (const entry of entries) {
     if (entry.name.startsWith('.')) continue;
     const absolute = path.join(directory, entry.name);
@@ -20,24 +20,28 @@ async function walk(directory, accept = () => true) {
 
 // 폴더 자체가 없을 때만 null을 돌려준다. 권한 오류나 파일을 폴더로 잘못 적은 경우까지 건너뛰면
 // 하위 폴더 하나 때문에 공개 폴더 전체가 조용히 사이트에서 빠진다.
-export async function walkIfPresent(directory, accept) {
+export async function walkIfPresent(directory: string, accept?: (name: string) => boolean): Promise<string[] | null> {
   try {
     return await walk(directory, accept);
   } catch (error) {
-    if (error.code === 'ENOENT' && error.path === directory) return null;
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT' && 'path' in error && error.path === directory) return null;
     throw error;
   }
 }
 
-export function parseFrontmatter(source) {
+export type FrontmatterValue = string | null | string[];
+export type Frontmatter = Record<string, FrontmatterValue>;
+export interface VaultNote { body: string; meta: Frontmatter }
+
+export function parseFrontmatter(source: string): VaultNote {
   if (!source.startsWith('---')) return { body: source, meta: {} };
   const end = source.indexOf('\n---', 3);
   if (end < 0) return { body: source, meta: {} };
 
   const frontmatter = source.slice(3, end).replace(/^\n/, '');
-  const meta = {};
-  let activeListKey = null;
-  const parseValue = (rawValue) => {
+  const meta: Frontmatter = {};
+  let activeListKey: string | null = null;
+  const parseValue = (rawValue: unknown): string | null => {
     const value = String(rawValue ?? '').trim();
     if (value === 'null' || value === '~') return null;
     const quoted = value.match(/^(['"])([\s\S]*)\1$/);
@@ -48,7 +52,7 @@ export function parseFrontmatter(source) {
     if (activeListKey && listItem) {
       meta[activeListKey] ??= [];
       const value = parseValue(listItem[1]);
-      if (value !== null && value !== '') meta[activeListKey].push(value);
+      if (value !== null && value !== '') (meta[activeListKey] as string[]).push(value);
       continue;
     }
     const field = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
@@ -66,16 +70,16 @@ export function parseFrontmatter(source) {
 }
 
 // frontmatter의 tags. 목록이 아니면 빈 배열로 본다.
-export function tagList(meta) {
+export function tagList(meta: Frontmatter): string[] {
   return Array.isArray(meta.tags) ? meta.tags : [];
 }
 
-export function numberValue(value) {
+export function numberValue(value: unknown): number {
   const number = Number(value);
   return Number.isFinite(number) ? number : 0;
 }
 
-export function stringList(value) {
+export function stringList(value: unknown): string[] {
   const values = Array.isArray(value) ? value : value ? [value] : [];
   return values.map((item) => String(item).trim()).filter(Boolean);
 }

@@ -1,4 +1,4 @@
-import { getGarden } from '../lib/get-garden.mjs';
+import { getGarden } from '../lib/get-garden.ts';
 import { renderFeed } from '../lib/rss.mjs';
 import { UNIFIED_QUOTA } from '../lib/feeds.mjs';
 export const prerender = true;

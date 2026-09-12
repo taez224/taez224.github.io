@@ -13,7 +13,7 @@ test('isPathInside accepts a nested path and the root itself, rejects anything t
 });
 
 test('decodedAssetTargetPath decodes each URL segment once to recover the real filesystem filename', () => {
-  // A Korean-named attachment: garden.mjs percent-encodes each path segment
+  // A Korean-named attachment: garden.ts percent-encodes each path segment
   // independently when it builds the dist-relative destination string.
   const encodedSegment = encodeURIComponent('한글 그림.svg');
   const destination = `assets/vault/_attachments/${encodedSegment}`;

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assembleBlog, blogLedger, lastPublishedOf, latestSeries } from '../src/lib/blog.mjs';
+import { assembleBlog, blogLedger, lastPublishedOf, latestSeries } from '../src/lib/blog.ts';
 
 // 조립 단계처럼 연재의 lastPublished를 편에서 계산해 둔다.
 const series = (title, ...published) => {

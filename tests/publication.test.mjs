@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { externalPublicationFor, isIncluded, validatePublicationConfig } from '../src/lib/publication.mjs';
+import { externalPublicationFor, isIncluded, validatePublicationConfig } from '../src/lib/publication.ts';
 
 const root = '30_Resources/Development';
 const approved = `${root}/Concepts/public.md`;

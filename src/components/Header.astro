@@ -1,6 +1,7 @@
 ---
 import { withBase } from '../lib/format.mjs';
 import ShareLink from './ShareLink.astro';
+interface Props { active?: string }
 const { active = '' } = Astro.props;
 const items = [['map', '/map/', '생각 지도'], ['posts', '/posts/', '글'], ['dev', '/dev/', '개발 노트'], ['books', '/books/', '책장']];
 ---

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { assembleGarden } from '../src/lib/garden.mjs';
+import { assembleGarden } from '../src/lib/garden.ts';
 import { publicNoteSchema, bookSchema } from '../src/lib/content-model.ts';
 import { inlineGraph, inlinePanelNotes } from '../src/lib/graph-data.ts';
 

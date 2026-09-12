@@ -1,5 +1,6 @@
 ---
 import Contacts from './Contacts.astro';
+interface Props { about: string; contacts: { name: string; url: string; icon?: string }[]; entryUrl: string; aboutUrl?: string }
 const { about, contacts, entryUrl, aboutUrl } = Astro.props;
 ---
 <div class="about">

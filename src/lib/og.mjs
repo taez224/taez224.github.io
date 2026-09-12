@@ -9,7 +9,7 @@ import { localGraphLayout } from '../components/local-graph-layout.mjs';
 import { layoutGraph, nodeRadius } from '../graph/layout.mjs';
 import { topicColor } from './format.mjs';
 import { ensureOgFonts } from './og-fonts.mjs';
-import { projectPaths } from './get-garden.mjs';
+import { projectPaths } from './get-garden.ts';
 import { pngDimensions } from './png.mjs';
 import { imageMimeType } from './image-types.mjs';
 

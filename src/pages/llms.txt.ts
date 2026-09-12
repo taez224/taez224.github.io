@@ -1,4 +1,4 @@
-import { getGarden } from '../lib/get-garden.mjs';
+import { getGarden } from '../lib/get-garden.ts';
 import { llmsText } from '../lib/seo.mjs';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../lib/site-meta.mjs';
 

@@ -2,6 +2,7 @@
 // 브랜드 로고를 회색조로 눕혀 종이색 톤에 맞춘다. 색을 지워도 실루엣이 남아 어느 서비스인지 알아볼 수 있다.
 // 상자는 40px(모바일 44px)이라 20px 아이콘보다 크다. 손가락으로 누를 자리를 확보한다.
 import { withBase } from '../lib/format.mjs';
+interface Props { contacts?: { name: string; url: string; icon?: string }[] }
 const { contacts = [] } = Astro.props;
 const shown = contacts.filter((contact) => contact.name !== 'Velog' && contact.icon);
 ---

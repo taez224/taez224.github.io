@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { projectPaths } from './get-garden.mjs';
+import { projectPaths } from './get-garden.ts';
 
 // OG 이미지용 정적 폰트. 빌드 때 한 번 받아 node_modules/.cache에 둔다(저장소에 넣기엔 10MB라 크다).
 // Gowun Batang은 정적 Bold가 있어 사이트 제목과 같은 굵기로 그려진다(가변 폰트는 resvg가 굵기 축을 무시한다).

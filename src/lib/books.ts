@@ -1,20 +1,20 @@
+import type { Book } from './content-model.ts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { dateOnly, newestFirst } from './dates.ts';
-import { firstHeading } from './note-body.mjs';
+import { firstHeading } from './note-body.ts';
 import { assertUniqueSlugs, slugify } from './slug.ts';
-import { isMarkdown, normalize, numberValue, parseFrontmatter, walkIfPresent } from './vault-files.mjs';
+import { isMarkdown, normalize, numberValue, parseFrontmatter, walkIfPresent } from './vault-files.ts';
 
 // 책 노트가 있는 vault 폴더. 조립 단계와 개발 서버 감시가 같은 경로를 쓴다.
 export const BOOKS_PATH = '30_Resources/References/Books';
 
 // 책장에 올릴 책. 평점 높은 순, 같으면 최근에 기록한 순이다. 파일 이름에서 만든 slug가 겹치면 빌드를 멈춘다.
 // base는 사이트 주소의 앞부분(basePath)이다.
-/** @returns {Promise<import('./content-model.ts').Book[]>} */
-export async function readBooks({ vaultRoot, base }) {
+export async function readBooks({ vaultRoot, base }: { vaultRoot: string; base: string }): Promise<Book[]> {
   const files = await walkIfPresent(path.join(vaultRoot, BOOKS_PATH), isMarkdown);
   if (!files) console.warn('Skipped missing books directory');
-  const books = [];
+  const books: Book[] = [];
   for (const absoluteFile of files ?? []) {
     const relativePath = normalize(path.relative(vaultRoot, absoluteFile));
     if (path.posix.basename(relativePath).startsWith('_')) continue;
@@ -44,7 +44,7 @@ export async function readBooks({ vaultRoot, base }) {
       created: dateOnly(parsed.meta.created)
     });
   }
-  const newestCreated = newestFirst((book) => book.created);
+  const newestCreated = newestFirst<Book>((book) => book.created);
   books.sort((left, right) => right.rate - left.rate || newestCreated(left, right));
   assertUniqueSlugs(books.map((book) => ({ kind: 'book', slug: book.slug, path: book.path })));
   return books;
@@ -57,8 +57,8 @@ const STATUS_ORDER = ['완독', '읽는 중', '중단'];
 const NOT_ON_SHELF = new Set(['예정']);
 
 // 책장 위의 상태 거르개. 실제로 쓰인 상태만 권수와 함께 돌려준다.
-export function statusFilters(books) {
-  const counts = new Map();
+export function statusFilters(books: readonly { status?: unknown }[]): { value: string; label: string; count: number }[] {
+  const counts = new Map<string, number>();
   for (const book of books) {
     const status = String(book.status ?? '').trim();
     if (status && !NOT_ON_SHELF.has(status)) counts.set(status, (counts.get(status) ?? 0) + 1);
@@ -69,17 +69,17 @@ export function statusFilters(books) {
     .sort((left, right) => left.localeCompare(right, 'ko'));
   return [
     { value: 'all', label: '전체', count: books.length },
-    ...[...known, ...unknown].map((status) => ({ value: status, label: status, count: counts.get(status) }))
+    ...[...known, ...unknown].map((status) => ({ value: status, label: status, count: counts.get(status)! }))
   ];
 }
 
 // 평점을 책장의 등급으로 바꾼다. 소수점은 버리고, 평점이 없으면 미분류다.
-export function bookTier(rate) {
-  return ({ 5: 'S', 4: 'A', 3: 'B', 2: 'C', 1: 'D' })[Math.floor(rate)] ?? '미분류';
+export function bookTier(rate: number): Book['tier'] {
+  return ({ 5: 'S', 4: 'A', 3: 'B', 2: 'C', 1: 'D' } as Record<number, Book['tier']>)[Math.floor(rate)] ?? '미분류';
 }
 
 // 표지는 88x128 상자에 들어간다. yes24의 XL은 823x1200이라 화면에 쓰이는 것보다 스무 배 넓고 한 장에 90KB다.
 // L(274x400)이면 2배 해상도까지 덮는다. 아는 형태가 아니면 그대로 둔다.
-export function coverUrl(url) {
+export function coverUrl(url: unknown): string {
   return String(url ?? '').replace(/^(https?:\/\/image\.yes24\.com\/goods\/\d+\/)XL$/, '$1L');
 }

@@ -2,7 +2,7 @@
 import Shell from '../layouts/Shell.astro';
 import { Content, frontmatter } from '../content/about.md';
 import Contacts from '../components/Contacts.astro';
-import { getGarden } from '../lib/get-garden.mjs';
+import { getGarden } from '../lib/get-garden.ts';
 import '../styles/body.css';
 
 const title = frontmatter.title;

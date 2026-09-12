@@ -64,6 +64,9 @@ jobs:
       - name: Type check migrated modules
         run: npm run check
 
+      - name: Type check Astro
+        run: npm run check:astro
+
       - name: Test
         run: npm test
 

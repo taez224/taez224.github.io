@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { getGarden, projectPaths } from '../lib/get-garden.mjs';
+import { getGarden, projectPaths } from '../lib/get-garden.ts';
 import { imageMimeType } from '../lib/image-types.mjs';
 
 const VAULT_ASSET_ROOT = 'assets/vault';
@@ -22,7 +22,7 @@ export function isPathInside(root, candidate) {
 }
 
 // `assetCopies` maps a vault-relative source path to a dist-relative target
-// path whose segments are already percent-encoded (see garden.mjs), because
+// path whose segments are already percent-encoded (see garden.ts), because
 // that target string doubles as the URL an <img src> points at. A URL and a
 // filesystem path are not the same thing: for the file we write to disk to
 // be found by a static file server at that URL, its name on disk has to be
@@ -62,7 +62,7 @@ async function copyReviewedAssets({ assetCopies, vaultRoot, outputDir }) {
 // Given a request pathname (already stripped of query string) and the
 // site's base path, finds the vault-relative source file to serve, or
 // `null` if the request isn't for a reviewed asset. Matching is done on the
-// *encoded* destination string exactly as garden.mjs produced it, so dev
+// *encoded* destination string exactly as garden.ts produced it, so dev
 // and production resolve the same URL to the same file without needing to
 // re-derive encoding rules here.
 //

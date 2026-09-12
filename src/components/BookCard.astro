@@ -1,5 +1,7 @@
 ---
 import { formatDate } from '../lib/format.mjs';
+import type { Book } from '../lib/content-model.ts';
+interface Props { book: Book }
 const { book } = Astro.props;
 const title = book.fileTitle || book.title;
 const review = String(book.note ?? '').trim();

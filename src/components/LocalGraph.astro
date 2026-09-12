@@ -2,12 +2,14 @@
 import { localGraphLayout } from './local-graph-layout.mjs';
 import { offsetLine } from '../graph/engine.mjs';
 import { cleanTitle } from '../lib/format.mjs';
+import type { PublicNote, CollectionNote } from '../lib/content-model.ts';
+interface Props { note: PublicNote | CollectionNote; outgoing: PublicNote[]; incoming: PublicNote[]; mapUrl?: string }
 const { note, outgoing, incoming, mapUrl } = Astro.props;
 const width = 310, height = 190;
 const layout = localGraphLayout(note, outgoing, incoming, { width, height });
-const short = (title) => ([...title].length > 12 ? [...title].slice(0, 11).join('') + '…' : title);
+const short = (title: string) => ([...title].length > 12 ? [...title].slice(0, 11).join('') + '…' : title);
 // 서로 참조하는 이웃은 지도처럼 선 두 개를 벌려 그려 두 방향을 모두 보인다. 벌리는 폭도 지도 엔진과 같다.
-const lines = (edge) => {
+const lines = (edge: { x1: number; y1: number; x2: number; y2: number; direction: string }) => {
   if (edge.direction !== 'both') return [edge];
   const center = { x: edge.x1, y: edge.y1 }, neighbor = { x: edge.x2, y: edge.y2 };
   return [{ ...offsetLine(center, neighbor, 1), direction: 'out' }, { ...offsetLine(center, neighbor, -1), direction: 'in' }];

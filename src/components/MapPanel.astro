@@ -1,4 +1,6 @@
 ---
+import type { GardenGraphNode } from '../lib/content-model.ts';
+interface Props { startpoints: GardenGraphNode[]; hubs?: GardenGraphNode[] }
 const { startpoints, hubs = [] } = Astro.props;
 ---
 <div class="sheet-backdrop" data-sheet-backdrop hidden></div>

@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
-import { vaultLoader, bookLoader, noteEntryId, isIgnoredWatchPath, watchPathsFor } from '../src/loaders/vault.mjs';
-import { createRefreshCoordinator } from '../src/loaders/refresh-coordinator.mjs';
+import { vaultLoader, bookLoader, noteEntryId, isIgnoredWatchPath, watchPathsFor } from '../src/loaders/vault.ts';
+import { createRefreshCoordinator } from '../src/loaders/refresh-coordinator.ts';
 
 const garden = {
   notes: [{ path: '20_Projects/blog/x.md', slug: 'x', kind: 'blog', title: 'X', bodyHtml: '<p>본문</p>', headings: [{ id: 'a', level: 2, title: 'A' }], outgoing: [], incoming: [] }],

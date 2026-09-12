@@ -8,6 +8,7 @@ const n = (value) => +value.toFixed(2);
 // 홈의 정적 지도. 페이지에 인라인되므로 서체·색은 페이지 토큰(--display, --sans, --paper, --accent)을 쓴다.
 // preset 'mobile': 높이 280px 상자용. viewBox 배율이 작아 글자를 크게 두고 허브 제목은 아래에만 놓는다(데스크톱 미만에서 그대로 보이는 그림).
 // preset 'desktop': 높이 pixelHeight 상자용. hero.js가 올리는 살아 있는 그래프와 같은 크기·자리로 그려, 교체가 눈에 띄지 않게 한다.
+/** @param {import('../lib/content-model.ts').GraphNode[]} nodes @param {import('../lib/content-model.ts').GraphEdge[]} edges @param {Map<string, import('../lib/content-model.ts').Point>} positions @param {{width: number, height: number, preset?: string, pixelHeight?: number, font?: number, regionFont?: number, strokeWidth?: number, label?: string}} options */
 export function renderSnapshotSvg(nodes, edges, positions, { width, height, preset = 'mobile', pixelHeight = 500, font = 14, regionFont = 16, strokeWidth = 1.1, label = '생각 지도' } = {}) {
   if (preset === 'desktop') return renderDesktop(nodes, edges, positions, { width, height, pixelHeight, label });
   const at = (id) => positions.get(id);

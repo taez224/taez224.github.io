@@ -1,17 +1,25 @@
-import { newestFirst } from './dates.ts';
-import { addTo } from './links.mjs';
+import type { PublicNote } from './content-model.ts';
 
-const latestDay = (days) => days.map((day) => String(day ?? '')).filter(Boolean).sort().at(-1) ?? '';
+export type BlogPost = Pick<PublicNote, 'path' | 'title' | 'date' | 'published' | 'url' | 'publication' | 'publishedUrl' | 'summary' | 'status'> & { series: string; seriesOrder: number };
+type BlogHub = Pick<BlogPost, 'title' | 'url' | 'summary' | 'status'> & { ended: string };
+export interface BlogSeries { title: string; noteUrl: string; summary: string; status: string; ended: string; lastPublished: string; posts: BlogPost[] }
+export interface Blog { series: BlogSeries[]; publications: { publication: string; posts: BlogPost[] }[]; stats: { posts: number; series: number; standalone: number } }
+type LedgerRow = { kind: 'post'; date: string; post: BlogPost } | { kind: 'series'; date: string; series: BlogSeries };
+
+import { newestFirst } from './dates.ts';
+import { addTo } from './links.ts';
+
+const latestDay = (days: readonly unknown[]): string => days.map((day) => String(day ?? '')).filter(Boolean).sort().at(-1) ?? '';
 
 // 연재가 마지막으로 발행한 날. 허브에 손으로 적는 last_published는 새 편을 내고 고치지 않으면 옛 날짜로 남으므로
 // 공개된 편의 published에서 계산한다. 편마다 발행일은 선택 값이라 하나도 없으면 빈 문자열이다.
-export function lastPublishedOf(posts = []) {
+export function lastPublishedOf(posts: readonly { published?: string }[] = []): string {
   return latestDay(posts.map((post) => post.published));
 }
 
 // 공개된 글을 연재와 발행처로 묶는다. hubs는 연재 허브 레코드(제목이 연재 이름), posts는 status가 published인 글 레코드다.
 // 레코드는 조립 단계가 만들어 넘기므로 여기서는 vault를 읽지 않는다. 허브가 없는 연재도 편만으로 만든다.
-export function assembleBlog({ hubs = [], posts = [] }) {
+export function assembleBlog({ hubs = [], posts = [] }: { hubs?: readonly BlogHub[]; posts?: readonly BlogPost[] }): Blog {
   const hubByTitle = new Map(hubs.map((hub) => [hub.title, hub]));
   const seriesNames = [...new Set(posts.map((post) => post.series).filter(Boolean))];
   const series = seriesNames.map((seriesName) => {
@@ -31,7 +39,7 @@ export function assembleBlog({ hubs = [], posts = [] }) {
     };
   }).sort(newestFirst((item) => item.lastPublished));
 
-  const byPublication = new Map();
+  const byPublication = new Map<string, BlogPost[]>();
   for (const post of posts.filter((candidate) => !candidate.series)) addTo(byPublication, post.publication || '발행처 미상', post);
   const publications = [...byPublication.entries()]
     .map(([publication, grouped]) => ({ publication, posts: grouped.sort(newestFirst((post) => post.published)) }))
@@ -46,16 +54,16 @@ export function assembleBlog({ hubs = [], posts = [] }) {
 
 // 홈에서 권할 연재 하나. 조립 단계가 계산한 lastPublished가 가장 늦은 연재를 고른다.
 // 아직 발행일이 있는 편이 없는 연재는 세지 않고, 고를 게 없으면 null을 돌려준다(홈은 그 칸을 그리지 않는다).
-export function latestSeries(series = []) {
+export function latestSeries<T extends { title: string; lastPublished: string }>(series: readonly T[] = []): T | null {
   return series.filter((item) => item.lastPublished).sort(newestFirst((item) => item.lastPublished))[0] ?? null;
 }
 
 // 글 목록의 연도별 장부. 단독 글과 연재를 한 장부에 넣고, 연재는 마지막 편이 나온 해에 한 행으로 둔다.
 // 발행일이 없는 단독 글은 날짜별 행에 넣지 않는다. 연재는 편마다 있는 검증된 표시 날짜(published, 없으면 created)로
 // 폴백하고, 허브의 started처럼 검증하지 않는 작성 필드로는 폴백하지 않는다.
-export function blogLedger({ publications = [], series = [] } = {}) {
-  const standalone = publications.flatMap((group) => group.posts).map((post) => ({ kind: 'post', date: post.published, post }));
-  const seriesRows = series.map((item) => ({ kind: 'series', date: item.lastPublished || latestDay(item.posts.map((post) => post.date)), series: item }));
-  const rows = [...standalone, ...seriesRows].filter((row) => row.date).sort(newestFirst((row) => row.date, (row) => (row.post ?? row.series).title));
+export function blogLedger({ publications = [], series = [] }: Partial<Pick<Blog, 'publications' | 'series'>> = {}): { year: string; rows: LedgerRow[] }[] {
+  const standalone = publications.flatMap((group) => group.posts).map((post) => ({ kind: 'post' as const, date: post.published, post }));
+  const seriesRows = series.map((item) => ({ kind: 'series' as const, date: item.lastPublished || latestDay(item.posts.map((post) => post.date)), series: item }));
+  const rows = [...standalone, ...seriesRows].filter((row) => row.date).sort(newestFirst((row) => row.date, (row) => (row.kind === 'post' ? row.post : row.series).title));
   return [...new Set(rows.map((row) => row.date.slice(0, 4)))].map((year) => ({ year, rows: rows.filter((row) => row.date.startsWith(year)) }));
 }

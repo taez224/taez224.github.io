@@ -1,11 +1,14 @@
 ---
 import LocalGraph from './LocalGraph.astro';
 import Icon from './Icon.astro';
+import type { PublicNote, CollectionNote } from '../lib/content-model.ts';
+import type { seriesNeighbors } from '../lib/note-nav.mjs';
+interface Props { note: CollectionNote; headings: PublicNote['headings']; outgoing: PublicNote[]; incoming: PublicNote[]; mapUrl: string; series?: ReturnType<typeof seriesNeighbors> }
 const { note, headings, outgoing, incoming, mapUrl, series = null } = Astro.props;
 // 목차는 h2·h3. h3에는 자기 h2의 id를 달아 두고, 스크립트가 읽고 있는 절의 h3만 펼친다(JS 없이는 전부 보인다).
 let section = '';
 const toc = headings.filter((h) => h.level === 2 || h.level === 3).map((h) => { if (h.level === 2) section = h.id; return { ...h, parent: h.level === 3 ? section : '' }; });
-const block = (label, icon, items) => ({ label, icon, items, long: items.length > 6 });
+const block = (label: string, icon: 'out' | 'in', items: PublicNote[]) => ({ label, icon, items, long: items.length > 6 });
 const blocks = [block('참조', 'out', outgoing), block('역참조', 'in', incoming)].filter((b) => b.items.length);
 ---
 <aside class="note-side">
@@ -53,5 +56,6 @@ const blocks = [block('참조', 'out', outgoing), block('역참조', 'in', incom
 <script src="../scripts/toc.js"></script>
 <script>
   import { setupScrollFades } from '../scripts/scroll-fades.js';
-  setupScrollFades(document.querySelector('.note-side'));
+  const sidebar = document.querySelector('.note-side');
+  if (sidebar) setupScrollFades(sidebar);
 </script>

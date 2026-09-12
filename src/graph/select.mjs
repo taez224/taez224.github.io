@@ -2,6 +2,7 @@
 //
 // 종점(isEndpoint) 규칙: 개발 노트처럼 종점으로 지정한 노트는 일반 노트가 직접 링크할 때만 지도에 들어온다.
 // 종점끼리 서로를 인용하는 사슬은 나머지를 끌어오지 않고, 서로만 인용하는 짝은 아예 빠진다.
+/** @param {{ candidates: Set<string>, edges: import('../lib/content-model.ts').GraphEdge[], isEndpoint?: (path: string) => boolean }} options */
 export function selectGraphNodes({ candidates, edges, isEndpoint = () => false }) {
   const degree = new Map();
   for (const edge of edges) {

@@ -10,6 +10,7 @@ export function parentLink(note, mapKey = '') {
 }
 
 // 연재 글의 앞·뒤 편. seriesList는 assembleGarden의 blog.series(편은 series_order 순으로 정렬됨).
+/** @param {Pick<import('./content-model.ts').PublicNote, 'type' | 'url' | 'path'>} note @param {import('./blog.ts').BlogSeries[]} seriesList */
 export function seriesNeighbors(note, seriesList) {
   const series = seriesList.find((item) => {
     if (note.type === 'series' && item.noteUrl && note.url) return item.noteUrl === note.url;

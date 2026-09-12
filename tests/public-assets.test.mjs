@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { createAssetResolver } from '../src/lib/public-assets.mjs';
+import { createAssetResolver } from '../src/lib/public-assets.ts';
 
 async function makeVault(files) {
   const vaultRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'garden-assets-'));

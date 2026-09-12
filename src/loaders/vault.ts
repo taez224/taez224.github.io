@@ -1,10 +1,19 @@
-import path from 'node:path';
-import { getGarden, invalidateGarden, projectPaths } from '../lib/get-garden.mjs';
-import { kindPrefix } from '../lib/slug.ts';
-import { BOOKS_PATH } from '../lib/books.mjs';
-import { createRefreshCoordinator } from './refresh-coordinator.mjs';
+import type { DataStore, LoaderContext, Loader } from 'astro/loaders';
+import type { NoteKind } from '../lib/kinds.ts';
+import type { GardenConfig } from '../lib/garden.ts';
 
-export function noteEntryId(note) {
+type Garden = Awaited<ReturnType<typeof getGarden>>;
+type StoreContext = Pick<LoaderContext, 'store' | 'parseData'>;
+type PrepareStore = (context: StoreContext) => (garden: Garden) => Promise<() => void>;
+type StoreEntry = Parameters<DataStore['set']>[0];
+
+import path from 'node:path';
+import { getGarden, invalidateGarden, projectPaths } from '../lib/get-garden.ts';
+import { kindPrefix } from '../lib/slug.ts';
+import { BOOKS_PATH } from '../lib/books.ts';
+import { createRefreshCoordinator } from './refresh-coordinator.ts';
+
+export function noteEntryId(note: { kind: NoteKind; slug: string }): string {
   return `${kindPrefix(note.kind)}/${note.slug}`;
 }
 
@@ -13,7 +22,7 @@ export function noteEntryId(note) {
 // workspace, and build/tooling output.
 const IGNORED_WATCH_ROOTS = ['30_Resources/Development/DevLog', '_workspace', 'dist', 'node_modules', '.astro'];
 
-export function isIgnoredWatchPath(vaultRelativePath) {
+export function isIgnoredWatchPath(vaultRelativePath: string): boolean {
   return IGNORED_WATCH_ROOTS.some((root) => vaultRelativePath === root || vaultRelativePath.startsWith(`${root}/`));
 }
 
@@ -23,8 +32,8 @@ export function isIgnoredWatchPath(vaultRelativePath) {
 // not part of `config.include`), `config.json` itself (publication rules
 // live there), and each individually reviewed attachment (assets that live
 // outside any watched include root, e.g. a shared `_attachments/` folder).
-export function watchPathsFor(config, { vaultRoot, projectRoot }) {
-  const paths = new Set();
+export function watchPathsFor(config: Pick<GardenConfig, 'include' | 'assets'>, { vaultRoot, projectRoot }: { vaultRoot: string; projectRoot: string }): string[] {
+  const paths = new Set<string>();
   for (const include of config.include ?? []) {
     if (!isIgnoredWatchPath(include.path)) paths.add(path.join(vaultRoot, include.path));
   }
@@ -36,16 +45,16 @@ export function watchPathsFor(config, { vaultRoot, projectRoot }) {
 
 // 새 항목을 모두 검증한 뒤에 스토어를 바꾼다. 먼저 비우면 개발 중 한 항목의 검증이 실패했을 때
 // 이미 보이던 페이지까지 사라지고 앞쪽 새 항목만 남는다.
-function replaceStore(store, entries) {
+function replaceStore(store: DataStore, entries: StoreEntry[]): void {
   store.clear();
   for (const entry of entries) store.set(entry);
 }
 
 // 새 항목을 검증하고 스토어를 바꿀 함수를 돌려준다. 여러 스토어를 함께 바꾸는 순서는 refresh-coordinator가 정한다.
-function prepareNotes({ store, parseData }) {
-  return async (garden) => {
+function prepareNotes({ store, parseData }: StoreContext) {
+  return async (garden: Garden) => {
     const { projectRoot, vaultRoot } = projectPaths();
-    const entries = [];
+    const entries: StoreEntry[] = [];
     for (const note of garden.notes) {
       const { bodyHtml, ...rest } = note;
       const id = noteEntryId(note);
@@ -65,9 +74,9 @@ function prepareNotes({ store, parseData }) {
   };
 }
 
-function prepareBooks({ store, parseData }) {
-  return async (garden) => {
-    const entries = [];
+function prepareBooks({ store, parseData }: StoreContext) {
+  return async (garden: Garden) => {
+    const entries: StoreEntry[] = [];
     for (const book of garden.books) entries.push({ id: book.slug, data: await parseData({ id: book.slug, data: book }) });
     return () => replaceStore(store, entries);
   };
@@ -82,24 +91,24 @@ const coordinator = createRefreshCoordinator({ invalidate: invalidateGarden, loa
 // loader's `load()` once at startup, and both `vaultLoader` and `bookLoader`
 // receive the same `context.watcher` instance, but only the first one to run
 // should register paths and event listeners.
-const wiredWatchers = new WeakSet();
+const wiredWatchers = new WeakSet<NonNullable<LoaderContext['watcher']>>();
 
-function attachWatcher(watcher, config) {
+function attachWatcher(watcher: LoaderContext['watcher'], config: GardenConfig): void {
   if (!watcher || wiredWatchers.has(watcher)) return;
   wiredWatchers.add(watcher);
   const { vaultRoot, projectRoot } = projectPaths();
   for (const watchedPath of watchPathsFor(config, { vaultRoot, projectRoot })) watcher.add(watchedPath);
-  const onFsEvent = (changedPath) => coordinator.scheduleRefresh(changedPath);
+  const onFsEvent = (changedPath: string) => coordinator.scheduleRefresh(changedPath);
   watcher.on('add', onFsEvent);
   watcher.on('change', onFsEvent);
   watcher.on('unlink', onFsEvent);
 }
 
 // 두 컬렉션 로더는 같은 조립 결과를 읽고 채우는 방식만 다르다. key는 coordinator가 재조립 뒤 다시 채울 스토어의 이름이다.
-function gardenLoader({ name, key, prepareStore, garden }) {
+function gardenLoader({ name, key, prepareStore, garden }: { name: string; key: string; prepareStore: PrepareStore; garden: () => Promise<Garden> }): Loader {
   return {
     name,
-    /** @param {import('astro/loaders').LoaderContext} context 정적 빌드에서는 watcher가 없다. */
+    // 정적 빌드에서는 watcher가 없다.
     async load({ store, parseData, watcher, logger }) {
       coordinator.setLogger(logger);
       const prepare = prepareStore({ store, parseData });
@@ -111,10 +120,10 @@ function gardenLoader({ name, key, prepareStore, garden }) {
   };
 }
 
-export function vaultLoader({ garden = getGarden } = {}) {
+export function vaultLoader({ garden = getGarden }: { garden?: () => Promise<Garden> } = {}): Loader {
   return gardenLoader({ name: 'vault-notes', key: 'notes', prepareStore: prepareNotes, garden });
 }
 
-export function bookLoader({ garden = getGarden } = {}) {
+export function bookLoader({ garden = getGarden }: { garden?: () => Promise<Garden> } = {}): Loader {
   return gardenLoader({ name: 'vault-books', key: 'books', prepareStore: prepareBooks, garden });
 }

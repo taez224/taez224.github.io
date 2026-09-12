@@ -19,7 +19,7 @@ Node 26.8.2(`.nvmrc`, `package.json`의 `engines`)와 커밋된 `package-lock.js
 nvm use                      # .nvmrc에 고정한 Node 버전 선택
 npm ci                       # 잠근 의존성 설치
 npm run check                # 전환한 TS 모듈과 타입 계약 검사
-npm run check:astro          # 전체 Astro 진단. 미전환 코드의 기존 오류가 있어 아직 CI 필수 검사가 아니다
+npm run check:astro          # Astro 컴포넌트·페이지 전체 타입 검사
 npm test                     # node --test tests/*.test.mjs
 node --test tests/garden.test.mjs                                  # 파일 하나
 node --test --test-name-pattern="slug" tests/garden.test.mjs       # 이름으로 골라 실행
@@ -37,11 +37,11 @@ npm run preview              # dist를 서빙한다. 먼저 build가 있어야 �
 핵심은 "vault를 한 번 조립하고, 모두가 그 결과를 읽는다"이다.
 
 ```
-config.json ──▶ publication.mjs (공개 판정)
+config.json ──▶ publication.ts (공개 판정)
                      │
                      ▼
-   assembleGarden()  src/lib/garden.mjs      vault 전체를 읽어 notes/books/nodes/edges/stats/assetCopies를 만든다
-                     │  (get-garden.mjs가 메모이즈. dev에서는 2초 지나면 다시 읽는다)
+   assembleGarden()  src/lib/garden.ts      vault 전체를 읽어 notes/books/nodes/edges/stats/assetCopies를 만든다
+                     │  (get-garden.ts가 메모이즈. dev에서는 2초 지나면 다시 읽는다)
         ┌────────────┼──────────────────┬──────────────────┐
         ▼            ▼                  ▼                  ▼
  Content Layer   정적 엔드포인트      OG 카드            vault-assets 통합
@@ -54,21 +54,21 @@ config.json ──▶ publication.mjs (공개 판정)
 ```
 
 - **페이지**(`src/pages/**`)는 `getCollection('notes'|'books')`로 읽고, **엔드포인트**(`data/*.json.ts`, `og/*.png.ts`, `rss.xml.js`, `llms.txt.ts`)는 `getGarden()`을 직접 부른다. 둘 다 같은 조립 결과다.
-- **조립 모듈**: `garden.mjs`는 공개 후보를 고르고 노트 레코드와 공개 색인을 만든 뒤 각 단계를 잇는다. 파일 탐색과 frontmatter는 `vault-files.mjs`, 공개 본문·목차·요약은 `note-body.mjs`, 위키 링크 해석은 `links.mjs`가 맡는다. 책장은 `books.mjs`의 `readBooks`, 블로그의 연재·발행처 묶음은 `blog.mjs`의 `assembleBlog`, 개발 노트 분류는 `development.ts`의 `groupDevelopment`가 만든다. 본문·썸네일이 쓸 수 있는 자산과 dist로 복사할 목록은 `public-assets.mjs`의 `createAssetResolver`가 정한다. 노트 링크 해석과 렌더링은 공개 색인에 기대므로 `garden.mjs`에 둔다. 이 모듈들은 `garden.mjs`를 import하지 않고 레코드 목록만 받으므로 순환 의존이 생기지 않는다.
+- **조립 모듈**: `garden.ts`는 공개 후보를 고르고 노트 레코드와 공개 색인을 만든 뒤 각 단계를 잇는다. 파일 탐색과 frontmatter는 `vault-files.ts`, 공개 본문·목차·요약은 `note-body.ts`, 위키 링크 해석은 `links.ts`가 맡는다. 책장은 `books.ts`의 `readBooks`, 블로그의 연재·발행처 묶음은 `blog.ts`의 `assembleBlog`, 개발 노트 분류는 `development.ts`의 `groupDevelopment`가 만든다. 본문·썸네일이 쓸 수 있는 자산과 dist로 복사할 목록은 `public-assets.ts`의 `createAssetResolver`가 정한다. 노트 링크 해석과 렌더링은 공개 색인에 기대므로 `garden.ts`에 둔다. 이 모듈들은 `garden.ts`를 import하지 않고 레코드 목록만 받으므로 순환 의존이 생기지 않는다.
 - **클라이언트 JS**: 홈(`hero.js`)과 지도(`map.js`)는 페이지에 인라인된 노드·간선(`data-hero-data`, `data-map-data`, `graph-data.ts`)으로 스크립트 실행 즉시 그래프를 올린다. 홈은 빌드 때 계산한 좌표까지 싣고, 지도는 무대 크기에 맞춰 배치한다. 지도 패널이 쓰는 노트 정보·참조 관계도 같은 JSON에 실어 fetch가 없다. 검색만 `search.json`을 열 때 fetch한다. `data/site.json`은 공개 데이터 엔드포인트이자 check-dist의 기준 자료로 남는다. `integrations/module-preload.mjs`가 빌드 산출물의 정적 import를 따라가 엔진 청크에 `modulepreload`를 달고, 지도 페이지 스크립트는 `<head>`로 옮겨 `blocking="render"`를 달아 그래프가 올라간 뒤에 첫 화면을 그린다(지도는 무대 크기가 화면마다 달라 스냅샷을 둘 수 없다). 그 전에 보이는 데스크톱 스냅샷(`snapshot.mjs`의 `desktop` 프리셋)은 엔진과 같은 배치 규칙(`label.mjs`의 `placeLabels`)과 같은 맞춤으로 그려서 교체가 눈에 띄지 않는다. 제목 배치 규칙을 바꾸면 두 쪽이 같이 바뀐다. 그래프는 프레임워크 없는 SVG 엔진 `src/graph/engine.mjs`가 그린다. `src/graph`의 나머지 모듈은 DOM을 만지지 않는 순수 함수이고 각각 단위 테스트가 있다.
-- **dev 감시**: `loaders/vault.mjs`가 include 루트·Books·`config.json`·검토된 자산을 watcher에 등록하고, `refresh-coordinator.mjs`가 디바운스와 직렬화를 맡아 notes·books 스토어를 한 번의 재조립으로 채운다.
+- **dev 감시**: `loaders/vault.ts`가 include 루트·Books·`config.json`·검토된 자산을 watcher에 등록하고, `refresh-coordinator.ts`가 디바운스와 직렬화를 맡아 notes·books 스토어를 한 번의 재조립으로 채운다.
 - **OG 카드**: `src/lib/og.mjs`. 최종 SVG 문자열 + 폰트 정체 + resvg 버전의 해시가 캐시 키라 수동 버전 상수가 없다. 캐시는 `node_modules/.cache/garden-og-images`와 `garden-og-fonts`이고 CI가 복원한다.
 
 ### 공개 범위 규칙 (바꿀 때 주의)
 
-- `config.json`의 `include`/`exclude`가 폴더 단위 규칙이고, `src/lib/publication.mjs`의 `privateRoots`는 config와 무관하게 항상 비공개다. Development 폴더는 `_`나 `.`로 시작하는 경로 조각이 있으면 뺀다. `include`에 적은 폴더가 vault에 없으면 빌드가 멈추므로, vault에서 공개 폴더의 이름을 바꾸면 `config.json`도 함께 고친다.
+- `config.json`의 `include`/`exclude`가 폴더 단위 규칙이고, `src/lib/publication.ts`의 `privateRoots`는 config와 무관하게 항상 비공개다. Development 폴더는 `_`나 `.`로 시작하는 경로 조각이 있으면 뺀다. `include`에 적은 폴더가 vault에 없으면 빌드가 멈추므로, vault에서 공개 폴더의 이름을 바꾸면 `config.json`도 함께 고친다.
 - 블로그(`20_Projects/blog`)는 `status: published`이거나 `type: series`만 들어온다. 발행된 편이 없는 연재 허브는 조립 단계에서 뺀다.
 - `externalPublications`에 걸리는 글은 `contentMode: 'external'`이 돼 본문·목차·검색 텍스트 없이 소개 페이지만 낸다. 규칙에 걸리면 `source`가 그 호스트의 유효한 https URL이어야 하고 아니면 빌드가 실패한다.
 - 링크·카드로 비공개 노트가 새지 않도록 설계돼 있다. 비공개 대상은 존재 여부만 기록하고 제목·요약·본문을 절대 출력하지 않는다. HTML, 검색 데이터, 그래프 데이터 어디로도 비공개 메타데이터와 외부 발행 글 본문을 내보내지 않는다.
 
 ### 공개 본문 변환
 
-vault 원문은 건드리지 않고 사이트로 나가는 사본만 바꾼다(`note-body.mjs`의 `publicBody`).
+vault 원문은 건드리지 않고 사이트로 나가는 사본만 바꾼다(`note-body.ts`의 `publicBody`).
 
 - 첫 H1, Obsidian 주석(`%% %%`), `AUTHOR_ONLY_SECTIONS`(현재 `운영 메모`) 절을 뺀다.
 - 정리한 공개 본문으로 자동 요약·검색 텍스트·목차·본문 링크를 계산한다. 명시한 `summary`를 우선하며, 외부 발행 글에는 본문 발췌 요약을 만들지 않는다.
@@ -85,9 +85,9 @@ vault 원문은 건드리지 않고 사이트로 나가는 사본만 바꾼다(`
 
 ## TypeScript 단계적 전환
 
-`tsconfig.json`은 Astro strict 설정과 JS 혼용을 사용한다. 전환 완료한 모듈은 `tsconfig.migration.json`의 include에 추가하고 `npm run check`를 CI에서 통과시킨다. 현재 대상은 `src/lib/`의 `dates.ts`, `kinds.ts`, `slug.ts`, `home.ts`, `development.ts`, `content-model.ts`, `graph-data.ts`와 `tests/types/`의 타입 계약 테스트다. `npm run check:astro`는 전체 코드의 진단을 보여주며, 기존 오류를 숨기거나 성공 코드로 바꾸지 않는다. 전체 오류를 해소한 뒤 CI 검사에 포함한다.
+`tsconfig.json`은 Astro strict 설정과 JS 혼용을 사용한다. 전환 완료한 모듈은 `tsconfig.migration.json`의 include에 추가하고 `npm run check`를 CI에서 통과시킨다. 아직 JS인 의존 모듈은 읽을 수 있지만 `checkJs`는 켜지 않는다. `npm run check:astro`도 CI에서 필수로 실행해 Astro Props와 페이지 타입을 검사한다.
 
-`content-model.ts`는 기존 노트 컬렉션 필드를 Zod 스키마로 공유하고 조립된 공개 노트·책·그래프·패널 데이터 타입을 정의한다. 조립 노트의 썸네일 경로와 Astro 컬렉션의 이미지 메타데이터는 구분한다. 아직 JS인 조립기는 반환 타입을 JSDoc으로 연결하며, 임시 vault 통합 테스트가 실제 조립 결과와 스키마를 대조한다. 조립기 구현 전체의 strict 검사는 다음 전환 단계에서 적용한다.
+`content-model.ts`는 노트 컬렉션 필드를 Zod 스키마로 공유하고 공개 노트·책·그래프·패널·컬렉션 엔트리 타입을 정의한다. 조립 노트의 썸네일 경로와 Astro 컬렉션의 이미지 메타데이터는 구분한다. 파일 읽기부터 공개 판정·본문 처리·조립기·로더까지 TS 검사 대상이며, 임시 vault 통합 테스트로 실제 조립 결과를 대조한다. 남은 JS 렌더러와 그래프 엔진은 공개 함수의 호출 계약을 JSDoc으로 연결하고 구현 전체 검사는 다음 전환에서 적용한다.
 
 TypeScript는 `astro check`가 지원하는 6.x를 쓴다. 현재 TypeScript 7은 검사 도구에 필요한 programmatic API를 제공하지 않는다. JS와 TS 사이의 상대 import에는 실제 확장자를 적는다. 테스트는 기존 `node:test`를 유지하고 Node 26의 타입 스트리핑으로 TS 모듈을 직접 읽는다. `erasableSyntaxOnly`로 enum이나 매개변수 프로퍼티처럼 실행 코드 변환이 필요한 문법을 검사 단계에서 막는다. 타입 검사와 테스트 실행은 별도 단계다.
 
@@ -128,7 +128,7 @@ Codex는 이 절만 읽고, Claude Code는 여기에 더해 위의 output-style 
 - `node:test`와 `node:assert/strict`를 쓰고 파일 이름은 `*.test.mjs`다. 테스트 이름은 관찰 가능한 동작을 서술한다.
 - **테스트는 임시 vault로 돈다.** `tests/garden.test.mjs`의 `makeVault()`처럼 `os.tmpdir()`에 최소 파일을 만들어 검증한다. 실제 `../obsidian`을 테스트에서 읽지 않는다.
 - 동작을 바꾸면 회귀 테스트를 더한다. 특히 Markdown 렌더링, 링크 해석, 공개 판정은 빠짐없이.
-- 코드를 넘기기 전에 `npm run check`, `npm test`, `npm run build`를 모두 돌린다. UI 변경은 데스크톱과 모바일 폭을 확인한다.
+- 코드를 넘기기 전에 `npm run check`, `npm run check:astro`, `npm test`, `npm run build`를 모두 돌린다. UI 변경은 데스크톱과 모바일 폭을 확인한다.
 
 ## 작업 규칙
 
@@ -156,7 +156,7 @@ type(scope): 명사형 제목
 
 - 수단: Codex는 `luna_worker`, Claude Code는 Agent 도구(하위 에이전트).
 - 위임하는 일: 코드 경로 추적, 기존 테스트 커버리지 확인, 문서·스펙 대조, 테스트·빌드 실행 결과 확인처럼 소스를 바꾸지 않는 조사·검증. 서로 파일 범위가 겹치지 않는 독립 작업이 2개 이상일 때만 병렬로 돌린다.
-- 위임하지 않는 일: 설계, 구현, 리팩터링, 테스트 작성, 공개 범위(`config.json`, `publication.mjs`) 판단. 구현 작업을 통째로 넘기지 않는다.
+- 위임하지 않는 일: 설계, 구현, 리팩터링, 테스트 작성, 공개 범위(`config.json`, `publication.ts`) 판단. 구현 작업을 통째로 넘기지 않는다.
 - 각 위임에는 읽을 파일 범위, 기대 결과, 검증 방법을 명시한다. 소스와 vault(`../obsidian`)는 읽기 전용이다.
 - 하위 에이전트의 결과는 근거이지 승인이 아니다. 주 에이전트가 최종 diff를 검토하고 `npm test`와 `npm run build`를 직접 돌려 확인한다.
 

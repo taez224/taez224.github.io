@@ -1,7 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "allowJs": false,
+    "allowJs": true,
     "types": [
       "node"
     ]
@@ -14,7 +14,18 @@
     "src/lib/development.ts",
     "tests/types/*.ts",
     "src/lib/content-model.ts",
-    "src/lib/graph-data.ts"
+    "src/lib/graph-data.ts",
+    "src/lib/vault-files.ts",
+    "src/lib/note-body.ts",
+    "src/lib/links.ts",
+    "src/lib/publication.ts",
+    "src/lib/books.ts",
+    "src/lib/blog.ts",
+    "src/lib/public-assets.ts",
+    "src/lib/garden.ts",
+    "src/lib/get-garden.ts",
+    "src/loaders/refresh-coordinator.ts",
+    "src/loaders/vault.ts"
   ],
   "exclude": [
     "node_modules",

@@ -1,3 +1,11 @@
+interface Logger { error(message: string): void }
+type Commit = () => void;
+type Prepare<T> = (garden: T) => Promise<Commit> | Commit;
+interface RefreshOptions<T> {
+  invalidate(): void; load(): Promise<T>; debounceMs?: number;
+  schedule?: (callback: () => void, ms: number) => unknown; cancel?: (handle: unknown) => void; logger?: Logger;
+}
+
 // Coordinates re-filling multiple Content Layer stores (notes, books) from a
 // single shared, invalidate-then-reload cycle, so that:
 //   1. A filesystem event only ever triggers ONE garden reassembly that both
@@ -12,35 +20,35 @@
 // This module has no dependency on Astro or the filesystem - `invalidate`
 // and `load` are injected, and `schedule`/`cancel` default to timers but can
 // be swapped out in tests for deterministic, timer-free behaviour.
-export function createRefreshCoordinator({
+export function createRefreshCoordinator<T>({
   invalidate,
   load,
   debounceMs = 200,
   schedule = (fn, ms) => setTimeout(fn, ms),
-  cancel = (handle) => clearTimeout(handle),
+  cancel = (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
   logger
-} = {}) {
-  const preparers = new Map();
-  let timer = null;
-  let tail = Promise.resolve();
+}: RefreshOptions<T>) {
+  const preparers = new Map<string, Prepare<T>>();
+  let timer: unknown = null;
+  let tail: Promise<T | void> = Promise.resolve();
   let currentLogger = logger;
-  let pendingPath = null;
+  let pendingPath: string | null = null;
 
   // prepare(garden)는 새 항목을 검증하고, 스토어를 바꾸는 함수를 돌려준다. 바꾸기는 runOnce가 한꺼번에 한다.
-  function register(name, prepare) {
+  function register(name: string, prepare: Prepare<T>): void {
     preparers.set(name, prepare);
   }
 
   // Astro's LoaderContext.logger is only available inside a loader's load(),
   // not at module-import time when the coordinator singleton is built - so
   // loaders call this once they have one.
-  function setLogger(nextLogger) {
+  function setLogger(nextLogger: Logger | undefined): void {
     currentLogger = nextLogger;
   }
 
-  function reportError(error, triggeringPath) {
+  function reportError(error: unknown, triggeringPath: string | null): void {
     const detail = triggeringPath ? ` (triggered by ${triggeringPath})` : '';
-    const message = `Vault refresh failed${detail}: ${error?.message ?? error}`;
+    const message = `Vault refresh failed${detail}: ${error && typeof error === 'object' && 'message' in error ? error.message : error}`;
     if (currentLogger && typeof currentLogger.error === 'function') {
       currentLogger.error(message);
     } else {
@@ -53,7 +61,7 @@ export function createRefreshCoordinator({
     const garden = await load();
     // 모든 스토어의 검증을 마친 뒤에 바꾼다. 하나씩 바꾸면 책 검증이 실패했을 때 노트만 새 상태가 되어
     // 두 컬렉션이 서로 다른 조립 결과를 보여 준다.
-    const commits = [];
+    const commits: Commit[] = [];
     for (const prepare of preparers.values()) commits.push(await prepare(garden));
     for (const commit of commits) commit();
     return garden;
@@ -62,12 +70,13 @@ export function createRefreshCoordinator({
   // Chains this run strictly after whatever is already in flight (or already
   // queued), so runs never overlap. Each run re-invalidates and reloads, so
   // it always reflects the freshest filesystem state at the time it starts.
-  function run() {
-    tail = tail.then(runOnce, runOnce);
-    return tail;
+  function run(): Promise<T> {
+    const result = tail.then(runOnce, runOnce);
+    tail = result;
+    return result;
   }
 
-  function scheduleRefresh(triggeringPath) {
+  function scheduleRefresh(triggeringPath?: string): void {
     if (triggeringPath !== undefined) pendingPath = triggeringPath;
     if (timer !== null) cancel(timer);
     timer = schedule(() => {

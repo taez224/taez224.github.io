@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getGarden } from '../../lib/get-garden.mjs';
+import { getGarden } from '../../lib/get-garden.ts';
 import { kindLabel, displayTag, cleanTitle } from '../../lib/format.mjs';
 
 export const GET: APIRoute = async () => {

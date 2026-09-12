@@ -1,20 +1,20 @@
 ---
 import Shell from '../../layouts/Shell.astro';
 import MapPanel from '../../components/MapPanel.astro';
-import { getGarden } from '../../lib/get-garden.mjs';
-import { withBase, GRAPH_COLORS, inlineJson } from '../../lib/format.mjs';
+import { getGarden } from '../../lib/get-garden.ts';
+import { topicColor, inlineJson } from '../../lib/format.mjs';
 import { inlineGraph, inlinePanelNotes } from '../../lib/graph-data.ts';
 import '../../styles/graph.css';
 const { nodes, edges, notes, noteEdges, stats, topicFold } = await getGarden();
 const startpoints = nodes.filter((n) => n.isEntry);
 const hubs = nodes.filter((n) => n.type === 'hub' && !n.isEntry).sort((a, b) => (b.degree ?? 0) - (a.degree ?? 0));
 // 범례는 지도에 실제 있는 주제만, 노드 많은 순. 기타는 맨 끝에 두고 접힌 주제 이름을 옆에 옅게 적는다(색은 같지만 태그는 남는다).
-const topicCounts = new Map();
+const topicCounts = new Map<string, number>();
 for (const n of nodes) topicCounts.set(n.topic, (topicCounts.get(n.topic) ?? 0) + 1);
 const folded = Object.keys(topicFold);
 // 접힌 주제가 늘어도 범례가 길어지지 않게 둘까지만 적고 나머지는 수로. 전체 목록은 툴팁.
 const foldedLabel = folded.length > 2 ? `${folded.slice(0, 2).join(', ')} 외 ${folded.length - 2}` : folded.join(', ');
-const topics = [...topicCounts].map(([name, count]) => ({ name, color: GRAPH_COLORS[name] ?? GRAPH_COLORS.기타, count })).sort((a, b) => Number(a.name === '기타') - Number(b.name === '기타') || b.count - a.count);
+const topics = [...topicCounts].map(([name, count]) => ({ name, color: topicColor(name), count })).sort((a, b) => Number(a.name === '기타') - Number(b.name === '기타') || b.count - a.count);
 ---
 <Shell title="생각 지도" description="노트를 고르고 연결된 생각을 따라가는 지도." path="/map/" active="map">
   {/* 그래프와 패널이 쓰는 데이터를 전부 페이지에 인라인한다. 스크립트가 실행되는 즉시(첫 화면 전에) 그래프와 선택된 노트 패널까지 한 번에 그린다. */}

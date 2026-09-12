@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { statusFilters, coverUrl } from '../src/lib/books.mjs';
+import { statusFilters, coverUrl } from '../src/lib/books.ts';
 
 const shelf = (...statuses) => statuses.map((status, index) => ({ title: `책 ${index}`, status }));
 

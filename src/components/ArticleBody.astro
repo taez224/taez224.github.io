@@ -5,6 +5,8 @@ import { kindPrefix } from '../lib/slug.ts';
 import { articleCardHtml, replaceArticleCards } from '../lib/article-card.mjs';
 import '../styles/article-card.css';
 
+import type { PublicNote } from '../lib/content-model.ts';
+interface Props { html: string; cards: PublicNote['articleCards']; notes: PublicNote[] }
 const { html, cards, notes } = Astro.props;
 const byUrl = new Map(notes.map((note) => [note.url, note]));
 const renderedCards = await Promise.all(cards.map(async (card) => {

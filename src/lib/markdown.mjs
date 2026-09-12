@@ -404,7 +404,7 @@ function createMarkdownIt() {
   });
 
   // 문서의 목차를 소유한 렌더만 headingIds를 넘긴다. 콜아웃 본문은 따로 렌더하므로 번호를 다시 매기지 않고 id도 두지 않는다.
-  // 인용·목록 안의 헤딩(level > 0)도 같은 이유로 건너뛴다. garden.mjs의 headingsFor가 쓰는 규칙과 같다.
+  // 인용·목록 안의 헤딩(level > 0)도 같은 이유로 건너뛴다. garden.ts의 headingsFor가 쓰는 규칙과 같다.
   const defaultHeadingOpen = markdown.renderer.rules.heading_open;
   markdown.renderer.rules.heading_open = (tokens, index, options, env, self) => {
     const token = tokens[index];
@@ -442,6 +442,7 @@ export function createMarkdownRenderer({ resolveNote, resolveAsset }) {
     return markdown.render(prepared, { context });
   }
 
+  /** @param {string} sourcePath @param {string} source @param {{ articleCards?: import('./content-model.ts').PublicNote['articleCards'] }} options */
   return function renderMarkdown(sourcePath, source, { articleCards = [] } = {}) {
     const context = {
       resolveAsset,

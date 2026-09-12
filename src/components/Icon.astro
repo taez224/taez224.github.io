@@ -1,5 +1,6 @@
 ---
 import { REF_ICONS } from '../lib/ref-icons.mjs';
+interface Props { name: keyof typeof REF_ICONS }
 const { name } = Astro.props;
 ---
 {REF_ICONS[name] && <Fragment set:html={REF_ICONS[name]} />}
