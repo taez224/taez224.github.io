@@ -2,10 +2,10 @@
 import '../styles/site.css';
 import Header from '../components/Header.astro';
 import SearchDialog from '../components/SearchDialog.astro';
-import { withBase } from '../lib/format.ts';
+import { inlineJson, withBase } from '../lib/format.ts';
 import { SITE_TITLE } from '../lib/site-meta.ts';
 import { FEED_LINKS } from '../lib/feeds.ts';
-import { structuredData, jsonLdScript } from '../lib/seo.ts';
+import { structuredData } from '../lib/seo.ts';
 import siteConfig from '../../config.json';
 interface Props { title: string; description: string; path: string; active?: string; ogType?: string; ogImage?: string | null; kind?: string | null; pageType?: string | null; published?: string | null; updated?: string | null }
 const umami = siteConfig.analytics?.umami?.websiteId ? siteConfig.analytics.umami : null;
@@ -20,7 +20,7 @@ const ogImage = new URL(ogImagePath ?? withBase('/og/site.png'), Astro.site).hre
 // 구조화 데이터는 페이지가 이미 가진 값만 쓴다. 홈은 WebSite, 노트는 글 종류별 Article, 나머지는 WebPage다. 페이지별 하위 타입은 호출부가 지정한다.
 const home = new URL(withBase('/'), Astro.site).href;
 const sameAs = (siteConfig.home?.contacts ?? []).map((contact) => contact.url).filter(Boolean);
-const jsonLd = jsonLdScript(structuredData({ ogType, kind, pageType, title: path === '/' ? SITE_TITLE : title, description, url: canonical, image: ogImage, published, updated, siteTitle: SITE_TITLE, siteUrl: home, sameAs }));
+const jsonLd = inlineJson(structuredData({ ogType, kind, pageType, title: path === '/' ? SITE_TITLE : title, description, url: canonical, image: ogImage, published, updated, siteTitle: SITE_TITLE, siteUrl: home, sameAs }));
 ---
 <!doctype html>
 <html lang="ko">

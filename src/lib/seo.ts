@@ -10,7 +10,7 @@ interface StructuredData {
 interface StructuredInput { ogType?: string; kind?: string | null; pageType?: string | null; title: string; description: string; url: string; image?: string | null; published?: string | null; updated?: string | null; siteTitle: string; siteUrl: string; sameAs?: string[] }
 
 import { KINDS } from './kinds.ts';
-import { inlineJson, withBase } from './format.ts';
+import { withBase } from './format.ts';
 import { newestFirst } from './dates.ts';
 import { kindPrefix, noteUrl, siteHome } from './slug.ts';
 // 검색 엔진과 답변 엔진이 읽는 구조화 데이터. 페이지가 이미 가진 제목·요약·날짜·URL만 쓰고 새 정보를 만들지 않는다.
@@ -43,11 +43,6 @@ export function structuredData({ ogType = 'website', kind = null, pageType = nul
 // 받아 withBase로 붙이므로, 경로는 종류와 슬러그로 다시 만든다. 공유 이미지는 og/[...slug].png가 같은 종류·슬러그로 그린다.
 export function articleMeta(note: Pick<PublicNote, 'kind' | 'slug' | 'date'>) {
   return { path: noteUrl('', note.kind, note.slug), kind: note.kind, published: note.date || null, ogType: 'article', ogImage: withBase(`/og/${kindPrefix(note.kind)}/${note.slug}.png`) };
-}
-
-// <script> 안에 넣는 JSON. 문자열 속 "</script>"가 태그를 닫지 못하게 "<"만 이스케이프한다.
-export function jsonLdScript(data: unknown): string {
-  return inlineJson(data);
 }
 
 // llms.txt: 사이트 요약과 공개 노트 목록을 마크다운 한 장으로. 사이트맵의 사람이 읽는 판이다.

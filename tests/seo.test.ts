@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { structuredData, jsonLdScript, llmsText, articleMeta } from '../src/lib/seo.ts';
+import { structuredData, llmsText, articleMeta } from '../src/lib/seo.ts';
 
 const siteUrl = 'https://example.com/obsidian/';
 const base = { siteTitle: '정원', siteUrl, description: '소개', sameAs: ['https://github.com/taez224'] };
@@ -50,12 +50,6 @@ test('about pages can use the specific AboutPage type', () => {
   assert.equal(data['@type'], 'AboutPage');
   assert.ok(data.isPartOf, '소개 페이지도 사이트에 속한다');
   assert.equal(data.isPartOf['@type'], 'WebSite');
-});
-
-test('jsonLdScript cannot close the script tag from inside a string', () => {
-  const script = jsonLdScript({ headline: '</script><b>x' });
-  assert.ok(!script.includes('</script>'));
-  assert.deepEqual(JSON.parse(script), { headline: '</script><b>x' });
 });
 
 test('llms.txt lists public notes by kind, newest first, with absolute urls', () => {
