@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { classifyEdges, hoverLabelCandidates, fitTransform, offsetLine, isFilteredOut } from '../src/graph/engine.ts';
-import { labelIds, wrapLabel } from '../src/graph/label.ts';
+import { labelIds } from '../src/graph/label.ts';
 
 const edges = [{ source: 'a', target: 'b' }, { source: 'b', target: 'a' }, { source: 'a', target: 'c' }, { source: 'd', target: 'e' }];
 const nodes = [
@@ -70,13 +70,4 @@ test('isFilteredOut applies the topic set and the hubs-only switch together', ()
   assert.equal(isFilteredOut(hub, { hubsOnly: true }), false);
   assert.equal(isFilteredOut(hub, { topics: new Set(['커리어']), hubsOnly: true }), true);
   assert.equal(isFilteredOut(undefined, { hubsOnly: true }), false);
-});
-
-test('wrapLabel keeps short titles on one line and folds long ones into two balanced lines', () => {
-  assert.deepEqual(wrapLabel('AI 활용'), ['AI 활용']);
-  assert.deepEqual(wrapLabel('스무 글자 안쪽이면 한 줄로 둔다'), ['스무 글자 안쪽이면 한 줄로 둔다']);
-  const lines = wrapLabel('산출물이 팀의 자산이 되려면 판단·추적·복구가 가능해야 한다');
-  assert.equal(lines.length, 2);
-  assert.ok(Math.abs([...lines[0]].length - [...lines[1]].length) <= 8, lines.join('|'));
-  assert.equal(lines.join(' '), '산출물이 팀의 자산이 되려면 판단·추적·복구가 가능해야 한다');
 });

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { estimateTextWidth, graphTitleLines } from '../src/graph/label.ts';
+import { estimateTextWidth, graphTitleLines, wrapLabel } from '../src/graph/label.ts';
 
 test('full titles wrap between words when possible', () => {
   assert.deepEqual(graphTitleLines('가능해야 한다', 10), ['가능해야 한다']);
@@ -70,4 +70,13 @@ test('label spacing separates nearby titles at each zoom while keeping their ful
     const x = spaced.get('a').g.box, y = spaced.get('b').g.box;
     assert.ok(x.right + 8 * u <= y.left || y.right + 8 * u <= x.left || x.bottom + 8 * u <= y.top || y.bottom + 8 * u <= x.top);
   }
+});
+
+test('wrapLabel keeps short titles on one line and folds long ones into two balanced lines', () => {
+  assert.deepEqual(wrapLabel('AI 활용'), ['AI 활용']);
+  assert.deepEqual(wrapLabel('스무 글자 안쪽이면 한 줄로 둔다'), ['스무 글자 안쪽이면 한 줄로 둔다']);
+  const lines = wrapLabel('산출물이 팀의 자산이 되려면 판단·추적·복구가 가능해야 한다');
+  assert.equal(lines.length, 2);
+  assert.ok(Math.abs([...lines[0]].length - [...lines[1]].length) <= 8, lines.join('|'));
+  assert.equal(lines.join(' '), '산출물이 팀의 자산이 되려면 판단·추적·복구가 가능해야 한다');
 });

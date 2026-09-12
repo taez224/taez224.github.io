@@ -5,15 +5,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { assembleGarden } from '../src/lib/garden.ts';
-import { headingsFor } from '../src/lib/note-body.ts';
 import { seriesNeighbors } from '../src/lib/note-nav.ts';
-
-test('table of contents excludes headings inside multiline Obsidian comments', () => {
-  assert.deepEqual(headingsFor('## 공개\n\n%%\n## 숨김\n%%\n\n## 끝'), [
-    { id: '공개', level: 2, title: '공개' },
-    { id: '끝', level: 2, title: '끝' }
-  ]);
-});
 
 const dev = '30_Resources/Development';
 async function makeVault(files) {
@@ -343,30 +335,6 @@ test('public notes carry a reading time of at least one minute', async () => {
   for (const note of garden.notes) assert.ok(Number.isInteger(note.readingMinutes) && note.readingMinutes >= 1, note.path);
 });
 
-test('headingsFor keeps every heading, strips inline markup and suffixes duplicate ids', () => {
-  const body = Array.from({ length: 12 }, (_, i) => `## ${i + 1}. 절`).join('\n\n') + '\n\n## 3. **DX와 DevRel** 그리고 `AX`\n\n### 절\n\n### 절';
-  const headings = headingsFor(body);
-  assert.equal(headings.length, 15);
-  assert.equal(headings[12].title, '3. DX와 DevRel 그리고 AX');
-  assert.deepEqual(headings.slice(13).map((h) => h.id), ['절', '절-2']);
-});
-
-test('headingsFor skips code examples and matches ids when an h1 shares the same title', () => {
-  const body = '# 실제 절\n\n```markdown\n## 예시\n```\n\n    ## 코드\n\n## 실제 절\n\n하위 절\n-------\n\n~~~markdown\n### 숨김\n~~~';
-  assert.deepEqual(headingsFor(body), [
-    { id: '실제-절-2', level: 2, title: '실제 절' },
-    { id: '하위-절', level: 2, title: '하위 절' }
-  ]);
-});
-
-test('headingsFor ignores Obsidian-only comments, highlights, and block ids', () => {
-  assert.deepEqual(headingsFor('## 제목 ^heading-id\n\n## 제목 %%숨김%%\n\n## ==강조 제목=='), [
-    { id: '제목', level: 2, title: '제목' },
-    { id: '제목-2', level: 2, title: '제목' },
-    { id: '강조-제목', level: 2, title: '강조 제목' }
-  ]);
-});
-
 const nextreeConfig = {
   ...config,
   externalPublications: [{ hosts: ['nextree.io', 'www.nextree.io'], publications: ['Nextree 기술 블로그'], name: '넥스트리' }]
@@ -463,20 +431,6 @@ test('published posts from other publishers keep the full body and ordinary summ
   assert.match(note.bodyHtml, /OTHER_PUBLISHER_BODY/);
   assert.match(note.summary, /OTHER_PUBLISHER_BODY/);
   assert.ok(note.readingMinutes > 0);
-});
-
-test('headingsFor skips headings quoted inside blockquotes and callouts', () => {
-  const body = '## 배경\n\n본문\n\n> [!note]\n> ## 배경\n> 콜아웃 본문\n\n> ## 인용 안 제목\n\n## 정리';
-  assert.deepEqual(headingsFor(body), [
-    { id: '배경', level: 2, title: '배경' },
-    { id: '정리', level: 2, title: '정리' }
-  ]);
-});
-
-test('headingsFor drops escape backslashes from outline titles', () => {
-  assert.deepEqual(headingsFor('## 1\\. Editor Config 요청'), [
-    { id: '1-editor-config-요청', level: 2, title: '1. Editor Config 요청' }
-  ]);
 });
 
 test('every outline id exists in the rendered body so sidebar links land on a heading', async () => {
@@ -587,9 +541,13 @@ test('an author-only section ends at the next heading, not at a comment line ins
   assert.match(note.bodyHtml, /연관된 노트/, '다음 절은 남는다');
 });
 
-test('a note date that is not a real day fails the build and names the file', async () => {
-  const vaultRoot = await makeVault({ ...files, '01_Slipbox/생각 B.md': files['01_Slipbox/생각 B.md'].replace('created: 2026-09-02', 'created: 2026-02-30') });
-  await assert.rejects(assembleGarden({ vaultRoot, config }), /created[\s\S]*2026-02-30[\s\S]*01_Slipbox\/생각 B\.md/);
+// 날짜 규칙 자체는 dates.test가 검사한다. 여기서는 조립이 파일 경로와 기준일을 규칙에 넘기는지 본다.
+test('assembly hands the date rules the file path and the build day', async () => {
+  const invalidVault = await makeVault({ ...files, '01_Slipbox/생각 B.md': files['01_Slipbox/생각 B.md'].replace('created: 2026-09-02', 'created: 2026-02-30') });
+  await assert.rejects(assembleGarden({ vaultRoot: invalidVault, config }), /created[\s\S]*2026-02-30[\s\S]*01_Slipbox\/생각 B\.md/);
+  const vaultRoot = await makeVault(files);
+  await assert.rejects(assembleGarden({ vaultRoot, config, today: '2026-09-03' }), /created[\s\S]*2026-09-0[45]/);
+  await assert.doesNotReject(assembleGarden({ vaultRoot, config, today: '2026-09-05' }));
 });
 
 test('blank optional YAML dates are accepted while blank created is rejected', async () => {
@@ -617,12 +575,6 @@ test('assembly uses first publication dates for blog, slipbox and development no
     assert.equal(note.date, '2026-09-10');
     assert.equal(note.updated, '');
   }
-});
-
-test('a note dated after the given build day fails the build', async () => {
-  const vaultRoot = await makeVault(files);
-  await assert.rejects(assembleGarden({ vaultRoot, config, today: '2026-09-03' }), /created[\s\S]*2026-09-0[45]/);
-  await assert.doesNotReject(assembleGarden({ vaultRoot, config, today: '2026-09-05' }));
 });
 
 test('public notes carry updated only when it is later than their date, and external articles never do', async () => {

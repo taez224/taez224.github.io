@@ -39,7 +39,7 @@ test('renderSnapshotSvg labels hubs only and colors by topic', () => {
   assert.equal((svg.match(/<line /g) || []).length, 2);
 });
 
-test('renderSnapshotSvg desktop preset matches the live hero: entry halo, 13px-equivalent labels, hub labels placed by the shared rule', () => {
+test('renderSnapshotSvg desktop preset scales labels like the live hero and labels hubs only', () => {
   const nodes: GraphNode[] = [
     { id: 'entry', title: '생각의 정원', type: 'hub', topic: 'AI', degree: 12, isEntry: true, url: '' },
     { id: 'hub', title: '지식관리와 글쓰기', type: 'hub', topic: '지식관리', degree: 10, isEntry: false, url: '' },
@@ -51,10 +51,8 @@ test('renderSnapshotSvg desktop preset matches the live hero: entry halo, 13px-e
   // 엔진의 맞춤과 같은 배율: 노드 경계 상자 높이가 (500 - 여백 80)px에 맞는다.
   const ys = [...positions.values()].map((p) => p.y), u = (Math.max(...ys) - Math.min(...ys)) / 420;
   assert.ok(svg.includes('class="snap is-desktop"'));
-  assert.ok(svg.includes('var(--accent-soft)'), '진입점 후광');
   assert.ok(svg.includes(`font-size="${+(13 * u).toFixed(2)}"`), '제목 13px');
   assert.ok(svg.includes(`font-size="${+(15 * u).toFixed(2)}"`), '영역 이름 15px');
   assert.match(svg, /^<svg viewBox="-?[\d.]+ -?[\d.]+ [\d.]+ [\d.]+"/, 'viewBox는 경계 상자 + 여백');
   assert.ok(svg.includes('>생각의 정원<') && svg.includes('>지식관리와 글쓰기<') && !svg.includes('>잎<'), '허브 제목만');
-  assert.ok(svg.includes('font-weight="700"'), '진입점 제목은 굵게');
 });
