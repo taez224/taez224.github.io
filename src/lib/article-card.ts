@@ -2,7 +2,6 @@ import type { PublicNote } from './content-model.ts';
 
 import { firstSentence, escapeHtml as escape } from './format.ts';
 
-/** @param {{ note: Pick<import('./content-model.ts').PublicNote, 'url' | 'summary' | 'contentMode' | 'publication' | 'displayTitle' | 'title'>, caption?: string, image?: Record<string, unknown> | null }} options */
 export function articleCardHtml({ note, caption = '', image = null }: { note: Pick<PublicNote, 'url' | 'summary' | 'contentMode' | 'publication' | 'displayTitle' | 'title'>; caption?: string; image?: Record<string, unknown> | null }): string {
   const summary = String(caption ?? '').trim() || firstSentence(note.summary);
   const imageAttributes = image ? Object.entries(image).filter(([, value]) => value != null).map(([key, value]) => `${key}="${escape(value)}"`).join(' ') : '';

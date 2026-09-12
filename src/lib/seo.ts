@@ -10,7 +10,6 @@ import { kindPrefix, noteUrl, siteHome } from './slug.ts';
 const AUTHOR_NAME = 'TaeZ';
 const ARTICLE_TYPES: Record<string, string> = { blog: 'BlogPosting', development: 'TechArticle' };
 
-/** @param {{ ogType?: string, kind?: string | null, pageType?: string | null, title: string, description: string, url: string, image?: string | null, published?: string | null, updated?: string | null, siteTitle: string, siteUrl: string, sameAs?: string[] }} options */
 export function structuredData({ ogType = 'website', kind = null, pageType = null, title, description, url, image = null, published = null, updated = null, siteTitle, siteUrl, sameAs = [] }: StructuredInput) {
   const author = { '@type': 'Person', name: AUTHOR_NAME, ...(sameAs.length ? { sameAs } : {}) };
   const website = { '@type': 'WebSite', name: siteTitle, url: siteUrl };

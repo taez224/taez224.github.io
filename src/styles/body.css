@@ -1,5 +1,5 @@
 /* 렌더링한 Markdown 본문(.body). 노트 본문(NotePage)과 소개 페이지(about)가 함께 불러온다.
-   콜아웃·비공개 표시처럼 사이트 렌더러(markdown.mjs)만 만드는 요소도 여기에 둔다. */
+   콜아웃·비공개 표시처럼 사이트 렌더러(markdown.ts)만 만드는 요소도 여기에 둔다. */
 .body { font-size: var(--t-body); line-height: 1.85; }
 .body p { margin: 0 0 22px; }
 /* 본문의 외부 링크는 사이트 다른 곳(발행처·출처)과 같이 ↗를 붙여 노트 링크와 구분한다. */

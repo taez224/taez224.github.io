@@ -138,7 +138,7 @@ function replaceStandardLinks(source: string, context: LinkContext): string {
     return asset ? `<img src="${escapeHtml(asset.url)}" alt="${escapeHtml(alt)}">` : whole;
   });
 
-  return source.replace(/\[([^\]]*)\]\(([^)\s]+\.md(?:#[^)]*)?)(?:\s+"[^"]*")?\)/gi, (whole, label, rawTarget) => {
+  return source.replace(/\[([^\]]*)\]\(([^)\s]+\.md(?:#[^)]*)?)(?:\s+"[^"]*")?\)/gi, (_whole, label, rawTarget) => {
     const { target, fragment } = splitWikiTarget(rawTarget);
     const note = context.resolveNote?.(context.sourcePath, target, fragment);
     if (note?.visibility === 'private') return renderPrivateNote(label, target);
@@ -452,7 +452,6 @@ export function createMarkdownRenderer({ resolveNote, resolveAsset }: Resolvers)
     return markdown.render(prepared, { context });
   }
 
-  /** @param {string} sourcePath @param {string} source @param {{ articleCards?: import('./content-model.ts').PublicNote['articleCards'] }} options */
   return function renderMarkdown(sourcePath: string, source: string, { articleCards = [] }: { articleCards?: PublicNote['articleCards'] } = {}): string {
     const context = {
       resolveAsset,

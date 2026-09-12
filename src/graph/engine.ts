@@ -6,7 +6,7 @@ interface GraphState { selected: string | null; hovered: string | null; topics: 
 import { nodeRadius } from './layout.ts';
 import { topicColor, cleanTitle } from '../lib/format.ts';
 import { createGraphGesture } from './gestures.ts';
-import { estimateTextWidth, labelIds, wrapLabel, placeLabels, nodeBox } from './label.ts';
+import { estimateTextWidth, labelIds, placeLabels, nodeBox } from './label.ts';
 import { topicRegions, regionPath, placeRegionLabels, regionLabelBox } from './regions.ts';
 
 const MIN_SCALE = 0.65;
@@ -251,7 +251,6 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
     const previewNear = new Set();
     if (previewId) { previewNear.add(previewId); for (const e of edges) { if (e.source === previewId) previewNear.add(e.target); if (e.target === previewId) previewNear.add(e.source); } }
     for (const [id, g] of nodeEls) {
-      const node = byId.get(id)!;
       const topicOut = outOfFilter(id);
       const dim = topicOut || (state.selected && id !== state.selected && !neighbors.has(id));
       g.classList.toggle('is-faint', Boolean(previewId && !previewNear.has(id)));

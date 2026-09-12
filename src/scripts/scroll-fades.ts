@@ -1,5 +1,4 @@
 // 아래에 읽을 항목이 남아 있을 때만 페이드를 표시한다.
-/** @param {Document | Element} root */
 export function setupScrollFades(root: Document | Element = document) {
   const lists = [...root.querySelectorAll('.scroll-list.is-long .side-list')];
   let active = true;
