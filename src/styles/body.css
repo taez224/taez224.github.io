@@ -27,7 +27,7 @@
 .body th, .body td { min-width: 100px; padding: 7px 10px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
 .body th { background: var(--paper-strong); font-weight: 650; }
 .body hr { margin: 30px 0; border: 0; border-top: 1px solid var(--line); }
-.body mark { padding: 0 3px; background: #e7d99b; }
+.body mark { padding: 0 3px; background: var(--highlight); }
 .body .mermaid { overflow-x: auto; margin: 22px 0; padding: 12px; border: 1px solid var(--line); background: var(--paper-strong); text-align: center; }
 .body img { display: block; max-width: 100%; height: auto; margin: 18px auto; }
 .body figure { margin: 18px 0 22px; }
@@ -55,10 +55,10 @@
 .body :is(.callout-summary, .callout-abstract, .callout-tldr, .callout-quote) .callout-body { font-family: var(--display); font-size: 18.5px; line-height: 1.65; letter-spacing: -.01em; }
 .body :is(.callout-question, .callout-faq) { border-left: 3px dashed var(--line); }
 .body .callout-tip :is(.callout-title, summary)::before { content: "→ "; }
-.body :is(.callout-warning, .callout-danger, .callout-failure) { border-left: 3px solid #a66a38; }
-.body :is(.callout-warning, .callout-danger, .callout-failure) :is(.callout-title, summary) { color: #a66a38; }
-.body .callout-bug { border-left: 3px solid #9c6e6e; }
-.body .callout-bug :is(.callout-title, summary) { color: #9c6e6e; }
+.body :is(.callout-warning, .callout-danger, .callout-failure) { border-left: 3px solid var(--warning); }
+.body :is(.callout-warning, .callout-danger, .callout-failure) :is(.callout-title, summary) { color: var(--warning); }
+.body .callout-bug { border-left: 3px solid var(--bug); }
+.body .callout-bug :is(.callout-title, summary) { color: var(--bug); }
 @media (max-width: 720px) {
   /* 설명 열이 지나치게 잘게 접히지 않도록 너비를 확보하고 표 안에서 가로로 읽는다. */
   .body th:not(:first-child), .body td:not(:first-child) { min-width: 180px; }

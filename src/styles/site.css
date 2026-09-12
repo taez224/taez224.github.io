@@ -1,8 +1,8 @@
 :root {
   color-scheme: light;
   --paper: #f7f7f2; --paper-strong: #fdfdfa; --ink: #252e29; --muted: #626d64; --faint: #687267;
-  /* UI는 먹색 하나. 색은 주제색(GRAPH_COLORS)으로만 들어온다. accent 토큰은 이름만 남기고 값은 먹색이다(2026-09-07). */
-  --line: #d8ded4; --accent: #252e29; --accent-soft: #e7e9e3;
+  /* UI의 기본 색은 먹색 하나이며 주제색과 의미 상태색만 예외로 사용한다. accent 토큰은 이름만 남기고 값은 먹색이다(2026-09-07). */
+  --line: #d8ded4; --accent: #252e29; --accent-soft: #e7e9e3; --warning: #985d2f; --bug: #8e5d5d; --highlight: #e7d99b;
   --display: 'Gowun Batang', 'Apple Myungjo', 'Nanum Myeongjo', serif;
   --sans: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
   --t-meta: 13px; --t-side: 14px; --t-body: 17px; --t-list: 20px; --t-h2: 24px; --t-h1: 46px;
@@ -29,7 +29,7 @@ h1, h2, h3, p { margin-top: 0; }
 .hub-mark { position: relative; display: inline-block; width: 11px; height: 11px; margin-right: 8px; border: 1.5px solid var(--accent); border-radius: 50%; vertical-align: 0; }
 .hub-mark::after { content: ""; position: absolute; inset: 2px; border-radius: 50%; background: var(--accent); } /* 지도의 허브 노드처럼 링 안에 점. 빈 링만으로는 눈에 안 띈다. */
 .topic-dot { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 50%; vertical-align: 0; }
-.btn { display: inline-flex; align-items: center; height: 44px; padding: 0 20px; border: 0; border-radius: 4px; background: var(--accent); color: var(--paper-strong); font-size: 15px; font-weight: 600; }
+.btn { display: inline-flex; align-items: center; height: 44px; padding: 0 20px; border: 0; border-radius: 4px; background: var(--accent); color: var(--paper-strong); font-size: 15px; font-weight: 600; line-height: 1.2; }
 .btn:hover { background: var(--muted); color: var(--paper-strong); text-decoration: none; }
 .btn.small { height: 40px; padding: 0 18px; font-size: 14px; }
 .side-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
