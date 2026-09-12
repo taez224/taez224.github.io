@@ -7,7 +7,7 @@ type LedgerRow = ReturnType<typeof blogLedger>[number]['rows'][number];
 // 장부와 목록이 읽지 않는 필드는 빈 값으로 채운다. 채운 값이 결과를 바꾸지 않는지는 아래 단언이 지킨다.
 const blogPost = (title: string, published: string, date = published): BlogPost => ({
   title, published, date, path: `${title}.md`, url: `/posts/${title}/`,
-  publication: '', publishedUrl: '', summary: '', status: '', series: '', seriesOrder: 0
+  publication: '', publishedUrl: '', summary: '', status: '', series: '', seriesOrder: 0, contentMode: 'full'
 });
 const blogSeries = (title: string, lastPublished: string, posts: BlogPost[]): BlogSeries => ({
   title, noteUrl: `/posts/${title}/`, summary: '', status: '', ended: '', lastPublished, posts

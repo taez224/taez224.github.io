@@ -1,14 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { feedItems, renderFeed } from '../src/lib/rss.ts';
+import { feedItems, renderFeed, type FeedNote } from '../src/lib/rss.ts';
 import { SITE_DESCRIPTION } from '../src/lib/site-meta.ts';
 const options = { site: 'https://example.com', basePath: '/obsidian' };
-const note = extra => ({ title: '생각', kind: 'slipbox', type: 'permanent', date: '2026-09-01', url: '/obsidian/notes/test/', summary: '요약', ...extra });
-const post = extra => note({ kind: 'blog', status: 'published', published: '2026-09-02', url: '/obsidian/posts/test/', publishedUrl: 'https://publisher.test/article', ...extra });
-const external = extra => post({ contentMode: 'external', url: '/obsidian/posts/ext/', published: '2026-09-03', ...extra });
-const dev = extra => note({ kind: 'development', category: 'Troubleshooting', date: '2026-09-04', url: '/obsidian/dev/test/', ...extra });
+// 조립 결과가 넘기는 노트 모양. 피드가 읽지 않는 필드는 빈 값으로 둔다.
+const note = (extra: Partial<FeedNote> & Record<string, unknown> = {}): FeedNote => ({
+  title: '생각', displayTitle: '', kind: 'slipbox', type: 'permanent', status: '', published: '',
+  date: '2026-09-01', contentMode: 'full', publishedUrl: '', url: '/obsidian/notes/test/', summary: '요약', ...extra
+});
+const post = (extra: Partial<FeedNote> & Record<string, unknown> = {}) => note({ kind: 'blog', status: 'published', published: '2026-09-02', url: '/obsidian/posts/test/', publishedUrl: 'https://publisher.test/article', ...extra });
+const external = (extra: Partial<FeedNote> & Record<string, unknown> = {}) => post({ contentMode: 'external', url: '/obsidian/posts/ext/', published: '2026-09-03', ...extra });
+const dev = (extra: Partial<FeedNote> & Record<string, unknown> = {}) => note({ kind: 'development', date: '2026-09-04', url: '/obsidian/dev/test/', ...extra });
 test('full articles, notes and development notes link to the garden, external articles link to the publisher; drafts and hubs are excluded', () => {
- const items = feedItems([note(), post(), external(), dev(), post({ status: 'draft' }), note({ type: 'hub' }), note({ type: 'series' }), note({ kind: 'book' })], options);
+ const items = feedItems([note(), post(), external(), dev(), post({ status: 'draft' }), note({ type: 'hub' }), note({ type: 'series' })], options);
  assert.deepEqual(items.map(x=>x.url), ['https://example.com/obsidian/dev/test/', 'https://publisher.test/article', 'https://example.com/obsidian/posts/test/', 'https://example.com/obsidian/notes/test/']);
  assert.deepEqual(items.map(x=>x.label), ['개발 노트', '글', '글', '노트']);
 });
@@ -56,10 +60,10 @@ test('category filtering happens before the limit so a busy notebook cannot disp
 });
 
 test('the unified feed reserves slots per kind so a burst of recent notes cannot displace articles', () => {
- const many = (make, count, prefix) => Array.from({ length: count }, (_, i) => make({ date: `2026-08-${String(30 - (i % 28)).padStart(2, '0')}`, url: `/obsidian/${prefix}/${i}/` }));
+ const many = (make: (extra: Partial<FeedNote>) => FeedNote, count: number, prefix: string) => Array.from({ length: count }, (_, i) => make({ date: `2026-08-${String(30 - (i % 28)).padStart(2, '0')}`, url: `/obsidian/${prefix}/${i}/` }));
  const input = [...many(note, 20, 'notes'), ...many(dev, 20, 'dev'), ...Array.from({ length: 6 }, (_, i) => post({ published: `2024-0${i + 1}-01`, url: `/obsidian/posts/${i}/` }))];
  const items = feedItems(input, { ...options, quota: { blog: 10, slipbox: 10, development: 10 } });
- const count = (kind) => items.filter((item) => item.kind === kind).length;
+ const count = (kind: string) => items.filter((item) => item.kind === kind).length;
  assert.deepEqual([count('blog'), count('slipbox'), count('development')], [6, 10, 10], '글은 있는 만큼 전부, 노트와 개발 노트는 몫만큼');
  assert.deepEqual(items.map((item) => item.date), [...items.map((item) => item.date)].sort().reverse(), '합친 뒤에는 날짜순');
  assert.equal(feedItems(input, { ...options, kinds: ['slipbox'] }).length, 20, '종류별 피드는 몫과 무관하다');
@@ -73,7 +77,7 @@ test('filtered feeds declare their own identity and escape feed metadata', () =>
  assert.ok(!xml.includes('<category>노트</category>'));
 });
 test('items from the same day are ordered by their guid, so editing a title does not reorder the feed', () => {
- const order = (titles) => feedItems([note({ title: titles[0], url: '/obsidian/notes/b/' }), note({ title: titles[1], url: '/obsidian/notes/a/' })], options).map(x => x.url);
+ const order = (titles: string[]) => feedItems([note({ title: titles[0], url: '/obsidian/notes/b/' }), note({ title: titles[1], url: '/obsidian/notes/a/' })], options).map(x => x.url);
  assert.deepEqual(order(['가을', '하늘']), ['https://example.com/obsidian/notes/a/', 'https://example.com/obsidian/notes/b/']);
  assert.deepEqual(order(['하늘', '가을']), order(['가을', '하늘']), '제목을 바꿔도 순서가 같다');
 });

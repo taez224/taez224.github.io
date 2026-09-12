@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGraphGesture } from '../src/graph/gestures.ts';
 const initial = { x: 0, y: 0, scale: 1 };
-const touch = (id, x, y = 100) => ({ id, x, y, touch: true, onNode: true });
-const near = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-8, `${actual} != ${expected}`);
+const touch = (id: number, x: number, y = 100) => ({ id, x, y, touch: true, onNode: true });
+const near = (actual: number, expected: number) => assert.ok(Math.abs(actual - expected) < 1e-8, `${actual} != ${expected}`);
 
 test('pinches from nodes around the two-finger midpoint and suppresses the synthetic click', () => {
   const g = createGraphGesture();
@@ -20,6 +20,7 @@ test('pinch also follows midpoint translation and clamps scale without moving th
   const start = { x: 20, y: -10, scale: 2 };
   g.down(touch(1, 50), start); g.down(touch(2, 150), start);
   const t = g.move(touch(2, 550, 200));
+  assert.ok(t, '두 손가락이 움직이면 변환이 나온다');
   assert.equal(t.scale, 3.2);
   near((300 - t.x) / t.scale, (100 - start.x) / start.scale);
   near((150 - t.y) / t.scale, (100 - start.y) / start.scale);
@@ -28,7 +29,9 @@ test('pinch also follows midpoint translation and clamps scale without moving th
 test('pinch-in obeys the minimum zoom', () => {
   const g = createGraphGesture();
   g.down(touch(1, 0), initial); g.down(touch(2, 200), initial);
-  assert.equal(g.move(touch(2, 10)).scale, .65);
+  const pinched = g.move(touch(2, 10));
+  assert.ok(pinched, '오므리는 동작도 변환을 낸다');
+  assert.equal(pinched.scale, .65);
 });
 
 test('lifting one finger rebases to a smooth single-finger pan', () => {
@@ -36,6 +39,7 @@ test('lifting one finger rebases to a smooth single-finger pan', () => {
   g.down(touch(1, 50), initial); g.down(touch(2, 150), initial);
   const t = g.move(touch(2, 250)); g.end(2);
   const pan = g.move(touch(1, 70, 110));
+  assert.ok(t && pan, '손가락을 하나 떼도 이어서 끌 수 있다');
   near(pan.x, t.x + 20); near(pan.y, t.y + 10); near(pan.scale, t.scale);
 });
 
@@ -66,5 +70,6 @@ test('pinch honours a fit scale below the default minimum instead of jumping to 
   gesture.down({ id: 1, x: 0, y: 0, touch: true }, { x: 0, y: 0, scale: .36 });
   gesture.down({ id: 2, x: 100, y: 0, touch: true }, { x: 0, y: 0, scale: .36 });
   const next = gesture.move({ id: 2, x: 90, y: 0 });
+  assert.ok(next, '맞춤 배율이 기본 최소보다 작아도 변환이 나온다');
   assert.ok(Math.abs(next.scale - .36) < 1e-9, `scale ${next.scale}`);
 });

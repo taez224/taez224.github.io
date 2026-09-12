@@ -49,8 +49,7 @@ export function articleMeta(note: Pick<PublicNote, 'kind' | 'slug' | 'date'>) {
 const LLMS_ORDER: NoteKind[] = ['blog', 'development', 'slipbox'];
 const oneLine = (value: unknown) => String(value ?? '').replace(/\s+/g, ' ').trim();
 
-// kind에는 공개 노트 종류 밖의 값(책)이 섞여 들어올 수 있다. 목록에 넣을 종류만 고르므로 그대로 걸러진다.
-export function llmsText(notes: readonly (Pick<PublicNote, 'url' | 'date' | 'title' | 'summary'> & { kind: string })[], { site, basePath = '', title, description }: { site: string | URL; basePath?: string; title: string; description: string }): string {
+export function llmsText(notes: readonly Pick<PublicNote, 'kind' | 'url' | 'date' | 'title' | 'summary'>[], { site, basePath = '', title, description }: { site: string | URL; basePath?: string; title: string; description: string }): string {
   const home = siteHome(site, basePath).href;
   const lines = [`# ${oneLine(title)}`, '', `> ${oneLine(description)}`, '', `사이트: ${home}`];
   for (const kind of LLMS_ORDER) {

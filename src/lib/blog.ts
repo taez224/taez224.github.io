@@ -1,6 +1,6 @@
 import type { PublicNote } from './content-model.ts';
 
-export type BlogPost = Pick<PublicNote, 'path' | 'title' | 'date' | 'published' | 'url' | 'publication' | 'publishedUrl' | 'summary' | 'status'> & { series: string; seriesOrder: number };
+export type BlogPost = Pick<PublicNote, 'path' | 'title' | 'date' | 'published' | 'url' | 'publication' | 'publishedUrl' | 'summary' | 'status' | 'contentMode'> & { series: string; seriesOrder: number };
 type BlogHub = Pick<BlogPost, 'title' | 'url' | 'summary' | 'status'> & { ended: string };
 export interface BlogSeries { title: string; noteUrl: string; summary: string; status: string; ended: string; lastPublished: string; posts: BlogPost[] }
 export interface Blog { series: BlogSeries[]; publications: { publication: string; posts: BlogPost[] }[]; stats: { posts: number; series: number; standalone: number } }

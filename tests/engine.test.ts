@@ -7,9 +7,9 @@ const edges = [{ source: 'a', target: 'b' }, { source: 'b', target: 'a' }, { sou
 const nodes = [
   { id: 'a', degree: 3, type: 'hub', displayTitle: 'A' },
   { id: 'b', degree: 2, type: 'hub', displayTitle: 'B' },
-  { id: 'c', degree: 9, displayTitle: '짧은 제목' },
-  { id: 'd', degree: 12, displayTitle: '열네 글자를 넘기는 아주아주 긴 제목' },
-  { id: 'e', degree: 1, displayTitle: 'E' }
+  { id: 'c', degree: 9, type: '', displayTitle: '짧은 제목' },
+  { id: 'd', degree: 12, type: '', displayTitle: '열네 글자를 넘기는 아주아주 긴 제목' },
+  { id: 'e', degree: 1, type: '', displayTitle: 'E' }
 ];
 
 test('classifyEdges collapses mutual pairs when nothing is selected', () => {
@@ -24,10 +24,13 @@ test('classifyEdges marks out, in, dim and offsets mutual edges apart when selec
   assert.equal(selected.length, 4);
   const ab = selected.find((e) => e.source === 'a' && e.target === 'b');
   const ba = selected.find((e) => e.source === 'b' && e.target === 'a');
+  const ac = selected.find((e) => e.source === 'a' && e.target === 'c');
+  const de = selected.find((e) => e.source === 'd');
+  assert.ok(ab && ba && ac && de, '네 간선이 모두 분류에 남는다');
   assert.deepEqual([ab.state, ab.mutual, ab.offset], ['out', true, 1]);
   assert.deepEqual([ba.state, ba.mutual, ba.offset], ['in', true, 1]);
-  assert.equal(selected.find((e) => e.source === 'a' && e.target === 'c').state, 'out');
-  assert.equal(selected.find((e) => e.source === 'd').state, 'dim');
+  assert.equal(ac.state, 'out');
+  assert.equal(de.state, 'dim');
 });
 
 test('labelIds follows the idle, selected and hovered rules', () => {

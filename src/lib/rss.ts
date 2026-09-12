@@ -1,6 +1,6 @@
 import type { NoteKind } from './kinds.ts';
 import type { PublicNote } from './content-model.ts';
-type FeedNote = Pick<PublicNote, 'title' | 'displayTitle' | 'kind' | 'type' | 'status' | 'published' | 'date' | 'contentMode' | 'publishedUrl' | 'url' | 'summary'>;
+export type FeedNote = Pick<PublicNote, 'title' | 'displayTitle' | 'kind' | 'type' | 'status' | 'published' | 'date' | 'contentMode' | 'publishedUrl' | 'url' | 'summary'>;
 interface FeedOptions { site: string | URL; basePath?: string; limit?: number; kinds?: readonly NoteKind[]; quota?: Partial<Record<NoteKind, number>> | null; title?: string; description?: string; feedPath?: string }
 interface FeedItem { title: string; kind: NoteKind; label: string; url: string; date: string; pubDate: string; summary: string }
 

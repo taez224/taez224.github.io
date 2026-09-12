@@ -8,7 +8,15 @@ import { assembleGarden } from '../src/lib/garden.ts';
 import { seriesNeighbors } from '../src/lib/note-nav.ts';
 
 const dev = '30_Resources/Development';
-async function makeVault(files) {
+type Garden = Awaited<ReturnType<typeof assembleGarden>>;
+// 조립 결과에서 노트 하나를 꺼낸다. 없으면 그 자체가 실패다.
+function noteAt(garden: Garden, notePath: string) {
+  const note = garden.notes.find((item) => item.path === notePath);
+  assert.ok(note, `${notePath}가 조립 결과에 있다`);
+  return note;
+}
+
+async function makeVault(files: Record<string, string>) {
   const vaultRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'garden-vault-'));
   for (const [file, content] of Object.entries(files)) {
     await fs.mkdir(path.dirname(path.join(vaultRoot, file)), { recursive: true });
@@ -45,25 +53,25 @@ test('assembleGarden publishes reviewed notes with slug urls and no private stri
     '01_Slipbox/생각 A.md', '01_Slipbox/생각 B.md', '20_Projects/blog/공개 글.md',
     `${dev}/Concepts/고립된 개념.md`, `${dev}/Concepts/연결된 개념.md`
   ].sort());
-  assert.equal(byPath.get('20_Projects/blog/공개 글.md').url, '/obsidian/posts/공개-글/');
-  assert.equal(byPath.get('01_Slipbox/생각 A.md').url, '/obsidian/notes/생각-a/');
-  assert.equal(byPath.get(`${dev}/Concepts/연결된 개념.md`).url, '/obsidian/dev/연결된-개념/');
-  const a = byPath.get('01_Slipbox/생각 A.md');
+  assert.equal(noteAt(garden, '20_Projects/blog/공개 글.md').url, '/obsidian/posts/공개-글/');
+  assert.equal(noteAt(garden, '01_Slipbox/생각 A.md').url, '/obsidian/notes/생각-a/');
+  assert.equal(noteAt(garden, `${dev}/Concepts/연결된 개념.md`).url, '/obsidian/dev/연결된-개념/');
+  const a = noteAt(garden, '01_Slipbox/생각 A.md');
   assert.match(a.bodyHtml, /href="\/obsidian\/notes\/생각-b\/"/);
   assert.match(a.bodyHtml, /src="\/obsidian\/assets\/vault\/_attachments\/reviewed\.svg"/);
   assert.deepEqual(a.publicTags, ['AI']);
   assert.deepEqual(a.outgoing, ['01_Slipbox/생각 B.md']);
-  assert.deepEqual(byPath.get('01_Slipbox/생각 B.md').incoming.sort(), ['01_Slipbox/생각 A.md']);
-  assert.match(byPath.get('01_Slipbox/생각 B.md').bodyText, /UNIQUE_BODY_WORD/);
-  assert.deepEqual(byPath.get('01_Slipbox/생각 B.md').aliases, ['별칭 B']);
+  assert.deepEqual(noteAt(garden, '01_Slipbox/생각 B.md').incoming.sort(), ['01_Slipbox/생각 A.md']);
+  assert.match(noteAt(garden, '01_Slipbox/생각 B.md').bodyText, /UNIQUE_BODY_WORD/);
+  assert.deepEqual(noteAt(garden, '01_Slipbox/생각 B.md').aliases, ['별칭 B']);
   assert.equal(JSON.stringify(garden).includes('DRAFT_SENTINEL'), false);
   assert.equal(JSON.stringify(garden).includes('WITHHELD_SENTINEL'), false);
   assert.equal(garden.assetCopies.get('_attachments/reviewed.svg'), 'assets/vault/_attachments/reviewed.svg');
   assert.equal(garden.home.about, '소개 문장');
   assert.equal(garden.books[0].url, '/obsidian/books/#book-좋은-책');
-  assert.equal(byPath.get('20_Projects/blog/공개 글.md').publication, 'Nextree');
-  assert.equal(byPath.get('20_Projects/blog/공개 글.md').topicTag, 'AI', 'blog 태그가 주제로 사용되지 않는다');
-  assert.equal(byPath.get('01_Slipbox/생각 A.md').publication, '');
+  assert.equal(noteAt(garden, '20_Projects/blog/공개 글.md').publication, 'Nextree');
+  assert.equal(noteAt(garden, '20_Projects/blog/공개 글.md').topicTag, 'AI', 'blog 태그가 주제로 사용되지 않는다');
+  assert.equal(noteAt(garden, '01_Slipbox/생각 A.md').publication, '');
 });
 
 test('graphRule linked stops at the first development note: a dev note linked only from another dev note stays out', async () => {
@@ -84,7 +92,7 @@ test('private references are labelled without exposing their metadata, body or l
     '20_Projects/blog/공개 글.md': files['20_Projects/blog/공개 글.md'] + '\n[[20_Projects/blog/초안|작업 메모]]와 [이전 기록](초안.md), [[없는 문서]]를 참고했다.'
   });
   const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
-  const html = garden.notes.find((note) => note.path === '20_Projects/blog/공개 글.md').bodyHtml;
+  const html = noteAt(garden, '20_Projects/blog/공개 글.md').bodyHtml;
   assert.equal((html.match(/class="visibility-mark"/g) ?? []).length, 2);
   assert.match(html, /작업 메모/);
   assert.match(html, /이전 기록/);
@@ -101,17 +109,17 @@ test('thumbnail frontmatter resolves reviewed assets separately from body images
     '20_Projects/blog/assets/cover.svg': '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"/>'
   });
   const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
-  const note = garden.notes.find((note) => note.path === '20_Projects/blog/공개 글.md');
+  const note = noteAt(garden, '20_Projects/blog/공개 글.md');
   assert.equal(note.thumbnail, '20_Projects/blog/assets/cover.svg');
   assert.equal(note.thumbnailStyle, 'soft');
   assert.doesNotMatch(note.bodyHtml, /<img/);
   assert.ok(!garden.assetCopies.has(note.thumbnail), '썸네일만 지정한 원본은 본문 에셋으로 복사하지 않는다');
-  assert.equal(garden.notes.find((note) => note.path === '01_Slipbox/생각 A.md').thumbnail, null);
-  assert.equal(garden.notes.find((note) => note.path === '01_Slipbox/생각 A.md').thumbnailStyle, 'plain');
+  assert.equal(noteAt(garden, '01_Slipbox/생각 A.md').thumbnail, null);
+  assert.equal(noteAt(garden, '01_Slipbox/생각 A.md').thumbnailStyle, 'plain');
 });
 
 test('thumbnails cannot bypass the reviewed asset list and invalid styles fail the build', async () => {
-  const withThumbnail = (extra) => files['20_Projects/blog/공개 글.md'].replace('status: published', `status: published\n${extra}`);
+  const withThumbnail = (extra: string) => files['20_Projects/blog/공개 글.md'].replace('status: published', `status: published\n${extra}`);
   const privateRoot = await makeVault({ ...files,
     '20_Projects/blog/공개 글.md': withThumbnail('thumbnail: "[[_attachments/private.svg]]"'),
     '_attachments/private.svg': '<svg xmlns="http://www.w3.org/2000/svg"/>'
@@ -141,6 +149,7 @@ test('graphRule linked keeps only development notes connected to the thought map
   assert.ok(ids.includes('01_Slipbox/외톨이.md'));
   assert.ok(garden.development.concepts.some((record) => record.path === `${dev}/Concepts/고립된 개념.md`), '고립 노트는 목록에는 남는다');
   const devNode = garden.nodes.find((node) => node.id === `${dev}/Concepts/연결된 개념.md`);
+  assert.ok(devNode, '생각 노트가 링크한 개발 노트는 지도에 있다');
   assert.equal(devNode.topicTag, '개발');
   assert.equal(devNode.topic, '기타', '지도 노드가 3개 미만인 주제는 색이 기타로 접힌다');
   assert.equal(garden.topicFold['개발'], '기타');
@@ -164,6 +173,7 @@ test('summary fallback uses plain text without image or table markup', async () 
   });
   const garden = await assembleGarden({ vaultRoot, config: fallbackConfig, basePath: '/obsidian' });
   const tool = garden.development.tools.find((record) => record.path === `${dev}/Tools/도구.md`);
+  assert.ok(tool, '도구 노트가 개발 노트 목록에 있다');
   assert.equal(tool.summary, '명령 설명 rg 검색 도구를 고르는 기준.');
   assert.doesNotMatch(tool.summary, /!\[|https?:\/\/|\|/);
 });
@@ -180,6 +190,7 @@ test('short summary fallback preserves the final word', async () => {
   });
   const garden = await assembleGarden({ vaultRoot, config: fallbackConfig, basePath: '/obsidian' });
   const tool = garden.development.tools.find((record) => record.path === `${dev}/Tools/짧은 도구.md`);
+  assert.ok(tool, '짧은 도구 노트가 목록에 있다');
   assert.equal(tool.summary, '마지막 어절 보존.');
 });
 
@@ -194,7 +205,7 @@ test('summary omits fenced code while body search preserves it', async () => {
     ].join('\n')
   });
   const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
-  const note = garden.notes.find((note) => note.path === '01_Slipbox/생각 B.md');
+  const note = noteAt(garden, '01_Slipbox/생각 B.md');
   assert.equal(note.summary, '명령의 목적을 설명한다. 본문의 inline API는 남긴다.');
   assert.match(note.bodyText, /CODE_ONLY_SENTINEL/);
   assert.match(note.bodyText, /TILDE_ONLY_SENTINEL/);
@@ -209,7 +220,7 @@ test('automatic summaries and references use only the public body without modify
   ].join('\n');
   const vaultRoot = await makeVault({ ...files, '01_Slipbox/생각 B.md': source });
   const garden = await assembleGarden({ vaultRoot, config });
-  const note = garden.notes.find((note) => note.path === '01_Slipbox/생각 B.md');
+  const note = noteAt(garden, '01_Slipbox/생각 B.md');
   assert.equal(note.summary, '공개 문장. 공개 끝.');
   assert.deepEqual(note.outgoing, []);
   assert.deepEqual(garden.edges.filter((edge) => edge.source === note.path), []);
@@ -228,7 +239,7 @@ test('series and publication summaries exclude author-only sections and retain e
   assert.equal(garden.blog.series[0].summary, '연재 소개.');
   assert.equal(garden.blog.series[0].posts[0].summary, '첫 편 소개.');
   assert.equal(garden.blog.publications[0].posts[0].summary, '독립 글 소개.');
-  assert.equal(garden.notes.find((note) => note.path === '01_Slipbox/생각 B.md').summary, '명시한 요약');
+  assert.equal(noteAt(garden, '01_Slipbox/생각 B.md').summary, '명시한 요약');
   assert.doesNotMatch(JSON.stringify(garden), /HUB_SENTINEL|HUB_TAIL_SENTINEL|POST_SENTINEL|STANDALONE_SENTINEL/);
 });
 
@@ -251,24 +262,24 @@ test('graph and references ignore comments and code while keeping visible links 
     '01_Slipbox/속성 연결.md': '---\ncreated: 2026-09-01\n---\n# 속성 연결\n속성 대상.'
   });
   const garden = await assembleGarden({ vaultRoot, config });
-  const note = garden.notes.find((note) => note.path === '01_Slipbox/생각 A.md');
+  const note = noteAt(garden, '01_Slipbox/생각 A.md');
   const expected = ['본문연결', '카드 연결', '인용 연결', '속성 연결'].map((name) => `01_Slipbox/${name}.md`).sort();
   assert.deepEqual(note.outgoing.toSorted(), expected);
   assert.deepEqual(garden.edges.filter((edge) => edge.source === note.path).map((edge) => edge.target).sort(), expected);
-  assert.deepEqual(garden.notes.find((note) => note.path === '01_Slipbox/생각 B.md').incoming, []);
+  assert.deepEqual(noteAt(garden, '01_Slipbox/생각 B.md').incoming, []);
   assert.match(note.bodyHtml, /<code>\[\[생각 B\]\]<\/code>/);
   assert.equal(note.articleCards.length, 1);
 });
 
 test('series navigation and references survive with related links and no body navigation list', async () => {
-  const post = (order, related, body) => `---\ncreated: 2026-09-0${order}\nstatus: published\nseries: 연재 S\nseries_order: ${order}\nrelated:\n${related.map((link) => `  - "${link}"`).join('\n')}\n---\n# S${order}\n${body}`;
+  const post = (order: number, related: string[], body: string) => `---\ncreated: 2026-09-0${order}\nstatus: published\nseries: 연재 S\nseries_order: ${order}\nrelated:\n${related.map((link: string) => `  - "${link}"`).join('\n')}\n---\n# S${order}\n${body}`;
   const vaultRoot = await makeVault({ ...files,
     '20_Projects/blog/S1.md': post(1, ['[[S2]]', '[[S2#절|두 번째 편]]', '[[초안]]', '[[없는 문서]]'], '본문 1.'),
     '20_Projects/blog/S2.md': post(2, ['[[S1]]', '[[생각 B]]'], '본문 2. [[생각 B]]를 참고한다.')
   });
   const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
-  const s1 = garden.notes.find((note) => note.path === '20_Projects/blog/S1.md');
-  const s2 = garden.notes.find((note) => note.path === '20_Projects/blog/S2.md');
+  const s1 = noteAt(garden, '20_Projects/blog/S1.md');
+  const s2 = noteAt(garden, '20_Projects/blog/S2.md');
   assert.equal(s1.bodyText, '본문 1.');
   assert.deepEqual(s1.headings, []);
   assert.deepEqual(s1.outgoing, [s2.path]);
@@ -277,9 +288,11 @@ test('series navigation and references survive with related links and no body na
   assert.deepEqual(s2.incoming, [s1.path]);
   assert.equal(garden.noteEdges.filter((edge) => edge.source === s2.path && edge.target === '01_Slipbox/생각 B.md').length, 1);
   assert.doesNotMatch(JSON.stringify(garden), /초안|없는 문서|DRAFT_SENTINEL/);
-  assert.equal(seriesNeighbors(s1, garden.blog.series).next.path, s2.path);
-  assert.equal(seriesNeighbors(s2, garden.blog.series).prev.path, s1.path);
-  assert.deepEqual(seriesNeighbors(s1, garden.blog.series).posts.map((post) => post.path), [s1.path, s2.path]);
+  const first = seriesNeighbors(s1, garden.blog.series), second = seriesNeighbors(s2, garden.blog.series);
+  assert.ok(first?.next && second?.prev, '연재의 두 편이 서로 앞뒤로 이어진다');
+  assert.equal(first.next.path, s2.path);
+  assert.equal(second.prev.path, s1.path);
+  assert.deepEqual(first.posts.map((post) => post.path), [s1.path, s2.path]);
 });
 
 test('blog body lists and code mentioning 이전 or 다음 글 are preserved', async () => {
@@ -287,7 +300,7 @@ test('blog body lists and code mentioning 이전 or 다음 글 are preserved', a
     '20_Projects/blog/공개 글.md': files['20_Projects/blog/공개 글.md'] + '\n\n## 본문\n- 본문에서 보존해야 하는 이전 글\n- [[생각 B]] - 다음 글\n\n```md\n- 예시의 이전 글\n```'
   });
   const garden = await assembleGarden({ vaultRoot, config });
-  const note = garden.notes.find((note) => note.path === '20_Projects/blog/공개 글.md');
+  const note = noteAt(garden, '20_Projects/blog/공개 글.md');
   assert.match(note.bodyHtml, /본문에서 보존해야 하는 이전 글/);
   assert.match(note.bodyHtml, /생각 B<\/a> - 다음 글/);
   assert.match(note.bodyHtml, /<code class="language-md">- 예시의 이전 글/);
@@ -298,7 +311,7 @@ test('related links use the public graph candidates and ignore plain text and un
     '01_Slipbox/생각 A.md': '---\ncreated: 2026-09-01\nrelated:\n  - "[[생각 B]]"\n  - "[[생각 B#절|별칭]]"\n  - "[[30_Resources/Development/Concepts/연결된 개념]]"\n  - "[[20_Projects/blog/초안]]"\n  - "[[20_Projects/blog/공개 글]]"\n  - "[[비공개 개념]]"\n  - 고립된 개념\n---\n# 생각 A\n연결은 속성에만 둔다.'
   });
   const garden = await assembleGarden({ vaultRoot, config });
-  const a = garden.notes.find((note) => note.path === '01_Slipbox/생각 A.md');
+  const a = noteAt(garden, '01_Slipbox/생각 A.md');
   assert.deepEqual(a.outgoing.sort(), ['01_Slipbox/생각 B.md', `${dev}/Concepts/연결된 개념.md`, '20_Projects/blog/공개 글.md'].sort());
   assert.deepEqual(garden.edges.filter((edge) => edge.source === a.path).map((edge) => edge.target).sort(), ['01_Slipbox/생각 B.md', `${dev}/Concepts/연결된 개념.md`].sort());
   assert.doesNotMatch(JSON.stringify(garden), /초안|비공개 개념|DRAFT_SENTINEL|WITHHELD_SENTINEL/);
@@ -318,7 +331,7 @@ test('folder publication picks up new development notes without publishing helpe
     [`${dev}/Concepts/qmd-eval.json`]: '{"query":"EVAL_SENTINEL"}'
   });
   const garden = await assembleGarden({ vaultRoot, config: folderConfig, basePath: '/obsidian' });
-  const added = garden.notes.find((note) => note.path === `${dev}/Concepts/새 개념.md`);
+  const added = noteAt(garden, `${dev}/Concepts/새 개념.md`);
   assert.ok(added);
   assert.match(added.bodyHtml, /href="\/obsidian\/dev\/연결된-개념\/"/);
   for (const sentinel of ['HELPER_SENTINEL', 'LOCAL_SENTINEL', 'EVAL_SENTINEL', 'WITHHELD_SENTINEL']) {
@@ -330,7 +343,7 @@ test('folder publication picks up new development notes without publishing helpe
 test('public notes carry a reading time of at least one minute', async () => {
   const vaultRoot = await makeVault(files);
   const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
-  const short = garden.notes.find((note) => note.path === '01_Slipbox/생각 B.md');
+  const short = noteAt(garden, '01_Slipbox/생각 B.md');
   assert.equal(short.readingMinutes, 1);
   for (const note of garden.notes) assert.ok(Number.isInteger(note.readingMinutes) && note.readingMinutes >= 1, note.path);
 });
@@ -370,8 +383,8 @@ test('external blog notes expose metadata and links while excluding original bod
     '20_Projects/blog/assets/external-cover.svg': '<svg xmlns="http://www.w3.org/2000/svg"/>'
   });
   const garden = await assembleGarden({ vaultRoot, config: nextreeConfig, basePath: '/obsidian' });
-  const external = garden.notes.find((note) => note.path === '20_Projects/blog/외부 원문.md');
-  const referring = garden.notes.find((note) => note.path === '01_Slipbox/생각 A.md');
+  const external = noteAt(garden, '20_Projects/blog/외부 원문.md');
+  const referring = noteAt(garden, '01_Slipbox/생각 A.md');
   assert.equal(external.contentMode, 'external');
   assert.equal(external.externalPublisher, '넥스트리');
   assert.equal(external.published, '2026-09-07');
@@ -383,6 +396,7 @@ test('external blog notes expose metadata and links while excluding original bod
   assert.deepEqual(external.articleCards, []);
   assert.equal(external.publishedUrl, 'https://www.nextree.io/external-post');
   const externalPost = garden.blog.publications.flatMap((group) => group.posts).find((item) => item.path === external.path);
+  assert.ok(externalPost, '외부 발행 글도 글 목록에 있다');
   assert.equal(externalPost.summary, external.summary, '글 목록과 노트 엔트리가 같은 요약 규칙을 쓴다');
   assert.equal(externalPost.contentMode, external.contentMode);
   assert.equal(external.thumbnail, '20_Projects/blog/assets/external-cover.svg');
@@ -406,8 +420,9 @@ test('external notes without an explicit summary do not fall back to body excerp
     ].join('\n')
   });
   const garden = await assembleGarden({ vaultRoot, config: nextreeConfig, basePath: '/obsidian' });
-  const note = garden.notes.find((item) => item.path === '20_Projects/blog/요약 없는 외부 글.md');
+  const note = noteAt(garden, '20_Projects/blog/요약 없는 외부 글.md');
   const post = garden.blog.publications.flatMap((group) => group.posts).find((item) => item.path === note.path);
+  assert.ok(post, '요약 없는 외부 글도 글 목록에 있다');
   assert.equal(note.summary, '');
   assert.equal(note.summaryIsExplicit, false);
   assert.equal(post.summary, '');
@@ -425,7 +440,7 @@ test('published posts from other publishers keep the full body and ordinary summ
     ].join('\n')
   });
   const garden = await assembleGarden({ vaultRoot, config: nextreeConfig, basePath: '/obsidian' });
-  const note = garden.notes.find((item) => item.path === '20_Projects/blog/다른 발행처 글.md');
+  const note = noteAt(garden, '20_Projects/blog/다른 발행처 글.md');
   assert.equal(note.contentMode, 'full');
   assert.equal(note.externalPublisher, '');
   assert.match(note.bodyHtml, /OTHER_PUBLISHER_BODY/);
@@ -437,7 +452,7 @@ test('every outline id exists in the rendered body so sidebar links land on a he
   const note = '---\ncreated: 2026-09-07\n---\n# 콜아웃 노트\n## 배경\n본문\n\n> [!note]\n> ## 배경\n> 콜아웃 본문\n';
   const vaultRoot = await makeVault({ ...files, '01_Slipbox/콜아웃 노트.md': note });
   const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
-  const entry = garden.notes.find((item) => item.path === '01_Slipbox/콜아웃 노트.md');
+  const entry = noteAt(garden, '01_Slipbox/콜아웃 노트.md');
   const renderedIds = [...entry.bodyHtml.matchAll(/<h[1-6][^>]*\sid="([^"]+)"/g)].map((match) => match[1]);
   assert.deepEqual(renderedIds, [...new Set(renderedIds)], '헤딩 id가 중복되지 않는다');
   for (const heading of entry.headings) assert.ok(renderedIds.includes(heading.id), `목차 id ${heading.id}가 본문에 없다`);
@@ -450,8 +465,8 @@ test('a basename shared with an unpublished draft still links to the public note
     '01_Slipbox/참조.md': '---\ncreated: 2026-09-07\n---\n# 참조\n[[AI 활용]]을 참조한다.'
   });
   const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
-  const referrer = garden.notes.find((note) => note.path === '01_Slipbox/참조.md');
-  const target = garden.notes.find((note) => note.path === '20_Projects/blog/AI 활용.md');
+  const referrer = noteAt(garden, '01_Slipbox/참조.md');
+  const target = noteAt(garden, '20_Projects/blog/AI 활용.md');
   assert.match(referrer.bodyHtml, new RegExp(`href="${target.url}"`));
   assert.doesNotMatch(referrer.bodyHtml, /private-note/);
   assert.ok(referrer.outgoing.includes('20_Projects/blog/AI 활용.md'));
@@ -462,15 +477,15 @@ test('frontmatter normalizes null values and scalar whitespace', async () => {
     '01_Slipbox/정규화.md': '---\ncreated: 2026-09-07\nstatus: null\ntype: hub   \npublication: null\n---\n# 정규화\n본문.'
   });
   const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
-  const note = garden.notes.find((item) => item.path === '01_Slipbox/정규화.md');
+  const note = noteAt(garden, '01_Slipbox/정규화.md');
   assert.equal(note.status, '');
   assert.equal(note.type, 'hub');
   assert.equal(note.publication, '');
 });
 
 test('a series hub stays off the site until one of its posts is published', async () => {
-  const hub = (name) => `---\ncreated: 2026-09-01\ntype: series\nstatus: active\nsummary: ${name} 소개\n---\n# ${name}\n연재 소개.`;
-  const episode = (name, status) => `---\ncreated: 2026-09-02\nstatus: ${status}\nseries: ${name}\nseries_order: 1\nsource: https://example.com/${status}\n---\n# ${name} 1화\n본문.`;
+  const hub = (name: string) => `---\ncreated: 2026-09-01\ntype: series\nstatus: active\nsummary: ${name} 소개\n---\n# ${name}\n연재 소개.`;
+  const episode = (name: string, status: string) => `---\ncreated: 2026-09-02\nstatus: ${status}\nseries: ${name}\nseries_order: 1\nsource: https://example.com/${status}\n---\n# ${name} 1화\n본문.`;
   const vaultRoot = await makeVault({ ...files,
     '20_Projects/blog/준비 중 연재.md': hub('준비 중 연재'),
     '20_Projects/blog/준비 중 연재 1화.md': episode('준비 중 연재', 'draft'),
@@ -486,8 +501,8 @@ test('a series hub stays off the site until one of its posts is published', asyn
 
 test('a series is dated by its latest published episode, not by the hub last_published field', async () => {
   // 허브의 last_published는 손으로 적는 값이라 새 편을 발행하고 고치지 않으면 옛 날짜로 남는다.
-  const hub = (name, lastPublished) => `---\ncreated: 2026-01-01\ntype: series\nlast_published: ${lastPublished}\n---\n# ${name}\n연재 소개.`;
-  const episode = (name, order, published) => `---\ncreated: 2026-01-01\npublished: ${published}\nstatus: published\nseries: ${name}\nseries_order: ${order}\n---\n# ${name} ${order}화\n본문.`;
+  const hub = (name: string, lastPublished: string) => `---\ncreated: 2026-01-01\ntype: series\nlast_published: ${lastPublished}\n---\n# ${name}\n연재 소개.`;
+  const episode = (name: string, order: number, published: string) => `---\ncreated: 2026-01-01\npublished: ${published}\nstatus: published\nseries: ${name}\nseries_order: ${order}\n---\n# ${name} ${order}화\n본문.`;
   const vaultRoot = await makeVault({ ...files,
     '20_Projects/blog/잊힌 허브.md': hub('잊힌 허브', '2020-01-01'),
     '20_Projects/blog/잊힌 허브 1화.md': episode('잊힌 허브', 1, '2026-09-05'),
@@ -513,7 +528,7 @@ test('an author-only section is cut from the published body but stays in the vau
     '20_Projects/blog/검증 연재 1화.md': '---\ncreated: 2026-09-02\nstatus: published\nseries: 검증 연재\nseries_order: 1\n---\n# 검증 연재 1화\n본문.'
   });
   const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
-  const note = garden.notes.find((item) => item.path === '20_Projects/blog/검증 연재.md');
+  const note = noteAt(garden, '20_Projects/blog/검증 연재.md');
   assert.ok(note, '허브는 사이트에 있다');
   assert.doesNotMatch(note.bodyHtml, /운영 메모|OPERATIONAL_SENTINEL|frontmatter/);
   assert.doesNotMatch(note.bodyText, /OPERATIONAL_SENTINEL/, '검색 색인에도 남지 않는다');
@@ -536,7 +551,7 @@ test('an author-only section ends at the next heading, not at a comment line ins
     '20_Projects/blog/검증 연재 1화.md': '---\ncreated: 2026-09-02\nstatus: published\nseries: 검증 연재\nseries_order: 1\n---\n# 검증 연재 1화\n본문.'
   });
   const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
-  const note = garden.notes.find((item) => item.path === '20_Projects/blog/검증 연재.md');
+  const note = noteAt(garden, '20_Projects/blog/검증 연재.md');
   assert.doesNotMatch(note.bodyHtml, /운영 메모|OPERATIONAL_SENTINEL|TAIL_SENTINEL/, '코드 블록 안의 # 줄에서 절이 끝나지 않는다');
   assert.match(note.bodyHtml, /연관된 노트/, '다음 절은 남는다');
 });
@@ -554,7 +569,7 @@ test('blank optional YAML dates are accepted while blank created is rejected', a
   const notePath = '01_Slipbox/생각 B.md';
   const vaultRoot = await makeVault({ ...files, [notePath]: '---\ncreated: 2026-09-02\npublished:\nupdated:\n---\n# 생각 B\n공개 본문.' });
   const garden = await assembleGarden({ vaultRoot, config, today: '2026-09-11' });
-  const note = garden.notes.find((note) => note.path === notePath);
+  const note = noteAt(garden, notePath);
   assert.equal(note.date, '2026-09-02');
   assert.equal(note.published, '');
   assert.equal(note.updated, '');
@@ -571,7 +586,7 @@ test('assembly uses first publication dates for blog, slipbox and development no
   });
   const garden = await assembleGarden({ vaultRoot, config, today: '2026-09-11' });
   for (const notePath of ['01_Slipbox/생각 B.md', `${dev}/Concepts/연결된 개념.md`, '20_Projects/blog/공개 글.md']) {
-    const note = garden.notes.find((note) => note.path === notePath);
+    const note = noteAt(garden, notePath);
     assert.equal(note.date, '2026-09-10');
     assert.equal(note.updated, '');
   }
@@ -584,7 +599,7 @@ test('public notes carry updated only when it is later than their date, and exte
     '20_Projects/blog/외부 원문.md': '---\ncreated: 2026-09-06\npublished: 2026-09-07\nupdated: 2026-09-09\nstatus: published\nsource: https://www.nextree.io/external-post\npublication: Nextree 기술 블로그\nsummary: 외부 글 요약\n---\n# 외부 원문\n본문.'
   });
   const garden = await assembleGarden({ vaultRoot, config: nextreeConfig, today: '2026-09-11' });
-  const byPath = (notePath) => garden.notes.find((note) => note.path === notePath);
+  const byPath = (notePath: string) => noteAt(garden, notePath);
   assert.equal(byPath('01_Slipbox/생각 A.md').updated, '2026-09-08');
   assert.equal(byPath('01_Slipbox/생각 B.md').updated, '');
   assert.equal(byPath('20_Projects/blog/외부 원문.md').updated, '', '본문을 싣지 않는 외부 발행 글은 수정일을 내보내지 않는다');

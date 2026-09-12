@@ -22,7 +22,9 @@ export function graphTitleLines(title: string, limit: number): string[] {
 }
 
 // 평소에 제목을 보이는 노드. 허브와 연결 많고 짧은 제목(14자 이하). 선택 중에는 선택 노드와 허브 이웃만.
-export function labelIds(nodes: readonly GraphNode[], edges: readonly GraphEdge[], { selected = null, hovered = null }: { selected?: string | null; hovered?: string | null } = {}): Set<string> {
+// 제목을 고를 때 읽는 값만 받는다. 제목은 displayTitle이나 title 중 있는 것을 쓴다.
+export type LabelNode = Pick<GraphNode, 'id' | 'type' | 'degree'> & Partial<Pick<GraphNode, 'title' | 'displayTitle'>>;
+export function labelIds(nodes: readonly LabelNode[], edges: readonly GraphEdge[], { selected = null, hovered = null }: { selected?: string | null; hovered?: string | null } = {}): Set<string> {
   const ids = new Set<string>();
   if (selected) {
     ids.add(selected);
@@ -80,7 +82,7 @@ export function labelGeometry(p: Point, r: number, lines: string[], placement: s
 // 제목 배치. order는 우선순위 순의 [{ node, mustPlace }]. 후보 자리를 차례로 시도해 이미 놓인 제목·장애물과 겹치지 않고
 // 보이는 범위(inside) 안에 드는 첫 자리를 준다. mustPlace는 자리가 없어도 아래에 둔다. 같은 노드는 한 번만 놓는다.
 // 결과는 id → { placement, lines, g }. 엔진(살아 있는 지도)과 스냅샷(정적 SVG)이 같은 규칙으로 그린다.
-export function placeLabels<T extends GraphNode>(order: readonly { node: T; mustPlace: boolean }[], { positions, radius, u = 1, obstacles = [], inside = () => true, labelGap = 0 }: { positions: ReadonlyMap<string, Point>; radius: (node: T) => number; u?: number; obstacles?: readonly Box[]; inside?: (box: Box) => boolean; labelGap?: number }) {
+export function placeLabels<T extends Pick<GraphNode, 'id'> & Partial<Pick<GraphNode, 'title' | 'displayTitle'>>>(order: readonly { node: T; mustPlace: boolean }[], { positions, radius, u = 1, obstacles = [], inside = () => true, labelGap = 0 }: { positions: ReadonlyMap<string, Point>; radius: (node: T) => number; u?: number; obstacles?: readonly Box[]; inside?: (box: Box) => boolean; labelGap?: number }) {
   const placed: Box[] = [], plan = new Map<string, { placement: string; lines: string[]; g: ReturnType<typeof labelGeometry> }>();
   for (const { node, mustPlace } of order) {
     if (plan.has(node.id)) continue;

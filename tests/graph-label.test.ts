@@ -18,16 +18,22 @@ test('estimateTextWidth weighs hangul, latin and punctuation differently and sca
 import { placeLabels, labelGeometry } from '../src/graph/label.ts';
 
 const radius = () => 6;
-const at = (x, y) => ({ x, y });
+const at = (x: number, y: number) => ({ x, y });
+// 배치 결과에서 한 노드의 계획을 꺼낸다. 자리를 잡지 못했다면 그 자체가 실패다.
+const planFor = <T>(plan: ReadonlyMap<string, T>, id: string): T => {
+  const entry = plan.get(id);
+  assert.ok(entry, `${id}의 제목 자리가 잡힌다`);
+  return entry;
+};
 
 test('placeLabels puts a free label below its node and moves it above when that slot is blocked', () => {
   const a = { id: 'a', title: '에이' };
   const positions = new Map([['a', at(100, 100)]]);
   const free = placeLabels([{ node: a, mustPlace: true }], { positions, radius });
-  assert.equal(free.get('a').placement, 'below');
-  assert.deepEqual(free.get('a').lines, ['에이']);
+  assert.equal(planFor(free, 'a').placement, 'below');
+  assert.deepEqual(planFor(free, 'a').lines, ['에이']);
   const below = labelGeometry(at(100, 100), 6, ['에이'], 'below', 1).box;
-  assert.equal(placeLabels([{ node: a, mustPlace: true }], { positions, radius, obstacles: [below] }).get('a').placement, 'above');
+  assert.equal(planFor(placeLabels([{ node: a, mustPlace: true }], { positions, radius, obstacles: [below] }), 'a').placement, 'above');
 });
 
 test('placeLabels keeps later labels off earlier ones: below blocked by an obstacle and above blocked by a label sends it right', () => {
@@ -35,8 +41,8 @@ test('placeLabels keeps later labels off earlier ones: below blocked by an obsta
   const positions = new Map([['a', at(100, 100)], ['b', at(100, 130)]]);
   const belowB = labelGeometry(at(100, 130), 6, ['비'], 'below', 1).box;
   const plan = placeLabels([{ node: a, mustPlace: true }, { node: b, mustPlace: true }], { positions, radius, obstacles: [belowB] });
-  assert.equal(plan.get('a').placement, 'below');
-  assert.equal(plan.get('b').placement, 'right');
+  assert.equal(planFor(plan, 'a').placement, 'below');
+  assert.equal(planFor(plan, 'b').placement, 'right');
 });
 
 test('placeLabels skips optional labels with no room, forces required ones below, and places a node once', () => {
@@ -46,14 +52,14 @@ test('placeLabels skips optional labels with no room, forces required ones below
   assert.equal(placeLabels([{ node: a, mustPlace: false }], { positions, radius, obstacles: everywhere }).size, 0);
   const forced = placeLabels([{ node: a, mustPlace: true }, { node: a, mustPlace: false }], { positions, radius, obstacles: everywhere });
   assert.equal(forced.size, 1);
-  assert.equal(forced.get('a').placement, 'below');
+  assert.equal(planFor(forced, 'a').placement, 'below');
 });
 
 test('placeLabels avoids slots outside the visible area', () => {
   const a = { id: 'a', title: '에이' };
   const positions = new Map([['a', at(100, 630)]]);
-  const inside = (box) => box.top >= 0 && box.bottom <= 640;
-  assert.equal(placeLabels([{ node: a, mustPlace: true }], { positions, radius, inside }).get('a').placement, 'above');
+  const inside = (box: { top: number; bottom: number }) => box.top >= 0 && box.bottom <= 640;
+  assert.equal(planFor(placeLabels([{ node: a, mustPlace: true }], { positions, radius, inside }), 'a').placement, 'above');
 });
 
 test('label spacing separates nearby titles at each zoom while keeping their full text', () => {
@@ -63,11 +69,11 @@ test('label spacing separates nearby titles at each zoom while keeping their ful
     const order = [a, b].map((node) => ({ node, mustPlace: false }));
     const options = { positions, radius: () => 6 * u, u };
     const tight = placeLabels(order, options);
-    assert.equal(tight.get('b').placement, 'below');
+    assert.equal(planFor(tight, 'b').placement, 'below');
     const spaced = placeLabels(order, { ...options, labelGap: 8 });
     assert.equal(spaced.size, 2);
-    assert.deepEqual(spaced.get('b').lines, ['비']);
-    const x = spaced.get('a').g.box, y = spaced.get('b').g.box;
+    assert.deepEqual(planFor(spaced, 'b').lines, ['비']);
+    const x = planFor(spaced, 'a').g.box, y = planFor(spaced, 'b').g.box;
     assert.ok(x.right + 8 * u <= y.left || y.right + 8 * u <= x.left || x.bottom + 8 * u <= y.top || y.bottom + 8 * u <= x.top);
   }
 });

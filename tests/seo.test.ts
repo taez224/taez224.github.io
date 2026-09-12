@@ -57,7 +57,6 @@ test('llms.txt lists public notes by kind, newest first, with absolute urls', ()
     { kind: 'slipbox' as const, title: '생각', url: '/obsidian/notes/생각/', summary: '한 줄\n요약', date: '2026-08-01' },
     { kind: 'blog' as const, title: '옛 글', url: '/obsidian/posts/old/', summary: '', date: '2026-01-01' },
     { kind: 'blog' as const, title: '새 글', url: '/obsidian/posts/new/', summary: '요약', date: '2026-09-01' },
-    { kind: 'book' as const, title: '책', url: '/obsidian/books/#b', summary: '', date: '2026-09-02' }
   ];
   const text = llmsText(notes, { site: 'https://example.com', basePath: '/obsidian', title: '정원', description: '소개' });
   const lines = text.split('\n');
@@ -69,5 +68,4 @@ test('llms.txt lists public notes by kind, newest first, with absolute urls', ()
   assert.ok(text.includes('- [새 글](https://example.com/obsidian/posts/new/): 요약'));
   assert.ok(text.includes('- [옛 글](https://example.com/obsidian/posts/old/)\n'), '요약이 없으면 콜론을 붙이지 않는다');
   assert.ok(text.includes(': 한 줄 요약'), '여러 줄 요약은 한 줄로 만든다');
-  assert.ok(!text.includes('책'), '책은 목록에 넣지 않는다');
 });

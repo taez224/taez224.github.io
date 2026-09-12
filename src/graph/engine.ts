@@ -34,7 +34,7 @@ export function classifyEdges(edges: readonly GraphEdge[], selected: string | nu
   return result;
 }
 
-export function hoverLabelCandidates<T extends GraphNode>(nodes: readonly T[], edges: readonly GraphEdge[], hovered: string) {
+export function hoverLabelCandidates<T extends Pick<GraphNode, 'id' | 'type' | 'degree'>>(nodes: readonly T[], edges: readonly GraphEdge[], hovered: string) {
   const neighbors = new Set();
   for (const edge of edges) {
     if (edge.source === hovered) neighbors.add(edge.target);
@@ -67,7 +67,7 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 const LAYOUT = { width: 1000, height: 640 };
 
 // 범례 필터(주제 집합, 허브만)에 걸려 흐려질 노드인지. 선택된 노드는 호출 쪽에서 제외한다.
-export function isFilteredOut(node: GraphNode | undefined, { topics = null, hubsOnly = false }: GraphFilter = {}) {
+export function isFilteredOut(node: Pick<GraphNode, 'topic' | 'type'> | undefined, { topics = null, hubsOnly = false }: GraphFilter = {}) {
   if (!node) return false;
   if (topics && !topics.has(node.topic)) return true;
   if (hubsOnly && node.type !== 'hub') return true;

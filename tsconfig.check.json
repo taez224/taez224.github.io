@@ -11,17 +11,9 @@
     "scripts/**/*.ts",
     "tests/**/*.ts"
   ],
-  // 아직 타입을 맞추지 못한 테스트다. 한 파일씩 고쳐 목록에서 빼고, 비면 이 항목을 지운다.
   "exclude": [
     "node_modules",
     "dist",
-    ".astro",
-    "tests/engine.test.ts",
-    "tests/garden.test.ts",
-    "tests/graph-gestures.test.ts",
-    "tests/graph-label.test.ts",
-    "tests/loader.test.ts",
-    "tests/note-nav.test.ts",
-    "tests/rss.test.ts"
+    ".astro"
   ]
 }

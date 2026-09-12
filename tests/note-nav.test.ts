@@ -16,6 +16,7 @@ const series = [{
 
 test('seriesNeighbors: 가운데 편은 앞뒤가 있고, 첫·마지막 편은 한쪽만 있다', () => {
   const middle = seriesNeighbors({ path: 'blog/a2.md' }, series);
+  assert.ok(middle?.prev && middle.next && middle.first, '가운데 편은 앞뒤와 첫 편을 모두 찾는다');
   assert.equal(middle.title, '연재 A');
   assert.equal(middle.url, '/obsidian/posts/series-a/');
   assert.equal(middle.prev.title, '1편');
@@ -25,12 +26,13 @@ test('seriesNeighbors: 가운데 편은 앞뒤가 있고, 첫·마지막 편은 
   assert.equal(middle.total, 3);
   assert.equal(middle.position, 2);
   assert.deepEqual(middle.posts.map((post) => post.title), ['1편', '2편', '3편']);
-  assert.equal(seriesNeighbors({ path: 'blog/a1.md' }, series).prev, null);
-  assert.equal(seriesNeighbors({ path: 'blog/a3.md' }, series).next, null);
+  assert.equal(seriesNeighbors({ path: 'blog/a1.md' }, series)?.prev, null);
+  assert.equal(seriesNeighbors({ path: 'blog/a3.md' }, series)?.next, null);
 });
 
 test('seriesNeighbors: 허브는 noteUrl로 식별하고 첫 공개 편으로 진입한다', () => {
   const hub = seriesNeighbors({ type: 'series', url: '/obsidian/posts/series-a/' }, series);
+  assert.ok(hub?.first && hub.next, '허브는 첫 공개 편으로 들어간다');
   assert.equal(hub.isHub, true);
   assert.equal(hub.first.title, '1편');
   assert.equal(hub.next.title, '1편');
@@ -40,14 +42,16 @@ test('seriesNeighbors: 허브는 noteUrl로 식별하고 첫 공개 편으로 �
 });
 
 test('seriesNeighbors: 초안은 공개 편 목록과 이웃에서 제외한다', () => {
-  const withDraft = [{ ...series[0], posts: [...series[0].posts, { path: 'blog/draft.md', title: '초안', status: 'draft' }] }];
+  const withDraft = [{ ...series[0], posts: [...series[0].posts, { path: 'blog/draft.md', title: '초안', url: '/obsidian/posts/draft/', status: 'draft' }] }];
   const result = seriesNeighbors({ path: 'blog/a3.md' }, withDraft);
+  assert.ok(result, '초안이 섞여 있어도 연재를 찾는다');
   assert.equal(result.total, 3);
   assert.equal(result.posts.some((post) => post.title === '초안'), false);
 });
 
 test('seriesNeighbors: 빈 연재 허브는 안전하게 반환한다', () => {
   const empty = seriesNeighbors({ type: 'series', url: '/obsidian/posts/empty/' }, [{ title: '빈 연재', noteUrl: '/obsidian/posts/empty/', posts: [] }]);
+  assert.ok(empty, '편이 없는 허브도 결과를 낸다');
   assert.equal(empty.isHub, true);
   assert.equal(empty.first, null);
   assert.equal(empty.next, null);
