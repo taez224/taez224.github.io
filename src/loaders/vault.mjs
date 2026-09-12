@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { getGarden, invalidateGarden, projectPaths } from '../lib/get-garden.mjs';
-import { kindPrefix } from '../lib/slug.mjs';
+import { kindPrefix } from '../lib/slug.ts';
 import { BOOKS_PATH } from '../lib/books.mjs';
 import { createRefreshCoordinator } from './refresh-coordinator.mjs';
 

@@ -1,5 +1,5 @@
 import { kindLabel } from './format.mjs';
-import { KINDS } from './kinds.mjs';
+import { KINDS } from './kinds.ts';
 
 // 리더의 상위 링크. 메타 줄의 종류 라벨과 본문 끝 링크가 같은 곳을 가리킨다.
 // 글 → 글 목록, 개발 노트 → 개발 노트 목록, 노트 → 생각 지도(이 노트를 선택한 채로).

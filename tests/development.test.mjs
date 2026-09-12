@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { groupDevelopment, technologyTags, selectDevelopmentRecords } from '../src/lib/development.mjs';
+import { groupDevelopment, technologyTags, selectDevelopmentRecords } from '../src/lib/development.ts';
 
 const record = (category, title, tag, date) => ({ category, title, path: `${title}.md`, date, tags: [`개발/${tag}`] });
 const records = [

@@ -1,33 +1,55 @@
 // 노트 날짜 규칙. 조립 단계가 여기서 한 번 검증하고, 페이지·목록·RSS·OG 카드는 결과를 다시 검사하지 않는다.
 // vault-lint(vault의 .agents/skills/vault-lint/scripts/lint_scan.py)가 같은 규칙으로 쓰는 단계에서 먼저 알린다. 규칙을 바꾸면 함께 고친다.
+export interface DateContext {
+  path: string;
+  today: string;
+}
+
+export interface NoteDates {
+  date: string;
+  published: string;
+  updated: string;
+}
+
+type DateField = 'created' | 'published' | 'updated';
+type DateMetadata = Partial<Record<DateField, unknown>>;
+type Sortable = { date?: unknown; title?: unknown };
+type Comparator<T> = (left: T, right: T) => number;
+
 const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const KST_OFFSET_MS = 9 * 3600000;
 
 // 빌드한 날은 한국 날짜로 센다. CI는 UTC로 돌고, 04:00 KST 예약 빌드는 UTC로 전날 19:00이라 UTC 날짜로 세면 그날 쓴 노트가 미래가 된다.
-export function kstDate(now = new Date()) {
+export function kstDate(now: Date = new Date()): string {
   return new Date(now.getTime() + KST_OFFSET_MS).toISOString().slice(0, 10);
 }
 
 // 책의 created처럼 시각이 붙을 수 있는 값에서 날짜만 뽑는다. 책 날짜는 화면에 나오지 않아 검증하지 않는다.
-export function dateOnly(value) {
+export function dateOnly(value: unknown): string {
   return String(value ?? '').match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? '';
 }
 
 // 목록의 정렬 기준. 최신 날짜가 먼저 오고, 같은 날이면 제목 가나다순이라 빌드마다 순서가 같다.
 // 날짜가 YYYY-MM-DD 문자열이라 문자열 비교가 곧 시간 비교이고, 날짜가 없는 항목은 맨 뒤로 간다.
-export function newestFirst(dateOf = (item) => item.date, titleOf = (item) => item.title) {
+export function newestFirst<T extends Sortable>(): Comparator<T>;
+export function newestFirst<T extends Pick<Sortable, 'title'>>(dateOf: (item: T) => unknown): Comparator<T>;
+export function newestFirst<T>(dateOf: (item: T) => unknown, titleOf: (item: T) => unknown): Comparator<T>;
+export function newestFirst<T>(
+  dateOf: (item: T) => unknown = (item) => (item as Sortable).date,
+  titleOf: (item: T) => unknown = (item) => (item as Sortable).title
+): Comparator<T> {
   return (left, right) => String(dateOf(right) ?? '').localeCompare(String(dateOf(left) ?? ''))
     || String(titleOf(left) ?? '').localeCompare(String(titleOf(right) ?? ''), 'ko');
 }
 
 // 2026-02-30은 Date가 3월로 넘기거나 거부한다. 되돌린 문자열이 같아야 달력에 있는 날이다.
-function isCalendarDay(value) {
+function isCalendarDay(value: string): boolean {
   if (!DAY_PATTERN.test(value)) return false;
   const time = Date.parse(`${value}T00:00:00Z`);
   return Number.isFinite(time) && new Date(time).toISOString().slice(0, 10) === value;
 }
 
-function readDate(meta, field, { path, today }) {
+function readDate(meta: DateMetadata, field: DateField, { path, today }: DateContext): string {
   const raw = meta[field];
   // frontmatter 파서는 값 없는 키를 빈 배열로 읽고, null 표기는 null로 읽는다.
   if (raw === null || raw === undefined || raw === '' || (Array.isArray(raw) && raw.length === 0)) return '';
@@ -40,7 +62,7 @@ function readDate(meta, field, { path, today }) {
 
 // 모든 공개 노트는 published를 우선하고, 없으면 created를 쓴다. updated는 표시 날짜보다 늦을 때만 남긴다.
 // 발행 전이나 같은 날 고친 것은 독자에게 수정이 아니므로 오류로 보지 않고 버린다.
-export function noteDates(meta, { path, today }) {
+export function noteDates(meta: DateMetadata, { path, today }: DateContext): NoteDates {
   const created = readDate(meta, 'created', { path, today });
   if (!created) throw new Error(`Missing created date in ${path}`);
   const published = readDate(meta, 'published', { path, today });

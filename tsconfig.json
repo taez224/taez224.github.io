@@ -1,4 +1,8 @@
 {
-  "extends": "astro/tsconfigs/base",
-  "compilerOptions": { "allowJs": true, "checkJs": false }
+  "extends": "astro/tsconfigs/strict",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "erasableSyntaxOnly": true
+  }
 }

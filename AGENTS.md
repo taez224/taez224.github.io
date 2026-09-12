@@ -13,10 +13,13 @@ TaeZ's Thinking Garden(https://taez224.github.io/)을 짓는 Astro 7 정적 사�
 
 ## 명령
 
-Node 22(22.12 이상, `package.json`의 `engines`)와 커밋된 `package-lock.json`을 쓴다. CI와 같다. `sharp`는 Astro가 선택 의존성으로만 가져오지만 썸네일 최적화와 OG 카드의 썸네일 변환이 쓰므로 직접 의존성으로 선언한다.
+Node 26.8.2(`.nvmrc`, `package.json`의 `engines`)와 커밋된 `package-lock.json`을 쓴다. CI와 같다. `sharp`는 Astro가 선택 의존성으로만 가져오지만 썸네일 최적화와 OG 카드의 썸네일 변환이 쓰므로 직접 의존성으로 선언한다.
 
 ```bash
+nvm use                      # .nvmrc에 고정한 Node 버전 선택
 npm ci                       # 잠근 의존성 설치
+npm run check                # 전환한 TS 모듈과 타입 계약 검사
+npm run check:astro          # 전체 Astro 진단. 미전환 코드의 기존 오류가 있어 아직 CI 필수 검사가 아니다
 npm test                     # node --test tests/*.test.mjs
 node --test tests/garden.test.mjs                                  # 파일 하나
 node --test --test-name-pattern="slug" tests/garden.test.mjs       # 이름으로 골라 실행
@@ -51,8 +54,8 @@ config.json ──▶ publication.mjs (공개 판정)
 ```
 
 - **페이지**(`src/pages/**`)는 `getCollection('notes'|'books')`로 읽고, **엔드포인트**(`data/*.json.ts`, `og/*.png.ts`, `rss.xml.js`, `llms.txt.ts`)는 `getGarden()`을 직접 부른다. 둘 다 같은 조립 결과다.
-- **조립 모듈**: `garden.mjs`는 공개 후보를 고르고 노트 레코드와 공개 색인을 만든 뒤 각 단계를 잇는다. 파일 탐색과 frontmatter는 `vault-files.mjs`, 공개 본문·목차·요약은 `note-body.mjs`, 위키 링크 해석은 `links.mjs`가 맡는다. 책장은 `books.mjs`의 `readBooks`, 블로그의 연재·발행처 묶음은 `blog.mjs`의 `assembleBlog`, 개발 노트 분류는 `development.mjs`의 `groupDevelopment`가 만든다. 본문·썸네일이 쓸 수 있는 자산과 dist로 복사할 목록은 `public-assets.mjs`의 `createAssetResolver`가 정한다. 노트 링크 해석과 렌더링은 공개 색인에 기대므로 `garden.mjs`에 둔다. 이 모듈들은 `garden.mjs`를 import하지 않고 레코드 목록만 받으므로 순환 의존이 생기지 않는다.
-- **클라이언트 JS**: 홈(`hero.js`)과 지도(`map.js`)는 페이지에 인라인된 노드·간선(`data-hero-data`, `data-map-data`, `graph-data.mjs`)으로 스크립트 실행 즉시 그래프를 올린다. 홈은 빌드 때 계산한 좌표까지 싣고, 지도는 무대 크기에 맞춰 배치한다. 지도 패널이 쓰는 노트 정보·참조 관계도 같은 JSON에 실어 fetch가 없다. 검색만 `search.json`을 열 때 fetch한다. `data/site.json`은 공개 데이터 엔드포인트이자 check-dist의 기준 자료로 남는다. `integrations/module-preload.mjs`가 빌드 산출물의 정적 import를 따라가 엔진 청크에 `modulepreload`를 달고, 지도 페이지 스크립트는 `<head>`로 옮겨 `blocking="render"`를 달아 그래프가 올라간 뒤에 첫 화면을 그린다(지도는 무대 크기가 화면마다 달라 스냅샷을 둘 수 없다). 그 전에 보이는 데스크톱 스냅샷(`snapshot.mjs`의 `desktop` 프리셋)은 엔진과 같은 배치 규칙(`label.mjs`의 `placeLabels`)과 같은 맞춤으로 그려서 교체가 눈에 띄지 않는다. 제목 배치 규칙을 바꾸면 두 쪽이 같이 바뀐다. 그래프는 프레임워크 없는 SVG 엔진 `src/graph/engine.mjs`가 그린다. `src/graph`의 나머지 모듈은 DOM을 만지지 않는 순수 함수이고 각각 단위 테스트가 있다.
+- **조립 모듈**: `garden.mjs`는 공개 후보를 고르고 노트 레코드와 공개 색인을 만든 뒤 각 단계를 잇는다. 파일 탐색과 frontmatter는 `vault-files.mjs`, 공개 본문·목차·요약은 `note-body.mjs`, 위키 링크 해석은 `links.mjs`가 맡는다. 책장은 `books.mjs`의 `readBooks`, 블로그의 연재·발행처 묶음은 `blog.mjs`의 `assembleBlog`, 개발 노트 분류는 `development.ts`의 `groupDevelopment`가 만든다. 본문·썸네일이 쓸 수 있는 자산과 dist로 복사할 목록은 `public-assets.mjs`의 `createAssetResolver`가 정한다. 노트 링크 해석과 렌더링은 공개 색인에 기대므로 `garden.mjs`에 둔다. 이 모듈들은 `garden.mjs`를 import하지 않고 레코드 목록만 받으므로 순환 의존이 생기지 않는다.
+- **클라이언트 JS**: 홈(`hero.js`)과 지도(`map.js`)는 페이지에 인라인된 노드·간선(`data-hero-data`, `data-map-data`, `graph-data.ts`)으로 스크립트 실행 즉시 그래프를 올린다. 홈은 빌드 때 계산한 좌표까지 싣고, 지도는 무대 크기에 맞춰 배치한다. 지도 패널이 쓰는 노트 정보·참조 관계도 같은 JSON에 실어 fetch가 없다. 검색만 `search.json`을 열 때 fetch한다. `data/site.json`은 공개 데이터 엔드포인트이자 check-dist의 기준 자료로 남는다. `integrations/module-preload.mjs`가 빌드 산출물의 정적 import를 따라가 엔진 청크에 `modulepreload`를 달고, 지도 페이지 스크립트는 `<head>`로 옮겨 `blocking="render"`를 달아 그래프가 올라간 뒤에 첫 화면을 그린다(지도는 무대 크기가 화면마다 달라 스냅샷을 둘 수 없다). 그 전에 보이는 데스크톱 스냅샷(`snapshot.mjs`의 `desktop` 프리셋)은 엔진과 같은 배치 규칙(`label.mjs`의 `placeLabels`)과 같은 맞춤으로 그려서 교체가 눈에 띄지 않는다. 제목 배치 규칙을 바꾸면 두 쪽이 같이 바뀐다. 그래프는 프레임워크 없는 SVG 엔진 `src/graph/engine.mjs`가 그린다. `src/graph`의 나머지 모듈은 DOM을 만지지 않는 순수 함수이고 각각 단위 테스트가 있다.
 - **dev 감시**: `loaders/vault.mjs`가 include 루트·Books·`config.json`·검토된 자산을 watcher에 등록하고, `refresh-coordinator.mjs`가 디바운스와 직렬화를 맡아 notes·books 스토어를 한 번의 재조립으로 채운다.
 - **OG 카드**: `src/lib/og.mjs`. 최종 SVG 문자열 + 폰트 정체 + resvg 버전의 해시가 캐시 키라 수동 버전 상수가 없다. 캐시는 `node_modules/.cache/garden-og-images`와 `garden-og-fonts`이고 CI가 복원한다.
 
@@ -77,8 +80,16 @@ vault 원문은 건드리지 않고 사이트로 나가는 사본만 바꾼다(`
 
 ### URL과 슬러그
 
-`/posts/<slug>/`(blog), `/notes/<slug>/`(slipbox), `/dev/<slug>/`(development). 슬러그는 frontmatter `slug`가 있으면 그것, 없으면 제목에서 만든다(한글 유지, 소문자, 기호는 `-`). 같은 kind에서 충돌하면 빌드가 실패하고 `slug`를 달라고 한다(`src/lib/slug.mjs`). 
+`/posts/<slug>/`(blog), `/notes/<slug>/`(slipbox), `/dev/<slug>/`(development). 슬러그는 frontmatter `slug`가 있으면 그것, 없으면 제목에서 만든다(한글 유지, 소문자, 기호는 `-`). 같은 kind에서 충돌하면 빌드가 실패하고 `slug`를 달라고 한다(`src/lib/slug.ts`).
 **기존 URL과 fragment는 슬러그 생성 규칙이나 헤딩 id 규칙이 정해지기 전까지 당분간 유동적으로 관리하며 과거 호환도 신경쓰지 않는다.**
+
+## TypeScript 단계적 전환
+
+`tsconfig.json`은 Astro strict 설정과 JS 혼용을 사용한다. 전환 완료한 모듈은 `tsconfig.migration.json`의 include에 추가하고 `npm run check`를 CI에서 통과시킨다. 현재 대상은 `src/lib/`의 `dates.ts`, `kinds.ts`, `slug.ts`, `home.ts`, `development.ts`, `content-model.ts`, `graph-data.ts`와 `tests/types/`의 타입 계약 테스트다. `npm run check:astro`는 전체 코드의 진단을 보여주며, 기존 오류를 숨기거나 성공 코드로 바꾸지 않는다. 전체 오류를 해소한 뒤 CI 검사에 포함한다.
+
+`content-model.ts`는 기존 노트 컬렉션 필드를 Zod 스키마로 공유하고 조립된 공개 노트·책·그래프·패널 데이터 타입을 정의한다. 조립 노트의 썸네일 경로와 Astro 컬렉션의 이미지 메타데이터는 구분한다. 아직 JS인 조립기는 반환 타입을 JSDoc으로 연결하며, 임시 vault 통합 테스트가 실제 조립 결과와 스키마를 대조한다. 조립기 구현 전체의 strict 검사는 다음 전환 단계에서 적용한다.
+
+TypeScript는 `astro check`가 지원하는 6.x를 쓴다. 현재 TypeScript 7은 검사 도구에 필요한 programmatic API를 제공하지 않는다. JS와 TS 사이의 상대 import에는 실제 확장자를 적는다. 테스트는 기존 `node:test`를 유지하고 Node 26의 타입 스트리핑으로 TS 모듈을 직접 읽는다. `erasableSyntaxOnly`로 enum이나 매개변수 프로퍼티처럼 실행 코드 변환이 필요한 문법을 검사 단계에서 막는다. 타입 검사와 테스트 실행은 별도 단계다.
 
 ## 코드 스타일
 
@@ -117,7 +128,7 @@ Codex는 이 절만 읽고, Claude Code는 여기에 더해 위의 output-style 
 - `node:test`와 `node:assert/strict`를 쓰고 파일 이름은 `*.test.mjs`다. 테스트 이름은 관찰 가능한 동작을 서술한다.
 - **테스트는 임시 vault로 돈다.** `tests/garden.test.mjs`의 `makeVault()`처럼 `os.tmpdir()`에 최소 파일을 만들어 검증한다. 실제 `../obsidian`을 테스트에서 읽지 않는다.
 - 동작을 바꾸면 회귀 테스트를 더한다. 특히 Markdown 렌더링, 링크 해석, 공개 판정은 빠짐없이.
-- 코드를 넘기기 전에 `npm test`와 `npm run build`를 모두 돌린다. UI 변경은 데스크톱과 모바일 폭을 확인한다.
+- 코드를 넘기기 전에 `npm run check`, `npm test`, `npm run build`를 모두 돌린다. UI 변경은 데스크톱과 모바일 폭을 확인한다.
 
 ## 작업 규칙
 

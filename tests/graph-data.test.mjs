@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { inlineGraph } from '../src/lib/graph-data.mjs';
+import { inlineGraph } from '../src/lib/graph-data.ts';
 import { inlineJson } from '../src/lib/format.mjs';
 
 const nodes = [
@@ -31,7 +31,7 @@ test('inlineJson escapes < so a title cannot close the inline script', () => {
   assert.equal(inlineJson({ t: '</script><b>' }), '{"t":"\\u003c/script>\\u003cb>"}');
 });
 
-import { inlinePanelNotes } from '../src/lib/graph-data.mjs';
+import { inlinePanelNotes } from '../src/lib/graph-data.ts';
 
 test('inlinePanelNotes keeps the panel fields, only explicit summaries, and indexes note edges by position', () => {
   const notes = [

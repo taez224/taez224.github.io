@@ -4,10 +4,12 @@ export const KINDS = {
   blog: { prefix: 'posts', label: '글', listPath: '/posts/', listLabel: '글 목록' },
   slipbox: { prefix: 'notes', label: '노트', listPath: '/map/', listLabel: '생각 지도' },
   development: { prefix: 'dev', label: '개발 노트', listPath: '/dev/', listLabel: '개발 노트 목록' }
-};
+} as const;
 
 // vault 경로로 노트 종류를 정한다. 공개 규칙(config.json)이 들인 파일에만 쓰므로 슬립박스와 블로그가 아니면 개발 노트다.
-export function kindFor(relativePath) {
+export type NoteKind = keyof typeof KINDS;
+
+export function kindFor(relativePath: string): NoteKind {
   if (relativePath.startsWith('01_Slipbox/')) return 'slipbox';
   if (relativePath.startsWith('20_Projects/blog/')) return 'blog';
   return 'development';

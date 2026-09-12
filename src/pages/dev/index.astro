@@ -1,7 +1,7 @@
 ---
 import Shell from '../../layouts/Shell.astro';
 import { getGarden } from '../../lib/get-garden.mjs';
-import { technologyTags, selectDevelopmentRecords } from '../../lib/development.mjs';
+import { technologyTags, selectDevelopmentRecords } from '../../lib/development.ts';
 import { developmentCategoryLabel, formatDate, firstSentence } from '../../lib/format.mjs';
 const { development } = await getGarden();
 const records = selectDevelopmentRecords([...development.concepts, ...development.troubleshooting, ...development.tools]);

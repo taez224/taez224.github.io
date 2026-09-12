@@ -5,13 +5,13 @@ import { developmentCategory, externalPublicationFor, pathMatches, publicUrl, is
 import { readBooks } from './books.mjs';
 import { createAssetResolver } from './public-assets.mjs';
 import { selectGraphNodes } from '../graph/select.mjs';
-import { slugFor, kindPrefix, noteUrl, assertUniqueSlugs } from './slug.mjs';
+import { slugFor, kindPrefix, noteUrl, assertUniqueSlugs } from './slug.ts';
 import { plainText } from './text.mjs';
 import { publicTags, cleanTitle, topicFor } from './format.mjs';
-import { kstDate, noteDates } from './dates.mjs';
-import { groupDevelopment } from './development.mjs';
+import { kstDate, noteDates } from './dates.ts';
+import { groupDevelopment } from './development.ts';
 import { assembleBlog } from './blog.mjs';
-import { kindFor } from './kinds.mjs';
+import { kindFor } from './kinds.ts';
 import { isMarkdown, normalize, numberValue, parseFrontmatter, stringList, tagList, walkIfPresent } from './vault-files.mjs';
 import { explicitSummary, firstHeading, headingsFor, publicBody, summaryFor } from './note-body.mjs';
 import { addTo, indexByBasename, noteTargets, resolveTarget, resolveTargets } from './links.mjs';
@@ -214,6 +214,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
     addTo(outgoingByPath, edge.source, edge.target);
     addTo(incomingByPath, edge.target, edge.source);
   }
+  /** @type {import('./content-model.ts').PublicNote[]} */
   const notes = [...publicEntries.values()]
     .filter((entry) => entry.kind !== 'book')
     .map(({ publicContent, ...entry }) => {
@@ -249,6 +250,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
   });
   const selectedSet = new Set(selectedPaths);
 
+  /** @type {import('./content-model.ts').GardenGraphNode[]} */
   const nodes = selectedPaths.map((relativePath) => {
     const entry = publicEntries.get(relativePath);
     return {

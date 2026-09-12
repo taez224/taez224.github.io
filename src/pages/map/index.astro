@@ -3,7 +3,7 @@ import Shell from '../../layouts/Shell.astro';
 import MapPanel from '../../components/MapPanel.astro';
 import { getGarden } from '../../lib/get-garden.mjs';
 import { withBase, GRAPH_COLORS, inlineJson } from '../../lib/format.mjs';
-import { inlineGraph, inlinePanelNotes } from '../../lib/graph-data.mjs';
+import { inlineGraph, inlinePanelNotes } from '../../lib/graph-data.ts';
 import '../../styles/graph.css';
 const { nodes, edges, notes, noteEdges, stats, topicFold } = await getGarden();
 const startpoints = nodes.filter((n) => n.isEntry);

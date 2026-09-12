@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { dateOnly, kstDate, newestFirst, noteDates } from '../src/lib/dates.mjs';
+import { dateOnly, kstDate, newestFirst, noteDates } from '../src/lib/dates.ts';
 
 const path = '01_Slipbox/노트.md';
 const today = '2026-09-11';

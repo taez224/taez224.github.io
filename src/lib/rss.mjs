@@ -1,7 +1,7 @@
 import { SITE_DESCRIPTION, SITE_TITLE } from './site-meta.mjs';
-import { KINDS, NAVIGATION_TYPES } from './kinds.mjs';
+import { KINDS, NAVIGATION_TYPES } from './kinds.ts';
 import { escapeXml } from './format.mjs';
-import { siteHome } from './slug.mjs';
+import { siteHome } from './slug.ts';
 
 // 최신 날짜가 먼저, 같은 날이면 guid(=link) 순서다. guid는 피드가 항목을 알아보는 값이라, 제목처럼 고칠 수 있는 표시 값으로
 // 정렬하면 제목만 고쳐도 순서와 종류별 몫의 경계 항목이 바뀐다. 날짜와 주소는 기계 값이라 로케일과 무관한 코드 포인트로 비교한다.
@@ -18,7 +18,7 @@ export function feedItems(notes, { site, basePath = '', limit = 30, kinds = FEED
     if (!kinds.includes(note.kind) || !FEED_KINDS.includes(note.kind) || NAVIGATION_TYPES.has(note.type)) return [];
     const blog = note.kind === 'blog';
     if (blog && note.status !== 'published') return [];
-    // 글은 발행일이 있어야 피드에 들어간다. 날짜가 실제로 있는 날인지, 빌드한 날보다 늦지 않은지는 조립 단계(dates.mjs)가 보장한다.
+    // 글은 발행일이 있어야 피드에 들어간다. 날짜가 실제로 있는 날인지, 빌드한 날보다 늦지 않은지는 조립 단계(dates.ts)가 보장한다.
     const day = blog ? note.published : note.date;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(day ?? '')) return [];
     const date = new Date(`${day}T00:00:00+09:00`);

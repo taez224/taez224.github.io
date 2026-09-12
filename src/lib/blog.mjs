@@ -1,4 +1,4 @@
-import { newestFirst } from './dates.mjs';
+import { newestFirst } from './dates.ts';
 import { addTo } from './links.mjs';
 
 const latestDay = (days) => days.map((day) => String(day ?? '')).filter(Boolean).sort().at(-1) ?? '';

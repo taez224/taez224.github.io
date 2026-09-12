@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { slugify, slugFor, kindPrefix, noteUrl, siteHome, assertUniqueSlugs } from '../src/lib/slug.mjs';
+import { slugify, slugFor, kindPrefix, noteUrl, siteHome, assertUniqueSlugs } from '../src/lib/slug.ts';
 
 test('slugify keeps Korean, lowercases Latin, and joins with hyphens', () => {
   assert.equal(slugify('AI Agent 시대의 Human Agency'), 'ai-agent-시대의-human-agency');

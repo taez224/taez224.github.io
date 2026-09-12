@@ -1,7 +1,7 @@
-import { KINDS } from './kinds.mjs';
+import { KINDS } from './kinds.ts';
 import { inlineJson, withBase } from './format.mjs';
-import { newestFirst } from './dates.mjs';
-import { kindPrefix, noteUrl, siteHome } from './slug.mjs';
+import { newestFirst } from './dates.ts';
+import { kindPrefix, noteUrl, siteHome } from './slug.ts';
 // 검색 엔진과 답변 엔진이 읽는 구조화 데이터. 페이지가 이미 가진 제목·요약·날짜·URL만 쓰고 새 정보를 만들지 않는다.
 const AUTHOR_NAME = 'TaeZ';
 const ARTICLE_TYPES = { blog: 'BlogPosting', development: 'TechArticle' };

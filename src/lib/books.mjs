@@ -1,8 +1,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { dateOnly, newestFirst } from './dates.mjs';
+import { dateOnly, newestFirst } from './dates.ts';
 import { firstHeading } from './note-body.mjs';
-import { assertUniqueSlugs, slugify } from './slug.mjs';
+import { assertUniqueSlugs, slugify } from './slug.ts';
 import { isMarkdown, normalize, numberValue, parseFrontmatter, walkIfPresent } from './vault-files.mjs';
 
 // 책 노트가 있는 vault 폴더. 조립 단계와 개발 서버 감시가 같은 경로를 쓴다.
@@ -10,6 +10,7 @@ export const BOOKS_PATH = '30_Resources/References/Books';
 
 // 책장에 올릴 책. 평점 높은 순, 같으면 최근에 기록한 순이다. 파일 이름에서 만든 slug가 겹치면 빌드를 멈춘다.
 // base는 사이트 주소의 앞부분(basePath)이다.
+/** @returns {Promise<import('./content-model.ts').Book[]>} */
 export async function readBooks({ vaultRoot, base }) {
   const files = await walkIfPresent(path.join(vaultRoot, BOOKS_PATH), isMarkdown);
   if (!files) console.warn('Skipped missing books directory');

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { recentByKind } from '../src/lib/home.mjs';
+import { recentByKind } from '../src/lib/home.ts';
 
 const note = (kind, title, date, extra = {}) => ({ kind, title, date, path: `${kind}/${title}.md`, type: 'permanent', ...extra });
 const titles = (notes) => notes.map((item) => item.title);

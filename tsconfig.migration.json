@@ -1,0 +1,24 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "allowJs": false,
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "src/lib/dates.ts",
+    "src/lib/kinds.ts",
+    "src/lib/slug.ts",
+    "src/lib/home.ts",
+    "src/lib/development.ts",
+    "tests/types/*.ts",
+    "src/lib/content-model.ts",
+    "src/lib/graph-data.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".astro"
+  ]
+}

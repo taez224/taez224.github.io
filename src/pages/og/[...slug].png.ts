@@ -1,5 +1,5 @@
 import { getGarden } from '../../lib/get-garden.mjs';
-import { kindPrefix } from '../../lib/slug.mjs';
+import { kindPrefix } from '../../lib/slug.ts';
 import { renderOgPng, siteLabelFor } from '../../lib/og.mjs';
 
 export const prerender = true;

@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pngDimensions } from '../src/lib/png.mjs';
-import { kindPrefix } from '../src/lib/slug.mjs';
+import { kindPrefix } from '../src/lib/slug.ts';
 import { FEED_LINKS } from '../src/lib/feeds.mjs';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
