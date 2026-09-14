@@ -8,6 +8,10 @@ updates:
     groups:
       compatible-updates:
         update-types: [minor, patch]
+    # astro check가 TypeScript 6.x의 programmatic API를 쓴다. 7.x는 그 API가 없어 설치부터 실패하므로 major 갱신은 받지 않는다.
+    ignore:
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
   - package-ecosystem: github-actions
     directory: /
     schedule:
