@@ -120,6 +120,13 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
     if ((category === 'Concepts' || category === 'Troubleshooting') && !String(note.meta.summary ?? '').trim()) {
       throw new Error(`Missing required summary for public ${category} note: ${relativePath}`);
     }
+    // 개발 노트 목록은 첫 공개 태그를 분류 옆에 보여 준다. 조건 태그가 앞에 있거나 태그가 없으면 분류와 같은 말이
+    // 찍히거나 빈칸이 되므로 vault에서 태그를 손보라고 알린다. 태그는 스키마의 영역이라 빌드를 멈추지는 않는다.
+    if (category) {
+      const firstTag = publicTags(tagList(note.meta))[0];
+      if (!firstTag) console.warn(`Development note has no public tag, list shows only the date: ${relativePath}`);
+      else if (firstTag === '개발/도구') console.warn(`Development note's first public tag is 개발/도구, same as its folder: ${relativePath}`);
+    }
   }
 
   const slugByPath = new Map<string, string>();

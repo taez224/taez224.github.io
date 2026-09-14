@@ -1,11 +1,11 @@
 ---
 import Shell from '../../layouts/Shell.astro';
 import { getGarden } from '../../lib/get-garden.ts';
-import { technologyTags, selectDevelopmentRecords } from '../../lib/development.ts';
+import { primaryTopicTag, selectDevelopmentRecords } from '../../lib/development.ts';
 import { developmentCategoryLabel, formatDate, firstSentence } from '../../lib/format.ts';
 const { development } = await getGarden();
 const records = selectDevelopmentRecords([...development.concepts, ...development.troubleshooting, ...development.tools]);
-// 분류가 여백 라벨이 된다. 탭과 기술 칩으로 거르던 것은 메타 줄의 기술명과 검색으로 대신한다.
+// 분류가 여백 라벨이 되고, 각 노트는 첫 공개 태그를 날짜 앞에 보여 준다. 태그 순서는 vault 스키마가 정한다.
 const groups = ['Concepts', 'Troubleshooting', 'Tools'].map((id) => ({ id, label: developmentCategoryLabel(id), records: records.filter((r) => r.category === id) })).filter((g) => g.records.length);
 ---
 <Shell title="개발 노트" description="개발하며 배운 개념과 해결한 문제, 도구 기록." path="/dev/" active="dev">
@@ -15,13 +15,13 @@ const groups = ['Concepts', 'Troubleshooting', 'Tools'].map((id) => ({ id, label
     <nav class="cat-index meta" aria-label="분류">{groups.map((g, i) => <>{i > 0 && <span class="sep">·</span>}<a href={`#${g.id.toLowerCase()}`}>{g.label} <span class="count">{g.records.length}</span></a></>)}</nav>
     {groups.map((g) => <section class="ledger-group is-word" id={g.id.toLowerCase()} aria-label={g.label}>
       <div class="ledger-head"><h2 class="display">{g.label}</h2><span class="meta">{g.records.length}개</span></div>
-      <div class="ledger-rows">{g.records.map((r) => <article class="ledger-row is-compact">
+      <div class="ledger-rows">{g.records.map((r) => { const topic = primaryTopicTag(r.tags); return <article class="ledger-row is-compact">
         <div>
           <h3><a href={r.url}>{r.title}</a></h3>
-          <div class="meta">{technologyTags(r.tags).length > 0 && <span>{technologyTags(r.tags).join(' · ')}</span>}<time datetime={r.date}>{formatDate(r.date)}</time></div>
+          <div class="meta">{topic && <span>{topic}</span>}<time datetime={r.date}>{formatDate(r.date)}</time></div>
         </div>
         {r.summary ? <p class="summary">{firstSentence(r.summary)}</p> : <div></div>}
-      </article>)}</div>
+      </article>; })}</div>
     </section>)}
   </div>
 </Shell>
