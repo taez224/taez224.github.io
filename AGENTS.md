@@ -13,7 +13,7 @@ TaeZ's Thinking Garden(https://taez224.github.io/)을 짓는 Astro 7 정적 사�
 
 ## 명령
 
-Node 26.8.2(`.nvmrc`, `package.json`의 `engines`)와 커밋된 `package-lock.json`을 쓴다. CI와 같다. `sharp`는 Astro가 선택 의존성으로만 가져오지만 썸네일 최적화와 OG 카드의 썸네일 변환이 쓰므로 직접 의존성으로 선언한다.
+Node 26.8.2(`.nvmrc`, `package.json`의 `engines`)와 커밋된 `package-lock.json`을 쓴다. CI와 같다. `sharp`는 Astro가 선택 의존성으로만 가져오지만 썸네일 최적화와 OG 카드의 썸네일 변환이 쓰므로 직접 의존성으로 선언한다. `overrides`의 `lodash-es`는 Mermaid 12가 쓰는 chevrotain이 취약한 4.17.23을 고정하기 때문에 둔 것이다. chevrotain 계열 세 패키지가 4.18 이상을 선언하면 override를 빼고 `npm audit --omit=dev`와 도표 렌더링을 다시 확인한다.
 
 ```bash
 nvm use                      # .nvmrc에 고정한 Node 버전 선택
