@@ -29,6 +29,24 @@
 .body hr { margin: 30px 0; border: 0; border-top: 1px solid var(--line); }
 .body mark { padding: 0 3px; background: var(--highlight); }
 .body .mermaid { overflow-x: auto; margin: 22px 0; padding: 12px; border: 1px solid var(--line); background: var(--paper-strong); text-align: center; }
+/* 가로로 스크롤해야 하는 도표에만 붙는 버튼이다. 도표를 통째로 누르게 하면 스크롤·글자 선택과 부딪히므로
+   여는 수단을 따로 두고, 도표 위 오른쪽에 놓아 내용과 겹치지 않게 한다. */
+/* 손가락으로 누르는 자리이므로 글자 크기는 그대로 두고 누를 수 있는 높이를 44px로 잡는다. 이 사이트의 터치 목표다. */
+.body .diagram-open { display: flex; align-items: center; justify-content: center; min-height: 44px; margin: 22px 0 6px auto; padding: 0 14px; border: 1px solid var(--line); background: var(--paper-strong); color: var(--muted); font-size: var(--t-meta); }
+.body .diagram-open:hover, .body .diagram-open:focus-visible { border-color: var(--ink); color: var(--ink); }
+.body .diagram-open + .mermaid { margin-top: 0; }
+/* 크게 보기 다이얼로그. 본문의 도표를 그대로 옮겨 오므로 무대는 스크롤만 맡는다. */
+.diagram-viewer { width: min(96vw, 1600px); max-width: none; height: min(92dvh, 1100px); max-height: none; padding: 0; border: 1px solid var(--line); background: var(--paper); color: var(--ink); }
+.diagram-viewer[open] { display: flex; flex-direction: column; }
+.diagram-viewer::backdrop { background: rgb(37 46 41 / .55); }
+/* 보기를 바꾸는 버튼과 닫는 버튼은 성격이 달라 양끝으로 떼어 놓는다. 나란히 두면 크기를 바꾸려다 닫기 쉽다. */
+.diagram-viewer-tools { flex: none; display: flex; gap: 8px; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+.diagram-viewer-tools button { display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 14px; border: 1px solid var(--line); background: var(--paper-strong); color: var(--muted); font-size: var(--t-meta); }
+.diagram-viewer-tools button:hover, .diagram-viewer-tools button:focus-visible { border-color: var(--ink); color: var(--ink); }
+/* flex 항목은 기본으로 줄어들므로 원래 크기 모드에서 도표가 무대 폭에 맞춰져 버린다. 축소는 max-width로만 건다.
+   가운데 정렬을 justify-content로 하면 내용이 넘칠 때 왼쪽이 잘리므로 margin: auto를 쓴다. */
+.diagram-viewer-stage { display: flex; flex: 1; min-height: 0; padding: 16px; overflow: auto; }
+.diagram-viewer-stage > svg { flex: none; margin: auto; }
 .body img { display: block; max-width: 100%; height: auto; margin: 18px auto; }
 .body figure { margin: 18px 0 22px; }
 .body figure img { margin: 0 auto; }
@@ -62,4 +80,7 @@
 @media (max-width: 720px) {
   /* 설명 열이 지나치게 잘게 접히지 않도록 너비를 확보하고 표 안에서 가로로 읽는다. */
   .body th:not(:first-child), .body td:not(:first-child) { min-width: 180px; }
+  /* 한 손으로 잡으면 화면 위쪽에는 엄지가 닿지 않는다. 지도의 하단 시트와 같은 이유로 조작을 아래에 둔다. */
+  .diagram-viewer[open] { flex-direction: column-reverse; }
+  .diagram-viewer-tools { border-top: 1px solid var(--line); border-bottom: 0; }
 }

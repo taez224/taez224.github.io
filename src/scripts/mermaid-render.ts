@@ -1,5 +1,6 @@
 import type { Mermaid } from 'mermaid';
 import { FONT_WAIT_MS, LABEL_FONT, LABEL_FONT_PX, MERMAID_CONFIG, MIN_READABLE_LABEL_PX } from './mermaid-config.ts';
+import { setViewerButton } from './mermaid-viewer.ts';
 type MermaidRenderer = Pick<Mermaid, 'initialize' | 'run'>;
 
 // 컨테이너보다 넓은 도표의 처리다. 조금 넘치는 도표는 줄여도 글자를 읽을 수 있으므로 접어 넣고, 크게 넘치는
@@ -36,11 +37,20 @@ export function fitDiagram(container: Element): boolean {
   return overflowing;
 }
 
+function refreshDiagram(container: Element): void {
+  setViewerButton(container, fitDiagram(container), () => refreshDiagram(container));
+}
+
 // 폭이 바뀌면 다시 판단한다. 폭이 0인 채로 그려진 도표(접힌 콜아웃 안, 아직 크기가 없는 창)도 여기서 바로잡힌다.
 function refitOnResize(container: Element): void {
   const view = container.ownerDocument?.defaultView;
   if (!view?.ResizeObserver) return;
-  new view.ResizeObserver(() => fitDiagram(container)).observe(container);
+  new view.ResizeObserver(() => {
+    // 크게 보기가 열려 있는 동안에는 도표가 다이얼로그에 가 있다. 빈 컨테이너를 재면 "넘치지 않는다"가 되어
+    // 여는 버튼을 지워 버리고, 닫을 때 돌아갈 자리가 사라진다. 도표가 제자리에 있을 때만 다시 판단한다.
+    if (!container.querySelector('svg')) return;
+    refreshDiagram(container);
+  }).observe(container);
 }
 
 // Pretendard는 동적 서브셋이라 페이지에 쓰인 문자만 내려받는다. 도표 원문은 고정폭 서체의 코드 블록으로
@@ -73,7 +83,7 @@ export async function renderMermaidBlocks(blocks: Element[], mermaid: MermaidRen
     pre.replaceWith(container);
     try {
       await mermaid.run({ nodes: [container] });
-      fitDiagram(container);
+      refreshDiagram(container);
       refitOnResize(container);
     } catch {
       // 오류가 난 도표만 원문으로 되돌려 다른 도표는 계속 렌더링한다.
