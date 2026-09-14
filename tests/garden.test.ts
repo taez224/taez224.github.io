@@ -39,7 +39,7 @@ const files = {
   '20_Projects/blog/공개 글.md': '---\ncreated: 2026-09-03\nstatus: published\nsource: https://example.com/post\npublication: Nextree\nsummary: 글 요약\ntags:\n  - blog\n  - AI/에이전트\n---\n# 공개 글\n[[생각 A]]를 인용한다.',
   '20_Projects/blog/초안.md': '---\nstatus: draft\n---\n# 초안\nDRAFT_SENTINEL',
   [`${dev}/Concepts/연결된 개념.md`]: '---\ncreated: 2026-09-04\nsummary: 개념 요약\ntags:\n  - 개발/설계\n---\n# 연결된 개념\n[[생각 A]]에서 출발.',
-  [`${dev}/Concepts/고립된 개념.md`]: '---\ncreated: 2026-09-05\nsummary: 고립 요약\n---\n# 고립된 개념\n링크 없음.',
+  [`${dev}/Concepts/고립된 개념.md`]: '---\ncreated: 2026-09-05\nsummary: 고립 요약\ntags:\n  - 개발/설계\n---\n# 고립된 개념\n링크 없음.',
   [`${dev}/Concepts/비공개 개념.md`]: '---\ncreated: 2026-09-05\n---\n# 비공개 개념\nWITHHELD_SENTINEL',
   '30_Resources/References/Books/좋은 책.md': '---\ntitle: 좋은 책\nauthor: 저자\nmy_rate: 5\nbook_note: 강력 추천\nstatus: 완독\ncreated: 2026-08-01\n---\n# 좋은 책',
   '_attachments/reviewed.svg': '<svg xmlns="http://www.w3.org/2000/svg"></svg>'
@@ -77,7 +77,7 @@ test('assembleGarden publishes reviewed notes with slug urls and no private stri
 test('graphRule linked stops at the first development note: a dev note linked only from another dev note stays out', async () => {
   const chainConfig = { ...config, include: config.include.map((rule) => rule.graphRule ? { ...rule, files: [...rule.files, `${dev}/Concepts/사슬.md`] } : rule) };
   const vaultRoot = await makeVault({ ...files,
-    [`${dev}/Concepts/사슬.md`]: '---\ncreated: 2026-09-06\nsummary: 사슬\n---\n# 사슬\n[[연결된 개념]]에서만 이어진다.'
+    [`${dev}/Concepts/사슬.md`]: '---\ncreated: 2026-09-06\nsummary: 사슬\ntags:\n  - 개발/설계\n---\n# 사슬\n[[연결된 개념]]에서만 이어진다.'
   });
   const garden = await assembleGarden({ vaultRoot, config: chainConfig, basePath: '/obsidian' });
   const ids = garden.nodes.map((node) => node.id);
@@ -135,8 +135,8 @@ test('graphRule linked keeps only development notes connected to the thought map
   const pairConfig = { ...config, include: config.include.map((rule) => rule.graphRule ? { ...rule, files: [...rule.files, `${dev}/Concepts/짝 A.md`, `${dev}/Concepts/짝 B.md`] } : rule) };
   const vaultRoot = await makeVault({ ...files,
     '01_Slipbox/외톨이.md': '---\ncreated: 2026-09-06\n---\n# 외톨이\n링크 없음.',
-    [`${dev}/Concepts/짝 A.md`]: '---\ncreated: 2026-09-06\nsummary: 짝 A\n---\n# 짝 A\n[[짝 B]]만 참조.',
-    [`${dev}/Concepts/짝 B.md`]: '---\ncreated: 2026-09-06\nsummary: 짝 B\n---\n# 짝 B\n[[짝 A]]만 참조.'
+    [`${dev}/Concepts/짝 A.md`]: '---\ncreated: 2026-09-06\nsummary: 짝 A\ntags:\n  - 개발/설계\n---\n# 짝 A\n[[짝 B]]만 참조.',
+    [`${dev}/Concepts/짝 B.md`]: '---\ncreated: 2026-09-06\nsummary: 짝 B\ntags:\n  - 개발/설계\n---\n# 짝 B\n[[짝 A]]만 참조.'
   });
   const paired = await assembleGarden({ vaultRoot, config: pairConfig, basePath: '/obsidian' });
   const pairedIds = paired.nodes.map((node) => node.id);
@@ -169,7 +169,7 @@ test('summary fallback uses plain text without image or table markup', async () 
     }]
   };
   const vaultRoot = await makeVault({ ...files,
-    [`${dev}/Tools/도구.md`]: '---\ncreated: 2026-09-06\n---\n# 도구\n![](https://example.com/tool.png)\n\n| 명령 | 설명 |\n| --- | --- |\n| rg | 검색 |\n\n도구를 고르는 기준.'
+    [`${dev}/Tools/도구.md`]: '---\ncreated: 2026-09-06\ntags:\n  - 개발/터미널\n---\n# 도구\n![](https://example.com/tool.png)\n\n| 명령 | 설명 |\n| --- | --- |\n| rg | 검색 |\n\n도구를 고르는 기준.'
   });
   const garden = await assembleGarden({ vaultRoot, config: fallbackConfig, basePath: '/obsidian' });
   const tool = garden.development.tools.find((record) => record.path === `${dev}/Tools/도구.md`);
@@ -186,7 +186,7 @@ test('short summary fallback preserves the final word', async () => {
     }]
   };
   const vaultRoot = await makeVault({ ...files,
-    [`${dev}/Tools/짧은 도구.md`]: '---\ncreated: 2026-09-06\n---\n# 짧은 도구\n마지막 어절 보존.'
+    [`${dev}/Tools/짧은 도구.md`]: '---\ncreated: 2026-09-06\ntags:\n  - 개발/터미널\n---\n# 짧은 도구\n마지막 어절 보존.'
   });
   const garden = await assembleGarden({ vaultRoot, config: fallbackConfig, basePath: '/obsidian' });
   const tool = garden.development.tools.find((record) => record.path === `${dev}/Tools/짧은 도구.md`);
@@ -325,7 +325,7 @@ test('folder publication picks up new development notes without publishing helpe
     exclude: [`${dev}/Concepts/비공개 개념.md`]
   };
   const vaultRoot = await makeVault({ ...files,
-    [`${dev}/Concepts/새 개념.md`]: '---\ncreated: 2026-09-06\nsummary: 새 개념 요약\n---\n# 새 개념\n[[연결된 개념]]으로 연결한다.',
+    [`${dev}/Concepts/새 개념.md`]: '---\ncreated: 2026-09-06\nsummary: 새 개념 요약\ntags:\n  - 개발/설계\n---\n# 새 개념\n[[연결된 개념]]으로 연결한다.',
     [`${dev}/Concepts/_index.md`]: '# 내부 운영 안내\nHELPER_SENTINEL',
     [`${dev}/Concepts/_local/보류.md`]: '# 로컬 초안\nLOCAL_SENTINEL',
     [`${dev}/Concepts/qmd-eval.json`]: '{"query":"EVAL_SENTINEL"}'
@@ -581,7 +581,7 @@ test('assembly uses first publication dates for blog, slipbox and development no
   const metadata = 'created: 2026-09-01\npublished: 2026-09-10\nupdated: 2026-09-08';
   const vaultRoot = await makeVault({ ...files,
     '01_Slipbox/생각 B.md': `---\n${metadata}\n---\n# 생각 B\n공개 본문.`,
-    [`${dev}/Concepts/연결된 개념.md`]: `---\n${metadata}\nsummary: 개념 요약\n---\n# 연결된 개념\n공개 본문.`,
+    [`${dev}/Concepts/연결된 개념.md`]: `---\n${metadata}\nsummary: 개념 요약\ntags:\n  - 개발/설계\n---\n# 연결된 개념\n공개 본문.`,
     '20_Projects/blog/공개 글.md': `---\n${metadata}\nstatus: published\n---\n# 공개 글\n공개 본문.`
   });
   const garden = await assembleGarden({ vaultRoot, config, today: '2026-09-11' });
@@ -663,4 +663,20 @@ test('series hubs keep their own reviewed thumbnail without inheriting an episod
   assert.equal(withCover?.thumbnail, '_attachments/reviewed.svg');
   assert.equal(withCover?.thumbnailStyle, 'soft');
   assert.equal(garden.notes.find((note) => note.title === '표지 없는 연재')?.thumbnail, null);
+});
+
+// 개발 노트 목록은 첫 공개 태그를 분류 옆에 보여 준다. 첫 태그가 도구 활용 조건 태그이거나 공개 태그가 없으면
+// 빈칸이나 분류와 같은 말이 찍히므로, 빌드 로그로 알려 vault에서 태그를 손보게 한다. 빌드는 멈추지 않는다.
+test('a development note whose first public tag is 개발/도구 or missing is reported in the build log', async (t) => {
+  const warn = t.mock.method(console, 'warn', () => {});
+  const vaultRoot = await makeVault({
+    ...files,
+    [`${dev}/Concepts/연결된 개념.md`]: '---\ncreated: 2026-09-04\nsummary: 개념 요약\ntags:\n  - 개발/도구\n  - 개발/Astro\n---\n# 연결된 개념\n[[생각 A]]에서 출발.',
+    [`${dev}/Concepts/고립된 개념.md`]: '---\ncreated: 2026-09-05\nsummary: 고립 요약\n---\n# 고립된 개념\n링크 없음.'
+  });
+  const garden = await assembleGarden({ vaultRoot, config });
+  const messages = warn.mock.calls.map((call) => String(call.arguments[0]));
+  assert.ok(messages.some((m) => m.includes('first public tag is 개발/도구') && m.includes(`${dev}/Concepts/연결된 개념.md`)), messages.join('\n'));
+  assert.ok(messages.some((m) => m.includes('no public tag') && m.includes(`${dev}/Concepts/고립된 개념.md`)), messages.join('\n'));
+  assert.ok(garden.notes.some((note) => note.path === `${dev}/Concepts/연결된 개념.md`), '경고만 남기고 노트는 그대로 공개한다');
 });
