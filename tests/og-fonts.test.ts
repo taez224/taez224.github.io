@@ -1,13 +1,15 @@
 import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
 import { ensureOgFonts } from '../src/lib/og-fonts.ts';
 
 // 캐시가 받아들이는 하한(200KB)을 넘는 가짜 폰트. 실제 폰트 서버에는 접속하지 않는다.
 const FONT = Buffer.alloc(200_000, 1);
-const fonts = [{ file: 'A.ttf', url: 'https://fonts.test/A.ttf' }, { file: 'B.otf', url: 'https://fonts.test/B.otf' }];
+const sha256 = createHash('sha256').update(FONT).digest('hex');
+const fonts = [{ file: 'A.ttf', url: 'https://fonts.test/A.ttf', sha256 }, { file: 'B.otf', url: 'https://fonts.test/B.otf', sha256 }];
 // 가짜 폰트가 테스트마다 수백 KB라 캐시 폴더를 한 폴더 아래에 만들고 실행이 끝나면 지운다.
 const root = await fs.mkdtemp(path.join(os.tmpdir(), 'garden-og-fonts-'));
 after(() => fs.rm(root, { recursive: true, force: true }));
@@ -23,7 +25,7 @@ function fakeFetch(plan: Record<string, (string | number | Error)[]>) {
     if (next === undefined) throw new Error(`unexpected request ${url}`);
     if (next instanceof Error) throw next;
     if (typeof next === 'number') return new Response('', { status: next });
-    return new Response(next === 'truncated' ? FONT.subarray(0, 1_000) : FONT);
+    return new Response(next === 'truncated' ? FONT.subarray(0, 1_000) : next === 'corrupt' ? Buffer.alloc(FONT.length, 2) : FONT);
   };
   return { fetch, calls };
 }
@@ -76,4 +78,21 @@ test('in CI a font that cannot be downloaded stops the build', async () => {
   const cacheDir = await makeCacheDir();
   const { fetch } = fakeFetch({ 'https://fonts.test/A.ttf': [404, 404, 404] });
   await assert.rejects(ensureOgFonts({ cacheDir, fonts, fetch, wait: noWait, ci: true }), /A\.ttf.*404.*CI/);
+});
+
+test('a full-size cache with a wrong digest is replaced', async () => {
+  const cacheDir = await makeCacheDir();
+  await fs.writeFile(path.join(cacheDir, 'A.ttf'), Buffer.alloc(FONT.length, 2));
+  await fs.writeFile(path.join(cacheDir, 'B.otf'), FONT);
+  const { fetch, calls } = fakeFetch({ 'https://fonts.test/A.ttf': ['ok'] });
+  await ensureOgFonts({ cacheDir, fonts, fetch, wait: noWait, ci: true });
+  assert.deepEqual(calls, ['https://fonts.test/A.ttf']);
+  assert.deepEqual(await fs.readFile(path.join(cacheDir, 'A.ttf')), FONT);
+});
+
+test('a wrong download digest stops CI and leaves no invalid cache', async () => {
+  const cacheDir = await makeCacheDir();
+  const { fetch } = fakeFetch({ 'https://fonts.test/A.ttf': ['corrupt', 'corrupt', 'corrupt'] });
+  await assert.rejects(ensureOgFonts({ cacheDir, fonts, fetch, wait: noWait, ci: true }), /SHA-256/);
+  assert.deepEqual(await fs.readdir(cacheDir), []);
 });

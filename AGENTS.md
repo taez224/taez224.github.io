@@ -7,7 +7,7 @@ AI 코딩 에이전트가 이 저장소에서 작업할 때의 지침이다. Cod
 TaeZ's Thinking Garden(https://taez224.github.io/)을 짓는 Astro 7 정적 사이트다. **노트 원본은 이 저장소에 없다.** 별도 저장소 `taez224/obsidian`(Obsidian vault)을 읽어서 공개 가능한 부분만 사이트로 낸다.
 
 - 로컬: vault는 옆 폴더 `../obsidian`에 클론돼 있다. 다른 위치면 `GARDEN_VAULT_ROOT`로 지정한다. dev와 build 모두 vault가 있어야 돈다.
-- CI(`.github/workflows/deploy.yml`): vault를 `vault/`에 두 번째 checkout하고 `GARDEN_VAULT_ROOT`로 넘긴다. main push, 매일 04:00 KST, 수동 실행(`gh workflow run deploy.yml`)으로 돈다. **vault만 바뀌면 다음 예약 빌드까지 사이트에 반영되지 않는다.**
+- CI(`.github/workflows/deploy.yml`): vault를 `vault/`에 두 번째 checkout하고 `GARDEN_VAULT_ROOT`로 넘긴다. main push, 매일 04:00 KST, 수동 실행(`gh workflow run deploy.yml`)으로 돈다. PR에서는 같은 검사를 실행하되 배포하지 않는다. **vault만 바뀌면 다음 예약 빌드까지 사이트에 반영되지 않는다.**
 - 노트 작성 규칙(frontmatter 속성, 허용 값)의 정본은 vault의 `99_Templates/_property-schema.md`다. 사이트 쪽 표시 규칙은 `AUTHORING.md`에 있다. 콘텐츠 렌더링을 바꾸기 전에 먼저 읽는다.
 - 방문자용 소개 원고는 `src/content/about.md`에서 관리한다. `src/pages/about.astro`가 일반 Markdown으로 렌더링하며, vault 노트 컬렉션에는 포함하지 않는다.
 
@@ -57,7 +57,7 @@ config.json ──▶ publication.ts (공개 판정)
 - **조립 모듈**: `garden.ts`는 공개 후보를 고르고 노트 레코드와 공개 색인을 만든 뒤 각 단계를 잇는다. 파일 탐색과 frontmatter는 `vault-files.ts`, 공개 본문·목차·요약은 `note-body.ts`, 위키 링크 해석은 `links.ts`가 맡는다. 책장은 `books.ts`의 `readBooks`, 블로그의 연재·발행처 묶음은 `blog.ts`의 `assembleBlog`, 개발 노트 분류는 `development.ts`의 `groupDevelopment`가 만든다. 본문·썸네일이 쓸 수 있는 자산과 dist로 복사할 목록은 `public-assets.ts`의 `createAssetResolver`가 정한다. 노트 링크 해석과 렌더링은 공개 색인에 기대므로 `garden.ts`에 둔다. 이 모듈들은 `garden.ts`를 import하지 않고 레코드 목록만 받으므로 순환 의존이 생기지 않는다.
 - **클라이언트 JS**: 홈(`hero.ts`)과 지도(`map.ts`)는 페이지에 인라인된 노드·간선(`data-hero-data`, `data-map-data`, `graph-data.ts`)으로 스크립트 실행 즉시 그래프를 올린다. 홈은 빌드 때 계산한 좌표까지 싣고, 지도는 무대 크기에 맞춰 배치한다. 지도 패널이 쓰는 노트 정보·참조 관계도 같은 JSON에 실어 fetch가 없다. 검색만 `search.json`을 열 때 fetch한다. `data/site.json`은 공개 데이터 엔드포인트이자 check-dist의 기준 자료로 남는다. `integrations/module-preload.ts`가 빌드 산출물의 정적 import를 따라가 엔진 청크에 `modulepreload`를 달고, 지도 페이지 스크립트는 `<head>`로 옮겨 `blocking="render"`를 달아 그래프가 올라간 뒤에 첫 화면을 그린다(지도는 무대 크기가 화면마다 달라 스냅샷을 둘 수 없다). 그 전에 보이는 데스크톱 스냅샷(`snapshot.ts`의 `desktop` 프리셋)은 엔진과 같은 배치 규칙(`label.ts`의 `placeLabels`)과 같은 맞춤으로 그려서 교체가 눈에 띄지 않는다. 제목 배치 규칙을 바꾸면 두 쪽이 같이 바뀐다. 그래프는 프레임워크 없는 SVG 엔진 `src/graph/engine.ts`가 그린다. `src/graph`의 나머지 모듈은 DOM을 만지지 않는 순수 함수이고 각각 단위 테스트가 있다.
 - **dev 감시**: `loaders/vault.ts`가 include 루트·Books·`config.json`·검토된 자산을 watcher에 등록하고, `refresh-coordinator.ts`가 디바운스와 직렬화를 맡아 notes·books 스토어를 한 번의 재조립으로 채운다.
-- **OG 카드**: `src/lib/og.ts`. 최종 SVG 문자열 + 폰트 정체 + resvg 버전의 해시가 캐시 키라 수동 버전 상수가 없다. 캐시는 `node_modules/.cache/garden-og-images`와 `garden-og-fonts`이고 CI가 복원한다.
+- **OG 카드**: `src/lib/og.ts`. 최종 SVG 문자열 + 폰트 정체 + resvg 버전의 해시가 캐시 키라 수동 버전 상수가 없다. 캐시는 `node_modules/.cache/garden-og-images`와 `garden-og-fonts`이고 CI가 복원한다. 폰트는 고정 출처와 SHA-256으로 다운로드 및 캐시를 검증한다.
 
 ### 공개 범위 규칙 (바꿀 때 주의)
 
@@ -89,7 +89,7 @@ vault 원문은 건드리지 않고 사이트로 나가는 사본만 바꾼다(`
 
 `content-model.ts`는 노트 컬렉션 필드를 Zod 스키마로 공유하고 공개 노트·책·그래프·패널·컬렉션 엔트리 타입을 정의한다. 조립 노트의 썸네일 경로와 Astro 컬렉션의 이미지 메타데이터는 구분한다. 임시 vault 통합 테스트로 실제 조립 결과를 대조한다.
 
-TypeScript는 `astro check`가 지원하는 6.x를 쓴다. 현재 TypeScript 7은 검사 도구에 필요한 programmatic API를 제공하지 않는다. 상대 import에는 실제 `.ts` 확장자를 적고 타입은 `import type`으로 가져온다. 테스트도 TypeScript이고 `node:test`를 그대로 쓰며, Node 26의 타입 스트리핑으로 빌드 단계 없이 실행한다. 소스·설정·빌드 도구와 테스트가 모두 `npm run check`의 검사 대상이다. `erasableSyntaxOnly`로 실행 코드 변환이 필요한 enum·매개변수 프로퍼티를 막는다. 원격 Mermaid 모듈은 `remote-modules.d.ts`에 사용하는 API만 선언한다.
+TypeScript는 `astro check`가 지원하는 6.x를 쓴다. 현재 TypeScript 7은 검사 도구에 필요한 programmatic API를 제공하지 않는다. 상대 import에는 실제 `.ts` 확장자를 적고 타입은 `import type`으로 가져온다. 테스트도 TypeScript이고 `node:test`를 그대로 쓰며, Node 26의 타입 스트리핑으로 빌드 단계 없이 실행한다. 소스·설정·빌드 도구와 테스트가 모두 `npm run check`의 검사 대상이다. `erasableSyntaxOnly`로 실행 코드 변환이 필요한 enum·매개변수 프로퍼티를 막는다. Mermaid는 npm 의존성으로 관리하며 필요한 페이지에서 동적 import로 불러온다.
 
 ## 코드 스타일
 
