@@ -7,14 +7,14 @@ import { projectPaths } from './get-garden.ts';
 // Gowun Batang은 정적 Bold가 있어 사이트 제목과 같은 굵기로 그려진다(가변 폰트는 resvg가 굵기 축을 무시한다).
 const FONTS = [
   {
-    'file': 'GowunBatang-Bold.ttf',
-    'url': 'https://raw.githubusercontent.com/google/fonts/539f6c4bb51e9b328dd5826bcbf2fd9b1ce56e19/ofl/gowunbatang/GowunBatang-Bold.ttf',
-    'sha256': 'dbfcaa646e5831e7478524924f02906f550285a5050699b4e38c9950b3ec4b94'
+    file: 'GowunBatang-Bold.ttf',
+    url: 'https://raw.githubusercontent.com/google/fonts/539f6c4bb51e9b328dd5826bcbf2fd9b1ce56e19/ofl/gowunbatang/GowunBatang-Bold.ttf',
+    sha256: 'dbfcaa646e5831e7478524924f02906f550285a5050699b4e38c9950b3ec4b94'
   },
   {
-    'file': 'Pretendard-Medium.otf',
-    'url': 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/public/static/Pretendard-Medium.otf',
-    'sha256': 'd39e50e4bb52b4993b6a4eeb821a171254745bd824446af01e1f616b89fface0'
+    file: 'Pretendard-Medium.otf',
+    url: 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/public/static/Pretendard-Medium.otf',
+    sha256: 'd39e50e4bb52b4993b6a4eeb821a171254745bd824446af01e1f616b89fface0'
   }
 ];
 const MIN_FONT_BYTES = 200_000; // 둘 다 이보다 훨씬 크다. 잘린 파일을 걸러내는 하한.
