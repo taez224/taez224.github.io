@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { MERMAID_CONFIG } from '../src/scripts/mermaid-config.ts';
 import { fitDiagram, pinsOwnTheme, renderMermaidBlocks } from '../src/scripts/mermaid-render.ts';
 
 // 렌더링된 SVG의 대역이다. max-width가 100%가 되면 컨테이너 폭에 맞춰 줄어든 것으로 본다.
@@ -101,6 +102,15 @@ test('the layout engine, look and wrapping width are pinned instead of following
   assert.equal(config?.layout, 'dagre');
   assert.equal(config?.look, 'neo');
   assert.equal(config?.flowchart?.wrappingWidth, 120);
+});
+
+// 12는 짧은 라벨을 120px까지 늘려 노드 폭을 맞춘다. 한국어 라벨은 두세 글자가 많아 그 자리가 거의 빈 여백이 되고,
+// 흐름도가 370px까지 넓어져 320px 화면에서 가로로 스크롤한다. 이 값을 받는 네 종류에 모두 적어야 한다.
+test('the minimum node width is lowered for every diagram type that honours it', () => {
+  const limited = ['flowchart', 'state', 'usecase', 'agentflow'] as const;
+  for (const kind of limited) {
+    assert.equal(MERMAID_CONFIG[kind]?.minNodeWidth, 60, `${kind}가 12의 기본 바닥값을 그대로 쓴다`);
+  }
 });
 
 // 렌더링 결과를 대역 컨테이너에 심는다. 컨테이너 폭과 SVG의 원래 폭으로 맞춤 규칙을 시험한다.
@@ -352,6 +362,6 @@ test('Mermaid accepts frontmatter theme variables', async () => {
     await mermaid.parse('---\nconfig:\n  theme: dark\n  themeVariables:\n    primaryColor: "#ff0000"\n---\nflowchart LR\n');
     assert.equal(mermaid.mermaidAPI.getConfig().themeVariables.primaryColor, '#ff0000');
   } finally {
-    mermaid.initialize({ theme: 'base' });
+    mermaid.initialize(MERMAID_CONFIG);
   }
 });

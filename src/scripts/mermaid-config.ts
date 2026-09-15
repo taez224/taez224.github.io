@@ -37,15 +37,21 @@ const RENDERING_BASE: MermaidConfig = {
   // 200으로 올리면 짧은 흐름도가 컨테이너를 넘어 가로 스크롤을 얻는다(k8s 도표 774px → 905px).
   // 12의 기본값과 같지만 측정해서 고른 값이므로 적어 둔다. 긴 라벨이 필요한 도표는
   // 그 노트의 front matter에 config.flowchart.wrappingWidth를 적어 개별로 올린다.
-  flowchart: { useMaxWidth: false, wrappingWidth: 120 },
+  // 12가 새로 넣은 minNodeWidth는 짧은 라벨을 이 폭까지 늘려 노드 폭을 고르게 맞춘다. 기본값은 120이다.
+  // 한국어 라벨은 두세 글자가 많아 거의 모든 노드가 이 바닥값에 붙고, 남는 자리가 전부 빈 여백이 된다.
+  // 60으로 내리면 라벨 크기는 그대로 둔 채 흐름도가 370px에서 250px, 상태도가 347px에서 249px이 되어
+  // 320px 화면에서 가로 스크롤 없이 들어간다. 글자 크기는 이 문제에 듣지 않는다. 16px을 14px로 내려도
+  // 폭은 0~3%밖에 줄지 않는다. 폭을 정하는 것이 글자가 아니라 이 바닥값이기 때문이다.
+  // minNodeWidth를 받는 종류는 흐름도·상태도·유스케이스·에이전트 흐름 넷이다.
+  flowchart: { useMaxWidth: false, wrappingWidth: 120, minNodeWidth: 60 },
   // useMaxWidth는 도표 종류마다 따로 있다. flowchart만 끄면 나머지는 좁은 화면에서 컨테이너에
   // 맞춰 줄어들어 320px에서 글자가 6px까지 작아진다. 쓰는 종류를 모두 적고, 새 종류를 쓰게 되면 여기에 더한다.
   sequence: { useMaxWidth: false },
-  state: { useMaxWidth: false },
+  state: { useMaxWidth: false, minNodeWidth: 60 },
   class: { useMaxWidth: false },
   er: { useMaxWidth: false },
-  usecase: { useMaxWidth: false },
-  agentflow: { useMaxWidth: false }
+  usecase: { useMaxWidth: false, minNodeWidth: 60 },
+  agentflow: { useMaxWidth: false, minNodeWidth: 60 }
 };
 
 // 도표의 테마·배치·외형을 여기서만 바꾼다. 값을 비교할 때 이 파일 하나만 고치면 된다.
