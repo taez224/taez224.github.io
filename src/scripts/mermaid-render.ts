@@ -1,5 +1,6 @@
+import { JSON_SCHEMA, load } from 'js-yaml';
 import type { Mermaid } from 'mermaid';
-import { FONT_WAIT_MS, LABEL_FONT, LABEL_FONT_PX, MERMAID_CONFIG, MIN_READABLE_LABEL_PX } from './mermaid-config.ts';
+import { FONT_WAIT_MS, LABEL_FONT, LABEL_FONT_PX, MERMAID_CONFIG, MERMAID_PINNED_THEME_CONFIG, MIN_READABLE_LABEL_PX } from './mermaid-config.ts';
 import { setViewerButton } from './mermaid-viewer.ts';
 type MermaidRenderer = Pick<Mermaid, 'initialize' | 'run'>;
 
@@ -68,20 +69,49 @@ async function requestLabelFont(blocks: Element[], waitMs: number): Promise<void
   clearTimeout(timer);
 }
 
+// Mermaid와 같은 앞머리 경계와 JSON 스키마로 읽는다. 정규식으로 키를 찾으면
+// 인라인 매핑과 따옴표 키를 놓치고, 제목의 여러 줄 문자열을 설정으로 오인한다.
+const FRONT_MATTER = /^([^\S\n\r]*)-{3}\s*[\n\r](.*?)[\n\r]\1-{3}\s*[\n\r]+/s;
+
+export function pinsOwnTheme(source: string): boolean {
+  const match = FRONT_MATTER.exec(source.replace(/\r\n?/g, '\n'));
+  if (!match) return false;
+  const indent = match[1];
+  const body = match[2].split('\n').map((line) => line.startsWith(indent) ? line.slice(indent.length) : line).join('\n');
+  try {
+    const metadata: unknown = load(body, { schema: JSON_SCHEMA });
+    if (!metadata || typeof metadata !== 'object' || !('config' in metadata)) return false;
+    const config = metadata.config;
+    return !!config && typeof config === 'object' && 'theme' in config
+      && typeof config.theme === 'string' && config.theme.trim().length > 0;
+  } catch {
+    // 잘못된 YAML은 Mermaid의 기존 오류 복구 경로에서 원문으로 남긴다.
+    return false;
+  }
+}
+
 export async function renderMermaidBlocks(blocks: Element[], mermaid: MermaidRenderer, fontWaitMs = FONT_WAIT_MS): Promise<void> {
   mermaid.initialize(MERMAID_CONFIG);
+  // 설정은 부를 때마다 기본값에서 다시 만들어지므로 도표마다 필요한 것만 갈아 끼우면 된다.
+  let applied = MERMAID_CONFIG;
   await requestLabelFont(blocks, fontWaitMs);
   for (const code of blocks) {
     const pre = code.closest('pre');
     if (!pre) continue;
+    const source = code.textContent ?? '';
+    const config = pinsOwnTheme(source) ? MERMAID_PINNED_THEME_CONFIG : MERMAID_CONFIG;
     const container = code.ownerDocument.createElement('div');
     container.className = 'mermaid';
-    container.textContent = code.textContent;
+    container.textContent = source;
     // 스크린리더가 도표 영역임을 알도록 이름을 준다. 포커스는 스크롤이 생긴 도표에만 fitDiagram이 준다.
     container.setAttribute('role', 'group');
     container.setAttribute('aria-label', '도표');
     pre.replaceWith(container);
     try {
+      if (config !== applied) {
+        mermaid.initialize(config);
+        applied = config;
+      }
       await mermaid.run({ nodes: [container] });
       refreshDiagram(container);
       refitOnResize(container);
