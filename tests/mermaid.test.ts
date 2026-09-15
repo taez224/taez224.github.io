@@ -1,11 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { fitDiagram, renderMermaidBlocks } from '../src/scripts/mermaid-render.ts';
+import { MERMAID_CONFIG } from '../src/scripts/mermaid-config.ts';
+import { fitDiagram, pinsOwnTheme, renderMermaidBlocks } from '../src/scripts/mermaid-render.ts';
 
 // 렌더링된 SVG의 대역이다. max-width가 100%가 되면 컨테이너 폭에 맞춰 줄어든 것으로 본다.
 type FakeSvg = { style: { maxWidth: string; height: string } };
 
-function fixture(fonts?: unknown) {
+function fixture(fonts?: unknown, texts: string[] = ['invalid', 'valid']) {
   const slots: unknown[] = [];
   const makeNode = (textContent: string) => ({
     textContent, className: '',
@@ -28,7 +29,7 @@ function fixture(fonts?: unknown) {
     createElement: () => Object.assign(makeNode(''), { ownerDocument: document }),
     fonts
   };
-  const blocks = ['invalid', 'valid'].map((text) => {
+  const blocks = texts.map((text) => {
     const pre = makeNode(text);
     slots.push(pre);
     return { textContent: text, ownerDocument: document, closest: () => pre };
@@ -101,6 +102,15 @@ test('the layout engine, look and wrapping width are pinned instead of following
   assert.equal(config?.layout, 'dagre');
   assert.equal(config?.look, 'neo');
   assert.equal(config?.flowchart?.wrappingWidth, 120);
+});
+
+// 12는 짧은 라벨을 120px까지 늘려 노드 폭을 맞춘다. 한국어 라벨은 두세 글자가 많아 그 자리가 거의 빈 여백이 되고,
+// 흐름도가 370px까지 넓어져 320px 화면에서 가로로 스크롤한다. 이 값을 받는 네 종류에 모두 적어야 한다.
+test('the minimum node width is lowered for every diagram type that honours it', () => {
+  const limited = ['flowchart', 'state', 'usecase', 'agentflow'] as const;
+  for (const kind of limited) {
+    assert.equal(MERMAID_CONFIG[kind]?.minNodeWidth, 60, `${kind}가 12의 기본 바닥값을 그대로 쓴다`);
+  }
 });
 
 // 렌더링 결과를 대역 컨테이너에 심는다. 컨테이너 폭과 SVG의 원래 폭으로 맞춤 규칙을 시험한다.
@@ -289,4 +299,69 @@ test('fitDiagram excludes container padding when checking the minimum readable l
   assert.equal(fitDiagram(container), true);
   assert.equal(svg.style.maxWidth, '', '실제 라벨은 12.8px이 되므로 축소하지 않는다');
   assert.equal(attributes.tabindex, '0');
+});
+
+// 앞머리에 theme을 적은 도표는 그 테마의 색을 보여 주려는 것이다. 라벨에 들어 있는 글자까지 테마로
+// 읽으면 멀쩡한 도표에서 사이트 색이 벗겨지므로, 맨 앞의 앞머리 안만 본다.
+test('only a theme key inside the leading front matter counts as pinning a theme', () => {
+  assert.equal(pinsOwnTheme('---\nconfig:\n  theme: dark\n---\nflowchart LR\n  A --> B'), true);
+  assert.equal(pinsOwnTheme('---\nconfig:\n  layout: elk\n  look: neo\n---\nflowchart LR\n  A --> B'), false);
+  assert.equal(pinsOwnTheme('---\ntitle: 흐름도\n---\nflowchart LR\n  A --> B'), false);
+  // 클래스도의 멤버와 ER의 속성은 `이름: 타입`으로 쓴다. 앞머리 밖을 보면 이런 줄이 테마로 읽힌다.
+  assert.equal(pinsOwnTheme('classDiagram\n  class 설정 {\n    theme: String\n  }'), false, '클래스 멤버는 앞머리가 아니다');
+  assert.equal(pinsOwnTheme('---\nconfig:\n  layout: elk\n---\nclassDiagram\n  class 설정 {\n    theme: String\n  }'), false);
+  assert.equal(pinsOwnTheme('flowchart LR\n  A["theme: dark"] --> B'), false, '라벨 안의 글자는 앞머리가 아니다');
+  assert.equal(pinsOwnTheme('flowchart LR\n  A --> B'), false);
+});
+
+// 테마를 명시한 도표에는 사이트 팔레트가 섞이지 않게 하고, 다음 일반 도표는 사이트 설정으로 복귀한다.
+test('a diagram pinning its own theme drops the site palette while keeping the size rules', async () => {
+  const pinned = '---\nconfig:\n  theme: dark\n---\nflowchart LR\n  A --> B';
+  const plain = 'flowchart LR\n  A --> B';
+  type Config = Parameters<Parameters<typeof renderMermaidBlocks>[1]['initialize']>[0];
+  let current: Config | undefined;
+  const drawn: (Config | undefined)[] = [];
+  const f = fixture(undefined, [pinned, plain, pinned]);
+  await renderMermaidBlocks(f.blocks, {
+    initialize(received) { current = received; },
+    async run({ nodes } = {}) {
+      drawn.push(current);
+      assert.ok(nodes);
+      nodes[0].textContent = 'rendered SVG';
+    }
+  });
+  assert.equal(drawn.length, 3);
+  const [first, middle, last] = drawn;
+  assert.equal(first?.theme, undefined, '테마를 적은 도표에 사이트 테마를 씌우면 안 된다');
+  assert.equal(first?.themeVariables?.borderColorArray, undefined, '사이트 팔레트가 남아 있다');
+  assert.match(String(first?.themeVariables?.fontFamily), /Pretendard/, '서체까지 벗기면 한 페이지에서 글자가 따로 논다');
+  assert.equal(first?.flowchart?.useMaxWidth, false, '크기 규칙은 테마와 무관하게 같아야 한다');
+  assert.equal(first?.layout, 'dagre');
+  assert.equal(middle?.theme, 'redux-color', '앞머리가 없는 도표는 사이트 설정으로 그린다');
+  assert.ok(Array.isArray(middle?.themeVariables?.borderColorArray));
+  assert.equal(last?.theme, undefined, '사이트 설정으로 돌아온 뒤 다시 벗겨지지 않았다');
+});
+
+
+test('theme detection follows YAML mappings rather than matching text inside metadata', () => {
+  const wrap = (body: string) => `---\n${body}\n---\nflowchart LR\n A --> B`;
+  assert.equal(pinsOwnTheme(wrap('config: { theme: dark }')), true);
+  assert.equal(pinsOwnTheme(wrap('config:\n  "theme": dark')), true);
+  assert.equal(pinsOwnTheme(wrap('title: |\n  theme: dark\nconfig:\n  layout: dagre')), false);
+  assert.equal(pinsOwnTheme(wrap('theme: dark')), false);
+  assert.equal(pinsOwnTheme(wrap('config: { theme: null }')), false);
+  assert.equal(pinsOwnTheme(wrap('config: [broken')), false);
+  assert.equal(pinsOwnTheme(wrap('config: { theme: dark }').replaceAll('\n', '\r\n')), true);
+});
+
+test('Mermaid accepts frontmatter theme variables', async () => {
+  const { default: mermaid } = await import('mermaid');
+  mermaid.initialize({ theme: 'base' });
+  try {
+    // 빈 흐름도는 DOM 없이 실제 Mermaid의 설정 해석을 검증할 수 있다.
+    await mermaid.parse('---\nconfig:\n  theme: dark\n  themeVariables:\n    primaryColor: "#ff0000"\n---\nflowchart LR\n');
+    assert.equal(mermaid.mermaidAPI.getConfig().themeVariables.primaryColor, '#ff0000');
+  } finally {
+    mermaid.initialize(MERMAID_CONFIG);
+  }
 });
