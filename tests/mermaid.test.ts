@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import mermaid from 'mermaid';
 import { MERMAID_CONFIG } from '../src/scripts/mermaid-config.ts';
 import { fitDiagram, pinsOwnTheme, renderMermaidBlocks } from '../src/scripts/mermaid-render.ts';
 
@@ -40,6 +41,7 @@ function fixture(fonts?: unknown, texts: string[] = ['invalid', 'valid']) {
 test('a failed diagram restores its original block and later diagrams still render', async () => {
   const f = fixture();
   await renderMermaidBlocks(f.blocks, {
+    parse: async () => ({ diagramType: 'flowchart-v2', config: {} }),
     initialize() {},
     async run({ nodes } = {}) {
       assert.ok(nodes);
@@ -54,7 +56,7 @@ test('a failed diagram restores its original block and later diagrams still rend
 
 test('initialization failure leaves all original code blocks intact', async () => {
   const f = fixture();
-  await assert.rejects(renderMermaidBlocks(f.blocks, { initialize() { throw new Error('initialization failed'); }, async run() {} }));
+  await assert.rejects(renderMermaidBlocks(f.blocks, { parse: async () => ({ diagramType: 'flowchart-v2', config: {} }), initialize() { throw new Error('initialization failed'); }, async run() {} }));
   assert.deepEqual(f.slots, f.originals);
 });
 
@@ -62,6 +64,7 @@ test('flowcharts keep their natural width instead of shrinking into the column',
   let useMaxWidth: boolean | undefined;
   const f = fixture();
   await renderMermaidBlocks(f.blocks, {
+    parse: async () => ({ diagramType: 'flowchart-v2', config: {} }),
     initialize(config) { useMaxWidth = config?.flowchart?.useMaxWidth; },
     async run({ nodes } = {}) {
       assert.ok(nodes);
@@ -77,6 +80,7 @@ test('every diagram type in use is drawn at its natural size', async () => {
   let config: Record<string, { useMaxWidth?: boolean } | undefined> | undefined;
   const f = fixture();
   await renderMermaidBlocks(f.blocks, {
+    parse: (source, options) => mermaid.parse(source, options),
     initialize(received) { config = received as Record<string, { useMaxWidth?: boolean } | undefined>; },
     async run({ nodes } = {}) {
       assert.ok(nodes);
@@ -93,6 +97,7 @@ test('the layout engine, look and wrapping width are pinned instead of following
   let config: Parameters<Parameters<typeof renderMermaidBlocks>[1]['initialize']>[0] | undefined;
   const f = fixture();
   await renderMermaidBlocks(f.blocks, {
+    parse: (source, options) => mermaid.parse(source, options),
     initialize(received) { config = received; },
     async run({ nodes } = {}) {
       assert.ok(nodes);
@@ -128,7 +133,7 @@ type Rendered = { getAttribute(name: string): string | null; svg: FakeSvg | null
 
 test('a diagram that fits the column is neither scaled nor a tab stop, but still carries a name', async () => {
   const f = fixture();
-  await renderMermaidBlocks(f.blocks, { initialize() {}, run: renderInto(700, 500) });
+  await renderMermaidBlocks(f.blocks, { parse: async () => ({ diagramType: 'flowchart-v2', config: {} }), initialize() {}, run: renderInto(700, 500) });
   const container = f.slots[1] as Rendered;
   assert.equal(container.svg?.style.maxWidth, '');
   assert.equal(container.getAttribute('tabindex'), null);
@@ -138,7 +143,7 @@ test('a diagram that fits the column is neither scaled nor a tab stop, but still
 
 test('a diagram slightly wider than the column is scaled down while its labels stay readable', async () => {
   const f = fixture();
-  await renderMermaidBlocks(f.blocks, { initialize() {}, run: renderInto(700, 760) });
+  await renderMermaidBlocks(f.blocks, { parse: async () => ({ diagramType: 'flowchart-v2', config: {} }), initialize() {}, run: renderInto(700, 760) });
   const container = f.slots[1] as Rendered;
   assert.equal(container.svg?.style.maxWidth, '100%');
   assert.equal(container.svg?.style.height, 'auto');
@@ -147,7 +152,7 @@ test('a diagram slightly wider than the column is scaled down while its labels s
 
 test('a diagram that would shrink its labels below the readable size keeps its width and becomes keyboard-scrollable', async () => {
   const f = fixture();
-  await renderMermaidBlocks(f.blocks, { initialize() {}, run: renderInto(700, 2400) });
+  await renderMermaidBlocks(f.blocks, { parse: async () => ({ diagramType: 'flowchart-v2', config: {} }), initialize() {}, run: renderInto(700, 2400) });
   const container = f.slots[1] as Rendered;
   assert.equal(container.svg?.style.maxWidth, '');
   assert.equal(container.getAttribute('tabindex'), '0');
@@ -157,6 +162,7 @@ test('the font request carries the label font and every diagram source', async (
   const requests: { font: string; text: string }[] = [];
   const f = fixture({ load: async (font: string, text: string) => { requests.push({ font, text }); } });
   await renderMermaidBlocks(f.blocks, {
+    parse: async () => ({ diagramType: 'flowchart-v2', config: {} }),
     initialize() {},
     async run({ nodes } = {}) {
       assert.ok(nodes);
@@ -175,6 +181,7 @@ test('no diagram renders until the font request settles', async () => {
   let runs = 0;
   const f = fixture({ load: () => pending });
   const rendering = renderMermaidBlocks(f.blocks, {
+    parse: async () => ({ diagramType: 'flowchart-v2', config: {} }),
     initialize() {},
     async run({ nodes } = {}) {
       runs += 1;
@@ -193,6 +200,7 @@ test('no diagram renders until the font request settles', async () => {
 test('diagrams still render when the font request fails', async () => {
   const f = fixture({ load: async () => { throw new Error('font subset unavailable'); } });
   await renderMermaidBlocks(f.blocks, {
+    parse: async () => ({ diagramType: 'flowchart-v2', config: {} }),
     initialize() {},
     async run({ nodes } = {}) {
       assert.ok(nodes);
@@ -206,6 +214,7 @@ test('diagrams still render when the font request fails', async () => {
 test('rendering proceeds when the font request outlives the wait', { timeout: 500 }, async () => {
   const f = fixture({ load: () => new Promise(() => {}) });
   await renderMermaidBlocks(f.blocks, {
+    parse: async () => ({ diagramType: 'flowchart-v2', config: {} }),
     initialize() {},
     async run({ nodes } = {}) {
       assert.ok(nodes);
@@ -301,19 +310,6 @@ test('fitDiagram excludes container padding when checking the minimum readable l
   assert.equal(attributes.tabindex, '0');
 });
 
-// 앞머리에 theme을 적은 도표는 그 테마의 색을 보여 주려는 것이다. 라벨에 들어 있는 글자까지 테마로
-// 읽으면 멀쩡한 도표에서 사이트 색이 벗겨지므로, 맨 앞의 앞머리 안만 본다.
-test('only a theme key inside the leading front matter counts as pinning a theme', () => {
-  assert.equal(pinsOwnTheme('---\nconfig:\n  theme: dark\n---\nflowchart LR\n  A --> B'), true);
-  assert.equal(pinsOwnTheme('---\nconfig:\n  layout: elk\n  look: neo\n---\nflowchart LR\n  A --> B'), false);
-  assert.equal(pinsOwnTheme('---\ntitle: 흐름도\n---\nflowchart LR\n  A --> B'), false);
-  // 클래스도의 멤버와 ER의 속성은 `이름: 타입`으로 쓴다. 앞머리 밖을 보면 이런 줄이 테마로 읽힌다.
-  assert.equal(pinsOwnTheme('classDiagram\n  class 설정 {\n    theme: String\n  }'), false, '클래스 멤버는 앞머리가 아니다');
-  assert.equal(pinsOwnTheme('---\nconfig:\n  layout: elk\n---\nclassDiagram\n  class 설정 {\n    theme: String\n  }'), false);
-  assert.equal(pinsOwnTheme('flowchart LR\n  A["theme: dark"] --> B'), false, '라벨 안의 글자는 앞머리가 아니다');
-  assert.equal(pinsOwnTheme('flowchart LR\n  A --> B'), false);
-});
-
 // 테마를 명시한 도표에는 사이트 팔레트가 섞이지 않게 하고, 다음 일반 도표는 사이트 설정으로 복귀한다.
 test('a diagram pinning its own theme drops the site palette while keeping the size rules', async () => {
   const pinned = '---\nconfig:\n  theme: dark\n---\nflowchart LR\n  A --> B';
@@ -321,8 +317,9 @@ test('a diagram pinning its own theme drops the site palette while keeping the s
   type Config = Parameters<Parameters<typeof renderMermaidBlocks>[1]['initialize']>[0];
   let current: Config | undefined;
   const drawn: (Config | undefined)[] = [];
-  const f = fixture(undefined, [pinned, plain, pinned]);
+  const f = fixture(undefined, [pinned, plain, "%%{init: {'theme': 'dark'}}%%\nflowchart LR\n  A --> B"]);
   await renderMermaidBlocks(f.blocks, {
+    parse: (source, options) => mermaid.parse(source, options),
     initialize(received) { current = received; },
     async run({ nodes } = {}) {
       drawn.push(current);
@@ -343,15 +340,41 @@ test('a diagram pinning its own theme drops the site palette while keeping the s
 });
 
 
-test('theme detection follows YAML mappings rather than matching text inside metadata', () => {
-  const wrap = (body: string) => `---\n${body}\n---\nflowchart LR\n A --> B`;
-  assert.equal(pinsOwnTheme(wrap('config: { theme: dark }')), true);
-  assert.equal(pinsOwnTheme(wrap('config:\n  "theme": dark')), true);
-  assert.equal(pinsOwnTheme(wrap('title: |\n  theme: dark\nconfig:\n  layout: dagre')), false);
-  assert.equal(pinsOwnTheme(wrap('theme: dark')), false);
-  assert.equal(pinsOwnTheme(wrap('config: { theme: null }')), false);
-  assert.equal(pinsOwnTheme(wrap('config: [broken')), false);
-  assert.equal(pinsOwnTheme(wrap('config: { theme: dark }').replaceAll('\n', '\r\n')), true);
+test('theme detection uses Mermaid frontmatter, directives and the active diagram section', async () => {
+  mermaid.initialize(MERMAID_CONFIG);
+  const cases: [string, boolean][] = [
+    ['---\nconfig: { theme: dark }\n---\nflowchart LR\n', true],
+    ['---\nconfig:\n  "theme": dark\n---\nflowchart LR\n', true],
+    ['---\ntitle: |\n  theme: dark\n---\nflowchart LR\n', false],
+    ["%%{init: {'theme': 'dark'}}%%\nflowchart LR\n", true],
+    ['---\nconfig: { flowchart: { theme: dark } }\n---\nflowchart LR\n', true],
+    ['---\nconfig: { sequence: { theme: dark } }\n---\nflowchart LR\n', false]
+  ];
+  for (const [source, expected] of cases) {
+    const parsed = await mermaid.parse(source);
+    assert.ok(parsed);
+    assert.equal(pinsOwnTheme(parsed), expected, source);
+  }
+  const merged = await mermaid.parse("---\nconfig: { theme: dark }\n---\n%%{init: {'theme': 'neutral'}}%%\nflowchart LR\n");
+  assert.ok(merged);
+  assert.equal(merged.config.theme, 'neutral');
+});
+
+test('a failed parse preserves the original and does not prevent later diagrams rendering', async () => {
+  const f = fixture(undefined, ['bad', 'throws', 'valid']);
+  let runs = 0;
+  await renderMermaidBlocks(f.blocks, {
+    initialize() {},
+    async parse(source) {
+      if (source === 'bad') return false;
+      if (source === 'throws') throw new Error('invalid metadata');
+      return { diagramType: 'flowchart-v2', config: {} };
+    },
+    async run() { runs += 1; }
+  });
+  assert.equal(f.slots[0], f.originals[0]);
+  assert.equal(f.slots[1], f.originals[1]);
+  assert.equal(runs, 1);
 });
 
 test('Mermaid accepts frontmatter theme variables', async () => {
