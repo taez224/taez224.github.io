@@ -107,7 +107,7 @@ export const MERMAID_CONFIG: MermaidConfig = {
   }
 };
 
-// 앞머리에 theme을 적은 도표에 쓰는 설정이다. 그런 도표는 그 테마의 색을 보여 주려는 것이므로
+// 앞머리나 init 지시문으로 테마를 지정한 도표에 쓰는 설정이다. 그런 도표는 그 테마의 색을 보여 주려는 것이므로
 // 사이트 색이 도표별 테마에 섞이지 않도록 초기화 설정에서 팔레트를 제외한다.
 // 서체는 기본으로 유지하되 도표의 themeVariables가 명시한 값은 Mermaid가 적용한다.
 export const MERMAID_PINNED_THEME_CONFIG: MermaidConfig = {
