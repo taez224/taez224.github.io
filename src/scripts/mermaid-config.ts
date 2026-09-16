@@ -123,5 +123,11 @@ export const LABEL_FONT = '16px "Pretendard Variable"';
 export const LABEL_FONT_PX = 16;
 export const MIN_READABLE_LABEL_PX = 13;
 
+// 좁은 화면에서는 가로로 밀어 보는 것보다 도표 전체가 한눈에 들어오는 쪽을 택한다. 본문 CSS와 같은 720px에서 나눈다.
+// 375px 화면에서 도표 14개 중 10개가 13px 기준으로는 가로로 스크롤했고, 하한을 8px로 내리면 그중 7개가 들어간다.
+// 13px보다 작게 줄인 도표에는 크게 보기를 남겨 원래 크기로 읽을 수 있게 한다.
+export const NARROW_SCREEN_QUERY = '(max-width: 720px)';
+export const NARROW_MIN_READABLE_LABEL_PX = 8;
+
 // 폰트를 기다리는 시간이다. 도표 표시가 이보다 늦어지지 않게 끊는다.
 export const FONT_WAIT_MS = 1000;

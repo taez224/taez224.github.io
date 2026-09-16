@@ -1,5 +1,7 @@
 // 도표를 크게 보는 다이얼로그다. 본문의 도표는 스크롤과 글자 선택을 그대로 두고, 전체 구조를 한눈에
 // 보는 일만 여기로 옮긴다. 도표 전체를 누르게 하면 스크롤·선택과 부딪히므로 여는 수단은 버튼으로 둔다.
+import { NARROW_SCREEN_QUERY } from './mermaid-config.ts';
+
 const OPEN_CLASS = 'diagram-open';
 
 export function fitViewerSize(width: number, height: number, availableWidth: number, availableHeight: number): { width: number; height: number } {
@@ -7,7 +9,15 @@ export function fitViewerSize(width: number, height: number, availableWidth: num
   return { width: width * ratio, height: height * ratio };
 }
 
-// 넘치는 도표에만 버튼을 붙인다. 창 크기가 바뀌어 도표가 다 들어가게 되면 버튼도 떼어 낸다.
+// 크게 볼 이유가 있는 도표에만 버튼을 붙인다. 넘치는 도표와 본문에 맞추느라 라벨을 작게 줄인 도표다.
+// 창 크기가 바뀌어 그 이유가 사라지면 버튼도 떼어 낸다.
+
+// 좁은 화면에서 화면에 맞춰 열면 대화상자가 본문과 폭이 비슷해 도표가 거의 커지지 않는다.
+// 그래서 원래 크기로 열고, 전체 구조는 전체 보기 버튼으로 본다.
+export function opensFitted(view: { matchMedia?: (query: string) => { matches: boolean } } | null | undefined): boolean {
+  return !(view?.matchMedia?.(NARROW_SCREEN_QUERY).matches ?? false);
+}
+
 export function setViewerButton(container: Element, needed: boolean, onRestore?: () => void): void {
   const previous = container.previousElementSibling;
   const existing = previous && previous.classList.contains(OPEN_CLASS) ? previous : null;
@@ -57,8 +67,8 @@ function openViewer(container: Element, opener: HTMLElement, onRestore?: () => v
   svg.replaceWith(slot);
   stage.appendChild(svg);
 
-  // 처음에는 화면에 맞춰 전체 구조를 보여 주고, 버튼으로 원래 크기와 오간다.
-  let fitted = true;
+  // 넓은 화면에서는 화면에 맞춰 전체 구조를 먼저 보여 주고, 버튼으로 원래 크기와 오간다.
+  let fitted = opensFitted(doc.defaultView);
   const applyScale = () => {
     const style = doc.defaultView!.getComputedStyle(stage);
     const width = stage.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);

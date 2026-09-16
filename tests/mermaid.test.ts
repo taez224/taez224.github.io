@@ -253,7 +253,7 @@ test('fitDiagram re-decides when the container width changes and undoes an earli
   assert.equal(container.getAttribute('tabindex'), null, '넘치지 않게 되면 Tab 정지점을 거둔다');
 });
 
-// 크게 보기 버튼은 넘치는 도표에만 붙는다. 그 판단을 두 번 하지 않도록 fitDiagram이 결과를 넘긴다.
+// 크게 보기 버튼은 넘치는 도표와 작게 줄인 도표에만 붙는다. 그 판단을 두 번 하지 않도록 fitDiagram이 결과를 넘긴다.
 test('fitDiagram reports whether the diagram still overflows', () => {
   const svg: FakeSvg = { style: { maxWidth: '', height: '' } };
   const attributes: Record<string, string> = {};
@@ -293,6 +293,36 @@ test('fitDiagram keeps the max-width Mermaid set on a diagram that already fits'
   assert.equal(container.getAttribute('tabindex'), null);
 });
 
+
+// 좁은 화면에서는 라벨이 8px까지 줄어도 접어 넣는다. 13px보다 작아진 도표는 넘치지 않아도 크게 보기를 남긴다.
+test('fitDiagram shrinks further on narrow screens and keeps the viewer for small labels', () => {
+  const attributes: Record<string, string> = {};
+  const svg: FakeSvg = { style: { maxWidth: '', height: '' } };
+  const screen = { narrow: true };
+  const size = { clientWidth: 309, naturalWidth: 598 };
+  const container = {
+    get clientWidth() { return size.clientWidth; },
+    get scrollWidth() { return svg.style.maxWidth === '100%' ? size.clientWidth : Math.max(size.clientWidth, size.naturalWidth); },
+    ownerDocument: { defaultView: {
+      getComputedStyle: () => ({ paddingLeft: '0px', paddingRight: '0px' }),
+      matchMedia: (query: string) => ({ matches: screen.narrow && query === '(max-width: 720px)' })
+    } },
+    querySelector: (selector: string) => (selector === 'svg' ? svg : null),
+    setAttribute: (name: string, value: string) => { attributes[name] = value; },
+    removeAttribute: (name: string) => { delete attributes[name]; }
+  } as unknown as Element;
+  assert.equal(fitDiagram(container), true, '라벨이 8.3px이면 접어 넣되 크게 보기는 남긴다');
+  assert.equal(svg.style.maxWidth, '100%');
+  assert.equal(attributes.tabindex, undefined, '넘치지 않으므로 Tab 정지점은 두지 않는다');
+  size.naturalWidth = 759;
+  assert.equal(fitDiagram(container), true, '8px 밑으로 내려가는 도표는 원래 크기로 스크롤한다');
+  assert.equal(svg.style.maxWidth, '');
+  assert.equal(attributes.tabindex, '0');
+  size.naturalWidth = 598;
+  screen.narrow = false;
+  assert.equal(fitDiagram(container), true, '넓은 화면 규칙으로는 같은 도표를 줄이지 않는다');
+  assert.equal(svg.style.maxWidth, '');
+});
 
 test('fitDiagram excludes container padding when checking the minimum readable label size', () => {
   const attributes: Record<string, string> = {};
