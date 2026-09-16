@@ -201,14 +201,15 @@ test('callout code fences keep blank lines inside the code block', () => {
   const html = render('x.md', [
     '> [!note] 예시',
     '>',
-    '> ```js',
+    '> ```text',
     '> const a = 1;',
     '>',
     '> ```',
     '>',
     '> **굵게** 아님'
   ].join('\n'));
-  assert.match(html, /<pre><code class="language-js">const a = 1;\n\n<\/code><\/pre>/);
+  // 강조하지 않는 언어로 두어 산출물 바이트를 그대로 대조한다. 강조된 펜스는 highlight.test.ts가 본다.
+  assert.match(html, /<pre><code class="language-text">const a = 1;\n\n<\/code><\/pre>/);
   assert.match(html, /<p><strong>굵게<\/strong> 아님<\/p>/);
   assert.doesNotMatch(html, /<code[^>]*>[\s\S]*<p><\/p>/);
 });
@@ -263,7 +264,7 @@ test('invalid article callouts fall back to ordinary callouts without discarding
 test('article syntax is protected in fenced, indented and inline code', () => {
   const articleCards: PublicNote['articleCards'] = [];
   const html = renderWithArticles()('x.md', [
-    '```md',
+    '```text',
     '> [!article]',
     '> [[public.md]]',
     '```',
@@ -277,7 +278,7 @@ test('article syntax is protected in fenced, indented and inline code', () => {
     '> [[public.md]]'
   ].join('\n'), { articleCards });
   assert.equal(articleCards.length, 1);
-  assert.match(html, /<pre><code class="language-md">&gt; \[!article\]/);
+  assert.match(html, /<pre><code class="language-text">&gt; \[!article\]\n&gt; \[\[public\.md\]\]\n<\/code><\/pre>/);
   assert.match(html, /<pre><code>&gt; \[!article\]/);
   assert.match(html, /<code>&gt; \[!article\]<\/code>/);
   assert.match(html, /data-article-card="0"/);
