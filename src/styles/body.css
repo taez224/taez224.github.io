@@ -22,7 +22,22 @@
 .body blockquote { margin: 18px 0; padding: 4px 16px; border-left: 3px solid var(--line); color: var(--muted); }
 .body pre { overflow-x: auto; margin: 18px 0; padding: 14px 16px; border: 1px solid var(--line); background: var(--paper-strong); font-size: 14px; line-height: 1.6; }
 .body code { padding: 1px 4px; background: rgba(36,39,32,.08); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .88em; }
-.body pre code { padding: 0; background: transparent; }
+.body pre code { padding: 0; background: transparent; font-size: inherit; }
+/* 코드 색은 문법을 빠르게 구분하도록 정하며, 이곳에서만 관리한다.
+   종이색 배경(--paper-strong)에서 키워드·문자열·숫자·메타·타입은 6:1 이상, 주석은 5.3:1이다.
+   deleted(5.3:1)와 inserted(4.9:1)는 등록하지 않은 diff 언어만 내므로 지금은 화면에 나오지 않는다.
+   th-token은 모든 토큰이 함께 갖는 공통 클래스라 아래 색 규칙과 특이도가 같다. 색 규칙보다 앞에 두어야 뒤의 색이 이긴다. */
+.body pre .th-token { color: inherit; }
+.body pre .th-comment { color: #626d64; }
+.body pre :is(.th-keyword, .th-tag, .th-selector, .th-heading, .th-command) { color: #7040a0; }
+.body pre .th-string { color: #21683f; }
+.body pre :is(.th-number, .th-literal) { color: #935018; }
+.body pre .th-meta { color: #9b3d67; }
+.body pre :is(.th-type, .th-attr, .th-property, .th-link) { color: #1d6093; }
+.body pre .th-deleted { color: #8e5d5d; }
+.body pre .th-inserted { color: #4f7a4a; }
+/* 함수·연산자·변수는 기본 글자색으로 두어 색을 준 문법 요소와 구분한다. */
+.body pre :is(.th-function, .th-operator, .th-variable, .th-code-inline) { color: inherit; }
 .body table { display: block; overflow-x: auto; width: 100%; margin: 18px 0; border-collapse: collapse; font-size: 14px; }
 .body th, .body td { min-width: 100px; padding: 7px 10px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
 .body th { background: var(--paper-strong); font-weight: 650; }

@@ -120,6 +120,12 @@ thumbnail: "[[thumbnail-ai-harness-loop.jpg]]"
 
 구현 위치는 `src/lib/markdown.ts`(문법), `src/lib/slug.ts`(주소), `src/lib/garden.ts`(공개 문서 조립), `src/lib/links.ts`(위키 링크 해석), `src/lib/note-body.ts`(공개 본문과 요약), `src/lib/public-assets.ts`(본문·썸네일에 쓸 수 있는 이미지), `src/components/ArticleBody.astro`와 `src/lib/article-card.ts`(카드 출력), `src/styles/article-card.css`(배치), `src/styles/body.css`(콜아웃·표·코드 블록 같은 본문 요소의 모양), `src/lib/og.ts`(공유 카드), `src/lib/rss.ts`(피드)다.
 
+## 코드 블록 강조
+
+언어를 적은 코드 블록은 빌드 때 색이 붙는다. 다루는 언어는 java, js, ts, tsx, yaml, shell, json, css, html, markdown, python, dockerfile이고 `javascript`·`typescript`·`bash`·`xml`·`yml`·`md` 같은 별칭도 같은 언어로 받는다. 그 밖의 언어와 언어를 적지 않은 블록은 색 없이 원문 그대로 나오므로, 색이 필요하면 위 목록에서 고른다.
+
+`mermaid` 블록은 도표로 바뀌므로 색을 붙이지 않는다. Java는 라이브러리에 없어 이 저장소에서 직접 정의했고 주석·문자열·텍스트 블록·키워드·애너테이션·숫자·기본 타입(`int`, `void` 등)·`true`/`false`/`null`을 다룬다. `String`이나 `List` 같은 클래스 이름과 메서드 호출은 추정하지 않으므로 먹색으로 남는다.
+
 ## Mermaid 도표
 
 언어를 `mermaid`로 적은 코드 블록은 페이지에서 도표로 렌더링한다. 흐름도, 시퀀스, 상태도를 비롯해 Mermaid 12가 그리는 종류를 그대로 쓴다. `usecase-beta`와 `agentflow-beta`도 그려지지만 이름에 `beta`가 붙어 있어 문법이 바뀔 수 있다. 유스케이스 다이어그램은 식별자에 한글을 받지 않으므로 이름을 영문으로 두고 한글은 괄호 안 라벨에 적는다. 나머지 종류는 한글 식별자를 받는다.

@@ -297,13 +297,13 @@ test('series navigation and references survive with related links and no body na
 
 test('blog body lists and code mentioning 이전 or 다음 글 are preserved', async () => {
   const vaultRoot = await makeVault({ ...files,
-    '20_Projects/blog/공개 글.md': files['20_Projects/blog/공개 글.md'] + '\n\n## 본문\n- 본문에서 보존해야 하는 이전 글\n- [[생각 B]] - 다음 글\n\n```md\n- 예시의 이전 글\n```'
+    '20_Projects/blog/공개 글.md': files['20_Projects/blog/공개 글.md'] + '\n\n## 본문\n- 본문에서 보존해야 하는 이전 글\n- [[생각 B]] - 다음 글\n\n```text\n- 예시의 이전 글\n```'
   });
   const garden = await assembleGarden({ vaultRoot, config });
   const note = noteAt(garden, '20_Projects/blog/공개 글.md');
   assert.match(note.bodyHtml, /본문에서 보존해야 하는 이전 글/);
   assert.match(note.bodyHtml, /생각 B<\/a> - 다음 글/);
-  assert.match(note.bodyHtml, /<code class="language-md">- 예시의 이전 글/);
+  assert.match(note.bodyHtml, /<pre><code class="language-text">- 예시의 이전 글\n<\/code><\/pre>/);
 });
 
 test('related links use the public graph candidates and ignore plain text and unpublished targets', async () => {

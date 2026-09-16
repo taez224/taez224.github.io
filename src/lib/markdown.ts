@@ -9,6 +9,7 @@ interface RenderContext extends LinkContext { markdown: InstanceType<typeof Mark
 
 import MarkdownIt, { type Token } from 'markdown-it';
 import sanitizeHtml from 'sanitize-html';
+import { highlightCode } from './highlight.ts';
 import { escapeHtml } from './format.ts';
 import { isImagePath } from './image-types.ts';
 
@@ -327,6 +328,7 @@ function materializeCallouts(html: string, blocks: string[]): string {
 function createMarkdownIt() {
   const markdown = new MarkdownIt({
     breaks: false,
+    highlight: highlightCode,
     html: true,
     linkify: true,
     typographer: false
