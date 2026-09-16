@@ -214,6 +214,36 @@ test('callout code fences keep blank lines inside the code block', () => {
   assert.doesNotMatch(html, /<code[^>]*>[\s\S]*<p><\/p>/);
 });
 
+test('comparison callouts keep each nested case as a direct callout with its Mermaid source', () => {
+  const html = render('x.md', [
+    '> [!compare] 기본 모습',
+    '> > [!example] Mermaid 11까지',
+    '> > ```mermaid',
+    '> > flowchart TD',
+    '> >     A --> B',
+    '> > ```',
+    '>',
+    '> > [!example] Mermaid 12',
+    '> > ```mermaid',
+    '> > flowchart TD',
+    '> >     A --> C',
+    '> > ```'
+  ].join('\n'));
+  // 격자는 CSS가 바깥 콜아웃의 본문에 건다. 칸이 그 본문의 직계 자식이어야 한 칸씩 자리를 차지한다.
+  assert.match(html, /<aside class="callout callout-compare"><div class="callout-title">기본 모습<\/div><div class="callout-body"><aside class="callout callout-example">/);
+  assert.equal(html.match(/<aside class="callout callout-example">/g)?.length, 2);
+  assert.match(html, /<div class="callout-title">Mermaid 12<\/div><div class="callout-body"><pre><code class="language-mermaid">flowchart TD\n    A --&gt; C\n<\/code><\/pre>/);
+  // 칸 제목은 Markdown 제목이 아니므로 목차에 올라오지 않는다.
+  assert.doesNotMatch(html, /<h[1-6]/);
+
+  const stacked = render('x.md', '> [!compare-stacked] 조합\n> > [!example] classic + default\n> > 본문');
+  assert.match(stacked, /<aside class="callout callout-compare-stacked">/);
+  assert.match(stacked, /<div class="callout-title">classic \+ default<\/div>/);
+  // 제목을 적지 않으면 종류 이름이 아니라 한국어 기본 제목이 나온다.
+  assert.match(render('x.md', '> [!compare]\n> > [!example]\n> > 본문'), /<div class="callout-title">비교<\/div>/);
+  assert.match(render('x.md', '> [!compare-stacked]\n> 본문'), /<div class="callout-title">비교<\/div>/);
+});
+
 function renderWithArticles() {
   return createMarkdownRenderer({
     resolveNote: (_source, target, fragment) => {

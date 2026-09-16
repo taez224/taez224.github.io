@@ -17,6 +17,8 @@ const CALLOUT_TITLES: Record<string, string> = {
   abstract: '요약',
   article: '함께 읽기',
   bug: '문제',
+  compare: '비교',
+  'compare-stacked': '비교',
   danger: '주의',
   example: '예시',
   failure: '실패',

@@ -62,16 +62,6 @@
    가운데 정렬을 justify-content로 하면 내용이 넘칠 때 왼쪽이 잘리므로 margin: auto를 쓴다. */
 .diagram-viewer-stage { display: flex; flex: 1; min-height: 0; padding: 16px; overflow: auto; }
 .diagram-viewer-stage > svg { flex: none; margin: auto; }
-/* 같은 도표를 설정만 바꿔 견주는 자리다. 칸 최소 폭을 20rem으로 두면 좁은 화면에서 저절로 한 줄로 내려가 미디어 쿼리가 필요 없다.
-   min()으로 감싸지 않으면 본문이 20rem보다 좁은 320px 화면에서 칸이 본문을 밀어내 페이지 전체가 가로로 스크롤한다. */
-.body .diagram-comparison { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: 16px; margin: 22px 0; }
-/* 본문 폭을 다 쓰는 도표를 견주는 묶음이다. 두 열로 두면 칸이 도표의 절반도 담지 못해 나란히 둔 의미가 사라지므로 한 줄에 하나씩 놓는다. */
-.body .diagram-comparison.is-stacked { grid-template-columns: 1fr; }
-/* 격자 항목의 기본 최소 폭은 내용 크기다. 0으로 내려야 넓은 도표가 칸을 밀어내지 않고 도표 안에서 가로로 스크롤한다. */
-.body .diagram-case { min-width: 0; }
-/* 제목과 도표가 한 덩어리로 읽히도록 칸의 바깥 여백은 격자 간격에 맡긴다. */
-.body .diagram-case > :first-child { margin-top: 0; }
-.body .diagram-case > :last-child { margin-bottom: 0; }
 .body img { display: block; max-width: 100%; height: auto; margin: 18px auto; }
 .body figure { margin: 18px 0 22px; }
 .body figure img { margin: 0 auto; }
@@ -102,6 +92,19 @@
 .body :is(.callout-warning, .callout-danger, .callout-failure) :is(.callout-title, summary) { color: var(--warning); }
 .body .callout-bug { border-left: 3px solid var(--bug); }
 .body .callout-bug :is(.callout-title, summary) { color: var(--bug); }
+/* 같은 도표를 설정만 바꿔 견주는 콜아웃이다. 바깥 콜아웃의 본문을 격자로 두고 안쪽 콜아웃 하나가 한 칸이 된다.
+   칸 최소 폭을 20rem으로 두면 좁은 화면에서 저절로 한 줄로 내려가 미디어 쿼리가 필요 없다.
+   min()으로 감싸지 않으면 본문이 20rem보다 좁은 320px 화면에서 칸이 본문을 밀어내 페이지 전체가 가로로 스크롤한다. */
+.body :is(.callout-compare, .callout-compare-stacked) > .callout-body { display: grid; gap: 16px; }
+.body .callout-compare > .callout-body { grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); }
+/* 본문 폭을 다 쓰는 도표를 견주는 묶음이다. 두 열로 두면 칸이 도표의 절반도 담지 못해 나란히 둔 의미가 사라지므로 한 줄에 하나씩 놓는다. */
+.body .callout-compare-stacked > .callout-body { grid-template-columns: 1fr; }
+/* 칸은 바깥 콜아웃의 판 안에 있으므로 판·선·여백을 걷어내 제목과 도표만 남긴다. 칸 사이는 격자 간격에 맡긴다.
+   격자 항목의 기본 최소 폭은 내용 크기다. 0으로 내려야 넓은 도표가 칸을 밀어내지 않고 도표 안에서 가로로 스크롤한다. */
+.body :is(.callout-compare, .callout-compare-stacked) > .callout-body > .callout { min-width: 0; margin: 0; padding: 0; border: 0; background: none; }
+/* 칸 제목의 밑줄은 바로 아래 도표 틀의 윗선과 겹쳐 선이 두 줄로 보이고, 바깥 제목과 모양이 같아 위계가 흐려진다.
+   선을 빼서 칸 제목을 도표에 붙은 이름으로 읽히게 한다. */
+.body :is(.callout-compare, .callout-compare-stacked) > .callout-body > .callout > :is(.callout-title, summary) { padding-bottom: 0; border-bottom: 0; }
 @media (max-width: 720px) {
   /* 설명 열이 지나치게 잘게 접히지 않도록 너비를 확보하고 표 안에서 가로로 읽는다. */
   .body th:not(:first-child), .body td:not(:first-child) { min-width: 180px; }
