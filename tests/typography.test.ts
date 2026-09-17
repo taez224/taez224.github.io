@@ -54,7 +54,8 @@ test('font sizes outside :root use role tokens instead of px', () => {
 });
 
 test('font weights stay on the 400, 600 and 700 steps', () => {
-  const found = sourceFiles('src').flatMap((path) => [...styleText(path).matchAll(/font-weight:\s*(\d+)/g)]
+  // @font-face의 font-weight는 글꼴 파일이 지원하는 범위(가변 글꼴의 45 920 등)라 요소에 쓰는 굵기가 아니다.
+  const found = sourceFiles('src').flatMap((path) => [...styleText(path).replace(/@font-face\s*\{[^}]*\}/g, '').matchAll(/font-weight:\s*(\d+)/g)]
     .filter((m) => !['400', '600', '700'].includes(m[1])).map((m) => `${path}: ${m[1]}`));
   assert.deepEqual(found, []);
 });

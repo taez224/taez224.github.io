@@ -27,7 +27,10 @@ npm run dev                  # astro dev. vault 파일을 감시해 다시 조�
 npm run build                # astro build && node scripts/check-dist.ts
 npm run preview              # dist를 서빙한다. 먼저 build가 있어야 한다
 npm run snapshot:markdown -- write|verify   # 공개 본문 전체의 조립 결과를 저장했다가 바이트 단위로 견준다
+npm run fonts:vendor         # 글꼴 버전을 올릴 때만. public/fonts와 src/styles/fonts.css를 다시 만든다
 ```
+
+사이트 글꼴(Pretendard, Gowun Batang)은 자체 호스팅한다. `scripts/vendor-fonts.ts`가 고정 버전 npm 패키지에서 woff2 조각만 받아 `public/fonts/`에 커밋해 두므로 빌드와 dev에는 네트워크가 필요 없다. 글꼴 버전은 스크립트의 패키지 버전으로 올리고, 생성된 `fonts.css`는 직접 고치지 않는다.
 
 `snapshot:markdown`은 Markdown 렌더러·본문 정리·목차·검색 텍스트·링크 해석을 고치거나 markdown-it·sanitize-html을 올릴 때의 회귀 검사다. 고치기 전에 `write`, 고친 뒤에 `verify`를 돌린다. 실제 vault를 읽기 전용으로 읽는다. config.json이나 스냅샷 형식이 다르면 종료 코드 2로 중단하며, 원문이 바뀐 노트도 전체 동일로 판정하지 않는다. 산출물 차이는 종료 코드 1이다. 자동 테스트가 아니므로 문법 검증은 임시 입력을 쓰는 단위 테스트로 한다.
 

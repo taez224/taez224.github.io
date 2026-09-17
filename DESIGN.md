@@ -413,7 +413,7 @@ Thinking Garden은 글과 개발 노트를 읽으며 관련 생각으로 이어�
 
 ## Typography
 
-Gowun Batang은 제목과 요약·인용 콜아웃에, Pretendard Variable은 본문·목록·조작 요소에 사용한다. 제목은 700 굵기로 두고 요약·인용은 400으로 흘려 제목보다 한 단계 물러나게 한다. 그래서 Gowun Batang은 400과 700 두 파일을 불러온다. 한 굵기만 불러오면 브라우저가 다른 굵기 요청을 그 파일로 대신 그리므로, 명조에 새 굵기를 쓰려면 글꼴 요청에도 함께 추가한다. 대체 서체는 `site.css`의 `--display`와 `--sans`를 따른다. 코드는 `code` 토큰에 적은 SFMono-Regular를 대표로 삼아 `ui-monospace`, SFMono-Regular, Menlo 순서의 시스템 고정폭 서체를 사용한다. 긴 한국어 문장은 `keep-all`로 단어를 묶고 긴 URL은 가용 폭에 맞춰 줄바꿈한다.
+Gowun Batang은 제목과 요약·인용 콜아웃에, Pretendard Variable은 본문·목록·조작 요소에 사용한다. 제목은 700 굵기로 두고 요약·인용은 400으로 흘려 제목보다 한 단계 물러나게 한다. 그래서 Gowun Batang은 400과 700 두 굵기를 둔다. 한 굵기만 두면 브라우저가 다른 굵기 요청을 그 파일로 대신 그리므로, 명조에 새 굵기를 쓰려면 `scripts/vendor-fonts.ts`의 CSS 목록에도 함께 추가한다. 두 글꼴은 외부 CDN 대신 `public/fonts/`에서 자체 호스팅한다. 한국어 글꼴은 unicode-range 조각으로 나뉘어 있어 페이지에 쓰인 글자의 조각만 받는다. 대체 서체는 `site.css`의 `--display`와 `--sans`를 따른다. 코드는 `code` 토큰에 적은 SFMono-Regular를 대표로 삼아 `ui-monospace`, SFMono-Regular, Menlo 순서의 시스템 고정폭 서체를 사용한다. 긴 한국어 문장은 `keep-all`로 단어를 묶고 긴 URL은 가용 폭에 맞춰 줄바꿈한다.
 
 글자 크기는 역할 토큰으로만 정한다. YAML의 typography 토큰마다 `site.css`의 `--t-이름` 변수가 있고, 변수는 rem이라 브라우저의 기본 글자 크기 설정을 따른다. 폭에 따라 달라지는 역할은 `-mobile`(720px 이하), `-tablet`(721~1000px) 토큰으로 적고, CSS는 해당 미디어 쿼리의 `:root`에서 변수 값만 바꾼다. 그래서 컴포넌트에는 글자 크기용 미디어 쿼리가 없고 단계 전체가 함께 줄어든다. 예외는 그래프 SVG의 이름 글자뿐이다. 엔진이 px 기준 폭으로 배치를 계산하므로 px로 둔다. 굵기는 400·600·700 세 단계만 쓴다. 토큰과 CSS 변수의 일치, px 글자 크기와 다른 굵기의 재등장은 `tests/typography.test.ts`가 검사한다.
 
