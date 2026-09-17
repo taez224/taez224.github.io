@@ -57,10 +57,10 @@ const CALLOUT_ALIASES: Record<string, string> = {
   summary: 'abstract', tldr: 'abstract'
 };
 
-// markdown-it은 ~~취소선~~을 <s>로 그리므로 del과 함께 s도 허용한다. input은 할 일 목록의 체크박스다.
+// markdown-it은 ~~취소선~~을 <s>로 그리므로 del과 함께 s도 허용한다. input과 label은 할 일 목록의 체크박스와 그 이름이다.
 const ALLOWED_TAGS = [
   'a', 'aside', 'blockquote', 'br', 'code', 'del', 'details', 'div', 'em', 'figcaption',
-  'figure', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'img', 'input', 'kbd', 'li', 'mark', 'ol',
+  'figure', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'img', 'input', 'kbd', 'label', 'li', 'mark', 'ol',
   'p', 'pre', 's', 'section', 'small', 'span', 'strong', 'sub', 'summary', 'sup', 'table',
   'tbody', 'td', 'tfoot', 'th', 'thead', 'tr', 'ul'
 ];
@@ -79,6 +79,7 @@ const ALLOWED_ATTRIBUTES = {
   h6: ['class', 'id'],
   img: ['alt', 'class', 'height', 'loading', 'src', 'title', 'width'],
   input: ['checked', 'class', 'disabled', 'type'],
+  label: ['class'],
   li: ['class'],
   mark: ['class'],
   p: ['class'],
@@ -629,9 +630,13 @@ function createMarkdownIt() {
       if (!marker || first?.type !== 'text' || !first.content.startsWith(`[${marker[1]}]`)) continue;
       first.content = first.content.replace(TASK_MARKER, '');
       const checked = marker[1] !== ' ';
-      const box = new state.Token('html_inline', '', 0);
-      box.content = `<input class="task-list-item-checkbox" type="checkbox" disabled${checked ? ' checked' : ''}>`;
-      inline.children!.unshift(box);
+      // label로 체크박스와 항목 글을 묶어 글이 체크박스의 이름이 되게 한다. 중첩 목록은 label 밖에 남으므로
+      // 완료 표시(흐린 색·취소선)를 label에만 걸면 하위 항목으로 번지지 않는다.
+      const open = new state.Token('html_inline', '', 0);
+      open.content = `<label class="task-list-item-label"><input class="task-list-item-checkbox" type="checkbox" disabled${checked ? ' checked' : ''}>`;
+      const close = new state.Token('html_inline', '', 0);
+      close.content = '</label>';
+      inline.children = [open, ...inline.children!, close];
       tokens[index - 2].attrJoin('class', checked ? 'task-list-item is-checked' : 'task-list-item');
     }
   });
