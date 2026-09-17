@@ -48,7 +48,7 @@ const hitsCircle = (box: Box, c: Circle) => { const nx = Math.max(box.left, Math
 // bounds({ width, height })를 주면 무대 밖으로 나가는 자리는 쓰지 않는다.
 // scale은 regionLabelBox와 같은 뜻(화면 1px당 장면 단위)이다. 이름과 껍질과의 간격은 화면 크기로 그리므로 자리도 화면 크기로 잰다.
 // 이 값을 빼면 그래프가 작게 그려지는 폭(홈 721~1000px)에서 실제 이름이 계산보다 몇 배 넓어져 서로 겹친다.
-export function placeRegionLabels(regions: readonly Region[], obstacles: readonly (Box | Circle)[] = [], { fontSize = 15, pad: padPx = 18, measure = (text, size) => [...text].length * size, bounds = null, scale = 1 }: { fontSize?: number; pad?: number; measure?: (text: string, size: number) => number; bounds?: Size | null; scale?: number } = {}): Map<string, LabelPosition> {
+export function placeRegionLabels(regions: readonly Region[], obstacles: readonly (Box | Circle)[] = [], { fontSize = 15, pad: padPx = 18, measure = (text, size) => [...text].length * size, bounds = null, scale = 1 }: { fontSize?: number; pad?: number; measure?: (text: string, size: number) => number; bounds?: (Size & { top?: number }) | null; scale?: number } = {}): Map<string, LabelPosition> {
   const placed: Box[] = [], out = new Map<string, LabelPosition>();
   const pad = padPx * scale;
   for (const region of regions) {
@@ -61,13 +61,15 @@ export function placeRegionLabels(regions: readonly Region[], obstacles: readonl
       { x: ext.left.x - pad, y: ext.left.y + h * 0.35, anchor: 'end', box: { left: ext.left.x - pad - w, right: ext.left.x - pad, top: ext.left.y - h * 0.6, bottom: ext.left.y + h * 0.6 } },
       { x: ext.right.x + pad, y: ext.right.y + h * 0.35, anchor: 'start', box: { left: ext.right.x + pad, right: ext.right.x + pad + w, top: ext.right.y - h * 0.6, bottom: ext.right.y + h * 0.6 } }
     ];
-    const inBounds = (b: Box) => b.top >= 0 && b.left >= 0 && (!bounds || (b.right <= bounds.width && b.bottom <= bounds.height));
+    // bounds.top을 음수로 주면 그림 위쪽 여백까지 이름 자리로 쓴다. 그림 밖을 비워 둔 정적 스냅샷이 쓴다.
+    const minTop = bounds?.top ?? 0;
+    const inBounds = (b: Box) => b.top >= minTop && b.left >= 0 && (!bounds || (b.right <= bounds.width && b.bottom <= bounds.height));
     const free = (c: { box: Box }) => inBounds(c.box) && !placed.some((b) => overlaps(b, c.box)) && !obstacles.some((o) => ('r' in o ? hitsCircle(c.box, o) : overlaps(c.box, o)));
     // 네 자리가 모두 막히면 노드나 다른 이름과 겹치는 편이 무대 밖으로 잘리는 것보다 낫다. 무대 안의 자리를 먼저 고르고,
     // 그런 자리도 없으면 첫 자리(위)를 무대 안으로 밀어 넣는다. 전에는 첫 자리를 그대로 써서 맨 위 영역 이름이 그림 밖으로 잘렸다.
     const intoBounds = (c: typeof candidates[number]) => {
       const dx = Math.max(0, -c.box.left) - Math.max(0, bounds ? c.box.right - bounds.width : 0);
-      const dy = Math.max(0, -c.box.top) - Math.max(0, bounds ? c.box.bottom - bounds.height : 0);
+      const dy = Math.max(0, minTop - c.box.top) - Math.max(0, bounds ? c.box.bottom - bounds.height : 0);
       return { ...c, x: c.x + dx, y: c.y + dy, box: { left: c.box.left + dx, right: c.box.right + dx, top: c.box.top + dy, bottom: c.box.bottom + dy } };
     };
     const pick = candidates.find(free) ?? candidates.find((c) => inBounds(c.box)) ?? intoBounds(candidates[0]);

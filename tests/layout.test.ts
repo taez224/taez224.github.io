@@ -40,6 +40,17 @@ test('renderSnapshotSvg labels hubs only and colors by topic', () => {
   assert.equal((svg.match(/<line /g) || []).length, 2);
 });
 
+test('renderSnapshotSvg can add a compact region layer that CSS swaps in on narrow screens', () => {
+  const positions = layoutGraph(nodes, edges, { width: 1000, height: 640 });
+  const plain = renderSnapshotSvg(nodes, edges, positions, { width: 1000, height: 640, regionFont: 30 });
+  assert.ok(plain.includes('class="snap-regions"') && plain.includes('class="snap-titles"'), 'CSS가 고를 수 있게 층마다 class가 있다');
+  assert.doesNotMatch(plain, /snap-regions-compact/, '요청하지 않으면 층을 더 그리지 않는다');
+  const svg = renderSnapshotSvg(nodes, edges, positions, { width: 1000, height: 640, regionFont: 30, compactRegionFont: 46 });
+  const compact = svg.match(/<g class="snap-regions-compact"[^>]*font-size="46"[^>]*>(.*?)<\/g>/)?.[1] ?? '';
+  const regular = svg.match(/<g class="snap-regions"[^>]*>(.*?)<\/g>/)?.[1] ?? '';
+  assert.equal((compact.match(/<text /g) || []).length, (regular.match(/<text /g) || []).length, '같은 영역 이름을 크게 한 벌 더 그린다');
+});
+
 test('renderSnapshotSvg desktop preset scales labels like the live hero and labels hubs only', () => {
   const nodes: GraphNode[] = [
     { id: 'entry', title: '생각의 정원', type: 'hub', topic: 'AI', degree: 12, isEntry: true, url: '' },

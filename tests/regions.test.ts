@@ -79,6 +79,15 @@ test('placeRegionLabels pushes a name back inside when no spot fits the bounds',
   assert.ok(box.top >= 0, `위로 잘리지 않는다: ${JSON.stringify(box)}`);
 });
 
+test('placeRegionLabels can use a margin above the bounds when the picture leaves room there', () => {
+  const hull = [{ x: 100, y: 10 }, { x: 200, y: 10 }, { x: 200, y: 110 }, { x: 100, y: 110 }];
+  const region = { topic: '철학', count: 4, hull, label: { x: 100, y: 10 } };
+  const at = placeRegionLabels([region], [], { bounds: { top: -60, width: 400, height: 300 } }).get('철학')!;
+  assert.equal(at.anchor, 'middle');
+  assert.ok(at.y < 10, '위 여백을 자리로 쓰면 영역 위에 이름을 둔다');
+  assert.ok(regionLabelBox(at, '철학').top >= -60, '여백보다 위로는 나가지 않는다');
+});
+
 test('topicRegions never draws a territory for 기타', () => {
   const nodes = [{ id: 'x1', topic: '기타' }, { id: 'x2', topic: '기타' }, { id: 'x3', topic: '기타' }, { id: 'x4', topic: '기타' }];
   const positions = new Map(nodes.map((n, i) => [n.id, { x: 100 + i * 40, y: 100 + (i % 2) * 40 }]));

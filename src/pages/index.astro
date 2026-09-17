@@ -37,7 +37,7 @@ const positions = layoutGraph(garden.nodes, garden.edges, { width: 1000, height:
 const snapshotLabel = `생각 지도. 노드 ${garden.stats.nodes}개와 연결 ${garden.stats.edges}개.`;
 // 데스크톱(1000px 초과)은 hero.js가 살아 있는 지도로 바꾸기 전까지 같은 모습의 정적 그림을 보여 교체가 눈에 띄지 않게 한다.
 const snapshotDesktop = renderSnapshotSvg(garden.nodes, garden.edges, positions, { width: 1000, height: 640, preset: 'desktop', pixelHeight: 500, label: snapshotLabel });
-const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { width: 1000, height: 640, font: 26, regionFont: 30, strokeWidth: 2, label: snapshotLabel });
+const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { width: 1000, height: 640, font: 26, regionFont: 30, compactRegionFont: 46, strokeWidth: 2, label: snapshotLabel });
 ---
 <Shell title="TaeZ" description={garden.home.about} path="/">
   <section class="hero" aria-label="소개와 생각 지도">
@@ -96,6 +96,7 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
   .hero-graph { position: absolute; top: 0; left: calc(50% - 160px); width: min(940px, 50% + 160px); height: 100%; }
   .hero-graph :global(svg), .hero-snapshot { display: block; width: 100%; height: 100%; }
   .hero-graph .hero-snapshot :global(.is-mobile) { display: none; }
+  .hero-snapshot :global(.snap-regions-compact) { display: none; }
   /* 오른쪽·위·아래 가장자리를 옅게. 색면과 간선이 헤더 선·대표 글 선에 닿거나 화면 끝에서 뚝 잘리지 않게 한다. 왼쪽은 종이색 그라데이션이 맡는다. */
   .hero-graph { -webkit-mask-image: linear-gradient(90deg, #000 0, #000 84%, transparent 100%), linear-gradient(180deg, transparent 0, #000 10%, #000 90%, transparent 100%); mask-image: linear-gradient(90deg, #000 0, #000 84%, transparent 100%), linear-gradient(180deg, transparent 0, #000 10%, #000 90%, transparent 100%); -webkit-mask-composite: source-in; mask-composite: intersect; }
   .hero-graph .graph { cursor: pointer; }
@@ -147,15 +148,19 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
   /* 좁은 화면은 소개를 먼저 읽고 지도를 탐색한다. */
   @media (max-width: 1000px) {
     .hero { height: auto; overflow: visible; }
-    .hero-graph { position: static; width: 100%; height: 280px; -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 8%, #000 92%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0, #000 8%, #000 92%, transparent 100%); }
+    .hero-graph { position: static; width: 100%; height: 280px; -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 3%, #000 97%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0, #000 3%, #000 97%, transparent 100%); }
     .hero-fade { display: none; }
     .hero-graph .hero-snapshot :global(.is-desktop) { display: none; }
     .hero-graph .hero-snapshot :global(.is-mobile) { display: block; }
     .hero-about { position: relative; top: auto; left: auto; width: calc(100% - 2 * var(--s-page-gutter)); max-width: 640px; margin: 36px auto 12px; }
   }
   @media (max-width: 720px) {
+    /* 휴대폰 폭에서는 허브 제목이 읽을 수 없을 만큼 작아서 제목 층을 숨기고 영역 이름만 크게 놓은 층으로 바꾼다. */
+    .hero-snapshot :global(.snap-regions), .hero-snapshot :global(.snap-titles) { display: none; }
+    .hero-snapshot :global(.snap-regions-compact) { display: inline; }
     .hero-map-link { position: static; display: block; width: fit-content; margin: -12px 20px 8px auto; }
-    .hero-graph { height: clamp(200px, 50vw, 280px); margin: 0 0 8px; }
+    /* 그림(1000×640)을 폭에 맞추고, 영역 이름 층이 그림 위로 넘어가는 여백(COMPACT_TOP_MARGIN)만큼 위아래를 더 준다. 그림은 상자 가운데에 놓인다. */
+    .hero-graph { height: clamp(230px, 78vw, 350px); margin: 0 0 8px; }
     .hero-about { margin: 20px auto 0; }
     .home-section { grid-template-columns: minmax(0, 1fr); gap: 24px; padding: 28px 0; }
     .featured-meta { flex-direction: row; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; }
