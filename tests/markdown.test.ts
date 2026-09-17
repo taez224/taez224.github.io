@@ -97,6 +97,81 @@ test('heading ids ignore Obsidian-only comments, highlights, and block ids', () 
   assert.match(html, /<h2 id="강조-제목">/);
 });
 
+// 목차는 렌더러가 id를 매기면서 함께 모은다. 조립 전체를 돌리지 않고 렌더러의 출력 인자만 검사한다.
+function headingsOf(source: string) {
+  const headings: PublicNote['headings'] = [];
+  render('x.md', source, { headings });
+  return headings;
+}
+
+test('table of contents excludes headings inside multiline Obsidian comments', () => {
+  assert.deepEqual(headingsOf('## 공개\n\n%%\n## 숨김\n%%\n\n## 끝'), [
+    { id: '공개', level: 2, title: '공개' },
+    { id: '끝', level: 2, title: '끝' }
+  ]);
+});
+
+test('the table of contents keeps every heading, strips inline markup and suffixes duplicate ids', () => {
+  const body = Array.from({ length: 12 }, (_, i) => `## ${i + 1}. 절`).join('\n\n') + '\n\n## 3. **DX와 DevRel** 그리고 `AX`\n\n### 절\n\n### 절';
+  const headings = headingsOf(body);
+  assert.equal(headings.length, 15);
+  assert.equal(headings[12].title, '3. DX와 DevRel 그리고 AX');
+  assert.deepEqual(headings.slice(13).map((h) => h.id), ['절', '절-2']);
+});
+
+test('the table of contents skips code examples and matches ids when an h1 shares the same title', () => {
+  const body = '# 실제 절\n\n```markdown\n## 예시\n```\n\n    ## 코드\n\n## 실제 절\n\n하위 절\n-------\n\n~~~markdown\n### 숨김\n~~~';
+  const headings: PublicNote['headings'] = [];
+  const html = render('x.md', body, { headings });
+  assert.deepEqual(headings, [
+    { id: '실제-절-2', level: 2, title: '실제 절' },
+    { id: '하위-절', level: 2, title: '하위 절' }
+  ]);
+  assert.match(html, /<h1 id="실제-절">실제 절<\/h1>/);
+  assert.match(html, /<h2 id="실제-절-2">실제 절<\/h2>/);
+});
+
+test('the table of contents ignores Obsidian-only comments, highlights, and block ids', () => {
+  assert.deepEqual(headingsOf('## 제목 ^heading-id\n\n## 제목 %%숨김%%\n\n## ==강조 제목=='), [
+    { id: '제목', level: 2, title: '제목' },
+    { id: '제목-2', level: 2, title: '제목' },
+    { id: '강조-제목', level: 2, title: '강조 제목' }
+  ]);
+});
+
+test('the table of contents skips headings quoted inside blockquotes and callouts', () => {
+  const body = '## 배경\n\n본문\n\n> [!note]\n> ## 배경\n> 콜아웃 본문\n\n> ## 인용 안 제목\n\n## 정리';
+  assert.deepEqual(headingsOf(body), [
+    { id: '배경', level: 2, title: '배경' },
+    { id: '정리', level: 2, title: '정리' }
+  ]);
+});
+
+test('the table of contents drops escape backslashes from outline titles', () => {
+  assert.deepEqual(headingsOf('## 1\\. Editor Config 요청'), [
+    { id: '1-editor-config-요청', level: 2, title: '1. Editor Config 요청' }
+  ]);
+});
+
+// 엔진 실험에서 후보가 틀렸던 입력이다. 운영 렌더러의 동작을 고정해 두어 파이프라인을 고칠 때 되돌아가지 않게 한다.
+test('setext heading ids leave the underline out', () => {
+  const html = render('x.md', '작은 제목\n----\n\n큰 제목\n====\n\n본문');
+  assert.match(html, /<h2 id="작은-제목">작은 제목<\/h2>/);
+  assert.match(html, /<h1 id="큰-제목">큰 제목<\/h1>/);
+});
+
+test('callouts nest four levels deep and the fifth level stays a blockquote', () => {
+  const html = render('x.md', '> [!a] 1\n> > [!b] 2\n> > > [!c] 3\n> > > > [!d] 4\n> > > > > [!e] 5\n> > > > > 본문');
+  for (const kind of ['a', 'b', 'c', 'd']) assert.match(html, new RegExp(`<aside class="callout callout-${kind}">`));
+  assert.doesNotMatch(html, /callout-e/);
+  assert.match(html, /<blockquote>\n<p>\[!e\] 5\n본문<\/p>\n<\/blockquote>/);
+});
+
+test('Korean strong emphasis may span inline code', () => {
+  const html = render('x.md', '**앞 `코드`(X)**이라는 말과 **`코드`(Y)**라는 말');
+  assert.match(html, /<strong>앞 <code>코드<\/code>\(X\)<\/strong>이라는 말과 <strong><code>코드<\/code>\(Y\)<\/strong>라는 말/);
+});
+
 test('strong emphasis closes after punctuation before Korean particles', () => {
   const html = render('x.md', '**흡수 역량(Absorptive Capacity)**이라는 **워크슬롭(Workslop)**이라고 **"결국 내가 다시 확인해야 하나"**라는');
   assert.match(html, /<strong>흡수 역량\(Absorptive Capacity\)<\/strong>이라는/);
@@ -362,4 +437,17 @@ test('a paragraph that only starts or ends with italics is not a caption and nev
 test('strikethrough keeps its tag instead of flattening into plain text', () => {
   // markdown-it은 ~~ ~~를 <s>로 그린다. 허용 태그에서 빠지면 취소선이 사라지고 글자만 남는다.
   assert.match(render('x.md', '앞 ~~지운 글~~ 뒤'), /앞 <s>지운 글<\/s> 뒤/);
+});
+
+
+test('a callout following an ordinary quote starts a separate block', () => {
+  const html = render('x.md', '> 앞 인용\n> [!note] 메모\n> 뒤 본문');
+  assert.match(html, /<blockquote>\n<p>앞 인용<\/p>\n<\/blockquote>\n<aside class="callout callout-note">/);
+  assert.match(html, /<p>뒤 본문<\/p>/);
+});
+
+test('callout markers inside a quoted code fence stay literal', () => {
+  const html = render('x.md', '> 인용\n> ```text\n> [!note] 예시\n> ```');
+  assert.doesNotMatch(html, /<aside/);
+  assert.match(html, /\[!note\] 예시/);
 });

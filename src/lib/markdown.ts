@@ -165,8 +165,10 @@ function inlineCodeEnd(source: string, start: number): number {
   return -1;
 }
 
-const commentParser = new MarkdownIt({ html: true });
-// 헤딩 id. 같은 제목이 되풀이되면 -2, -3을 붙인다. 목차(garden.headingsFor)와 렌더러가 같은 함수를 써서 앵커가 어긋나지 않는다.
+// 사이트 규칙 없이 문법 구조만 보는 파서다. 주석 제거의 코드 범위, 목차의 제목 위치, 검색 텍스트 추출이 같이 쓴다.
+// 렌더러 인스턴스와 달리 노트 해석기가 필요 없어 어디서든 env 없이 부를 수 있다.
+export const structureParser = new MarkdownIt({ html: true });
+// 헤딩 id. 같은 제목이 되풀이되면 -2, -3을 붙인다. 렌더러가 id를 매기면서 목차도 같이 모으므로 앵커와 목차가 어긋나지 않는다.
 export function headingId(headingIds: Map<string, number>, text: unknown): string {
   const baseId = slugifyHeading(headingTextForId(text));
   const count = (headingIds.get(baseId) ?? 0) + 1;
@@ -176,9 +178,11 @@ export function headingId(headingIds: Map<string, number>, text: unknown): strin
 
 export function stripObsidianComments(source: unknown): string {
   const original = String(source ?? '');
+  // 이미 정리한 공개 본문이 목차·검색·링크 추출 때마다 다시 들어온다. 주석 표시가 없으면 파싱 없이 그대로 돌려준다.
+  if (!original.includes('%%')) return original;
   const offsets = [0];
   for (let i = 0; i < original.length; i += 1) if (original[i] === '\n') offsets.push(i + 1);
-  const ranges = commentParser.parse(original, {})
+  const ranges = structureParser.parse(original, {})
     .filter((token) => ['fence', 'code_block'].includes(token.type) && token.map)
     .map((token) => [offsets[token.map![0]], offsets[token.map![1]] ?? original.length]);
   let output = '', rangeIndex = 0;
@@ -236,25 +240,70 @@ function replaceOutsideInlineCode(line: string, transform: (text: string) => str
   return output;
 }
 
-// 블록 ID는 보이는 표기 대신 링크 도착점으로 남긴다. 코드 예시는 변환하지 않는다.
-function replaceObsidianFormatting(source: string, markdown: InstanceType<typeof MarkdownIt>, context: RenderContext): string {
-  const original = stripObsidianComments(source);
-  const codeLines = codeLinesFor(original, markdown, context);
-  return original.split('\n').map((line, index) => {
-    if (codeLines.has(index)) return line;
-    return replaceOutsideInlineCode(line, (text) => text
-      .replace(/==([^=\n]+)==/g, '<mark>$1</mark>')
-      .replace(/(^|[ \t]+)\^([A-Za-z0-9-]+)[ \t]*$/, (_match, space, id) => `${space}<span id="${slugifyHeading(id)}"></span>`));
-  }).join('\n');
+// 인라인 토큰 목록에서 Obsidian 표기를 바꾼다. 줄바꿈 토큰으로 나눈 줄 안에서만 짝을 찾는다.
+// 형광은 `==`와 `==` 사이에 `=`가 없고 비어 있지 않을 때만 짝이고, 그 사이의 굵게·링크 같은 토큰은 그대로 안에 든다.
+// 블록 id는 줄 끝의 텍스트 토큰에서만 보며, 줄 첫머리가 아니면 앞에 공백이 있어야 한다. 운영 규칙(원문 정규식)과 같다.
+const BLOCK_ID = /(^|[ \t]+)\^([A-Za-z0-9-]+)[ \t]*$/;
+type TokenConstructor = new (type: string, tag: string, nesting: 1 | 0 | -1) => Token;
+
+function rewriteObsidianInline(children: Token[], Token: TokenConstructor): Token[] {
+  const make = (type: string, content: string) => { const token = new Token(type, '', 0); token.content = content; return token; };
+  const output: Token[] = [];
+  let line: Token[] = [];
+  const flush = () => { output.push(...rewriteLine(line, make)); line = []; };
+  for (const token of children) {
+    if (token.type === 'softbreak' || token.type === 'hardbreak') { flush(); output.push(token); continue; }
+    line.push(token);
+  }
+  flush();
+  return output;
 }
 
-function codeLinesFor(source: string, markdown: InstanceType<typeof MarkdownIt>, context: RenderContext): Set<number> {
-  const lines = new Set<number>();
-  for (const token of markdown.parse(source, { context })) {
-    if ((token.type !== 'fence' && token.type !== 'code_block') || !token.map) continue;
-    for (let index = token.map![0]; index < token.map![1]; index += 1) lines.add(index);
+function rewriteLine(line: Token[], make: (type: string, content: string) => Token): Token[] {
+  const last = line[line.length - 1];
+  if (last?.type === 'text') {
+    const match = last.content.match(BLOCK_ID);
+    if (match && (match[1] !== '' || line.length === 1)) {
+      last.content = last.content.slice(0, match.index) + match[1];
+      line = [...line, make('html_inline', `<span id="${slugifyHeading(match[2])}"></span>`)];
+    }
   }
-  return lines;
+  // 표시 위치를 모은다. 텍스트 토큰 안의 `==`만 표시이고, 다른 토큰의 내용은 짝 사이의 `=` 검사에만 쓴다.
+  const markers: { index: number; at: number }[] = [];
+  line.forEach((token, index) => {
+    if (token.type !== 'text') return;
+    for (const found of token.content.matchAll(/==/g)) markers.push({ index, at: found.index });
+  });
+  const chosen = new Set<number>();
+  for (let i = 0; i < markers.length - 1; i += 1) {
+    if (chosen.has(i)) continue;
+    const open = markers[i];
+    const close = markers[i + 1];
+    const between = line.slice(open.index, close.index + 1).map((token, offset, slice) => {
+      const from = offset === 0 ? open.at + 2 : 0;
+      const to = offset === slice.length - 1 ? close.at : token.content.length;
+      return token.type === 'text' || token.type === 'code_inline' || token.type === 'text_special' ? token.content.slice(from, to) : '';
+    }).join('');
+    const hasOtherTokens = close.index > open.index;
+    if ((between.length === 0 && !hasOtherTokens) || between.includes('=')) continue;
+    chosen.add(i); chosen.add(i + 1); i += 1;
+  }
+  if (!chosen.size) return line;
+  const result: Token[] = [];
+  let opened = false;
+  line.forEach((token, index) => {
+    const here = markers.map((marker, position) => ({ ...marker, position })).filter((marker) => marker.index === index && chosen.has(marker.position));
+    if (!here.length) { result.push(token); return; }
+    let cursor = 0;
+    for (const marker of here) {
+      if (marker.at > cursor) result.push(make('text', token.content.slice(cursor, marker.at)));
+      result.push(make('html_inline', opened ? '</mark>' : '<mark>'));
+      opened = !opened;
+      cursor = marker.at + 2;
+    }
+    if (cursor < token.content.length) result.push(make('text', token.content.slice(cursor)));
+  });
+  return result;
 }
 
 function articleTarget(line: string) {
@@ -264,68 +313,10 @@ function articleTarget(line: string) {
   return parsed.target ? parsed : null;
 }
 
-const calloutPlaceholder = (index: number) => `\uE000CALLOUT_${index}\uE001`;
-
-function renderCallouts(source: string, renderCore: (body: string) => string, context: RenderContext, articleCards: PublicNote['articleCards'], depth = 0, blocks: string[] = []): string {
-  const lines = source.split('\n');
-  const codeLines = codeLinesFor(source, context.markdown, context);
-  const output = [];
-  for (let index = 0; index < lines.length; index += 1) {
-    const match = lines[index].match(/^\s*>\s*\[!([\w-]+)\]([+-])?(?:\s+(.*))?\s*$/i);
-    if (!match || codeLines.has(index)) {
-      output.push(lines[index]);
-      continue;
-    }
-
-    const [, rawType, foldMarker, customTitle] = match;
-    const type = rawType.toLowerCase();
-    const quotedLines = [];
-    let next = index + 1;
-    while (next < lines.length) {
-      const quoted = lines[next].match(/^\s*>\s?(.*)$/);
-      if (!quoted) break;
-      quotedLines.push(quoted[1]);
-      next += 1;
-    }
-
-    const target = type === 'article' && !foldMarker && quotedLines.length === 1
-      ? articleTarget(quotedLines[0])
-      : null;
-    const note = target ? context.resolveNote?.(context.sourcePath, target.target, target.fragment) : null;
-    if (note && note.visibility !== 'private' && note.url) {
-      const cardIndex = articleCards.length;
-      const title = note.title || target!.target;
-      articleCards.push({ url: note.url, title, caption: customTitle?.trim() || '' });
-      blocks.push(`<aside class="article-card-slot" data-article-card="${cardIndex}"><a class="internal-note-link" href="${escapeHtml(note.url)}">${escapeHtml(title)}</a></aside>`);
-      output.push('', calloutPlaceholder(blocks.length - 1), '');
-      index = next - 1;
-      continue;
-    }
-
-    const title = customTitle?.trim() || CALLOUT_TITLES[type] || type;
-    const body = quotedLines.join('\n').trim();
-    const nestedBody = depth < 3 ? renderCallouts(body, renderCore, context, articleCards, depth + 1, blocks) : body;
-    const bodyHtml = renderCore(nestedBody);
-    const className = `callout callout-${type.replace(/[^a-z0-9_-]/gi, '') || 'note'}`;
-    const block = foldMarker === '-'
-      ? `<details class="${className}"><summary>${escapeHtml(title)}</summary><div class="callout-body">${bodyHtml}</div></details>`
-      : `<aside class="${className}"><div class="callout-title">${escapeHtml(title)}</div><div class="callout-body">${bodyHtml}</div></aside>`;
-    blocks.push(block);
-    output.push('', calloutPlaceholder(blocks.length - 1), '');
-    index = next - 1;
-  }
-  return output.join('\n');
-}
-
-function materializeCallouts(html: string, blocks: string[]): string {
-  let output = html;
-  // 바깥 콜아웃이 안쪽 콜아웃의 placeholder를 품을 수 있으므로 역순으로 풀어낸다.
-  for (let index = blocks.length - 1; index >= 0; index -= 1) {
-    const marker = calloutPlaceholder(index);
-    output = output.replaceAll(`<p>${marker}</p>`, blocks[index]).replaceAll(marker, blocks[index]);
-  }
-  return output;
-}
+// 콜아웃은 이 깊이까지만 콜아웃으로 그리고 그 아래는 인용문으로 둔다. 바깥 콜아웃이 0이다.
+const MAX_CALLOUT_DEPTH = 3;
+const CALLOUT_HEAD = /^>\s*\[!([\w-]+)\]([+-])?(?:\s+(.*))?\s*$/i;
+const CALLOUT_LINE = /^>\s?(.*)$/;
 
 function createMarkdownIt() {
   const markdown = new MarkdownIt({
@@ -416,8 +407,113 @@ function createMarkdownIt() {
     }
   });
 
-  // 문서의 목차를 소유한 렌더만 headingIds를 넘긴다. 콜아웃 본문은 따로 렌더하므로 번호를 다시 매기지 않고 id도 두지 않는다.
-  // 인용·목록 안의 헤딩(level > 0)도 같은 이유로 건너뛴다. garden.ts의 headingsFor가 쓰는 규칙과 같다.
+  // 기존 전처리는 일반 인용문 뒤의 콜아웃을 별도 블록으로 분리했다. 기본 인용문 규칙이
+  // 같은 깊이의 콜아웃까지 삼키지 않도록 앞부분만 먼저 파싱한다. 인용문 속 코드 예시는 제외한다.
+  markdown.block.ruler.before('blockquote', 'quote_before_callout', (state, startLine, endLine, silent) => {
+    if (state.parentType === 'blockquote' || state.sCount[startLine] - state.blkIndent >= 4) return false;
+    const lineAt = (line: number) => state.src.slice(state.bMarks[line] + state.tShift[line], state.eMarks[line]);
+    if (!lineAt(startLine).startsWith('>') || CALLOUT_HEAD.test(lineAt(startLine))) return false;
+    let protectedLines: Set<number> | undefined;
+    for (let line = startLine + 1; line < endLine; line++) {
+      if (!lineAt(line).startsWith('>')) break;
+      if (!CALLOUT_HEAD.test(lineAt(line))) continue;
+      protectedLines ??= new Set(structureParser.parse(state.src, {})
+        .filter((token) => ['fence', 'code_block'].includes(token.type) && token.map)
+        .flatMap((token) => Array.from({ length: token.map![1] - token.map![0] }, (_, i) => token.map![0] + i)));
+      if (protectedLines.has(line)) continue;
+      if (silent) return true;
+      state.md.block.tokenize(state, startLine, line);
+      state.line = line;
+      return true;
+    }
+    return false;
+  });
+
+  // Obsidian 콜아웃(`> [!종류]±? 제목`과 이어지는 `>` 줄)을 블록 규칙으로 잡는다. 인용문 규칙보다 앞에 두어 `>`를 먼저 본다.
+  // 본문은 `>`를 벗겨 다시 블록 파싱하고 그 토큰을 같은 흐름에 넣으므로, 인라인 처리·그림 설명·제목 규칙이 한 번만 돈다.
+  // 종류 이름은 대소문자를 가리지 않고 사용자 정의를 받으며, 뜻은 CSS가 준다. 일반 인용문 안의 `> [!종류]`는
+  // 그대로 인용문으로 둔다(운영 동작 유지). 글 카드는 접히지 않는 article 콜아웃의 본문이 위키링크 한 줄일 때만 만든다.
+  markdown.block.ruler.before('blockquote', 'callout', (state, startLine, endLine, silent) => {
+    if (state.sCount[startLine] - state.blkIndent >= 4 || state.parentType === 'blockquote') return false;
+    const env = state.env as { context?: RenderContext; articleCards?: PublicNote['articleCards']; calloutDepth?: number };
+    const depth = env.calloutDepth ?? 0;
+    if (depth > MAX_CALLOUT_DEPTH) return false;
+    const lineAt = (line: number) => state.src.slice(state.bMarks[line] + state.tShift[line], state.eMarks[line]);
+    const head = lineAt(startLine).match(CALLOUT_HEAD);
+    if (!head) return false;
+    if (silent) return true;
+
+    const [, rawType, foldMarker, customTitle] = head;
+    const type = rawType.toLowerCase();
+    const quotedLines: string[] = [];
+    let next = startLine + 1;
+    for (; next < endLine; next += 1) {
+      const quoted = lineAt(next).match(CALLOUT_LINE);
+      if (!quoted) break;
+      quotedLines.push(quoted[1]);
+    }
+
+    // 글 카드는 카드 목록을 받은 렌더링에서만 해석한다. 링크 추출과 코드 범위 계산의 파싱에서는 본문의 위키링크가
+    // 인라인 규칙으로 문서 순서대로 모이도록 일반 콜아웃으로 둔다.
+    const context = env.context;
+    const target = env.articleCards && type === 'article' && !foldMarker && quotedLines.length === 1 ? articleTarget(quotedLines[0]) : null;
+    const note = target && context ? context.resolveNote?.(context.sourcePath, target.target, target.fragment) : null;
+    if (note && note.visibility !== 'private' && note.url && env.articleCards) {
+      const cardIndex = env.articleCards.length;
+      const title = note.title || target!.target;
+      env.articleCards.push({ url: note.url, title, caption: customTitle?.trim() || '' });
+      const card = state.push('article_card', 'aside', 0);
+      card.block = true;
+      card.map = [startLine, next];
+      card.meta = { cardIndex, url: note.url, title };
+      state.line = next;
+      return true;
+    }
+
+    const open = state.push('callout_open', foldMarker === '-' ? 'details' : 'aside', 1);
+    open.block = true;
+    open.map = [startLine, next];
+    open.meta = {
+      folded: foldMarker === '-',
+      title: customTitle?.trim() || CALLOUT_TITLES[type] || type,
+      className: `callout callout-${type.replace(/[^a-z0-9_-]/gi, '') || 'note'}`
+    };
+    // 본문 토큰은 새 상태에서 깊이 0으로 나오므로 현재 깊이를 더해 넣는다. 제목 id 규칙이 level 0만 보기 때문이다.
+    const body: Token[] = [];
+    env.calloutDepth = depth + 1;
+    state.md.block.parse(quotedLines.join('\n').trim(), state.md, state.env, body);
+    env.calloutDepth = depth;
+    for (const token of body) {
+      token.level += state.level;
+      state.tokens.push(token);
+    }
+    const close = state.push('callout_close', open.tag, -1);
+    close.block = true;
+    state.line = next;
+    return true;
+  });
+  markdown.renderer.rules.callout_open = (tokens, index) => {
+    const { folded, title, className } = tokens[index].meta as { folded: boolean; title: string; className: string };
+    return folded
+      ? `<details class="${className}"><summary>${escapeHtml(title)}</summary><div class="callout-body">`
+      : `<aside class="${className}"><div class="callout-title">${escapeHtml(title)}</div><div class="callout-body">`;
+  };
+  markdown.renderer.rules.callout_close = (tokens, index) => `</div></${tokens[index].tag}>\n`;
+  markdown.renderer.rules.article_card = (tokens, index) => {
+    const { cardIndex, url, title } = tokens[index].meta as { cardIndex: number; url: string; title: string };
+    return `<aside class="article-card-slot" data-article-card="${cardIndex}"><a class="internal-note-link" href="${escapeHtml(url)}">${escapeHtml(title)}</a></aside>\n`;
+  };
+
+  // Obsidian의 형광(==글==)과 블록 id(줄 끝의 ^id)를 인라인 토큰에서 바꾼다. 원문을 미리 고치지 않으므로 코드 안의
+  // 표기는 저절로 남고, 이스케이프한 `\=`는 text_special 토큰이라 표시로 읽히지 않는다. 그래서 text_join보다 앞에 둔다.
+  markdown.core.ruler.after('inline', 'obsidian_inline', (state) => {
+    for (const token of state.tokens) {
+      if (token.type === 'inline' && token.children) token.children = rewriteObsidianInline(token.children, state.Token);
+    }
+  });
+
+  // 문서의 목차를 소유한 렌더만 headingIds를 넘긴다. 콜아웃 본문의 토큰은 level이 0보다 커서 번호를 매기지 않고 id도 두지 않는다.
+  // 인용·목록 안의 헤딩(level > 0)도 같은 이유로 건너뛴다. 목차(env.headings)도 여기서 같이 모으므로 앵커와 목차가 어긋날 수 없다.
   const defaultHeadingOpen = markdown.renderer.rules.heading_open;
   markdown.renderer.rules.heading_open = (tokens, index, options, env, self) => {
     const token = tokens[index];
@@ -425,7 +521,11 @@ function createMarkdownIt() {
     const headingText = nextToken?.type === 'inline' ? nextToken.content : '';
     const headingIds = env?.headingIds as Map<string, number> | undefined;
     if (headingIds && token.level === 0) {
-      token.attrSet('id', headingId(headingIds, headingText));
+      const id = headingId(headingIds, headingText);
+      token.attrSet('id', id);
+      const level = Number(token.tag.slice(1));
+      const headings = env?.headings as PublicNote['headings'] | undefined;
+      if (headings && level >= 2 && level <= 4) headings.push({ id, level, title: headingTextForId(headingText) });
     }
     return defaultHeadingOpen
       ? defaultHeadingOpen(tokens, index, options, env, self)
@@ -451,22 +551,15 @@ export function extractNoteTargets(source: string): string[] {
 export function createMarkdownRenderer({ resolveNote, resolveAsset }: Resolvers) {
   const markdown = createMarkdownIt();
 
-  function renderCore(source: string, context: RenderContext): string {
-    const prepared = replaceObsidianFormatting(String(source ?? ''), markdown, context);
-    return markdown.render(prepared, { context });
-  }
-
-  return function renderMarkdown(sourcePath: string, source: string, { articleCards = [] }: { articleCards?: PublicNote['articleCards'] } = {}): string {
+  // articleCards와 headings는 렌더링이 채우는 출력 인자다. 글 카드는 카드 목록에, 목차는 2~4단계 제목이 렌더러가 매긴 id와 함께 쌓인다.
+  return function renderMarkdown(sourcePath: string, source: string, { articleCards = [], headings }: { articleCards?: PublicNote['articleCards']; headings?: PublicNote['headings'] } = {}): string {
     const context = {
       resolveAsset,
       resolveNote,
       sourcePath,
       markdown
     };
-    const prepared = replaceObsidianFormatting(String(source ?? ''), markdown, context);
-    const calloutBlocks: string[] = [];
-    const withCallouts = renderCallouts(prepared, (body) => renderCore(body, context), context, articleCards, 0, calloutBlocks);
-    const rendered = materializeCallouts(markdown.render(withCallouts, { headingIds: new Map(), context }), calloutBlocks);
+    const rendered = markdown.render(stripObsidianComments(source), { headingIds: new Map(), headings, context, articleCards });
     return sanitizeHtml(rendered, {
       allowedAttributes: ALLOWED_ATTRIBUTES,
       allowedSchemes: ['http', 'https', 'mailto'],

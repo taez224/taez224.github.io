@@ -65,3 +65,8 @@ test('plainText drops prose block ids but keeps code block and inline code conte
   const body = '문장 ^prose-id\n\n```md\n코드 ^code-id\n```\n\n`인라인 ^inline-id`';
   assert.equal(plainText(body), '문장 코드 ^code-id 인라인 ^inline-id');
 });
+
+
+test('excluding code blocks retains headings and inline code', () => {
+  assert.equal(plainText('## 제목\n\n본문 `인라인`\n\n```\n코드\n```', { includeCodeBlocks: false }), '제목 본문 인라인');
+});
