@@ -47,7 +47,10 @@ h1, h2, h3, p { margin-top: 0; }
 .hub-mark { position: relative; display: inline-block; width: 11px; height: 11px; margin-right: 8px; border: 1.5px solid var(--accent); border-radius: 50%; vertical-align: 0; }
 .hub-mark::after { content: ""; position: absolute; inset: 2px; border-radius: 50%; background: var(--accent); } /* 지도의 허브 노드처럼 링 안에 점. 빈 링만으로는 눈에 안 띈다. */
 .topic-dot { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 50%; vertical-align: 0; }
-.btn { display: inline-flex; align-items: center; height: 44px; padding: 0 20px; border: 0; border-radius: 4px; background: var(--accent); color: var(--paper-strong); font-size: var(--t-ui); font-weight: 600; line-height: 1.2; transition: background-color .15s ease; }
+.btn { display: inline-flex; align-items: center; height: 44px; padding: 0 20px; border: 0; border-radius: 4px; background: var(--accent); color: var(--paper-strong); font-size: var(--t-ui); font-weight: 600; line-height: 1.2; transition: background-color .15s ease, transform .15s cubic-bezier(.23, 1, .32, 1); }
+/* 누르는 순간 버튼이 살짝 줄어 입력을 받았음을 알린다. 호버가 없는 터치 기기에서는 이것이 유일한 즉시 반응이다.
+   상자 모양의 버튼(채운 버튼, 아이콘 버튼)에만 두고 링크·글자 버튼·필터에는 두지 않는다. */
+.btn:active, .search-trigger:active { transform: scale(.97); }
 @media (hover: hover) { .btn:hover { background: var(--muted); color: var(--paper-strong); text-decoration: none; } }
 .btn.small { height: 40px; padding: 0 18px; font-size: var(--t-side); }
 /* 글자 버튼: 대화상자·시트를 닫거나 검색을 다시 시도하는 보조 조작. 글자는 작게 두고 누르는 영역만 44px로 잡는다.
@@ -111,7 +114,7 @@ h1, h2, h3, p { margin-top: 0; }
 .site-nav a:focus-visible { outline: none; }
 .site-nav a:focus-visible > span { outline: 2px solid var(--accent); outline-offset: 4px; }
 .site-nav a[aria-current="page"] { color: var(--ink); }
-.search-trigger { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin-left: 12px; margin-right: -13px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); transition: background-color .15s ease, color .15s ease; }
+.search-trigger { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin-left: 12px; margin-right: -13px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); transition: background-color .15s ease, color .15s ease, transform .15s cubic-bezier(.23, 1, .32, 1); }
 @media (hover: hover) { .search-trigger:hover { background: var(--accent-soft); color: var(--accent); } }
 /* 공유 아이콘이 앞에 보이면 상자를 붙인다. 상자 안 여백만으로 그림 사이가 내비 간격과 비슷해진다.
    360px 미만에서는 헤더 공유 아이콘이 숨고, JS가 없으면 hidden으로 남으므로 그때는 검색 버튼의 원래 여백을 둔다.

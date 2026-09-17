@@ -59,7 +59,8 @@ const topics = [...topicCounts].map(([name, count]) => ({ name, color: topicColo
   .graph-box { position: relative; }
   .map-stage { min-width: 0; } /* 그리드 아이템이 범례의 min-content 폭으로 늘어나 페이지가 넘치지 않게 */
   .graph-controls { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper-strong); }
-  .graph-controls button { min-width: 36px; min-height: 36px; padding: 3px 9px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: var(--t-meta); transition: background-color .15s ease, color .15s ease; }
+  .graph-controls button { min-width: 36px; min-height: 36px; padding: 3px 9px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: var(--t-meta); transition: background-color .15s ease, color .15s ease, transform .15s cubic-bezier(.23, 1, .32, 1); }
+  .graph-controls button:active { transform: scale(.97); }
   /* 확대 버튼도 범례·필터와 같은 투명 버튼이라 호버 때 같은 옅은 판을 깐다. */
   @media (hover: hover) { .graph-controls button:hover { background: var(--accent-soft); color: var(--accent); } }
   @media (max-width: 1000px) {

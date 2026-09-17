@@ -13,7 +13,8 @@ const shown = contacts.filter((contact) => contact.name !== 'Velog' && contact.i
 </div>}
 <style>
   .contacts { display: flex; align-items: center; gap: 4px; margin: 0 -8px; }
-  .contacts a { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 4px; transition: background .15s ease; }
+  .contacts a { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 4px; transition: background .15s ease, transform .15s cubic-bezier(.23, 1, .32, 1); }
+  .contacts a:active { transform: scale(.97); }
   .contacts img { width: 20px; height: 20px; object-fit: contain; filter: grayscale(1); opacity: .7; transition: opacity .15s ease; }
   .contacts a:focus-visible img { opacity: 1; }
   @media (hover: hover) { .contacts a:hover { background: var(--accent-soft); } .contacts a:hover img { opacity: 1; } }
