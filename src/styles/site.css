@@ -23,6 +23,9 @@
   --s-content-max: 1180px; --s-page-gutter: 24px; --s-column-gap: 40px; --s-reader-column: 720px; --s-sidebar: 310px;
   --s-header-height: 72px; --s-page-top-index: 36px; --s-page-top-reading: 56px; --s-page-bottom: 96px;
   --s-title-gap: 40px; --s-paragraph-gap: 22px; --s-side-list-gap: 8px;
+  /* 앞머리로 테마를 지정한 도표가 놓이는 판. 그 테마가 전제한 밝기를 화면 모드와 상관없이 지키므로 어두운 화면 블록에서 덮지 않는다.
+     값은 각 모드의 paper-strong이다. */
+  --diagram-plate-light: #fdfdfa; --diagram-plate-dark: #1c221e;
 }
 /* 어두운 화면. 시스템 설정을 따르며 사이트 안에 전환 버튼은 두지 않는다. 값은 palette.ts의 DARK_PALETTE와 같다.
    accent는 라이트처럼 먹색 역할(ink)과 같은 값이다. 먹색 반투명 변형(color-mix)은 --ink를 따라 저절로 바뀐다. */

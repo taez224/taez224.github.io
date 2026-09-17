@@ -77,6 +77,10 @@
 .body .diagram-open:focus-visible { border-color: var(--ink); color: var(--ink); }
 @media (hover: hover) { .body .diagram-open:hover { border-color: var(--ink); color: var(--ink); } }
 .body .diagram-open + .mermaid { margin-top: 0; }
+/* 앞머리로 테마를 지정한 도표는 그 테마를 원래 모습대로 보여 주려는 것이라 사이트 색을 입히지 않는다. 대신 그 테마가 전제한 밝기의 판에 둔다.
+   밝은 테마는 선과 화살표를 짙은 회색(#333)으로 그려 어두운 상자에서 사라지고, 어두운 테마는 밝은 글자가 밝은 상자에서 사라진다. */
+.body .mermaid[data-theme-tone="light"], .diagram-viewer[data-theme-tone="light"] .diagram-viewer-stage { background: var(--diagram-plate-light); }
+.body .mermaid[data-theme-tone="dark"], .diagram-viewer[data-theme-tone="dark"] .diagram-viewer-stage { background: var(--diagram-plate-dark); }
 /* 크게 보기 다이얼로그. 본문의 도표를 그대로 옮겨 오므로 무대는 스크롤만 맡는다. */
 .diagram-viewer { width: min(96vw, 1600px); max-width: none; height: min(92dvh, 1100px); max-height: none; padding: 0; border: 1px solid var(--line); background: var(--paper); color: var(--ink); }
 .diagram-viewer[open] { display: flex; flex-direction: column; }

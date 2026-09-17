@@ -40,6 +40,9 @@ function openViewer(container: Element, opener: HTMLElement, onRestore?: () => v
   if (!svg || typeof dialog.showModal !== 'function') return;
   dialog.className = 'diagram-viewer';
   dialog.setAttribute('aria-label', '도표 크게 보기');
+  // 테마를 지정한 도표는 크게 볼 때도 같은 밝기의 판에 둔다.
+  const tone = container.getAttribute('data-theme-tone');
+  if (tone) dialog.setAttribute('data-theme-tone', tone);
 
   const tools = doc.createElement('div');
   tools.className = 'diagram-viewer-tools';

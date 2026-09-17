@@ -81,13 +81,18 @@ const CONFIG_KEYS: Record<string, string> = {
   railroadAbnf: 'railroad', railroadEbnf: 'railroad', railroadPeg: 'railroad'
 };
 
-export function pinsOwnTheme(parsed: Exclude<Awaited<ReturnType<Mermaid['parse']>>, false>): boolean {
+// 도표가 앞머리·init 지시문으로 지정한 테마 이름이다. 지정하지 않았으면 null이다.
+export function pinnedTheme(parsed: Exclude<Awaited<ReturnType<Mermaid['parse']>>, false>): string | null {
   const config = parsed.config;
   const key = (CONFIG_KEYS[parsed.diagramType] ?? parsed.diagramType) as keyof typeof config;
   const section: unknown = config[key];
   const scoped = section && typeof section === 'object' && 'theme' in section ? section.theme : undefined;
   const theme = scoped ?? config.theme;
-  return typeof theme === 'string' && theme.trim().length > 0;
+  return typeof theme === 'string' && theme.trim().length > 0 ? theme.trim() : null;
+}
+
+export function pinsOwnTheme(parsed: Exclude<Awaited<ReturnType<Mermaid['parse']>>, false>): boolean {
+  return pinnedTheme(parsed) !== null;
 }
 
 // 화면 모드에 맞는 사이트 설정이다. 창이 없는 환경(테스트 대역)에서는 밝은 화면으로 그린다.
@@ -117,7 +122,10 @@ export async function renderMermaidBlocks(blocks: Element[], mermaid: MermaidRen
       // 앞머리와 init 지시문의 병합·우선순위는 Mermaid의 공개 파서에 맡긴다.
       const parsed = await mermaid.parse(source, { suppressErrors: true });
       if (!parsed) { container.replaceWith(pre); continue; }
-      const config = pinsOwnTheme(parsed) ? MERMAID_PINNED_THEME_CONFIG : siteConfig;
+      const theme = pinnedTheme(parsed);
+      const config = theme ? MERMAID_PINNED_THEME_CONFIG : siteConfig;
+      // 지정한 테마가 밝은지 어두운지 적어 두면 CSS가 그 밝기의 판에 도표를 둔다. Mermaid의 어두운 테마는 이름에 dark가 들어간다.
+      if (theme) container.setAttribute('data-theme-tone', /dark/i.test(theme) ? 'dark' : 'light');
       if (config !== applied) {
         mermaid.initialize(config);
         applied = config;

@@ -368,6 +368,18 @@ test('a diagram pinning its own theme drops the site palette while keeping the s
   assert.equal(middle?.theme, 'redux-color', '앞머리가 없는 도표는 사이트 설정으로 그린다');
   assert.ok(Array.isArray(middle?.themeVariables?.borderColorArray));
   assert.equal(last?.theme, undefined, '사이트 설정으로 돌아온 뒤 다시 벗겨지지 않았다');
+  const tones = f.slots.map((slot) => (slot as { getAttribute(name: string): string | null }).getAttribute('data-theme-tone'));
+  assert.deepEqual(tones, ['dark', null, 'dark'], '지정한 테마의 밝기를 적어 판을 고르게 하고, 사이트 테마 도표에는 적지 않는다');
+});
+
+test('a light pinned theme is marked light so it keeps a light plate in the dark color scheme', async () => {
+  const f = fixture(undefined, ['---\nconfig:\n  theme: default\n---\nflowchart LR\n  A --> B', "%%{init: {'theme': 'redux-dark-color'}}%%\nflowchart LR\n  A --> B"]);
+  await renderMermaidBlocks(f.blocks, {
+    parse: (source, options) => mermaid.parse(source, options),
+    initialize() {},
+    async run({ nodes } = {}) { assert.ok(nodes); nodes[0].textContent = 'rendered SVG'; }
+  }, 0, MERMAID_DARK_CONFIG);
+  assert.deepEqual(f.slots.map((slot) => (slot as { getAttribute(name: string): string | null }).getAttribute('data-theme-tone')), ['light', 'dark']);
 });
 
 
