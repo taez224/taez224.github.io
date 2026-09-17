@@ -9,7 +9,11 @@ const { note, headings, outgoing, incoming, mapUrl, series = null } = Astro.prop
 let section = '';
 const toc = headings.filter((h) => h.level === 2 || h.level === 3).map((h) => { if (h.level === 2) section = h.id; return { ...h, parent: h.level === 3 ? section : '' }; });
 const block = (label: string, icon: 'out' | 'in', items: PublicNote[]) => ({ label, icon, items, long: items.length > 6 });
-const blocks = [block('참조', 'out', outgoing), block('역참조', 'in', incoming)].filter((b) => b.items.length);
+// 연재 글의 참조·역참조는 대개 같은 연재의 다른 편과 허브이고, 위의 연재 블록이 이미 모두 보여 준다.
+// 목록에서는 연재 블록에 있는 글을 빼고 비면 블록을 그리지 않는다. 로컬 그래프는 연결 방향을 보여 주므로 전체 이웃을 그린다.
+const inSeriesBlock = new Set(series && series.total > 0 ? [series.url, ...series.posts.map((post) => post.url)].filter(Boolean) : []);
+const outsideSeries = (items: PublicNote[]) => items.filter((item) => !inSeriesBlock.has(item.url));
+const blocks = [block('참조', 'out', outsideSeries(outgoing)), block('역참조', 'in', outsideSeries(incoming))].filter((b) => b.items.length);
 // 연결이 하나도 없으면 로컬 그래프는 "이 노트" 점 하나뿐이라 그리지 않는다. 지도에 있는 노트라면 지도로 가는 링크만 남긴다.
 const hasNeighbors = outgoing.length + incoming.length > 0;
 ---
