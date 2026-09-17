@@ -13,6 +13,18 @@ colors:
   warning: '#985d2f'
   bug: '#8e5d5d'
   highlight: '#e7d99b'
+  code-bg: '#ffffff'
+  code-text: '#24292f'
+  code-comment: '#6e7781'
+  code-keyword: '#cf222e'
+  code-function: '#8250df'
+  code-string: '#0a7f64'
+  code-number: '#0550ae'
+  code-type: '#953800'
+  code-meta: '#57606a'
+  code-tag: '#116329'
+  code-link: '#0969da'
+  code-inserted: '#1a7f37'
 typography:
   reader-title:
     fontFamily: Gowun Batang
@@ -98,6 +110,11 @@ typography:
     fontSize: 13px
     fontWeight: 400
     lineHeight: 1.6
+  code:
+    fontFamily: SFMono-Regular
+    fontSize: 14px
+    fontWeight: 400
+    lineHeight: 1.6
 spacing:
   content-max: 1180px
   page-gutter: 24px
@@ -171,6 +188,42 @@ components:
   callout-bug-title:
     backgroundColor: '{colors.paper-strong}'
     textColor: '{colors.bug}'
+  code-block:
+    backgroundColor: '{colors.code-bg}'
+    textColor: '{colors.code-text}'
+    typography: '{typography.code}'
+    rounded: '{rounded.none}'
+    padding: '14px 16px'
+  code-comment:
+    backgroundColor: '{colors.code-bg}'
+    textColor: '{colors.code-comment}'
+  code-keyword:
+    backgroundColor: '{colors.code-bg}'
+    textColor: '{colors.code-keyword}'
+  code-function:
+    backgroundColor: '{colors.code-bg}'
+    textColor: '{colors.code-function}'
+  code-string:
+    backgroundColor: '{colors.code-bg}'
+    textColor: '{colors.code-string}'
+  code-number:
+    backgroundColor: '{colors.code-bg}'
+    textColor: '{colors.code-number}'
+  code-type:
+    backgroundColor: '{colors.code-bg}'
+    textColor: '{colors.code-type}'
+  code-meta:
+    backgroundColor: '{colors.code-bg}'
+    textColor: '{colors.code-meta}'
+  code-tag:
+    backgroundColor: '{colors.code-bg}'
+    textColor: '{colors.code-tag}'
+  code-link:
+    backgroundColor: '{colors.code-bg}'
+    textColor: '{colors.code-link}'
+  code-inserted:
+    backgroundColor: '{colors.code-bg}'
+    textColor: '{colors.code-inserted}'
   text-highlight:
     backgroundColor: '{colors.highlight}'
     textColor: '{colors.primary}'
@@ -199,7 +252,7 @@ Thinking Garden은 글과 개발 노트를 읽으며 관련 생각으로 이어�
 
 ## Colors
 
-`primary`는 `--ink`와 `--accent`에 대응하며 글자와 주요 조작을 표시한다. `paper`는 페이지 배경, `paper-strong`은 표 머리·콜아웃·도표·대화상자 배경이다. 코드 상자는 강조 테마의 흰 배경을 쓴다. `muted`와 `faint`는 보조 정보의 위계를, `line`은 내용의 구획을 나타낸다. `accent-soft`는 호버·선택 배경에 사용한다. `warning`, `bug`, `highlight`는 각각 `--warning`, `--bug`, `--highlight`로 연결해 본문 상태와 강조를 표현한다. 본문 링크는 먹색 글자에 밑줄을 더해 주변 문장과 구분한다.
+`primary`는 `--ink`와 `--accent`에 대응하며 글자와 주요 조작을 표시한다. `paper`는 페이지 배경, `paper-strong`은 표 머리·콜아웃·도표·대화상자 배경이다. 코드 상자는 강조 테마의 흰 배경(`code-bg`)을 쓴다. `muted`와 `faint`는 보조 정보의 위계를, `line`은 내용의 구획을 나타낸다. `accent-soft`는 호버·선택 배경에 사용한다. `warning`, `bug`, `highlight`는 각각 `--warning`, `--bug`, `--highlight`로 연결해 본문 상태와 강조를 표현한다. 본문 링크는 먹색 글자에 밑줄을 더해 주변 문장과 구분한다.
 
 주제색은 노드·영역·태그 점·지도 영역 이름·현재 목차 위치에 사용한다. 색과 함께 주제 이름, 허브 링, 연결 목록을 제공해 의미를 읽을 수 있게 한다. 아래 값은 `GRAPH_COLORS`와 대응한다.
 
@@ -215,11 +268,11 @@ Thinking Garden은 글과 개발 노트를 읽으며 관련 생각으로 이어�
 
 도표는 연두색 노드와 먹색 글자를 기본으로 하고, 낮은 채도의 색으로 묶음과 항목을 구분한다. 작성자가 의미를 부여한 색은 유지하며, 세부 팔레트는 [도표 설정](src/scripts/mermaid-config.ts)에서 관리한다.
 
-코드 블록은 14px 고정폭 글자에 `@tanstack/highlight`의 GitHub Light 테마 색을 그대로 적용한다. 키워드는 빨강, 함수와 애너테이션은 보라, 문자열은 청록, 숫자·속성은 파랑, 타입은 주황 갈색으로 구분하고, 주석은 회색으로 낮춘다. 애너테이션을 테마의 메타 회색으로 두면 주석과 갈리지 않아 TS 데코레이터와 같은 함수 색을 쓴다. 코드는 문단보다 토큰 종류를 빨리 가려 읽어야 하므로 사이트 톤과의 일치보다 문법 구분과 글자 대비를 우선한다. 배경도 테마의 흰색을 쓴다. 가장 흐린 주석 색이 종이색 배경에서는 4.5:1에 조금 못 미치기 때문이다. 값은 [body.css](src/styles/body.css)에서 관리한다.
+코드 블록은 14px 고정폭 글자에 `@tanstack/highlight`의 GitHub Light 테마 색을 그대로 적용한다. 키워드는 빨강, 함수와 애너테이션은 보라, 문자열은 청록, 숫자·속성은 파랑, 타입은 주황 갈색으로 구분하고, 주석은 회색으로 낮춘다. 애너테이션을 테마의 메타 회색으로 두면 주석과 갈리지 않아 TS 데코레이터와 같은 함수 색을 쓴다. 코드는 문단보다 토큰 종류를 빨리 가려 읽어야 하므로 사이트 톤과의 일치보다 문법 구분과 글자 대비를 우선한다. 배경도 테마의 흰색을 쓴다. 가장 흐린 주석 색이 종이색 배경에서는 4.5:1에 조금 못 미치기 때문이다. 값은 [body.css](src/styles/body.css)에서 관리하고 YAML의 `code-*` 토큰과 대응한다. 토큰 색마다 흰 배경과 짝지은 컴포넌트를 두어 lint가 각 색의 대비를 검사한다.
 
 ## Typography
 
-Gowun Batang은 제목과 요약·인용 콜아웃에, Pretendard Variable은 본문·목록·조작 요소에 사용한다. 제목은 700 굵기로 두고 요약·인용은 읽기 흐름에 맞춰 별도 굵기를 쓴다. 대체 서체는 `site.css`의 `--display`와 `--sans`를 따르며 코드는 시스템 고정폭 서체를 사용한다. 긴 한국어 문장은 `keep-all`로 단어를 묶고 긴 URL은 가용 폭에 맞춰 줄바꿈한다.
+Gowun Batang은 제목과 요약·인용 콜아웃에, Pretendard Variable은 본문·목록·조작 요소에 사용한다. 제목은 700 굵기로 두고 요약·인용은 읽기 흐름에 맞춰 별도 굵기를 쓴다. 대체 서체는 `site.css`의 `--display`와 `--sans`를 따른다. 코드는 `code` 토큰에 적은 SFMono-Regular를 대표로 삼아 `ui-monospace`, SFMono-Regular, Menlo 순서의 시스템 고정폭 서체를 사용한다. 긴 한국어 문장은 `keep-all`로 단어를 묶고 긴 URL은 가용 폭에 맞춰 줄바꿈한다.
 
 리더와 페이지 제목은 화면의 역할에 따라 `reader-title`, `page-title`, `section-title`, `featured-title` 토큰을 사용한다. 본문·목록·보조 정보는 `body`, `list-title`, `side`, `meta` 토큰으로 위계를 나눈다. 일반 UI의 모바일 기본 글자 크기는 16px이며 본문은 `body` 토큰을 유지한다.
 
