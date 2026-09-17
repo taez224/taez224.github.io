@@ -57,6 +57,20 @@ test('highlights pair like Obsidian across inline markup and ignore escaped mark
   }
 });
 
+// Obsidian의 기본 설정(Strict line breaks 끔)처럼 문단 안의 Enter 한 번은 줄바꿈으로 보인다.
+test('a single line break inside a paragraph, list item or callout shows as a line break like Obsidian', () => {
+  assert.equal(render('x.md', '"신은 주사위 놀이를 하지 않는다."\n— 알베르트 아인슈타인').trim(), '<p>"신은 주사위 놀이를 하지 않는다."<br />\n— 알베르트 아인슈타인</p>');
+  assert.match(render('x.md', '- 설치: brew install bat\n  alias로 지정한다.'), /<li>설치: brew install bat<br \/>\nalias로 지정한다\.<\/li>/);
+  assert.match(render('x.md', '> [!note]\n> 첫 줄\n> 둘째 줄'), /<p>첫 줄<br \/>\n둘째 줄<\/p>/);
+  // 줄 끝 공백 두 칸으로 이미 줄을 바꾼 곳에 줄바꿈이 겹치지 않고, 빈 줄은 여전히 문단을 나눈다.
+  assert.equal(render('x.md', '첫 줄  \n둘째 줄\n\n새 문단').trim(), '<p>첫 줄<br />\n둘째 줄</p>\n<p>새 문단</p>');
+});
+
+test('line breaks inside code blocks and inline code stay as written', () => {
+  assert.equal(render('x.md', '```text\n첫 줄\n둘째 줄\n```').trim(), '<pre><code class="language-text">첫 줄\n둘째 줄\n</code></pre>');
+  assert.doesNotMatch(render('x.md', '`여러\n줄`'), /<br/);
+});
+
 test('block ids become invisible anchors at paragraph ends and on their own line', () => {
   const html = render('x.md', '플랫폼 팀의 첫 번째 미션은 몰입 시간을 되찾는 것이다. ^flow-time-mission\n\n다음 문단.\n^para-2\n\n`a ^ b`는 코드라 남는다.');
   assert.doesNotMatch(html, /\^flow-time-mission|\^para-2/);

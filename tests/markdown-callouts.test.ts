@@ -50,7 +50,7 @@ test('callouts nest four levels deep and the fifth level stays a blockquote', ()
   const html = render('x.md', '> [!a] 1\n> > [!b] 2\n> > > [!c] 3\n> > > > [!d] 4\n> > > > > [!e] 5\n> > > > > 본문');
   for (const kind of ['a', 'b', 'c', 'd']) assert.match(html, new RegExp(`<aside class="callout callout-${kind}">`));
   assert.doesNotMatch(html, /callout-e/);
-  assert.match(html, /<blockquote>\n<p>\[!e\] 5\n본문<\/p>\n<\/blockquote>/);
+  assert.match(html, /<blockquote>\n<p>\[!e\] 5<br \/>\n본문<\/p>\n<\/blockquote>/);
 });
 
 test('callout code fences keep blank lines inside the code block', () => {

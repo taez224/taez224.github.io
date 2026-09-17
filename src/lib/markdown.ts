@@ -422,7 +422,8 @@ const CALLOUT_LINE = /^>\s?(.*)$/;
 
 function createMarkdownIt() {
   const markdown = new MarkdownIt({
-    breaks: false,
+    // 작성 기준인 Obsidian 기본 설정(Strict line breaks 끔)처럼 문단 안의 Enter 한 번을 줄바꿈으로 그린다.
+    breaks: true,
     highlight: highlightCode,
     html: true,
     linkify: true,
