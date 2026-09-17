@@ -1,5 +1,13 @@
 export interface SearchRecord { title: string; aliases?: string[]; summary?: string; tags?: string[]; headings?: string[]; text?: string; url: string; label: string }
 
+// 한 번에 보여 주는 결과 수. 더 보기를 누르면 이만큼씩 늘어난다.
+export const SEARCH_PAGE = 30;
+
+// 자른 결과를 결과가 없는 것으로 오해하지 않도록, 전체 개수와 지금 보이는 개수를 함께 알린다.
+export function resultCountLabel(total: number, shown: number): string {
+  return shown < total ? `검색 결과 ${total}개 중 ${shown}개 표시` : `검색 결과 ${total}개`;
+}
+
 export function normalizeQuery(query: unknown): string[] {
   return String(query ?? '').toLowerCase().split(/\s+/).filter(Boolean);
 }

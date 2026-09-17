@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { panelModel } from '../src/lib/panel.ts';
 import { topicColor } from '../src/lib/format.ts';
+import { readFileSync } from 'node:fs';
 
 const hubNote = { path: 'a.md', title: 'A', displayTitle: 'A', url: '/obsidian/notes/a/', kind: 'slipbox' as const, type: 'hub', date: '2026-07-12', topic: 'AI', publicTags: ['AI', '개발'], summary: '자동 발췌', summaryIsExplicit: false };
 const plainNote = { path: 'b.md', title: 'B', displayTitle: 'B', url: '/obsidian/notes/b/', kind: 'slipbox' as const, type: '', date: '2026-08-01', topic: 'AI', publicTags: ['AI'], summary: '명시 요약', summaryIsExplicit: true };
@@ -27,4 +28,12 @@ test('panelModel shows explicit summaries and category labels for development no
   const dev = panelModel(devNote, notes, edges);
   assert.equal(dev.kind, '개념·설계');
   assert.deepEqual(dev.topics.map((t) => t.name), ['설계']);
+});
+
+test('the map graph label describes the panel without naming a direction', () => {
+  // 패널은 넓은 화면에서 오른쪽에, 휴대폰 폭에서는 아래 시트로 열린다. 방향을 적으면 한쪽 독자에게 틀린 안내가 된다.
+  const map = readFileSync(new URL('../src/pages/map/index.astro', import.meta.url), 'utf8');
+  const label = map.match(/<svg data-map[^>]*aria-label="([^"]+)"/)?.[1];
+  assert.ok(label, '지도 SVG에 aria-label이 있다');
+  assert.doesNotMatch(label, /오른쪽|왼쪽|아래쪽|위쪽/);
 });
