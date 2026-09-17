@@ -2,7 +2,7 @@ import type { GraphNode, GraphEdge, Point, Size, Box } from './types.ts';
 interface SnapshotOptions extends Size { preset?: string; pixelHeight?: number; font?: number; regionFont?: number; strokeWidth?: number; label?: string }
 
 import { nodeRadius } from './layout.ts';
-import { topicColor, cleanTitle, escapeHtml as escape } from '../lib/format.ts';
+import { topicColor, topicLabelColor, cleanTitle, escapeHtml as escape } from '../lib/format.ts';
 import { topicRegions, regionPath, placeRegionLabels, regionLabelBox } from './regions.ts';
 import { estimateTextWidth, labelIds, placeLabels, nodeBox } from './label.ts';
 
@@ -29,8 +29,8 @@ export function renderSnapshotSvg(nodes: readonly GraphNode[], edges: readonly G
   const regionLabelAt = placeRegionLabels(regions, [...nodes.filter((node) => at(node.id)).map((node) => ({ ...at(node.id), r: radiusOf(node) + 4 })), ...labelBoxes], { fontSize: regionFont, pad: regionFont * 1.2, measure: estimateTextWidth, bounds: { width, height } });
   let out = `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" class="snap is-mobile" role="img" aria-label="${escape(label)}">`;
   out += `<g data-regions="" opacity=".06">${regions.map((r) => `<path d="${regionPath(r.hull)}" fill="${topicColor(r.topic)}" stroke="${topicColor(r.topic)}" stroke-width="64" stroke-linejoin="round"></path>`).join('')}</g>`;
-  out += `<g font-family="var(--display)" font-weight="700" font-size="${regionFont}" letter-spacing="${(regionFont * 0.16).toFixed(1)}" text-anchor="middle" opacity=".95" paint-order="stroke" stroke="var(--paper)" stroke-width="${(regionFont * 0.25).toFixed(1)}" stroke-linejoin="round">`;
-  out += regions.map((r) => { const a = regionLabelAt.get(r.topic)!; return `<text x="${a.x.toFixed(1)}" y="${a.y.toFixed(1)}" text-anchor="${a.anchor}" fill="${topicColor(r.topic)}">${escape(r.topic)}</text>`; }).join('');
+  out += `<g font-family="var(--display)" font-weight="700" font-size="${regionFont}" letter-spacing="${(regionFont * 0.16).toFixed(1)}" text-anchor="middle" paint-order="stroke" stroke="var(--paper)" stroke-width="${(regionFont * 0.25).toFixed(1)}" stroke-linejoin="round">`;
+  out += regions.map((r) => { const a = regionLabelAt.get(r.topic)!; return `<text x="${a.x.toFixed(1)}" y="${a.y.toFixed(1)}" text-anchor="${a.anchor}" fill="${topicLabelColor(r.topic)}">${escape(r.topic)}</text>`; }).join('');
   out += `</g><g stroke="var(--edge)" stroke-width="${strokeWidth}" stroke-opacity=".22">`;
   for (const edge of edges) { const a = at(edge.source), b = at(edge.target); if (a && b) out += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"></line>`; }
   out += '</g><g>';
@@ -69,8 +69,8 @@ function renderDesktop(nodes: readonly GraphNode[], edges: readonly GraphEdge[],
   const plan = placeLabels(placed.filter((node) => idle.has(node.id)).map((node) => ({ node, mustPlace: true })), { positions, radius: radiusOf, u, obstacles, inside });
   let out = `<svg viewBox="${viewBox}" xmlns="http://www.w3.org/2000/svg" class="snap is-desktop" role="img" aria-label="${escape(label)}">`;
   out += `<g data-regions="" opacity=".07">${regions.map((r) => `<path d="${regionPath(r.hull)}" fill="${topicColor(r.topic)}" stroke="${topicColor(r.topic)}" stroke-width="64" stroke-linejoin="round"></path>`).join('')}</g>`;
-  out += `<g font-family="var(--display)" font-weight="700" font-size="${n(15 * u)}" letter-spacing=".16em" opacity=".95" paint-order="stroke" stroke="var(--paper)" stroke-width="${n(3.5 * u)}" stroke-linejoin="round">`;
-  out += regions.map((r) => { const a = regionLabelAt.get(r.topic)!; return `<text x="${a.x.toFixed(1)}" y="${a.y.toFixed(1)}" text-anchor="${a.anchor}" fill="${topicColor(r.topic)}">${escape(r.topic)}</text>`; }).join('');
+  out += `<g font-family="var(--display)" font-weight="700" font-size="${n(15 * u)}" letter-spacing=".16em" paint-order="stroke" stroke="var(--paper)" stroke-width="${n(3.5 * u)}" stroke-linejoin="round">`;
+  out += regions.map((r) => { const a = regionLabelAt.get(r.topic)!; return `<text x="${a.x.toFixed(1)}" y="${a.y.toFixed(1)}" text-anchor="${a.anchor}" fill="${topicLabelColor(r.topic)}">${escape(r.topic)}</text>`; }).join('');
   out += `</g><g stroke="var(--edge)" stroke-width="1.1" stroke-opacity=".28">`;
   for (const edge of edges) { const a = at(edge.source), b = at(edge.target); if (a && b) out += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"></line>`; }
   out += '</g><g>';

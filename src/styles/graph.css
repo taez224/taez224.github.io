@@ -17,8 +17,7 @@
 .graph.map.has-topic-filter [data-regions] { opacity: .1; }
 .graph.map .region.is-topic-dim { opacity: .25; }
 .graph [data-region-labels] { pointer-events: none; }
-.graph .region-label { font-family: var(--display); font-weight: 700; letter-spacing: .16em; opacity: .95; paint-order: stroke; stroke: var(--paper); stroke-linejoin: round; transition: opacity .15s ease; }
-.graph.map .region-label.is-topic-active { opacity: 1; }
+.graph .region-label { font-family: var(--display); font-weight: 700; letter-spacing: .16em; paint-order: stroke; stroke: var(--paper); stroke-linejoin: round; transition: opacity .15s ease; }
 .graph.map .region-label.is-topic-dim { opacity: .35; }
 .graph .node { cursor: pointer; outline: none; transition: opacity .15s ease; }
 .graph .node.is-dim { opacity: .22; }

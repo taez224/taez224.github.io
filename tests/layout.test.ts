@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { layoutGraph, nodeRadius } from '../src/graph/layout.ts';
 import { renderSnapshotSvg } from '../src/graph/snapshot.ts';
+import { GRAPH_COLORS } from '../src/lib/format.ts';
 import type { GraphNode, Point } from '../src/lib/content-model.ts';
 
 const nodes: GraphNode[] = [{ id: 'a', degree: 2, type: 'hub', displayTitle: 'A', topic: 'AI', title: '', url: '', isEntry: false }, { id: 'b', degree: 1, displayTitle: 'B', topic: '개발', type: '', title: '', url: '', isEntry: false }, { id: 'c', degree: 1, displayTitle: '아주 긴 제목이라 라벨이 되지 않는 노드', topic: '기타', type: '', title: '', url: '', isEntry: false }];
@@ -34,8 +35,8 @@ test('renderSnapshotSvg labels hubs only and colors by topic', () => {
   assert.match(svg, /^<svg viewBox="0 0 1000 640"/);
   assert.match(svg, />A<\/text>/);
   assert.doesNotMatch(svg, /아주 긴 제목/);
-  assert.match(svg, /fill="#80698f"/);
-  assert.match(svg, /fill="#5d7897"/); // 개발의 주제색
+  assert.ok(svg.includes(`fill="${GRAPH_COLORS.AI}"`));
+  assert.ok(svg.includes(`fill="${GRAPH_COLORS.개발}"`)); // 개발의 주제색
   assert.equal((svg.match(/<line /g) || []).length, 2);
 });
 

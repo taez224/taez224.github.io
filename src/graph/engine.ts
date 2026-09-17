@@ -4,7 +4,7 @@ interface GraphOptions { nodes: readonly GraphNode[]; edges: readonly GraphEdge[
 interface GraphState { selected: string | null; hovered: string | null; topics: ReadonlySet<string> | null; hubsOnly: boolean; transform: Transform }
 
 import { nodeRadius } from './layout.ts';
-import { topicColor, cleanTitle } from '../lib/format.ts';
+import { topicColor, topicLabelColor, cleanTitle } from '../lib/format.ts';
 import { createGraphGesture } from './gestures.ts';
 import { estimateTextWidth, labelIds, placeLabels, nodeBox } from './label.ts';
 import { topicRegions, regionPath, placeRegionLabels, regionLabelBox } from './regions.ts';
@@ -123,7 +123,7 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
     for (const region of regionList) {
       const shape = el('path', { class: 'region', d: regionPath(region.hull), fill: topicColor(region.topic), stroke: topicColor(region.topic) });
       const at = regionLabelAt.get(region.topic)!;
-      const label = el('text', { class: 'region-label', x: at.x.toFixed(1), y: at.y.toFixed(1), 'text-anchor': at.anchor, fill: topicColor(region.topic) });
+      const label = el('text', { class: 'region-label', x: at.x.toFixed(1), y: at.y.toFixed(1), 'text-anchor': at.anchor, fill: topicLabelColor(region.topic) });
       label.textContent = region.topic;
       regionLayer.append(shape); regionLabelLayer.append(label);
       regionEls.set(region.topic, [shape, label]);
