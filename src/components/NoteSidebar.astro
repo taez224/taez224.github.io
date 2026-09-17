@@ -10,6 +10,8 @@ let section = '';
 const toc = headings.filter((h) => h.level === 2 || h.level === 3).map((h) => { if (h.level === 2) section = h.id; return { ...h, parent: h.level === 3 ? section : '' }; });
 const block = (label: string, icon: 'out' | 'in', items: PublicNote[]) => ({ label, icon, items, long: items.length > 6 });
 const blocks = [block('참조', 'out', outgoing), block('역참조', 'in', incoming)].filter((b) => b.items.length);
+// 연결이 하나도 없으면 로컬 그래프는 "이 노트" 점 하나뿐이라 그리지 않는다. 지도에 있는 노트라면 지도로 가는 링크만 남긴다.
+const hasNeighbors = outgoing.length + incoming.length > 0;
 ---
 <aside class="note-side">
   {toc.length >= 2 && <div class:list={['rail-scroll', { 'is-long': toc.length > 10 }]}><nav class="rail" aria-label="목차">
@@ -20,7 +22,7 @@ const blocks = [block('참조', 'out', outgoing), block('역참조', 'in', incom
     {!series.isHub && (series.url ? <a class="series-hub" href={series.url}>{series.title}</a> : <span class="series-hub">{series.title}</span>)}
     <ol class="side-list series-list">{series.posts.map((post) => <li><a href={post.url} aria-current={post.path === note.path ? 'page' : undefined}>{post.title}</a></li>)}</ol>
   </section>}
-  <LocalGraph note={note} outgoing={outgoing} incoming={incoming} mapUrl={mapUrl} />
+  {hasNeighbors ? <LocalGraph note={note} outgoing={outgoing} incoming={incoming} mapUrl={mapUrl} /> : mapUrl && <div class="map-link"><a href={mapUrl}>생각 지도에서 보기</a></div>}
   {blocks.map((b) => <section class="list-block">
     <div class="meta"><Icon name={b.icon} />{b.label}<span class="count">{b.items.length}</span></div>
     <div class:list={['scroll-list', { 'is-long': b.long }]}>
@@ -35,6 +37,7 @@ const blocks = [block('참조', 'out', outgoing), block('역참조', 'in', incom
   .note-side > :global(* + *) { border-top: 1px solid var(--line); }
   .rail-scroll { padding-bottom: 24px; }
   .note-side .list-block { padding: 20px 0; border-bottom: 0; }
+  .map-link { padding: 20px 0; font-size: var(--t-meta); }
   .rail { display: flex; flex-direction: column; border-left: 2px solid var(--line); }
   /* 목차가 길면(11개 이상) 목차만 안에서 스크롤한다. 로컬 그래프와 참조 목록은 그 아래에 그대로 보인다. 끝까지 내리면 페이드를 걷는다. */
   .rail-scroll { position: relative; }
