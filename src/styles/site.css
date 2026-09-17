@@ -130,6 +130,13 @@ h1, h2, h3, p { margin-top: 0; }
 @media (min-width: 360px) { .share-control:not([hidden]) ~ .search-trigger { margin-left: 0; } }
 .search-trigger svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 main { min-height: 60vh; }
+/* 사이트 바닥글: 페이지가 마지막 항목 뒤에서 그냥 끝나지 않게 구분선 아래 한 줄을 둔다. 링크는 홀로 선 링크와 같은 밑줄이다. */
+.site-footer { border-top: 1px solid var(--line); color: var(--muted); font-size: var(--t-meta); }
+.site-footer .wrap { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; padding: 20px 0 32px; }
+.site-footer nav { display: flex; flex-wrap: wrap; gap: 4px 20px; }
+.site-footer a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--link-underline); text-underline-offset: 4px; }
+@media (hover: hover) { .site-footer a:hover { text-decoration-color: var(--ink); } }
+@media (pointer: coarse) { .site-footer a { padding-block: 12px; margin-block: -12px; } }
 
 @media (max-width: 720px) {
   /* 모바일에서는 제목 단계를 함께 줄여 글 제목과 h2, 페이지 제목과 장부 라벨, 절 제목과 대표 글 제목이 같은 크기로 겹치지 않게 한다.

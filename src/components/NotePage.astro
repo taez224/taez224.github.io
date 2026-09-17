@@ -32,8 +32,6 @@ const hasSeriesNav = series && (series.prev || series.next);
 // 노트(Slipbox)는 사이드바의 "생각 지도에서 보기"가 같은 곳으로 가므로 페이지 끝에 목록 링크를 두지 않는다.
 // 사이드바는 모바일에서도 보이므로 여기서 한 번 더 두면 같은 링크가 두 개가 된다.
 const endLink = note.kind === 'slipbox' ? null : parent.listLabel;
-// 다 읽은 자리에서 저자에게 닿는 길. 검색이나 SNS로 상세 페이지에 바로 들어온 사람에게는 이것이 유일한 경로다.
-const aboutUrl = withBase('/about/');
 ---
 <Shell title={title} description={note.summary} {...articleMeta(note)} updated={note.updated || null} active={note.kind === 'blog' ? 'posts' : note.kind === 'development' ? 'dev' : 'map'}>
   <div class="wrap note-view" style={`--topic:${topicColor(note.topic)}`}>
@@ -68,20 +66,17 @@ const aboutUrl = withBase('/about/');
       </nav>}
     </article>
     <NoteSidebar note={note} headings={note.headings} outgoing={outgoing} incoming={incoming} mapUrl={mapUrl} series={series} />
-    <footer class="note-footer">
-      {endLink && <a href={parentUrl}><span aria-hidden="true">←</span> {endLink}</a>}
-      <a class="about-link" href={aboutUrl}>이 위키에 대해 <span aria-hidden="true">→</span></a>
-    </footer>
+    {/* 사이트 소개 링크는 모든 페이지의 바닥글에 있어 여기서는 목록으로 돌아가는 링크만 둔다. 목록 링크가 없는 생각 노트는 이 줄을 그리지 않는다. */}
+    {endLink && <footer class="note-footer"><a href={parentUrl}><span aria-hidden="true">←</span> {endLink}</a></footer>}
   </div>
 </Shell>
 <style is:global>
   .note-view { display: grid; grid-template-columns: minmax(0, var(--s-reader-column)) var(--s-sidebar); justify-content: space-between; gap: var(--s-column-gap); align-items: start; padding: var(--s-page-top-reading) 0 var(--s-page-bottom); }
   .note-side { position: sticky; top: 100px; max-height: calc(100dvh - 120px); overflow-y: auto; padding-top: 82px; scrollbar-gutter: stable; }
   .note-view > .note-side { grid-column: 2; grid-row: 1 / span 2; }
-  /* 페이지 끝 한 줄: 왼쪽은 목록으로 돌아가는 링크, 오른쪽은 사이트 소개. 목록 링크가 없는 노트(slipbox)에서도 소개 링크는 오른쪽에 둔다.
+  /* 페이지 끝 한 줄: 목록으로 돌아가는 링크. 사이트 소개는 모든 페이지의 바닥글이 맡는다.
      본문 밖에 두어 한 열에서는 연결 목록 뒤에 온다. 두 열에서는 본문 바로 아래가 된다. */
   .note-footer { grid-column: 1; display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 24px; padding-top: 24px; border-top: 1px solid var(--line); font-size: var(--t-side); }
-  .note-footer .about-link { margin-left: auto; }
   .note-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
   /* 구분점은 항목의 앞에 붙인다. 별도 span이면 좁은 화면에서 줄 끝에 점만 남고 항목은 다음 줄로 넘어간다. */
   .note-meta > * + *::before { content: '·'; margin-right: 8px; }
