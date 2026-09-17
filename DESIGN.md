@@ -23,27 +23,8 @@ colors:
   highlight-dark: '#574d24'
   code-bg: '#ffffff'
   code-text: '#24292f'
-  code-comment: '#6e7781'
-  code-keyword: '#cf222e'
-  code-function: '#8250df'
-  code-string: '#0a7f64'
-  code-number: '#0550ae'
-  code-type: '#953800'
-  code-meta: '#57606a'
-  code-tag: '#116329'
-  code-link: '#0969da'
-  code-inserted: '#1a7f37'
   code-bg-dark: '#1c221e'
   code-text-dark: '#e6edf3'
-  code-comment-dark: '#8b949e'
-  code-keyword-dark: '#ff7b72'
-  code-function-dark: '#d2a8ff'
-  code-string-dark: '#56d4bc'
-  code-number-dark: '#79c0ff'
-  code-type-dark: '#ffa657'
-  code-tag-dark: '#7ee787'
-  code-link-dark: '#58a6ff'
-  code-inserted-dark: '#aff5b4'
 typography:
   title:
     fontFamily: Gowun Batang
@@ -364,69 +345,12 @@ components:
     typography: '{typography.code}'
     rounded: '{rounded.none}'
     padding: '14px 16px'
-  code-comment:
-    backgroundColor: '{colors.code-bg}'
-    textColor: '{colors.code-comment}'
-  code-keyword:
-    backgroundColor: '{colors.code-bg}'
-    textColor: '{colors.code-keyword}'
-  code-function:
-    backgroundColor: '{colors.code-bg}'
-    textColor: '{colors.code-function}'
-  code-string:
-    backgroundColor: '{colors.code-bg}'
-    textColor: '{colors.code-string}'
-  code-number:
-    backgroundColor: '{colors.code-bg}'
-    textColor: '{colors.code-number}'
-  code-type:
-    backgroundColor: '{colors.code-bg}'
-    textColor: '{colors.code-type}'
-  code-meta:
-    backgroundColor: '{colors.code-bg}'
-    textColor: '{colors.code-meta}'
-  code-tag:
-    backgroundColor: '{colors.code-bg}'
-    textColor: '{colors.code-tag}'
-  code-link:
-    backgroundColor: '{colors.code-bg}'
-    textColor: '{colors.code-link}'
-  code-inserted:
-    backgroundColor: '{colors.code-bg}'
-    textColor: '{colors.code-inserted}'
   code-block-dark:
     backgroundColor: '{colors.code-bg-dark}'
     textColor: '{colors.code-text-dark}'
     typography: '{typography.code}'
     rounded: '{rounded.none}'
     padding: '14px 16px'
-  code-comment-dark:
-    backgroundColor: '{colors.code-bg-dark}'
-    textColor: '{colors.code-comment-dark}'
-  code-keyword-dark:
-    backgroundColor: '{colors.code-bg-dark}'
-    textColor: '{colors.code-keyword-dark}'
-  code-function-dark:
-    backgroundColor: '{colors.code-bg-dark}'
-    textColor: '{colors.code-function-dark}'
-  code-string-dark:
-    backgroundColor: '{colors.code-bg-dark}'
-    textColor: '{colors.code-string-dark}'
-  code-number-dark:
-    backgroundColor: '{colors.code-bg-dark}'
-    textColor: '{colors.code-number-dark}'
-  code-type-dark:
-    backgroundColor: '{colors.code-bg-dark}'
-    textColor: '{colors.code-type-dark}'
-  code-tag-dark:
-    backgroundColor: '{colors.code-bg-dark}'
-    textColor: '{colors.code-tag-dark}'
-  code-link-dark:
-    backgroundColor: '{colors.code-bg-dark}'
-    textColor: '{colors.code-link-dark}'
-  code-inserted-dark:
-    backgroundColor: '{colors.code-bg-dark}'
-    textColor: '{colors.code-inserted-dark}'
   text-highlight:
     backgroundColor: '{colors.highlight}'
     textColor: '{colors.primary}'
@@ -515,7 +439,7 @@ Thinking Garden은 글과 개발 노트를 읽으며 관련 생각으로 이어�
 
 도표는 연두색 노드와 먹색 글자를 기본으로 하고, 낮은 채도의 색으로 묶음과 항목을 구분한다. 작성자가 의미를 부여한 색은 유지하며, 세부 팔레트는 [도표 설정](src/scripts/mermaid-config.ts)에서 관리한다. 어두운 화면에서는 같은 색상각에서 밝기만 다시 고른 짙은 면과 밝은 테두리(`redux-dark-color` 이름으로 사이트 값을 덮음)를 쓰고, 읽는 중에 화면 모드가 바뀌면 원문에서 다시 그린다. 앞머리로 테마를 직접 지정한 도표는 그 테마를 보여 주려는 것이라 사이트 색을 입히지 않고, 그 테마가 전제한 밝기의 판(`--diagram-plate-light`·`--diagram-plate-dark`)에 화면 모드와 상관없이 둔다. 밝은 테마의 짙은 회색 선이 어두운 상자에서, 어두운 테마의 밝은 글자가 밝은 상자에서 사라지기 때문이다.
 
-코드 블록은 14px 고정폭 글자에 `@tanstack/highlight`의 GitHub Light 테마 색을 그대로 적용한다. 키워드는 빨강, 함수와 애너테이션은 보라, 문자열은 청록, 숫자·속성은 파랑, 타입은 주황 갈색으로 구분하고, 주석은 회색으로 낮춘다. 애너테이션을 테마의 메타 회색으로 두면 주석과 갈리지 않아 TS 데코레이터와 같은 함수 색을 쓴다. 코드는 문단보다 토큰 종류를 빨리 가려 읽어야 하므로 사이트 톤과의 일치보다 문법 구분과 글자 대비를 우선한다. 배경도 테마의 흰색을 쓴다. 가장 흐린 주석 색이 종이색 배경에서는 4.5:1에 조금 못 미치기 때문이다. 값은 [body.css](src/styles/body.css)에서 관리하고 YAML의 `code-*` 토큰과 대응한다. 토큰 색마다 흰 배경과 짝지은 컴포넌트를 두어 lint가 각 색의 대비를 검사한다. 어두운 화면에서는 GitHub Dark 색을 쓰고, 배경은 흰 상자 대신 올라온 판(`code-bg-dark` = `paper-strong-dark`)이라 페이지에서 튀지 않는다. 라이트와 같은 이유로 문자열은 GitHub Dark의 하늘색 대신 청록(`#56d4bc`)을 써서 숫자·링크의 파랑과 구분한다. 가장 흐린 주석도 5.26:1이며 `code-*-dark` 컴포넌트가 대비를 검사한다.
+코드 블록은 14px 고정폭 글자에 `@tanstack/highlight`의 GitHub Light 테마 색을 그대로 적용한다. 키워드는 빨강, 함수와 애너테이션은 보라, 문자열은 청록, 숫자·속성은 파랑, 타입은 주황 갈색으로 구분하고, 주석은 회색으로 낮춘다. 애너테이션을 테마의 메타 회색으로 두면 주석과 갈리지 않아 TS 데코레이터와 같은 함수 색을 쓴다. 코드는 문단보다 토큰 종류를 빨리 가려 읽어야 하므로 사이트 톤과의 일치보다 문법 구분과 글자 대비를 우선한다. 배경도 테마의 흰색을 쓴다. 가장 흐린 주석 색이 종이색 배경에서는 4.5:1에 조금 못 미치기 때문이다. 토큰 색은 [body.css](src/styles/body.css)가 유일한 출처이고, YAML에는 코드 상자의 바탕과 기본 글자색만 둔다. 토큰 색마다의 대비는 `tests/code-colors.test.ts`가 두 화면 모드에서 검사한다. 어두운 화면에서는 GitHub Dark 색을 쓰고, 배경은 흰 상자 대신 올라온 판(`code-bg-dark` = `paper-strong-dark`)이라 페이지에서 튀지 않는다. 라이트와 같은 이유로 문자열은 GitHub Dark의 하늘색 대신 청록(`#56d4bc`)을 써서 숫자·링크의 파랑과 구분한다. 가장 흐린 주석도 5.26:1이다.
 
 ## Typography
 
