@@ -50,3 +50,10 @@ test('thick one-sided borders stay on quotes and the table of contents rail', ()
     .map((m) => `${rule.path}: ${rule.selector} (${m[0]})`));
   assert.deepEqual(found, []);
 });
+
+test('overlays separate layers with borders and backdrops instead of drop shadows', () => {
+  const found = allRules.flatMap((rule) => [...rule.body.matchAll(/box-shadow:\s*([^;]+)/g)]
+    .filter((m) => m[1].trim() !== 'none' && !/\binset\b/.test(m[1]))
+    .map((m) => `${rule.path}: ${rule.selector} (${m[1].trim()})`));
+  assert.deepEqual(found, []);
+});
