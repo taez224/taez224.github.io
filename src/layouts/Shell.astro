@@ -53,7 +53,8 @@ const jsonLd = inlineJson(structuredData({ ogType, kind, pageType, title: path =
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
     {umami && <script is:inline defer src={umami.src} data-website-id={umami.websiteId} data-domains={(umami.domains ?? []).join(',')}></script>}
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&display=swap" />
+    <!-- 명조는 제목용 700과 요약·인용용 400을 함께 받는다. 400이 없으면 브라우저가 요약 문단을 700 파일로 그려 제목과 같은 굵기가 된다. -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
   </head>
   <body>

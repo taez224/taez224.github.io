@@ -299,7 +299,7 @@ Thinking Garden은 글과 개발 노트를 읽으며 관련 생각으로 이어�
 
 ## Typography
 
-Gowun Batang은 제목과 요약·인용 콜아웃에, Pretendard Variable은 본문·목록·조작 요소에 사용한다. 제목은 700 굵기로 두고 요약·인용은 읽기 흐름에 맞춰 별도 굵기를 쓴다. 대체 서체는 `site.css`의 `--display`와 `--sans`를 따른다. 코드는 `code` 토큰에 적은 SFMono-Regular를 대표로 삼아 `ui-monospace`, SFMono-Regular, Menlo 순서의 시스템 고정폭 서체를 사용한다. 긴 한국어 문장은 `keep-all`로 단어를 묶고 긴 URL은 가용 폭에 맞춰 줄바꿈한다.
+Gowun Batang은 제목과 요약·인용 콜아웃에, Pretendard Variable은 본문·목록·조작 요소에 사용한다. 제목은 700 굵기로 두고 요약·인용은 400으로 흘려 제목보다 한 단계 물러나게 한다. 그래서 Gowun Batang은 400과 700 두 파일을 불러온다. 한 굵기만 불러오면 브라우저가 다른 굵기 요청을 그 파일로 대신 그리므로, 명조에 새 굵기를 쓰려면 글꼴 요청에도 함께 추가한다. 대체 서체는 `site.css`의 `--display`와 `--sans`를 따른다. 코드는 `code` 토큰에 적은 SFMono-Regular를 대표로 삼아 `ui-monospace`, SFMono-Regular, Menlo 순서의 시스템 고정폭 서체를 사용한다. 긴 한국어 문장은 `keep-all`로 단어를 묶고 긴 URL은 가용 폭에 맞춰 줄바꿈한다.
 
 리더와 페이지 제목은 화면의 역할에 따라 `reader-title`, `page-title`, `section-title`, `featured-title` 토큰을 사용한다. 본문·목록·보조 정보는 `body`, `list-title`, `side`, `meta` 토큰으로 위계를 나눈다. 일반 UI의 모바일 기본 글자 크기는 16px이며 본문은 `body` 토큰을 유지한다.
 
