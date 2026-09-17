@@ -123,7 +123,10 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
     }
   }
   .recent ol { list-style: none; margin: 0; padding: 0; }
-  .recent li { display: grid; grid-template-columns: 100px 80px minmax(0, 1fr) 90px; gap: 20px; align-items: baseline; padding: 18px 0; border-bottom: 1px solid var(--line); }
+  .recent li { position: relative; display: grid; grid-template-columns: 100px 80px minmax(0, 1fr) 90px; gap: 20px; align-items: baseline; padding: 18px 0; border-bottom: 1px solid var(--line); }
+  /* 최근 기록은 행 어디를 눌러도 글로 간다. 분류 링크는 위에 올려 따로 누른다. */
+  .recent-title::after { position: absolute; inset: 0; content: ""; }
+  .recent-kind { position: relative; z-index: 1; }
   .recent li:first-child { padding-top: 0; }
   .recent li:last-child { border-bottom: 0; padding-bottom: 0; }
   .recent-title { color: var(--ink); font-size: var(--t-list); font-weight: 600; line-height: 1.45; }
@@ -166,5 +169,6 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
     .home-section:last-child { padding-bottom: 64px; }
 
   }
+  @media (pointer: coarse) { .latest-series h3 a, .recent-kind { padding-block: 12px; margin-block: -12px; } }
 </style>
 <script src="../scripts/hero.ts"></script>

@@ -130,5 +130,12 @@ const aboutUrl = withBase('/about/');
     .series-link.is-next { align-items: flex-start; text-align: left; }
     .series-start { align-items: flex-start; flex-direction: column; gap: 16px; }
   }
+  /* 손가락으로 누르는 기기에서는 목차 줄을 44px로 넓힌다. 메타 줄과 페이지 끝의 짧은 링크는 위아래로만 누르는 영역을 넓히고
+     같은 양의 음수 여백으로 되돌려 줄 높이가 바뀌지 않게 한다. */
+  @media (pointer: coarse) {
+    .mobile-toc nav { gap: 0; }
+    .mobile-toc nav a { padding-block: calc((44px - 1.5em) / 2); }
+    .note-meta a, .note-footer a { padding-block: 12px; margin-block: -12px; }
+  }
 </style>
 <script src="../scripts/mermaid.ts"></script>

@@ -52,6 +52,10 @@ const blocks = [block('참조', 'out', outgoing), block('역참조', 'in', incom
   .series-hub:hover { color: var(--accent); }
   .series-list { margin: 0; padding: 0; list-style: none; }
   .series-list a[aria-current="page"] { color: var(--accent); font-weight: 600; }
+  @media (pointer: coarse) {
+    .rail a { padding-block: calc((44px - 1.5em) / 2); }
+    .series-hub { padding-block: 10px; margin-block: -6px -4px; }
+  }
 </style>
 <script src="../scripts/toc.ts"></script>
 <script>

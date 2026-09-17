@@ -77,5 +77,10 @@ const topics = [...topicCounts].map(([name, count]) => ({ name, color: topicColo
     .map-toolbar .legend::after { flex: 0 0 24px; content: ""; }
     .map-toolbar .legend-item { flex: 0 0 auto; min-height: 36px; }
   }
+  /* 손가락으로 누르는 기기에서는 범례와 확대 버튼을 44px로 키운다. 마우스 환경은 한 줄에 범례가 더 들어가도록 작게 둔다. */
+  @media (pointer: coarse) {
+    .legend-item, .map-toolbar .legend-item { min-height: 44px; }
+    .graph-controls button { min-width: 44px; min-height: 44px; }
+  }
 </style>
 <script src="../../scripts/map.ts"></script>
