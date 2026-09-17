@@ -6,7 +6,7 @@ const stripBlockIds = (value: unknown) => String(value ?? '').replace(/(^|\s)\^[
 
 // 검색·요약용 텍스트를 한 번의 파싱으로 만든다. bodyText는 본문 전체이고 excerptText는 코드 블록과
 // 본문 흐름의 제목 줄(`#`로 시작하는 ATX 제목)을 뺀 것이다. 요약은 후자를 잘라 만든다.
-export interface TextAnalysis { bodyText: string; withoutCodeText: string; excerptText: string }
+export interface TextAnalysis { bodyText: string; excerptText: string }
 
 export function analyzeText(body: string): TextAnalysis {
   const source = stripObsidianComments(body)
@@ -27,7 +27,6 @@ export function analyzeText(body: string): TextAnalysis {
   const tokens = parser.parse(source, {});
   const full: string[] = [];
   const excerpt: string[] = [];
-  const withoutCode: string[] = [];
   let skippingHeading = false;
   for (const token of tokens) {
     const text = content(token);
@@ -35,15 +34,9 @@ export function analyzeText(body: string): TextAnalysis {
     // 요약은 본문 흐름의 ATX 제목과 코드 블록을 뺀다. 제목 줄을 원문에서 지우던 규칙과 같은 대상이다.
     if (token.type === 'heading_open' && token.level === 0 && token.markup.startsWith('#')) skippingHeading = true;
     const isCode = token.type === 'fence' || token.type === 'code_block';
-    if (text && !isCode) withoutCode.push(text);
     if (text && !skippingHeading && !isCode) excerpt.push(text);
     if (token.type === 'heading_close' && token.level === 0) skippingHeading = false;
   }
   const join = (parts: string[]) => parts.join(' ').replace(/\s+/g, ' ').trim();
-  return { bodyText: join(full), withoutCodeText: join(withoutCode), excerptText: join(excerpt) };
-}
-
-export function plainText(body: string, { includeCodeBlocks = true } = {}) {
-  const analysis = analyzeText(body);
-  return includeCodeBlocks ? analysis.bodyText : analysis.withoutCodeText;
+  return { bodyText: join(full), excerptText: join(excerpt) };
 }
