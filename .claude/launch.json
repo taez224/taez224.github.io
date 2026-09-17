@@ -1,6 +1,12 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "garden-preview", "runtimeExecutable": "npm", "runtimeArgs": ["run", "preview"], "port": 4321 }
+    {
+      "name": "garden-preview",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "exec npm run preview -- --ignore-lock --port \"${PORT:-4321}\""],
+      "port": 4321,
+      "autoPort": true
+    }
   ]
 }
