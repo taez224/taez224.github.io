@@ -7,9 +7,9 @@ export interface GardenConfig extends PublicationConfig {
   basePath?: string; entry?: string; minTopicNodes?: number;
   home?: { featured?: string[]; contacts?: { name: string; url: string; icon?: string }[]; about?: string };
 }
-type Candidate = VaultNote & { publicContent: string; linkTargets: string[] };
+type Candidate = VaultNote & { publicContent: string; linkTargets: string[]; text: TextAnalysis };
 type BaseRecord = Omit<PublicNote, 'slug' | 'publicTags' | 'topic' | 'headings' | 'outgoing' | 'incoming' | 'thumbnail' | 'thumbnailStyle' | 'articleCards' | 'bodyText' | 'bodyHtml' | 'isEntry' | 'aliases' | 'readingMinutes' | 'topicTag'>;
-type PublicEntry = Omit<PublicNote, 'thumbnail' | 'thumbnailStyle' | 'articleCards' | 'bodyHtml' | 'outgoing' | 'incoming' | 'topicTag'> & { publicContent: string };
+type PublicEntry = Omit<PublicNote, 'thumbnail' | 'thumbnailStyle' | 'articleCards' | 'bodyHtml' | 'headings' | 'outgoing' | 'incoming' | 'topicTag'> & { publicContent: string };
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -19,14 +19,14 @@ import { readBooks } from './books.ts';
 import { createAssetResolver } from './public-assets.ts';
 import { selectGraphNodes } from '../graph/select.ts';
 import { slugFor, kindPrefix, noteUrl, assertUniqueSlugs } from './slug.ts';
-import { plainText } from './text.ts';
+import { analyzeText, type TextAnalysis } from './text.ts';
 import { publicTags, cleanTitle, topicFor } from './format.ts';
 import { kstDate, noteDates } from './dates.ts';
 import { groupDevelopment } from './development.ts';
 import { assembleBlog } from './blog.ts';
 import { kindFor } from './kinds.ts';
 import { isMarkdown, normalize, numberValue, parseFrontmatter, stringList, tagList, walkIfPresent } from './vault-files.ts';
-import { explicitSummary, firstHeading, headingsFor, publicBody, summaryFor } from './note-body.ts';
+import { explicitSummary, firstHeading, publicBody, summaryFor } from './note-body.ts';
 import { addTo, indexByBasename, noteTargets, resolveTarget, resolveTargets } from './links.ts';
 
 // 지도에서 노드가 이보다 적은 주제는 색과 영역을 기타로 접는다. 범례가 길어지고 팔레트가 바닥나는 걸 막는다. 원래 주제는 topicTag에 남는다.
@@ -94,7 +94,8 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
       const parsed = parseFrontmatter(source);
       if (isIncluded(relativePath, parsed.meta)) {
         const publicContent = publicBody(parsed.body);
-        candidateFiles.set(relativePath, { ...parsed, publicContent, linkTargets: noteTargets(publicContent, parsed.meta.related) });
+        // 검색 텍스트와 요약 발췌는 같은 파싱에서 나온다. 노트마다 한 번만 뽑아 요약·검색·읽기 시간이 나눠 쓴다.
+        candidateFiles.set(relativePath, { ...parsed, publicContent, linkTargets: noteTargets(publicContent, parsed.meta.related), text: analyzeText(publicContent) });
       }
     }
   }
@@ -174,7 +175,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
   function publicEntry(relativePath: string, note: Candidate): PublicEntry {
     const record = baseRecord(relativePath, note);
     const publicContent = note.publicContent;
-    const bodyText = record.contentMode === 'external' ? '' : plainText(publicContent);
+    const bodyText = record.contentMode === 'external' ? '' : note.text.bodyText;
     return {
       ...record,
       isEntry: relativePath === config.entry,
@@ -185,7 +186,6 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
       // 한국어 평균 읽기 속도 분당 600자 기준. 리더 메타 줄의 "N분".
       readingMinutes: record.contentMode === 'external' ? 0 : Math.max(1, Math.round([...bodyText].length / 600)),
       topic: topicFor(record.tags),
-      headings: record.contentMode === 'external' ? [] : headingsFor(publicContent),
       publicContent
     };
   }
@@ -248,13 +248,16 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
       const thumbnailStyle = String(meta.thumbnail_style ?? 'plain');
       if (thumbnailStyle !== 'plain' && thumbnailStyle !== 'soft') throw new Error(`Unknown thumbnail_style for ${entry.path}: ${thumbnailStyle}`);
       const articleCards: PublicNote['articleCards'] = [];
-      const bodyHtml = entry.contentMode === 'external' ? '' : renderMarkdown(entry.path, publicContent, { articleCards });
+      // 목차는 렌더러가 id를 매기며 함께 모은다. 따로 계산하지 않으므로 앵커와 목차가 어긋날 수 없다.
+      const headings: PublicNote['headings'] = [];
+      const bodyHtml = entry.contentMode === 'external' ? '' : renderMarkdown(entry.path, publicContent, { articleCards, headings });
       return {
         ...entry,
         topicTag: entry.topic,
         thumbnail,
         thumbnailStyle,
         articleCards,
+        headings,
         bodyHtml,
         outgoing: outgoingByPath.get(entry.path) ?? [],
         incoming: incomingByPath.get(entry.path) ?? []
@@ -270,6 +273,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
   });
   const selectedSet = new Set(selectedPaths);
 
+  const notesByPath = new Map(notes.map((note) => [note.path, note]));
   const nodes: GardenGraphNode[] = selectedPaths.map((relativePath) => {
     const entry = publicEntries.get(relativePath) as PublicEntry;
     return {
@@ -290,7 +294,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
       date: entry.date,
       summary: entry.summary,
       summaryIsExplicit: entry.summaryIsExplicit,
-      headings: entry.headings,
+      headings: notesByPath.get(relativePath)?.headings ?? [],
       excerpt: entry.summary,
       degree: degree.get(relativePath) ?? 0
     };

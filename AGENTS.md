@@ -26,7 +26,10 @@ node --test --test-name-pattern="slug" tests/garden.test.ts       # 이름으로
 npm run dev                  # astro dev. vault 파일을 감시해 다시 조립한다
 npm run build                # astro build && node scripts/check-dist.ts
 npm run preview              # dist를 서빙한다. 먼저 build가 있어야 한다
+npm run snapshot:markdown -- write|verify   # 공개 본문 전체의 조립 결과를 저장했다가 바이트 단위로 견준다
 ```
+
+`snapshot:markdown`은 Markdown 렌더러·본문 정리·목차·검색 텍스트·링크 해석을 고치거나 markdown-it·sanitize-html을 올릴 때의 회귀 검사다. 고치기 전에 `write`, 고친 뒤에 `verify`를 돌린다. 실제 vault를 읽기 전용으로 읽는다. config.json이나 스냅샷 형식이 다르면 종료 코드 2로 중단하며, 원문이 바뀐 노트도 전체 동일로 판정하지 않는다. 산출물 차이는 종료 코드 1이다. 자동 테스트가 아니므로 문법 검증은 임시 입력을 쓰는 단위 테스트로 한다.
 
 `npm run build`는 dist를 검사하는 `scripts/check-dist.ts`까지 통과해야 성공이다. 메타데이터·OG PNG·공개 범위·페이지와 데이터 연결·그래프 초기화에 필요한 산출물을 검사하고, 사이트 안 링크가 실제 페이지를 가리키는지 확인한다. 문구·폰트·아이콘·배치·콘텐츠 개수는 고정하지 않는다. Markdown 문법은 임시 입력을 쓰는 단위 테스트로 검증한다.
 
@@ -54,7 +57,7 @@ config.json ──▶ publication.ts (공개 판정)
 ```
 
 - **페이지**(`src/pages/**`)는 `getCollection('notes'|'books')`로 읽고, **엔드포인트**(`data/*.json.ts`, `og/*.png.ts`, `rss.xml.ts`, `llms.txt.ts`)는 `getGarden()`을 직접 부른다. 둘 다 같은 조립 결과다.
-- **조립 모듈**: `garden.ts`는 공개 후보를 고르고 노트 레코드와 공개 색인을 만든 뒤 각 단계를 잇는다. 파일 탐색과 frontmatter는 `vault-files.ts`, 공개 본문·목차·요약은 `note-body.ts`, 위키 링크 해석은 `links.ts`가 맡는다. 책장은 `books.ts`의 `readBooks`, 블로그의 연재·발행처 묶음은 `blog.ts`의 `assembleBlog`, 개발 노트 분류는 `development.ts`의 `groupDevelopment`가 만든다. 본문·썸네일이 쓸 수 있는 자산과 dist로 복사할 목록은 `public-assets.ts`의 `createAssetResolver`가 정한다. 노트 링크 해석과 렌더링은 공개 색인에 기대므로 `garden.ts`에 둔다. 이 모듈들은 `garden.ts`를 import하지 않고 레코드 목록만 받으므로 순환 의존이 생기지 않는다.
+- **조립 모듈**: `garden.ts`는 공개 후보를 고르고 노트 레코드와 공개 색인을 만든 뒤 각 단계를 잇는다. 파일 탐색과 frontmatter는 `vault-files.ts`, 공개 본문과 요약은 `note-body.ts`, 검색 텍스트와 요약 발췌는 `text.ts`의 `analyzeText`(한 번 파싱), 위키 링크 해석은 `links.ts`가 맡는다. Obsidian 문법(콜아웃·위키링크·형광·블록 id·그림 설명·한글 강조)은 모두 `markdown.ts`의 `createMarkdownIt` 안에 markdown-it 규칙으로 있고, 목차는 렌더러가 제목 id를 매기면서 `headings` 출력 인자로 함께 모은다. 책장은 `books.ts`의 `readBooks`, 블로그의 연재·발행처 묶음은 `blog.ts`의 `assembleBlog`, 개발 노트 분류는 `development.ts`의 `groupDevelopment`가 만든다. 본문·썸네일이 쓸 수 있는 자산과 dist로 복사할 목록은 `public-assets.ts`의 `createAssetResolver`가 정한다. 노트 링크 해석과 렌더링은 공개 색인에 기대므로 `garden.ts`에 둔다. 이 모듈들은 `garden.ts`를 import하지 않고 레코드 목록만 받으므로 순환 의존이 생기지 않는다.
 - **클라이언트 JS**: 홈(`hero.ts`)과 지도(`map.ts`)는 페이지에 인라인된 노드·간선(`data-hero-data`, `data-map-data`, `graph-data.ts`)으로 스크립트 실행 즉시 그래프를 올린다. 홈은 빌드 때 계산한 좌표까지 싣고, 지도는 무대 크기에 맞춰 배치한다. 지도 패널이 쓰는 노트 정보·참조 관계도 같은 JSON에 실어 fetch가 없다. 검색만 `search.json`을 열 때 fetch한다. `data/site.json`은 공개 데이터 엔드포인트이자 check-dist의 기준 자료로 남는다. `integrations/module-preload.ts`가 빌드 산출물의 정적 import를 따라가 엔진 청크에 `modulepreload`를 달고, 지도 페이지 스크립트는 `<head>`로 옮겨 `blocking="render"`를 달아 그래프가 올라간 뒤에 첫 화면을 그린다(지도는 무대 크기가 화면마다 달라 스냅샷을 둘 수 없다). 그 전에 보이는 데스크톱 스냅샷(`snapshot.ts`의 `desktop` 프리셋)은 엔진과 같은 배치 규칙(`label.ts`의 `placeLabels`)과 같은 맞춤으로 그려서 교체가 눈에 띄지 않는다. 제목 배치 규칙을 바꾸면 두 쪽이 같이 바뀐다. 그래프는 프레임워크 없는 SVG 엔진 `src/graph/engine.ts`가 그린다. `src/graph`의 나머지 모듈은 DOM을 만지지 않는 순수 함수이고 각각 단위 테스트가 있다.
 - **dev 감시**: `loaders/vault.ts`가 include 루트·Books·`config.json`·검토된 자산을 watcher에 등록하고, `refresh-coordinator.ts`가 디바운스와 직렬화를 맡아 notes·books 스토어를 한 번의 재조립으로 채운다.
 - **OG 카드**: `src/lib/og.ts`. 최종 SVG 문자열 + 폰트 정체 + resvg 버전의 해시가 캐시 키라 수동 버전 상수가 없다. 캐시는 `node_modules/.cache/garden-og-images`와 `garden-og-fonts`이고 CI가 복원한다. 폰트는 고정 출처와 SHA-256으로 다운로드 및 캐시를 검증한다.
@@ -71,7 +74,7 @@ config.json ──▶ publication.ts (공개 판정)
 vault 원문은 건드리지 않고 사이트로 나가는 사본만 바꾼다(`note-body.ts`의 `publicBody`).
 
 - 첫 H1, Obsidian 주석(`%% %%`), `AUTHOR_ONLY_SECTIONS`(현재 `운영 메모`) 절을 뺀다.
-- 정리한 공개 본문으로 자동 요약·검색 텍스트·목차·본문 링크를 계산한다. 명시한 `summary`를 우선하며, 외부 발행 글에는 본문 발췌 요약을 만들지 않는다.
+- 정리한 공개 본문으로 자동 요약·검색 텍스트·본문 링크를 계산하고, 목차는 렌더링에서 나온다. 명시한 `summary`를 우선하며, 외부 발행 글에는 본문 발췌 요약을 만들지 않는다.
 - 연재 목차와 이전·다음 탐색은 `series`와 `series_order`로 만든다. 본문 목록은 자동으로 제거하지 않는다.
 - 참조·역참조는 본문 링크와 `related` 목록의 위키링크를 합쳐 만든다. 공개 대상만 연결하고 중복은 제거한다. 전체 지도에는 기존 그래프 후보 규칙을 적용한다.
 - 본문 링크는 렌더러의 Markdown 규칙으로 해석한다. 코드·주석·이스케이프된 예시와 운영 메모의 링크는 연결로 세지 않는다.

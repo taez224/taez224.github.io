@@ -10,6 +10,7 @@
     "build": "astro build && node scripts/check-dist.ts",
     "preview": "astro preview",
     "design:lint": "designmd lint DESIGN.md",
+    "snapshot:markdown": "node scripts/snapshot-markdown.ts",
     "test": "node --test tests/*.test.ts",
     "check": "tsc --project tsconfig.check.json",
     "check:astro": "astro check"

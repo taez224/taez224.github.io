@@ -1,12 +1,12 @@
 import type { Frontmatter } from './vault-files.ts';
 import type { NoteKind } from './kinds.ts';
 
-interface BodyNote { meta: Frontmatter; publicContent: string }
+// text는 조립이 미리 뽑아 둔 본문 텍스트다. 없으면 여기서 뽑는다(테스트와 연재 절 요약).
+interface BodyNote { meta: Frontmatter; publicContent: string; text?: TextAnalysis }
 interface BodyHeading { start: number; end: number; level: number; text: string }
 
-import MarkdownIt from 'markdown-it';
-import { headingTextForId, headingId, stripObsidianComments } from './markdown.ts';
-import { plainText } from './text.ts';
+import { stripObsidianComments, structureParser } from './markdown.ts';
+import { analyzeText, type TextAnalysis } from './text.ts';
 
 // 사이트로 나가는 본문 사본과 거기서 계산하는 제목·목차·요약. vault 원문은 바꾸지 않는다.
 export function firstHeading(body: string, fallback: string): string {
@@ -14,30 +14,18 @@ export function firstHeading(body: string, fallback: string): string {
   return heading ? heading[1].trim() : fallback;
 }
 
-// 목차·검색용 헤딩. 개수 제한은 두지 않는다(사이드바가 스크롤한다). 제목의 굵게·코드·위키링크 표시는 지운다.
-// 본문 흐름의 헤딩만 센다. 인용·콜아웃·목록 안의 헤딩(token.level > 0)은 인용한 남의 글이라 목차에 넣지 않는다.
-// 렌더러도 같은 규칙으로 id를 매기므로 목차 id와 실제 id가 어긋나지 않는다.
-const contentParser = new MarkdownIt({ html: true });
+// 본문 흐름의 제목 위치. 저자 전용 절의 범위와 연재 허브의 요약 절을 찾는 데 쓴다.
+// 목차는 렌더러가 id를 매기면서 함께 모은다(markdown.ts의 renderMarkdown). 인용·콜아웃·목록 안의 제목(token.level > 0)은 세지 않는다.
 function bodyHeadings(body: string): BodyHeading[] {
-  const tokens = contentParser.parse(body, {});
+  const tokens = structureParser.parse(body, {});
   return tokens.flatMap((token, index) => token.type === 'heading_open' && token.level === 0
     ? [{ start: token.map![0], end: token.map![1], level: Number(token.tag.slice(1)), text: tokens[index + 1].content.trim() }]
     : []);
 }
 
-export function headingsFor(body: string): { id: string; level: number; title: string }[] {
-  const headingIds = new Map<string, number>();
-  const headings = [];
-  for (const { text, level } of bodyHeadings(stripObsidianComments(body))) {
-    const id = headingId(headingIds, text);
-    if (level >= 2 && level <= 4) headings.push({ id, level, title: headingTextForId(text) });
-  }
-  return headings;
-}
-
-function excerpt(body: string): string {
-  const withoutHeadings = String(body ?? '').replace(/^#{1,6}\s+.+$/gm, ' ');
-  const cleaned = plainText(withoutHeadings, { includeCodeBlocks: false });
+// 본문 발췌. 제목 줄과 코드 블록을 뺀 텍스트의 앞 220자다.
+function excerpt(text: TextAnalysis): string {
+  const cleaned = text.excerptText;
   if (cleaned.length <= 220) return cleaned;
   return `${cleaned.slice(0, 220).replace(/\s+\S*$/, '')}…`;
 }
@@ -47,8 +35,9 @@ function excerpt(body: string): string {
 export function summaryFor(note: BodyNote, { kind = '', contentMode = 'full' }: { kind?: NoteKind | ''; contentMode?: 'full' | 'external' } = {}): string {
   const explicit = explicitSummary(note);
   if (contentMode === 'external') return explicit;
-  if (kind === 'blog' && note.meta.type === 'series') return explicit || sectionExcerpt(note.publicContent, ['연재 목적', '시리즈 소개']) || excerpt(note.publicContent);
-  return explicit || excerpt(note.publicContent);
+  const text = note.text ?? analyzeText(note.publicContent);
+  if (kind === 'blog' && note.meta.type === 'series') return explicit || sectionExcerpt(note.publicContent, ['연재 목적', '시리즈 소개']) || excerpt(text);
+  return explicit || excerpt(text);
 }
 
 export function explicitSummary(note: Pick<BodyNote, 'meta'>): string {
@@ -60,7 +49,7 @@ function sectionExcerpt(body: string, sectionNames: readonly string[]): string {
   const headings = bodyHeadings(body).filter((heading) => heading.level <= 2);
   const index = headings.findIndex((heading) => heading.level === 2 && wanted.includes(heading.text.toLowerCase()));
   if (index < 0) return '';
-  return excerpt(body.split('\n').slice(headings[index].end, headings[index + 1]?.start).join('\n'));
+  return excerpt(analyzeText(body.split('\n').slice(headings[index].end, headings[index + 1]?.start).join('\n')));
 }
 
 function stripLeadingTitle(body: string): string {
