@@ -175,6 +175,9 @@ main { min-height: 60vh; }
 .search { width: min(650px, 100% - 32px); margin: 12vh auto auto; padding: 0; border: 1px solid var(--overlay-line); border-radius: 6px; background: var(--paper-strong); color: var(--ink); }
 /* ::backdrop은 구형 브라우저에서 문서의 CSS 변수를 물려받지 않아 먹색(--ink) 값을 직접 적는다. */
 .search::backdrop { background: rgb(37 46 41 / .32); }
+/* 썸네일은 흰 바탕 그림이 많아 어두운 화면에서 밝은 덩어리로 뜬다. 색을 뒤집으면 사진·포스터가 망가지므로 밝기만 85%로 낮춘다.
+   본문 안 그림과 책 표지는 내용이라 손대지 않는다. */
+@media (prefers-color-scheme: dark) { :is(.featured-image, .external-thumbnail, .article-card) img { filter: brightness(.85); } }
 /* 뒤 배경은 페이지를 어둡게 덮어야 하는데, 어두운 화면의 먹색은 밝은 색이라 검정 반투명을 따로 둔다. */
 @media (prefers-color-scheme: dark) { .search::backdrop { background: rgb(0 0 0 / .5); } }
 .search-head { display: flex; align-items: center; gap: 12px; margin: 0; padding: 14px 16px; border-bottom: 1px solid var(--line); }
