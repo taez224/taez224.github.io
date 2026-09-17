@@ -181,6 +181,20 @@ function replaceWikiLinks(source: string, context: LinkContext): string {
   });
 }
 
+// 일반 Markdown URL만 한 번 디코딩한다. 위키링크의 퍼센트 문자는 파일 이름일 수 있어 그대로 둔다.
+// 잘못된 퍼센트 표기는 원문을 유지해 문서 전체의 렌더링을 중단하지 않는다.
+function decodeLinkPart(value: string): string {
+  try { return decodeURIComponent(value); } catch { return value; }
+}
+
+function splitMarkdownTarget(rawTarget: string) {
+  const hash = rawTarget.indexOf('#');
+  const target = decodeLinkPart(hash < 0 ? rawTarget : rawTarget.slice(0, hash));
+  const headingPath = hash < 0 ? '' : rawTarget.slice(hash + 1).split('#').map(decodeLinkPart).join('#');
+  const fragment = headingPath ? slugifyHeading(headingPath.split('#').at(-1)!) : '';
+  return { target, fragment, headingPath };
+}
+
 function replaceStandardLinks(source: string, context: LinkContext): string {
   if (source.startsWith('![')) return source.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (whole, alt, target) => {
     if (/^(?:https?:)?\/\//i.test(target) || target.startsWith('data:')) return whole;
@@ -191,7 +205,7 @@ function replaceStandardLinks(source: string, context: LinkContext): string {
   });
 
   return source.replace(/\[([^\]]*)\]\(([^)\s]+\.md(?:#[^)]*)?)(?:\s+"[^"]*")?\)/gi, (_whole, label, rawTarget) => {
-    const { target, fragment, headingPath } = splitWikiTarget(rawTarget);
+    const { target, fragment, headingPath } = splitMarkdownTarget(rawTarget);
     const note = context.resolveNote?.(context.sourcePath, target, fragment, headingPath);
     if (note?.visibility === 'private') return renderPrivateNote(label, target);
     return note

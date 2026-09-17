@@ -89,3 +89,19 @@ test('note resolution leaves code examples and escaped wiki brackets untouched',
   assert.match(html, /<code>\[\[hidden\/private.md\]\] \[별칭\]\(hidden\/private.md\)<\/code>/);
   assert.doesNotMatch(html, /비공개|class="private-note"/);
 });
+
+
+test('Markdown URLs decode paths and headings once without changing literal wiki targets', () => {
+  const received: [string, string | undefined, string | undefined][] = [];
+  const renderer = createMarkdownRenderer({ resolveNote: (_source, target, fragment, headingPath) => {
+    received.push([target, fragment, headingPath]);
+    return { title: '대상', url: '/notes/target/' };
+  } });
+  renderer('x.md', '[절](설정%20노트.md#상위%20절#하위%20절) [한번](literal%2520.md) [잘못된](bad%ZZ.md) [[literal%20.md]]');
+  assert.deepEqual(received, [
+    ['설정 노트.md', '하위-절', '상위 절#하위 절'],
+    ['literal%20.md', '', ''],
+    ['bad%ZZ.md', '', ''],
+    ['literal%20.md', '', '']
+  ]);
+});
