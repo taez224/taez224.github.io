@@ -3,7 +3,7 @@
 /* Chrome은 <svg>를 마우스로 클릭하면 포커스를 준다. 탭 순서에 없는 무대라 테두리는 노드에만 남긴다. */
 .graph:focus, .graph:focus-visible { outline: none; }
 /* 간선은 평소에 거의 안 보인다. 선택·호버에서만 방향과 함께 드러난다(지도가 그래프 뷰처럼 보이지 않게). */
-.graph .edge { stroke: #9aab9d; stroke-width: 1.1; stroke-opacity: .2; transition: stroke-opacity .15s ease; }
+.graph .edge { stroke: var(--edge); stroke-width: 1.1; stroke-opacity: .2; transition: stroke-opacity .15s ease; }
 /* 홈의 작은 지도에서도 연결이 보이도록 간선을 한 단계 진하게 그린다. */
 .graph.hero .edge { stroke-opacity: .28; }
 .graph .edge.is-out { stroke: var(--accent); stroke-width: 1.4; stroke-opacity: .75; }

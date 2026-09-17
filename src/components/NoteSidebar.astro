@@ -40,7 +40,7 @@ const blocks = [block('참조', 'out', outgoing), block('역참조', 'in', incom
   .rail-scroll { position: relative; }
   .rail-scroll.is-long .rail { max-height: 340px; overflow-y: auto; padding-right: 8px; scrollbar-width: thin; scroll-behavior: smooth; }
   @media (prefers-reduced-motion: reduce) { .rail-scroll.is-long .rail { scroll-behavior: auto; } }
-  .rail-scroll.is-long::after { position: absolute; right: 0; bottom: 0; left: 0; height: 36px; pointer-events: none; background: linear-gradient(180deg, rgba(247,247,242,0) 0%, var(--paper) 100%); content: ""; }
+  .rail-scroll.is-long::after { position: absolute; right: 0; bottom: 0; left: 0; height: 36px; pointer-events: none; background: linear-gradient(180deg, transparent 0%, var(--paper) 100%); content: ""; }
   .rail-scroll.is-long[data-at-end]::after { display: none; }
   .rail a { display: block; margin-left: -2px; padding: 5px 0 5px 16px; border-left: 2px solid transparent; color: var(--muted); font-size: var(--t-side); line-height: 1.5; }
   .rail a.level-3 { padding-left: 28px; font-size: var(--t-meta); }

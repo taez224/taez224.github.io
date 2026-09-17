@@ -1,4 +1,5 @@
 import type { MermaidConfig } from 'mermaid';
+import { PALETTE } from '../lib/palette.ts';
 
 // 도표에서 항목마다 돌려 쓰는 색이다. Mermaid는 묶음(subgraph·복합 상태·유스케이스 경계)과
 // 항목이 여러 개인 도표(클래스도·ER·시퀀스 참여자)에 이 배열의 색을 순서대로 물린다.
@@ -11,7 +12,7 @@ const DIAGRAM_BORDER_COLORS = [
 ];
 
 // 위 테두리 색과 같은 색상각을 유지하고 명도만 92%로 올린 면 색이다.
-// 종이색(#fdfdfa) 대비는 1.12~1.23으로, 노드가 쓰는 연두(#e3ece5)의 1.18과 같은 깊이다.
+// 밝은 종이색(paper-strong) 대비는 1.12~1.23으로, 노드가 쓰는 연두(#e3ece5)의 1.18과 같은 깊이다.
 // 먹색 글자 대비는 모두 12:1을 넘으므로 어느 칸이 걸려도 라벨을 읽는 데 지장이 없다.
 const DIAGRAM_FILL_COLORS = [
   '#e4eaf1', '#f3ebe2', '#e6efea', '#f2e3ea', '#f4f0e1', '#e5e4f1',
@@ -66,25 +67,25 @@ export const MERMAID_CONFIG: MermaidConfig = {
     background: '#fbfaf6',
     lineColor: '#746f64',
     // redux-color는 글자와 선을 남보라 계열(#28253D)로 두므로 먹색으로 되돌린다.
-    primaryTextColor: '#242720',
-    textColor: '#242720',
-    nodeTextColor: '#242720',
-    titleColor: '#242720',
+    primaryTextColor: PALETTE.ink,
+    textColor: PALETTE.ink,
+    nodeTextColor: PALETTE.ink,
+    titleColor: PALETTE.ink,
     // 노드 자체는 연두 한 가지로 두고 색은 묶음이 지게 한다. 노드까지 색을 돌리면
     // 색이 묶음을 뜻하는지 항목을 뜻하는지 읽는 쪽에서 구분할 수 없다.
     mainBkg: '#e3ece5',
     secondaryColor: '#f2efe7',
     tertiaryColor: '#fbfaf6',
     // 본문의 표·코드·콜아웃과 같은 1px 구분선 색이다. 묶음 테두리만 색을 갖게 하려고 낮게 둔다.
-    nodeBorder: '#d8ded4',
-    stateBorder: '#d8ded4',
-    actorBorder: '#d8ded4',
+    nodeBorder: PALETTE.line,
+    stateBorder: PALETTE.line,
+    actorBorder: PALETTE.line,
     clusterBkg: '#fbfaf6',
-    clusterBorder: '#d8ded4',
+    clusterBorder: PALETTE.line,
     // 기본값은 형광에 가까운 노랑(#fff5ad)이라 본문의 형광 표시(--highlight)와 같은 계열로 낮춘다.
     noteBkgColor: '#f4efd8',
     noteBorderColor: '#c9b978',
-    noteTextColor: '#242720',
+    noteTextColor: PALETTE.ink,
     borderColorArray: DIAGRAM_BORDER_COLORS,
     bkgColorArray: DIAGRAM_FILL_COLORS,
     // 유스케이스는 행위자·기능·경계가 각각 고정 색을 쓴다. 배열과 같은 대역에서 골라 맞춘다.
@@ -92,7 +93,7 @@ export const MERMAID_CONFIG: MermaidConfig = {
     usecaseActorBkg: '#ebe6ef',
     usecaseBorder: '#4a8791',
     usecaseBkg: '#e2f1f4',
-    usecaseBoundaryBorder: '#d8ded4',
+    usecaseBoundaryBorder: PALETTE.line,
     usecaseBoundaryBkg: '#fbfaf6',
     usecaseIncludeLine: '#5d7897',
     usecaseExtendLine: '#9a7852',

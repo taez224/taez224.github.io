@@ -3,6 +3,7 @@
   --paper: #f7f7f2; --paper-strong: #fdfdfa; --ink: #252e29; --muted: #626d64; --faint: #687267;
   /* UI의 기본 색은 먹색 하나이며 주제색과 의미 상태색만 예외로 사용한다. accent 토큰은 이름만 남기고 값은 먹색이다(2026-09-07). */
   --line: #d8ded4; --accent: #252e29; --accent-soft: #e7e9e3; --warning: #985d2f; --bug: #8e5d5d; --highlight: #e7d99b;
+  --edge: #9aab9d;
   --display: 'Gowun Batang', 'Apple Myungjo', 'Nanum Myeongjo', serif;
   --sans: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
   --t-meta: 13px; --t-side: 14px; --t-body: 17px; --t-list: 20px; --t-h2: 24px; --t-h1: 46px;
@@ -75,7 +76,7 @@ h1, h2, h3, p { margin-top: 0; }
 }
 .scroll-list { position: relative; }
 .scroll-list.is-long .side-list { max-height: 236px; overflow-y: auto; padding-right: 6px; scrollbar-gutter: stable; }
-.scroll-list.is-long[data-overflow]::after { position: absolute; right: 0; bottom: 0; left: 0; height: 36px; pointer-events: none; background: linear-gradient(180deg, rgba(247,247,242,0) 0%, var(--paper) 100%); content: ""; }
+.scroll-list.is-long[data-overflow]::after { position: absolute; right: 0; bottom: 0; left: 0; height: 36px; pointer-events: none; background: linear-gradient(180deg, transparent 0%, var(--paper) 100%); content: ""; }
 
 .site-header { position: sticky; z-index: 20; top: 0; background: var(--paper); border-bottom: 1px solid var(--line); }
 .site-header .wrap { display: flex; align-items: center; height: 72px; }
@@ -108,8 +109,9 @@ main { min-height: 60vh; }
   *, *::before, *::after { transition-duration: 0s !important; animation-duration: 0s !important; }
 }
 
-.search { width: min(650px, 100% - 32px); margin: 12vh auto auto; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: var(--paper-strong); color: var(--ink); box-shadow: 0 18px 70px rgba(36,39,32,.18); }
-.search::backdrop { background: rgba(36,39,32,.22); }
+.search { width: min(650px, 100% - 32px); margin: 12vh auto auto; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: var(--paper-strong); color: var(--ink); box-shadow: 0 18px 70px color-mix(in srgb, var(--ink) 18%, transparent); }
+/* ::backdrop은 구형 브라우저에서 문서의 CSS 변수를 물려받지 않아 먹색(--ink) 값을 직접 적는다. */
+.search::backdrop { background: rgb(37 46 41 / .22); }
 .search-head { display: flex; align-items: center; gap: 12px; margin: 0; padding: 14px 16px; border-bottom: 1px solid var(--line); }
 .search-head input { flex: 1; min-width: 0; padding: 4px 0; border: 0; outline: 0; background: transparent; font-size: 16px; }
 .search-head input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; }

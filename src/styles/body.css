@@ -4,7 +4,7 @@
 .body p { margin: 0 0 22px; }
 /* 본문의 외부 링크는 사이트 다른 곳(발행처·출처)과 같이 ↗를 붙여 노트 링크와 구분한다. */
 /* 링크 색이 먹색이라 본문 링크는 밑줄로 구분한다. */
-.body a { text-decoration: underline; text-decoration-color: rgba(37,46,41,.35); text-decoration-thickness: 1px; text-underline-offset: .18em; }
+.body a { text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--ink) 35%, transparent); text-decoration-thickness: 1px; text-underline-offset: .18em; }
 .body a:hover { text-decoration-color: var(--ink); }
 .body .private-note { color: var(--muted); }
 .body .visibility-mark { position: relative; display: inline-block; width: 22px; height: 22px; margin-left: 2px; color: var(--muted); vertical-align: -.2em; cursor: help; }
@@ -29,7 +29,7 @@
 .body .task-list-item.is-checked > p > .task-list-item-label { color: var(--muted); text-decoration: line-through; }
 .body blockquote { margin: 18px 0; padding: 4px 16px; border-left: 3px solid var(--line); color: var(--muted); }
 .body pre { overflow-x: auto; margin: 18px 0; padding: 14px 16px; border: 1px solid var(--line); background: #ffffff; color: #24292f; font-size: 14px; line-height: 1.6; }
-.body code { padding: 1px 4px; background: rgba(36,39,32,.08); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .88em; }
+.body code { padding: 1px 4px; background: color-mix(in srgb, var(--ink) 8%, transparent); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .88em; }
 .body pre code { padding: 0; background: transparent; font-size: inherit; }
 /* 코드 상자는 사이트 톤보다 문법 구분을 앞세워 @tanstack/highlight에 든 GitHub Light 테마의 배경·글자·토큰 색을 그대로 쓰며, 이곳에서만 관리한다.
    배경도 테마의 흰색이다. 가장 흐린 주석(#6e7781)이 흰색에서는 4.55:1이지만 종이색(--paper-strong)에서는 4.46:1로 4.5:1에 못 미친다.
