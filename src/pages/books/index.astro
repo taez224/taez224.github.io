@@ -20,22 +20,24 @@ const filters = statusFilters(books);
   </div>
 </Shell>
 <style>
-  .books-page { padding: 36px 0 96px; }
+  .books-page { padding: var(--s-page-top-index) 0 var(--s-page-bottom); }
   .page-head { flex-wrap: wrap; gap: 8px 20px; }
   .book-source { margin: 20px 0 0; color: var(--muted); text-align: right; }
-  .book-source a { color: inherit; text-underline-offset: 3px; }
+  .book-source a { color: inherit; }
   /* 거르개는 지도 범례와 같은 방식이다. 누른 것 하나만 aria-pressed로 남는다. */
   .status-filter { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 4px; margin-left: auto; }
-  .status-filter button { padding: 4px 7px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font: inherit; cursor: pointer; }
-  .status-filter button:hover, .status-filter button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
-  .status-filter .count { color: var(--faint); font-variant-numeric: tabular-nums; }
+  .status-filter button { padding: 4px 7px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font: inherit; cursor: pointer; transition: background-color .15s ease, color .15s ease; }
+  /* 선택은 호버(accent-soft)보다 한 단계 짙은 판이다. 호버와 같은 판이면 종이색과 1.10:1이라 무엇이 눌렸는지 보이지 않는다. */
+  .status-filter button[aria-pressed="true"] { background: var(--line); color: var(--accent); }
+  @media (hover: hover) { .status-filter button:hover { background: var(--accent-soft); color: var(--accent); } }
+  .status-filter .count { color: var(--muted); font-variant-numeric: tabular-nums; }
   .status-filter button[aria-pressed="true"] .count { color: inherit; }
   /* 등급 묶음은 공용 장부(.ledger-group)를 쓰고 여백과 굵기만 다르다. */
   .books-page .ledger-group { padding-bottom: 28px; }
-  .books-page .ledger-head h2 { font-weight: 600; }
-  .books-page .ledger-head h2.unrated { font-size: 18px; line-height: 1.4; white-space: nowrap; }
+  .books-page .ledger-head h2.unrated { font-size: var(--t-ledger-word); line-height: 1.4; white-space: nowrap; }
   .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px 40px; }
   @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
-  @media (max-width: 480px) { .page-head { gap: 12px; } .book-source { font-size: 12px; } }
+  @media (max-width: 480px) { .page-head { gap: 12px; } .book-source { font-size: var(--t-micro); } }
+  @media (pointer: coarse) { .status-filter button { min-height: 44px; } }
 </style>
 <script src="../../scripts/books.ts"></script>

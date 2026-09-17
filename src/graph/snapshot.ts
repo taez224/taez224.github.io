@@ -1,8 +1,8 @@
 import type { GraphNode, GraphEdge, Point, Size, Box } from './types.ts';
-interface SnapshotOptions extends Size { preset?: string; pixelHeight?: number; font?: number; regionFont?: number; strokeWidth?: number; label?: string }
+interface SnapshotOptions extends Size { preset?: string; pixelHeight?: number; font?: number; regionFont?: number; compactRegionFont?: number; strokeWidth?: number; label?: string }
 
 import { nodeRadius } from './layout.ts';
-import { topicColor, cleanTitle, escapeHtml as escape } from '../lib/format.ts';
+import { topicColor, topicLabelColor, cleanTitle, escapeHtml as escape } from '../lib/format.ts';
 import { topicRegions, regionPath, placeRegionLabels, regionLabelBox } from './regions.ts';
 import { estimateTextWidth, labelIds, placeLabels, nodeBox } from './label.ts';
 
@@ -11,7 +11,10 @@ const n = (value: number) => +value.toFixed(2);
 // 홈의 정적 지도. 페이지에 인라인되므로 서체·색은 페이지 토큰(--display, --sans, --paper, --accent)을 쓴다.
 // preset 'mobile': 높이 280px 상자용. viewBox 배율이 작아 글자를 크게 두고 허브 제목은 아래에만 놓는다(데스크톱 미만에서 그대로 보이는 그림).
 // preset 'desktop': 높이 pixelHeight 상자용. hero.js가 올리는 살아 있는 그래프와 같은 크기·자리로 그려, 교체가 눈에 띄지 않게 한다.
-export function renderSnapshotSvg(nodes: readonly GraphNode[], edges: readonly GraphEdge[], positions: ReadonlyMap<string, Point>, { width, height, preset = 'mobile', pixelHeight = 500, font = 14, regionFont = 16, strokeWidth = 1.1, label = '생각 지도' }: SnapshotOptions): string {
+// 휴대폰 폭 영역 이름 층이 그림 위로 넘어갈 수 있는 높이(장면 단위). 홈 CSS의 모바일 그림 상자 높이가 이 여백을 포함한다.
+export const COMPACT_TOP_MARGIN = 56;
+
+export function renderSnapshotSvg(nodes: readonly GraphNode[], edges: readonly GraphEdge[], positions: ReadonlyMap<string, Point>, { width, height, preset = 'mobile', pixelHeight = 500, font = 14, regionFont = 16, compactRegionFont = 0, strokeWidth = 1.1, label = '생각 지도' }: SnapshotOptions): string {
   if (preset === 'desktop') return renderDesktop(nodes, edges, positions, { width, height, pixelHeight, label });
   const at = (id: string) => positions.get(id)!;
   const regions = topicRegions(nodes, positions);
@@ -26,21 +29,28 @@ export function renderSnapshotSvg(nodes: readonly GraphNode[], edges: readonly G
     if (labelBoxes.some((b) => b.left < box.right && box.left < b.right && b.top < box.bottom && box.top < b.bottom)) continue;
     labelBoxes.push(box); labels.push({ node, title, x: p.x, y });
   }
-  const regionLabelAt = placeRegionLabels(regions, [...nodes.filter((node) => at(node.id)).map((node) => ({ ...at(node.id), r: radiusOf(node) + 4 })), ...labelBoxes], { fontSize: regionFont, pad: regionFont * 1.2, measure: estimateTextWidth, bounds: { width, height } });
+  const nodeObstacles = nodes.filter((node) => at(node.id)).map((node) => ({ ...at(node.id), r: radiusOf(node) + 4 }));
+  const regionLabelAt = placeRegionLabels(regions, [...nodeObstacles, ...labelBoxes], { fontSize: regionFont, pad: regionFont * 1.2, measure: estimateTextWidth, bounds: { width, height } });
+  // 영역 이름 층은 CSS가 폭에 따라 고른다(class). compactRegionFont를 주면 허브 제목 없이 영역 이름만 크게 놓은 층을 하나 더 그린다.
+  // 휴대폰 폭에서는 그림이 약 1/3로 줄어 허브 제목이 7px 남짓이 되므로 그 층으로 바꾼다. 제목이 없으니 노드만 피해서 다시 놓는다.
+  const regionLayer = (fontSize: number, placement: ReturnType<typeof placeRegionLabels>, cls: string) => `<g class="${cls}" font-family="var(--display)" font-weight="700" font-size="${fontSize}" letter-spacing="${(fontSize * 0.16).toFixed(1)}" text-anchor="middle" paint-order="stroke" stroke="var(--paper)" stroke-width="${(fontSize * 0.25).toFixed(1)}" stroke-linejoin="round">`
+    + regions.map((r) => { const a = placement.get(r.topic)!; return `<text x="${a.x.toFixed(1)}" y="${a.y.toFixed(1)}" text-anchor="${a.anchor}" fill="${topicLabelColor(r.topic)}">${escape(r.topic)}</text>`; }).join('') + '</g>';
   let out = `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" class="snap is-mobile" role="img" aria-label="${escape(label)}">`;
   out += `<g data-regions="" opacity=".06">${regions.map((r) => `<path d="${regionPath(r.hull)}" fill="${topicColor(r.topic)}" stroke="${topicColor(r.topic)}" stroke-width="64" stroke-linejoin="round"></path>`).join('')}</g>`;
-  out += `<g font-family="var(--display)" font-weight="700" font-size="${regionFont}" letter-spacing="${(regionFont * 0.16).toFixed(1)}" text-anchor="middle" opacity=".95" paint-order="stroke" stroke="#f7f7f2" stroke-width="${(regionFont * 0.25).toFixed(1)}" stroke-linejoin="round">`;
-  out += regions.map((r) => { const a = regionLabelAt.get(r.topic)!; return `<text x="${a.x.toFixed(1)}" y="${a.y.toFixed(1)}" text-anchor="${a.anchor}" fill="${topicColor(r.topic)}">${escape(r.topic)}</text>`; }).join('');
-  out += `</g><g stroke="#9aab9d" stroke-width="${strokeWidth}" stroke-opacity=".22">`;
+  out += regionLayer(regionFont, regionLabelAt, 'snap-regions');
+  // 큰 이름은 맨 위 영역에서 그림 안에 자리가 없어 그래프 한가운데로 밀려난다. 그림 위쪽 여백(COMPACT_TOP_MARGIN)까지 자리로 쓰고,
+  // 페이지 CSS가 그 여백만큼 그림 상자를 키우고 SVG 밖 그리기를 허용한다.
+  if (compactRegionFont) out += regionLayer(compactRegionFont, placeRegionLabels(regions, nodeObstacles, { fontSize: compactRegionFont, pad: compactRegionFont * 1.2, measure: estimateTextWidth, bounds: { top: -COMPACT_TOP_MARGIN, width, height } }), 'snap-regions-compact');
+  out += `<g stroke="var(--edge)" stroke-width="${strokeWidth}" stroke-opacity=".22">`;
   for (const edge of edges) { const a = at(edge.source), b = at(edge.target); if (a && b) out += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"></line>`; }
   out += '</g><g>';
   for (const node of nodes) {
     const p = at(node.id); if (!p) continue;
     const r = radiusOf(node);
-    if (node.type === 'hub') out += `<circle cx="${p.x}" cy="${p.y}" r="${(r + 6).toFixed(1)}" fill="none" stroke="#252e29" stroke-width="1.2" stroke-opacity=".7"></circle>`;
-    out += `<circle cx="${p.x}" cy="${p.y}" r="${r.toFixed(1)}" fill="${topicColor(node.topic)}" stroke="#f7f7f2" stroke-width="2"></circle>`;
+    if (node.type === 'hub') out += `<circle cx="${p.x}" cy="${p.y}" r="${(r + 6).toFixed(1)}" fill="none" stroke="var(--accent)" stroke-width="1.2" stroke-opacity=".7"></circle>`;
+    out += `<circle cx="${p.x}" cy="${p.y}" r="${r.toFixed(1)}" fill="${topicColor(node.topic)}" stroke="var(--paper)" stroke-width="2"></circle>`;
   }
-  out += `</g><g font-family="var(--sans)" font-size="${font}" fill="#252e29" text-anchor="middle" paint-order="stroke" stroke="#f7f7f2" stroke-width="${(font * 0.35).toFixed(1)}" stroke-linejoin="round">`;
+  out += `</g><g class="snap-titles" font-family="var(--sans)" font-size="${font}" fill="var(--ink)" text-anchor="middle" paint-order="stroke" stroke="var(--paper)" stroke-width="${(font * 0.35).toFixed(1)}" stroke-linejoin="round">`;
   for (const { node, title, x, y } of labels) out += `<text x="${x}" y="${y.toFixed(1)}" font-weight="${node.type === 'hub' ? 600 : 450}">${escape(title)}</text>`;
   return `${out}</g></svg>`;
 }
@@ -58,7 +68,7 @@ function renderDesktop(nodes: readonly GraphNode[], edges: readonly GraphEdge[],
   const radiusOf = (node: GraphNode) => nodeRadius(node.degree ?? 0, 0.9);
   const placed = nodes.filter((node) => at(node.id));
   const regions = topicRegions(nodes, positions);
-  const regionLabelAt = placeRegionLabels(regions, placed.map((node) => ({ ...at(node.id), r: radiusOf(node) + 4 })), { fontSize: 15, measure: estimateTextWidth, bounds: { width, height } });
+  const regionLabelAt = placeRegionLabels(regions, placed.map((node) => ({ ...at(node.id), r: radiusOf(node) + 4 })), { fontSize: 15, scale: u, measure: estimateTextWidth, bounds: { width, height } });
   const obstacles = [
     ...placed.map((node) => nodeBox(at(node.id), radiusOf(node) + 2 * u)),
     ...regions.map((r) => regionLabelBox(regionLabelAt.get(r.topic)!, r.topic, { fontSize: 15, measure: estimateTextWidth, scale: u }))
@@ -69,9 +79,9 @@ function renderDesktop(nodes: readonly GraphNode[], edges: readonly GraphEdge[],
   const plan = placeLabels(placed.filter((node) => idle.has(node.id)).map((node) => ({ node, mustPlace: true })), { positions, radius: radiusOf, u, obstacles, inside });
   let out = `<svg viewBox="${viewBox}" xmlns="http://www.w3.org/2000/svg" class="snap is-desktop" role="img" aria-label="${escape(label)}">`;
   out += `<g data-regions="" opacity=".07">${regions.map((r) => `<path d="${regionPath(r.hull)}" fill="${topicColor(r.topic)}" stroke="${topicColor(r.topic)}" stroke-width="64" stroke-linejoin="round"></path>`).join('')}</g>`;
-  out += `<g font-family="var(--display)" font-weight="700" font-size="${n(15 * u)}" letter-spacing=".16em" opacity=".95" paint-order="stroke" stroke="var(--paper)" stroke-width="${n(3.5 * u)}" stroke-linejoin="round">`;
-  out += regions.map((r) => { const a = regionLabelAt.get(r.topic)!; return `<text x="${a.x.toFixed(1)}" y="${a.y.toFixed(1)}" text-anchor="${a.anchor}" fill="${topicColor(r.topic)}">${escape(r.topic)}</text>`; }).join('');
-  out += `</g><g stroke="#9aab9d" stroke-width="1.1" stroke-opacity=".28">`;
+  out += `<g font-family="var(--display)" font-weight="700" font-size="${n(15 * u)}" letter-spacing=".16em" paint-order="stroke" stroke="var(--paper)" stroke-width="${n(3.5 * u)}" stroke-linejoin="round">`;
+  out += regions.map((r) => { const a = regionLabelAt.get(r.topic)!; return `<text x="${a.x.toFixed(1)}" y="${a.y.toFixed(1)}" text-anchor="${a.anchor}" fill="${topicLabelColor(r.topic)}">${escape(r.topic)}</text>`; }).join('');
+  out += `</g><g stroke="var(--edge)" stroke-width="1.1" stroke-opacity=".28">`;
   for (const edge of edges) { const a = at(edge.source), b = at(edge.target); if (a && b) out += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"></line>`; }
   out += '</g><g>';
   for (const node of placed) {

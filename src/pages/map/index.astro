@@ -16,7 +16,7 @@ const folded = Object.keys(topicFold);
 const foldedLabel = folded.length > 2 ? `${folded.slice(0, 2).join(', ')} 외 ${folded.length - 2}` : folded.join(', ');
 const topics = [...topicCounts].map(([name, count]) => ({ name, color: topicColor(name), count })).sort((a, b) => Number(a.name === '기타') - Number(b.name === '기타') || b.count - a.count);
 ---
-<Shell title="생각 지도" description="노트를 고르고 연결된 생각을 따라가는 지도." path="/map/" active="map">
+<Shell title="생각 지도" description="노트를 고르고 연결된 생각을 따라가는 지도." path="/map/" active="map" footer={false}>
   {/* 그래프와 패널이 쓰는 데이터를 전부 페이지에 인라인한다. 스크립트가 실행되는 즉시(첫 화면 전에) 그래프와 선택된 노트 패널까지 한 번에 그린다. */}
   <div class="wrap map-page">
     <script type="application/json" data-map-data is:inline set:html={inlineJson({ ...inlineGraph(nodes, edges, { extra: ['path', 'mapKey'] }), ...inlinePanelNotes(notes, noteEdges, topicFold) })}></script>
@@ -38,36 +38,48 @@ const topics = [...topicCounts].map(([name, count]) => ({ name, color: topicColo
             <button type="button" data-graph-zoom="in" aria-label="확대">+</button>
           </div>
         </div>
+        {/* 휴대폰 폭에서는 패널이 노드를 고른 뒤에 열리는 시트라 처음 화면에 들어갈 곳이 없다. 데스크톱 패널의 처음 내용과 같은 목록을 그래프 아래에 둔다. */}
+        <div class="map-start" data-map-start>
+          <p class="meta map-start-hint">노드를 누르면 노트 정보가 아래에서 열립니다.</p>
+          <section class="list-block"><div class="meta">시작점</div><ul class="side-list">{startpoints.map((h) => <li><a href={h.url} data-node={h.id}><i class="hub-mark" aria-hidden="true"></i>{h.displayTitle}</a></li>)}</ul></section>
+          {hubs.length > 0 && <section class="list-block"><div class="meta">허브</div><ul class="side-list">{hubs.map((h) => <li><a href={h.url} data-node={h.id}><i class="hub-mark" aria-hidden="true"></i>{h.displayTitle}</a></li>)}</ul></section>}
+        </div>
       </div>
       <MapPanel startpoints={startpoints} hubs={hubs} />
     </div>
   </div>
 </Shell>
 <style is:global>
-  .map-page { padding: 24px 0 48px; }
-  .map-layout { display: grid; grid-template-columns: minmax(0, 1fr) 310px; gap: 40px; margin-top: 16px; align-items: stretch; }
-  .graph-box { height: calc(100dvh - 270px); min-height: 420px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-  .map-panel { max-height: calc(100dvh - 270px + 88px); }
+  .map-page { padding: var(--s-page-top-index) 0 48px; }
+  .map-layout { display: grid; grid-template-columns: minmax(0, 1fr) var(--s-sidebar); gap: var(--s-column-gap); margin-top: 16px; align-items: stretch; }
+  /* 무대는 화면 높이에서 헤더·제목·범례·아래 여백(246px)과 페이지 위쪽 여백을 뺀 만큼이다. 패널은 여기에 범례 줄(88px)만큼 더 길다. */
+  .graph-box { height: calc(100dvh - 246px - var(--s-page-top-index)); min-height: 420px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .map-panel { max-height: calc(100dvh - 158px - var(--s-page-top-index)); }
   /* 범례는 위 한 줄, 확대 컨트롤은 지도 앱처럼 무대 오른쪽 아래에 띄운다. */
   .map-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
   .legend { display: flex; flex: 1 1 auto; flex-wrap: wrap; align-items: center; gap: 4px 12px; min-width: 0; }
-  .legend-item { display: inline-flex; align-items: center; gap: 5px; padding: 4px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: var(--t-meta); white-space: nowrap; }
-  .legend button.legend-item:hover, .legend button.legend-item[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
-  .legend-fold { margin-left: 2px; color: var(--faint); font-weight: 400; }
+  .legend-item { display: inline-flex; align-items: center; gap: 5px; padding: 4px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: var(--t-meta); white-space: nowrap; transition: background-color .15s ease, color .15s ease; }
+  /* 선택은 책장 필터처럼 호버보다 짙은 판이다. 이 판 위에서 보조색은 3.94:1이라 접힌 주제 이름도 먹색으로 올린다. */
+  .legend button.legend-item[aria-pressed="true"] { background: var(--line); color: var(--accent); }
+  .legend button.legend-item[aria-pressed="true"] .legend-fold { color: inherit; }
+  @media (hover: hover) { .legend button.legend-item:hover { background: var(--accent-soft); color: var(--accent); } }
+  .legend-fold { margin-left: 2px; color: var(--muted); font-weight: 400; }
   .graph-box { position: relative; }
-  .map-stage { min-width: 0; } /* 그리드 아이템이 범례의 min-content 폭으로 늘어나 페이지가 넘치지 않게 */
+  .map-stage { min-width: 0; }
+  .map-start { display: none; } /* 그리드 아이템이 범례의 min-content 폭으로 늘어나 페이지가 넘치지 않게 */
   .graph-controls { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper-strong); }
-  .graph-controls button { min-width: 36px; min-height: 36px; padding: 3px 9px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: var(--t-meta); }
-  .graph-controls button:hover { color: var(--accent); }
-  @media (max-width: 999.98px) {
+  .graph-controls button { min-width: 36px; min-height: 36px; padding: 3px 9px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: var(--t-meta); transition: background-color .15s ease, color .15s ease, transform .15s cubic-bezier(.23, 1, .32, 1); }
+  .graph-controls button:active { transform: scale(.97); }
+  /* 확대 버튼도 범례·필터와 같은 투명 버튼이라 호버 때 같은 옅은 판을 깐다. */
+  @media (hover: hover) { .graph-controls button:hover { background: var(--accent-soft); color: var(--accent); } }
+  @media (max-width: 1000px) {
     .map-layout { grid-template-columns: 1fr; gap: 24px; }
     .graph-box { height: 60vh; min-height: 360px; }
     .map-panel .scroll-list.is-long .side-list { max-height: none; }
     .map-panel .scroll-list.is-long::after { display: none; }
   }
-  @media (min-width: 720.02px) and (max-width: 999.98px) { .map-panel { max-height: none; } }
+  @media (min-width: 721px) and (max-width: 1000px) { .map-panel { max-height: none; } }
   @media (max-width: 720px) {
-    .map-page { padding-top: 16px; }
     .graph-box { width: 100vw; margin-left: calc(50% - 50vw); height: 60vh; }
     .graph-controls button { min-width: 40px; min-height: 40px; }
     /* 범례는 한 줄 가로 스크롤. 오른쪽 끝을 옅게 해 더 있음을 알린다. */
@@ -76,6 +88,13 @@ const topics = [...topicCounts].map(([name, count]) => ({ name, color: topicColo
     .map-toolbar .legend::-webkit-scrollbar { display: none; }
     .map-toolbar .legend::after { flex: 0 0 24px; content: ""; }
     .map-toolbar .legend-item { flex: 0 0 auto; min-height: 36px; }
+    .map-start { display: block; padding-top: 14px; }
+    .map-start-hint { margin: 0; }
+  }
+  /* 손가락으로 누르는 기기에서는 범례와 확대 버튼을 44px로 키운다. 마우스 환경은 한 줄에 범례가 더 들어가도록 작게 둔다. */
+  @media (pointer: coarse) {
+    .legend-item, .map-toolbar .legend-item { min-height: 44px; }
+    .graph-controls button { min-width: 44px; min-height: 44px; }
   }
 </style>
 <script src="../../scripts/map.ts"></script>

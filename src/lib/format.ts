@@ -1,12 +1,33 @@
 /// <reference types="astro/client" />
 import { KINDS } from './kinds.ts';
 
-// 개발은 파란색을 사용한다. 청록 #5f8184는 지식관리 초록과 구분이 안 됐다.
-// 조직(청록)과 심리(자홍)는 색상환에서 가장 넓게 빈 두 자리를 채운다(2026-09-10). 조직은 옛 청록보다 채도를 두 배로 올려 지식관리와 떨어뜨렸다.
-export const GRAPH_COLORS: Record<string, string> = { AI: '#80698f', 개발: '#5d7897', 커리어: '#9a7852', 지식관리: '#5c806c', 글쓰기: '#9c6e6e', 철학: '#9b8a45', 조직: '#4a8791', 심리: '#a4617f', 기타: '#817f72' };
+// 주제마다 색상(hue)은 유지하고 명도만 나눈다(2026-09-17). 9색이 같은 명도대에 몰려 있어 녹색약에서 AI와 개발,
+// 적색약에서 지식관리와 기타가 거의 같은 색으로 보였다. 노트가 많은 AI·지식관리·조직은 중간 톤(OKLCH 명도 52~58)에 두어
+// 지도가 무거워지지 않게 하고, 나머지 주제의 명도를 벌려 지도에 보이는 주제 사이의 거리를 최대화했다. 기타는 무채색이다.
+// 노드는 종이색 위 3:1 이상이어야 한다(tests/topic-colors.test.ts).
+export const GRAPH_COLORS: Record<string, string> = { AI: '#877096', 개발: '#405a78', 커리어: '#8c6a45', 지식관리: '#5a7e6a', 글쓰기: '#7c5050', 철학: '#94833e', 조직: '#36737d', 심리: '#793a58', 기타: '#868684' };
+// 지도 영역 이름은 15px 굵은 글자라 4.5:1이 필요한데, 밝은 주제색은 노드 기준(3:1)만 넘는다.
+// 같은 색상에서 명도만 낮춘 글자용 색이다. 이미 4.5:1을 넘는 주제는 노드 색과 같다.
+export const GRAPH_LABEL_COLORS: Record<string, string> = { AI: '#7e678d', 개발: '#405a78', 커리어: '#8a6944', 지식관리: '#547864', 글쓰기: '#7c5050', 철학: '#7f6e28', 조직: '#36737d', 심리: '#793a58', 기타: '#70706e' };
 const HIDDEN_TAGS = new Set(['slipbox', 'blog', 'inbox', 'clippings']);
 
-export function topicColor(topic: string): string { return GRAPH_COLORS[topic] ?? GRAPH_COLORS.기타; }
+// 어두운 화면의 주제색. 같은 색상에서 밝기만 다시 골랐다. 모두 같은 대비로 맞추면 명도 차이가 사라져 색각 이상 시뮬레이션에서
+// 이웃 주제가 붙으므로(적색약 AI-개발 1.6), 주제마다 밝기 단계를 달리해 지도에 보이는 7개의 최소 구분 거리를 넓혔다(6.6, 라이트는 4.1).
+// 노드는 어두운 바탕에서 3.3:1 이상, 영역 이름은 5:1 이상이다.
+export const DARK_GRAPH_COLORS: Record<string, string> = { AI: '#7c628d', 개발: '#6686ab', 커리어: '#8b6438', 지식관리: '#6e9981', 글쓰기: '#925e5e', 철학: '#96822d', 조직: '#5ea6b2', 심리: '#d483a8', 기타: '#787876' };
+export const DARK_GRAPH_LABEL_COLORS: Record<string, string> = { AI: '#9a7fac', 개발: '#6c8cb1', 커리어: '#ab8256', 지식관리: '#6e9981', 글쓰기: '#b27b7b', 철학: '#9d8936', 조직: '#5ea6b2', 심리: '#d483a8', 기타: '#8a8a88' };
+// 주제색은 SVG 속성과 인라인 스타일에 들어가므로 hex를 박으면 CSS가 화면 모드를 따라 바꿀 수 없다. CSS 변수를 참조하고,
+// 변수 값은 Shell이 topicColorCss()로 페이지 머리에 싣는다. 변수 이름에는 한글 주제 이름 대신 이 키를 쓴다.
+const TOPIC_KEYS: Record<string, string> = { AI: 'ai', 개발: 'dev', 커리어: 'career', 지식관리: 'knowledge', 글쓰기: 'writing', 철학: 'philosophy', 조직: 'org', 심리: 'psychology', 기타: 'other' };
+const topicKey = (topic: string) => TOPIC_KEYS[topic] ?? TOPIC_KEYS.기타;
+export function topicColor(topic: string): string { return `var(--topic-${topicKey(topic)})`; }
+export function topicLabelColor(topic: string): string { return `var(--topic-label-${topicKey(topic)})`; }
+// CSS 변수를 읽지 못하는 곳(resvg로 그리는 OG 카드)은 밝은 화면의 값을 직접 쓴다.
+export function topicHex(topic: string): string { return GRAPH_COLORS[topic] ?? GRAPH_COLORS.기타; }
+export function topicColorCss(): string {
+  const block = (nodes: Record<string, string>, labels: Record<string, string>) => Object.entries(TOPIC_KEYS).map(([topic, key]) => `--topic-${key}:${nodes[topic]};--topic-label-${key}:${labels[topic]};`).join('');
+  return `:root{${block(GRAPH_COLORS, GRAPH_LABEL_COLORS)}}@media (prefers-color-scheme: dark){:root{${block(DARK_GRAPH_COLORS, DARK_GRAPH_LABEL_COLORS)}}}`;
+}
 export function publicTags(tags: readonly string[] = []): string[] { return tags.filter((tag) => !HIDDEN_TAGS.has(tag) && !tag.startsWith('프로젝트/')); }
 // 노트의 주제는 첫 공개 태그의 앞 조각이다. 공개 태그가 없으면 기타다.
 export function topicFor(tags?: readonly string[]): string { const topic = publicTags(tags).find(Boolean); return topic ? topic.split('/')[0] : '기타'; }

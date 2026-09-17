@@ -15,13 +15,14 @@ import { kindLabel, formatDate, cleanTitle, escapeXml as esc } from './format.ts
 import { estimateTextWidth } from '../graph/label.ts';
 import { localGraphLayout } from '../components/local-graph-layout.ts';
 import { layoutGraph, nodeRadius } from '../graph/layout.ts';
-import { topicColor } from './format.ts';
+import { topicHex } from './format.ts';
+import { PALETTE } from './palette.ts';
 import { ensureOgFonts } from './og-fonts.ts';
 import { projectPaths } from './get-garden.ts';
 import { pngDimensions } from './png.ts';
 import { imageMimeType } from './image-types.ts';
 
-const PAPER = '#f7f7f2', INK = '#252e29', MUTED = '#626d64', FAINT = '#687267', ACCENT = '#252e29', LINE = '#9aab9d';
+const PAPER = PALETTE.paper, INK = PALETTE.ink, MUTED = PALETTE.muted, ACCENT = PALETTE.ink, LINE = PALETTE.edge;
 
 // ---- PNG 캐시 ----
 // 키는 최종 SVG 문자열 + 폰트 파일 정체 + resvg 버전에서 계산한다. 카드를 바꾸는 코드(템플릿·제목 접기·색상표·배치)는
@@ -192,7 +193,7 @@ export function ogSvg({ note, outgoing, incoming, siteLabel, thumbnailDataUri: t
 ${rightPanel}
 ${lines.map((line, index) => `<text x="72" y="${firstBaseline + index * lineHeight}" font-family="Gowun Batang" font-weight="700" font-size="${size}" letter-spacing="-1.5" fill="${INK}">${esc(line)}</text>`).join('\n')}
 <text x="72" y="560" font-family="Pretendard" font-size="26" fill="${MUTED}">${esc(meta)}</text>
-<text x="1128" y="560" text-anchor="end" font-family="Pretendard" font-size="22" fill="${FAINT}">${esc(siteLabel)}</text>
+<text x="1128" y="560" text-anchor="end" font-family="Pretendard" font-size="22" fill="${MUTED}">${esc(siteLabel)}</text>
 </svg>`;
 }
 
@@ -220,7 +221,7 @@ function siteSvg({ garden, title, siteLabel }: { garden: OgGarden; title: string
   const box = { width: 440, height: 440 };
   const positions = layoutGraph(garden.nodes, garden.edges, { ...box, pad: 24 });
   const edges = garden.edges.map((e) => { const a = positions.get(e.source), b = positions.get(e.target); return a && b ? `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${LINE}" stroke-width="1.1" stroke-opacity=".6"/>` : ''; }).join('');
-  const nodes = garden.nodes.map((n) => { const p = positions.get(n.id); if (!p) return ''; const r = nodeRadius(n.degree ?? 0, 0.95); const ring = n.type === 'hub' ? `<circle cx="${p.x}" cy="${p.y}" r="${(r + 6).toFixed(1)}" fill="none" stroke="${ACCENT}" stroke-width="1.4" stroke-opacity=".7"/>` : ''; return `${ring}<circle cx="${p.x}" cy="${p.y}" r="${r.toFixed(1)}" fill="${topicColor(n.topic)}" stroke="${PAPER}" stroke-width="2"/>`; }).join('');
+  const nodes = garden.nodes.map((n) => { const p = positions.get(n.id); if (!p) return ''; const r = nodeRadius(n.degree ?? 0, 0.95); const ring = n.type === 'hub' ? `<circle cx="${p.x}" cy="${p.y}" r="${(r + 6).toFixed(1)}" fill="none" stroke="${ACCENT}" stroke-width="1.4" stroke-opacity=".7"/>` : ''; return `${ring}<circle cx="${p.x}" cy="${p.y}" r="${r.toFixed(1)}" fill="${topicHex(n.topic)}" stroke="${PAPER}" stroke-width="2"/>`; }).join('');
   const blockHeight = lineHeight * lines.length;
   const firstBaseline = Math.round((630 - blockHeight) / 2 + size * 0.9);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
@@ -228,7 +229,7 @@ function siteSvg({ garden, title, siteLabel }: { garden: OgGarden; title: string
 <text x="72" y="94" font-family="Gowun Batang" font-weight="700" font-size="34" fill="${INK}">TaeZ</text>
 <g transform="translate(700 95)">${edges}${nodes}</g>
 ${lines.map((line, index) => `<text x="72" y="${firstBaseline + index * lineHeight}" font-family="Gowun Batang" font-weight="700" font-size="${size}" letter-spacing="-2" fill="${INK}">${esc(line)}</text>`).join('\n')}
-<text x="1128" y="560" text-anchor="end" font-family="Pretendard" font-size="22" fill="${FAINT}">${esc(siteLabel)}</text>
+<text x="1128" y="560" text-anchor="end" font-family="Pretendard" font-size="22" fill="${MUTED}">${esc(siteLabel)}</text>
 </svg>`;
 }
 

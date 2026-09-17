@@ -66,10 +66,20 @@ function stripAuthorSections(body: string): string {
   let start = 0;
   for (const [index, heading] of headings.entries()) {
     if (!AUTHOR_ONLY_SECTIONS.includes(heading.text)) continue;
-    kept.push(...lines.slice(start, heading.start));
+    kept.push(...withoutClosingBreak(lines.slice(start, heading.start)));
     start = headings[index + 1]?.start ?? lines.length;
   }
   return [...kept, ...lines.slice(start)].join('\n');
+}
+
+// 저자 절 바로 앞의 구분선(---, ***, ___)은 그 절을 여는 표시라 함께 뺀다. 남기면 공개 본문 끝에 짝 없는 선이 남아
+// 페이지 끝 선과 겹친다. 바로 윗줄이 글이면 `---`는 그 줄을 제목으로 만드는 밑줄이므로, 빈 줄 뒤에 온 구분선만 뺀다.
+const THEMATIC_BREAK = /^ {0,3}([-*_])(?:[ \t]*\1){2,}[ \t]*$/;
+function withoutClosingBreak(lines: string[]): string[] {
+  let end = lines.length;
+  while (end > 0 && !lines[end - 1].trim()) end--;
+  const afterBlank = end === 1 || (end > 1 && !lines[end - 2].trim());
+  return end > 0 && THEMATIC_BREAK.test(lines[end - 1]) && afterBlank ? lines.slice(0, end - 1) : lines;
 }
 
 export function publicBody(body: string): string {

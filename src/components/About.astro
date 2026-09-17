@@ -7,24 +7,28 @@ const { about, contacts, entryUrl, aboutUrl } = Astro.props;
   <h1 class="display">Thinking Garden</h1>
   <p>{about}</p>
   <div class="about-actions">
-    <a class="btn" href={entryUrl}>생각의 정원으로 <span aria-hidden="true">→</span></a>
-    {aboutUrl && <a class="making-of" href={aboutUrl}>이 위키에 대해 <span aria-hidden="true">→</span></a>}
+    {/* 버튼은 시작점을 모은 허브 노트로 간다. 도착한 노트의 절 제목과 지도 패널의 목록 이름이 "시작점"이라 같은 말로 잇는다.
+       화살표는 주요 행동인 버튼에만 둔다. 보조 링크까지 붙이면 두 행동이 같은 무게로 읽히고, 밑줄만으로 링크임이 보인다. */}
+    <a class="btn" href={entryUrl}>시작점 둘러보기 <span aria-hidden="true">→</span></a>
+    {aboutUrl && <a class="making-of" href={aboutUrl}>이 위키에 대해</a>}
   </div>
   <Contacts contacts={contacts} />
 </div>
 <style>
   .about { display: flex; flex-direction: column; gap: 18px; }
-  .about h1 { margin: 0; font-size: 32px; line-height: 1.45; }
-  .about p { margin: 0; color: var(--muted); font-size: var(--t-body); line-height: 1.8; }
+  .about h1 { margin: 0; font-size: var(--t-hero); line-height: 1.45; }
+  .about p { margin: 0; color: var(--muted); font-size: var(--t-body); line-height: 1.85; }
   .about-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px; margin-top: 10px; }
   /* .btn은 플렉스라 글자 사이 공백이 사라진다. 화살표가 있는 다른 버튼과 같은 간격을 둔다. */
   .about-actions .btn { gap: 14px; }
-  /* 인라인으로 두어 글자·공백·화살표 아래에 밑줄 하나가 이어지게 한다. 플렉스로 두면 항목마다 밑줄이 따로 그려져 간격에서 끊긴다. */
-  .making-of { font-size: var(--t-side); text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 4px; }
+  /* 인라인으로 두어 밑줄이 글자에 붙게 한다. 플렉스로 두면 항목마다 밑줄이 따로 그려져 간격에서 끊긴다. */
+  .making-of { font-size: var(--t-side); text-decoration: underline; text-decoration-color: var(--link-underline); text-underline-offset: 4px; }
+  @media (hover: hover) { .making-of:hover { text-decoration-color: var(--ink); } }
   @media (max-width: 720px) {
     .about { gap: 14px; }
     .about-actions { margin-top: 6px; column-gap: 16px; }
     /* 모바일 첫 화면은 글과 지도 탐색에 집중한다. 연락처는 소개 페이지에서 볼 수 있다. */
     .about :global(.contacts) { display: none; }
   }
+  @media (pointer: coarse) { .making-of { padding-block: 12px; margin-block: -12px; } }
 </style>

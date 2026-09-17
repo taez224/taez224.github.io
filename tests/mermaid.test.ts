@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import mermaid from 'mermaid';
-import { MERMAID_CONFIG } from '../src/scripts/mermaid-config.ts';
-import { fitDiagram, pinsOwnTheme, renderMermaidBlocks } from '../src/scripts/mermaid-render.ts';
+import { MERMAID_CONFIG, MERMAID_DARK_CONFIG, DARK_SCHEME_QUERY } from '../src/scripts/mermaid-config.ts';
+import { fitDiagram, pinsOwnTheme, renderMermaidBlocks, siteConfigFor } from '../src/scripts/mermaid-render.ts';
+import { DARK_PALETTE } from '../src/lib/palette.ts';
 
 // 렌더링된 SVG의 대역이다. max-width가 100%가 되면 컨테이너 폭에 맞춰 줄어든 것으로 본다.
 type FakeSvg = { style: { maxWidth: string; height: string } };
@@ -367,8 +368,51 @@ test('a diagram pinning its own theme drops the site palette while keeping the s
   assert.equal(middle?.theme, 'redux-color', '앞머리가 없는 도표는 사이트 설정으로 그린다');
   assert.ok(Array.isArray(middle?.themeVariables?.borderColorArray));
   assert.equal(last?.theme, undefined, '사이트 설정으로 돌아온 뒤 다시 벗겨지지 않았다');
+  const tones = f.slots.map((slot) => (slot as { getAttribute(name: string): string | null }).getAttribute('data-theme-tone'));
+  assert.deepEqual(tones, ['dark', null, 'dark'], '지정한 테마의 밝기를 적어 판을 고르게 하고, 사이트 테마 도표에는 적지 않는다');
 });
 
+test('a light pinned theme is marked light so it keeps a light plate in the dark color scheme', async () => {
+  const f = fixture(undefined, ['---\nconfig:\n  theme: default\n---\nflowchart LR\n  A --> B', "%%{init: {'theme': 'redux-dark-color'}}%%\nflowchart LR\n  A --> B"]);
+  await renderMermaidBlocks(f.blocks, {
+    parse: (source, options) => mermaid.parse(source, options),
+    initialize() {},
+    async run({ nodes } = {}) { assert.ok(nodes); nodes[0].textContent = 'rendered SVG'; }
+  }, 0, MERMAID_DARK_CONFIG);
+  assert.deepEqual(f.slots.map((slot) => (slot as { getAttribute(name: string): string | null }).getAttribute('data-theme-tone')), ['light', 'dark']);
+});
+
+
+test('diagrams follow the dark color scheme with the dark site palette', async () => {
+  const view = (dark: boolean) => ({ matchMedia: (query: string) => ({ matches: dark && query === DARK_SCHEME_QUERY }) as MediaQueryList });
+  assert.equal(siteConfigFor(view(true)), MERMAID_DARK_CONFIG);
+  assert.equal(siteConfigFor(view(false)), MERMAID_CONFIG);
+  assert.equal(siteConfigFor(undefined), MERMAID_CONFIG, '창이 없으면 밝은 화면으로 그린다');
+  const received: unknown[] = [];
+  const f = fixture(undefined, ['flowchart LR\n  A --> B']);
+  const rendered = await renderMermaidBlocks(f.blocks, {
+    parse: (source, options) => mermaid.parse(source, options),
+    initialize(config) { received.push(config); },
+    async run({ nodes } = {}) { assert.ok(nodes); nodes[0].textContent = 'rendered SVG'; }
+  }, 0, MERMAID_DARK_CONFIG);
+  assert.equal(received[0], MERMAID_DARK_CONFIG);
+  assert.equal(rendered.length, 1, '다시 그릴 수 있게 그린 도표와 원문 짝을 돌려준다');
+  assert.equal(rendered[0].pre, f.originals[0]);
+});
+
+test('the dark diagram palette keeps the light size rules and readable contrast', () => {
+  const channel = (value: number) => (value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
+  const luminance = (hex: string) => { const [r, g, b] = [1, 3, 5].map((i) => channel(parseInt(hex.slice(i, i + 2), 16) / 255)); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+  const contrast = (a: string, b: string) => { const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x); return (hi + 0.05) / (lo + 0.05); };
+  const { themeVariables: dark = {}, ...darkRest } = MERMAID_DARK_CONFIG;
+  const { themeVariables: light = {}, ...lightRest } = MERMAID_CONFIG;
+  assert.deepEqual({ ...darkRest, theme: undefined }, { ...lightRest, theme: undefined }, '배치·크기 설정은 화면 모드와 무관하다');
+  assert.equal(dark.borderColorArray.length, light.borderColorArray.length);
+  assert.equal(dark.textColor, DARK_PALETTE.ink);
+  for (const border of dark.borderColorArray) assert.ok(contrast(border, dark.background) >= 3, `테두리 ${border}`);
+  for (const fill of [...dark.bkgColorArray, dark.mainBkg, dark.secondaryColor, dark.noteBkgColor]) assert.ok(contrast(dark.textColor, fill) >= 4.5, `면 ${fill}`);
+  assert.ok(contrast(dark.lineColor, dark.background) >= 3, '선');
+});
 
 test('theme detection uses Mermaid frontmatter, directives and the active diagram section', async () => {
   mermaid.initialize(MERMAID_CONFIG);

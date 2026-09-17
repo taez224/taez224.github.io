@@ -27,16 +27,16 @@ async function render() {
   const version = ++queryVersion;
   const terms = normalizeQuery(input.value);
   if (!terms.length) { results.replaceChildren(); return; }
-  results.textContent = '검색 색인을 불러오는 중입니다.';
+  results.innerHTML = '<p class="search-status">검색 색인을 불러오는 중입니다.</p>';
   try {
     const records = await loadIndex();
     if (version !== queryVersion || !dialog.open) return;
     const hits = records.map((r) => ({ r, m: matchRecord(r, terms) })).filter((x): x is { r: SearchRecord; m: NonNullable<ReturnType<typeof matchRecord>> } => x.m !== null).sort((a, b) => b.m.score - a.m.score).slice(0, 30);
-    if (!hits.length) { results.innerHTML = '<p class="search-empty">검색 결과가 없습니다.</p>'; return; }
+    if (!hits.length) { results.innerHTML = '<p class="search-status">검색 결과가 없습니다.</p>'; return; }
     results.innerHTML = hits.map(({ r, m }) => `<div class="search-item"><span class="search-kind">${escapeHtml(r.label)}</span><div><a href="${escapeHtml(r.url)}">${escapeHtml(r.title)}</a><small>${escapeHtml(m.snippet || r.summary || '')}</small></div></div>`).join('');
   } catch {
     if (version !== queryVersion || !dialog.open) return;
-    results.innerHTML = '<p class="search-empty">검색을 불러오지 못했습니다.</p><button type="button" data-search-retry>다시 시도</button>';
+    results.innerHTML = '<p class="search-status">검색을 불러오지 못했습니다.</p><button type="button" class="text-button search-retry" data-search-retry>다시 시도</button>';
     results.querySelector('[data-search-retry]')?.addEventListener('click', render, { once: true });
   }
 }

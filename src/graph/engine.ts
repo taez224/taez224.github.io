@@ -4,7 +4,7 @@ interface GraphOptions { nodes: readonly GraphNode[]; edges: readonly GraphEdge[
 interface GraphState { selected: string | null; hovered: string | null; topics: ReadonlySet<string> | null; hubsOnly: boolean; transform: Transform }
 
 import { nodeRadius } from './layout.ts';
-import { topicColor, cleanTitle } from '../lib/format.ts';
+import { topicColor, topicLabelColor, cleanTitle } from '../lib/format.ts';
 import { createGraphGesture } from './gestures.ts';
 import { estimateTextWidth, labelIds, placeLabels, nodeBox } from './label.ts';
 import { topicRegions, regionPath, placeRegionLabels, regionLabelBox } from './regions.ts';
@@ -101,8 +101,18 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
   scene.append(regionLayer, regionLabelLayer, edgeLayer, nodeLayer, labelLayer);
   // 주제 영역은 배치가 정해지면 고정이다. 색면은 장면 좌표(확대하면 같이 커짐), 이름은 제목처럼 화면 크기 고정.
   const regionList = topicRegions(nodes, positions);
-  // 영역 이름 자리는 배치 때 한 번 정한다. 노드 원을 피하고 무대 안에 둔다. 노드 제목은 planLabels가 영역 이름을 장애물로 보고 피한다.
-  const regionLabelAt = placeRegionLabels(regionList, nodes.filter((node) => positions.has(node.id)).map((node) => ({ ...positions.get(node.id)!, r: radius(node) + 4 })), { fontSize: 15, measure: estimateTextWidth, bounds: layoutSize ?? size() });
+  // 영역 이름은 노드 원을 피하고 무대 안에 둔다. 노드 제목은 planLabels가 영역 이름을 장애물로 보고 피한다.
+  // 이름은 화면 크기로 그리므로 자리도 화면 배율(u)로 잰다. 배율은 맞춤(fit) 때 정해지므로 그때 자리를 다시 정하고,
+  // 확대·이동 중에는 다시 계산하지 않아 이름이 튀지 않는다. 확대하면 이름이 장면 대비 작아지므로 새로 겹치지 않는다.
+  const regionObstacles = nodes.filter((node) => positions.has(node.id)).map((node) => ({ ...positions.get(node.id)!, r: radius(node) + 4 }));
+  let regionLabelAt: ReturnType<typeof placeRegionLabels> = new Map(), regionLabelU = 0;
+  const placeRegionNames = (scale: number) => {
+    const u = 1 / (scale || 1);
+    if (regionLabelU && Math.abs(u - regionLabelU) / u < 0.01) return false;
+    regionLabelAt = placeRegionLabels(regionList, regionObstacles, { fontSize: 15, scale: u, measure: estimateTextWidth, bounds: layoutSize ?? size() });
+    regionLabelU = u;
+    return true;
+  };
   const regionLabelBoxes = (u: number) => regionList.map((region) => regionLabelBox(regionLabelAt.get(region.topic)!, region.topic, { fontSize: 15, measure: estimateTextWidth, scale: u }));
   const regionEls = new Map<string, SVGElement[]>();
   const refreshRegionStates = () => {
@@ -123,7 +133,7 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
     for (const region of regionList) {
       const shape = el('path', { class: 'region', d: regionPath(region.hull), fill: topicColor(region.topic), stroke: topicColor(region.topic) });
       const at = regionLabelAt.get(region.topic)!;
-      const label = el('text', { class: 'region-label', x: at.x.toFixed(1), y: at.y.toFixed(1), 'text-anchor': at.anchor, fill: topicColor(region.topic) });
+      const label = el('text', { class: 'region-label', x: at.x.toFixed(1), y: at.y.toFixed(1), 'text-anchor': at.anchor, fill: topicLabelColor(region.topic) });
       label.textContent = region.topic;
       regionLayer.append(shape); regionLabelLayer.append(label);
       regionEls.set(region.topic, [shape, label]);
@@ -293,7 +303,12 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
     setFilter({ topics = state.topics, hubsOnly = state.hubsOnly }: GraphFilter = {}) { state.topics = topics; state.hubsOnly = hubsOnly; refreshRegionStates(); drawEdges(); refreshNodeStates(); drawLabels(); },
     view: () => ({ ...state.transform }),
     moveTo(target: Transform) { animateTo(target); },
-    fit(animate = false) { const target = fitTransform(positions, size()); if (animate) animateTo(target); else { stopAnimation(); state.transform = target; applyTransform(); } },
+    fit(animate = false) {
+      const target = fitTransform(positions, size());
+      // 상자 크기가 바뀌어 맞춤 배율이 달라졌으면 영역 이름 자리를 새 배율로 다시 정하고, 노드 제목도 새 자리를 피해 다시 그린다.
+      if (placeRegionNames(target.scale)) { drawRegions(); labelScale = -1; }
+      if (animate) animateTo(target); else { stopAnimation(); state.transform = target; applyTransform(); }
+    },
     zoom(factor: number, center?: Point) {
       const { width, height } = size();
       const c = center ?? { x: width / 2, y: height / 2 };
@@ -305,6 +320,7 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
     },
     selected: () => state.selected
   };
+  placeRegionNames(fitTransform(positions, size()).scale);
   drawRegions(); drawNodes(); render(); api.fit();
   return api;
 }

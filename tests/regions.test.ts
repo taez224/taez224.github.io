@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { convexHull, topicRegions, regionPath, placeRegionLabels } from '../src/graph/regions.ts';
+import { convexHull, topicRegions, regionPath, placeRegionLabels, regionLabelBox } from '../src/graph/regions.ts';
 
 test('convexHull drops interior points and keeps corners', () => {
   const hull = convexHull([{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }, { x: 0, y: 10 }, { x: 5, y: 5 }]);
@@ -42,11 +42,50 @@ test('placeRegionLabels moves a name off nodes and other names', () => {
   assert.notDeepEqual(both.get('AI'), both.get('개발'), '두 이름은 같은 자리를 쓰지 않는다');
 });
 
+test('placeRegionLabels keeps screen-sized names apart when the graph is drawn small', () => {
+  // 이름은 화면에서 같은 크기로 그린다. 그래프가 작게 그려지면(화면 1px = 장면 3단위) 장면 좌표로는 이름이 세 배 넓다.
+  const regions = [
+    { topic: 'AI', count: 3, hull: [{ x: 100, y: 100 }, { x: 130, y: 200 }, { x: 70, y: 200 }], label: { x: 100, y: 100 } },
+    { topic: '개발', count: 3, hull: [{ x: 140, y: 100 }, { x: 170, y: 200 }, { x: 110, y: 200 }], label: { x: 140, y: 100 } }
+  ];
+  const at = placeRegionLabels(regions, [], { scale: 3 });
+  const [a, b] = regions.map((region) => regionLabelBox(at.get(region.topic)!, region.topic, { scale: 3 }));
+  const overlap = a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+  assert.equal(overlap, false, '화면 크기로 그린 두 이름이 겹치지 않는다');
+});
+
 test('placeRegionLabels keeps names inside the given bounds', () => {
   const hull = [{ x: 100, y: 20 }, { x: 200, y: 20 }, { x: 200, y: 120 }, { x: 100, y: 120 }];
   const at = placeRegionLabels([{ topic: 'AI', count: 3, hull, label: { x: 100, y: 20 } }], [], { bounds: { width: 300, height: 130 } }).get('AI');
   assert.ok(at, '무대가 좁아도 이름 자리를 잡는다');
   assert.equal(at.anchor, 'end', '위는 무대 밖, 아래도 밖이면 왼쪽');
+});
+
+test('placeRegionLabels keeps a name inside the bounds even when every spot is blocked', () => {
+  // 맨 위 영역은 위 자리가 무대 밖이고 나머지 세 자리는 노드로 막힌다. 겹치더라도 무대 안에 둔다.
+  const hull = [{ x: 100, y: 10 }, { x: 200, y: 10 }, { x: 200, y: 110 }, { x: 100, y: 110 }];
+  const region = { topic: '철학', count: 4, hull, label: { x: 100, y: 10 } };
+  const blockers = [{ x: 200, y: 140, r: 40 }, { x: 60, y: 10, r: 40 }, { x: 240, y: 10, r: 40 }];
+  const bounds = { width: 400, height: 300 };
+  const at = placeRegionLabels([region], blockers, { bounds }).get('철학')!;
+  const box = regionLabelBox(at, '철학');
+  assert.ok(box.top >= 0 && box.left >= 0 && box.right <= bounds.width && box.bottom <= bounds.height, JSON.stringify(box));
+});
+
+test('placeRegionLabels pushes a name back inside when no spot fits the bounds', () => {
+  const hull = [{ x: 20, y: 10 }, { x: 80, y: 10 }, { x: 80, y: 50 }, { x: 20, y: 50 }];
+  const at = placeRegionLabels([{ topic: 'AI', count: 4, hull, label: { x: 20, y: 10 } }], [], { bounds: { width: 100, height: 60 } }).get('AI')!;
+  const box = regionLabelBox(at, 'AI');
+  assert.ok(box.top >= 0, `위로 잘리지 않는다: ${JSON.stringify(box)}`);
+});
+
+test('placeRegionLabels can use a margin above the bounds when the picture leaves room there', () => {
+  const hull = [{ x: 100, y: 10 }, { x: 200, y: 10 }, { x: 200, y: 110 }, { x: 100, y: 110 }];
+  const region = { topic: '철학', count: 4, hull, label: { x: 100, y: 10 } };
+  const at = placeRegionLabels([region], [], { bounds: { top: -60, width: 400, height: 300 } }).get('철학')!;
+  assert.equal(at.anchor, 'middle');
+  assert.ok(at.y < 10, '위 여백을 자리로 쓰면 영역 위에 이름을 둔다');
+  assert.ok(regionLabelBox(at, '철학').top >= -60, '여백보다 위로는 나가지 않는다');
 });
 
 test('topicRegions never draws a territory for 기타', () => {

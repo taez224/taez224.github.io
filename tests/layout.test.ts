@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { layoutGraph, nodeRadius } from '../src/graph/layout.ts';
 import { renderSnapshotSvg } from '../src/graph/snapshot.ts';
+import { topicColor } from '../src/lib/format.ts';
 import type { GraphNode, Point } from '../src/lib/content-model.ts';
 
 const nodes: GraphNode[] = [{ id: 'a', degree: 2, type: 'hub', displayTitle: 'A', topic: 'AI', title: '', url: '', isEntry: false }, { id: 'b', degree: 1, displayTitle: 'B', topic: '개발', type: '', title: '', url: '', isEntry: false }, { id: 'c', degree: 1, displayTitle: '아주 긴 제목이라 라벨이 되지 않는 노드', topic: '기타', type: '', title: '', url: '', isEntry: false }];
@@ -34,9 +35,20 @@ test('renderSnapshotSvg labels hubs only and colors by topic', () => {
   assert.match(svg, /^<svg viewBox="0 0 1000 640"/);
   assert.match(svg, />A<\/text>/);
   assert.doesNotMatch(svg, /아주 긴 제목/);
-  assert.match(svg, /fill="#80698f"/);
-  assert.match(svg, /fill="#5d7897"/); // 개발의 주제색
+  assert.ok(svg.includes(`fill="${topicColor('AI')}"`));
+  assert.ok(svg.includes(`fill="${topicColor('개발')}"`)); // 개발의 주제색
   assert.equal((svg.match(/<line /g) || []).length, 2);
+});
+
+test('renderSnapshotSvg can add a compact region layer that CSS swaps in on narrow screens', () => {
+  const positions = layoutGraph(nodes, edges, { width: 1000, height: 640 });
+  const plain = renderSnapshotSvg(nodes, edges, positions, { width: 1000, height: 640, regionFont: 30 });
+  assert.ok(plain.includes('class="snap-regions"') && plain.includes('class="snap-titles"'), 'CSS가 고를 수 있게 층마다 class가 있다');
+  assert.doesNotMatch(plain, /snap-regions-compact/, '요청하지 않으면 층을 더 그리지 않는다');
+  const svg = renderSnapshotSvg(nodes, edges, positions, { width: 1000, height: 640, regionFont: 30, compactRegionFont: 46 });
+  const compact = svg.match(/<g class="snap-regions-compact"[^>]*font-size="46"[^>]*>(.*?)<\/g>/)?.[1] ?? '';
+  const regular = svg.match(/<g class="snap-regions"[^>]*>(.*?)<\/g>/)?.[1] ?? '';
+  assert.equal((compact.match(/<text /g) || []).length, (regular.match(/<text /g) || []).length, '같은 영역 이름을 크게 한 벌 더 그린다');
 });
 
 test('renderSnapshotSvg desktop preset scales labels like the live hero and labels hubs only', () => {

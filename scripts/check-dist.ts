@@ -161,6 +161,17 @@ checks.push(async () => {
   const head = map.match(/<head\b[^>]*>[\s\S]*?<\/head>/)?.[0] ?? '';
   check(/<script\b(?=[^>]*\btype="module")(?=[^>]*\bblocking="render")(?=[^>]*\bsrc=")[^>]*>/.test(head), 'map: 페이지 스크립트가 head에서 렌더링을 막지 않음');
 });
+checks.push(async () => {
+  // 글꼴은 자체 호스팅한다. 빌드된 CSS의 글꼴 주소가 dist 안의 파일을 가리켜야 한다.
+  // basePath를 바꾸면 public/ 절대 경로가 base를 따라가는지 여기서 드러난다. 외부 글꼴 CSS가 다시 들어와도 실패한다.
+  const base = String(config.basePath ?? '').replace(/\/$/, '');
+  const css = (await fs.readdir(path.join(dist, '_astro'))).filter((file) => file.endsWith('.css'));
+  const urls = new Set<string>();
+  for (const file of css) for (const [, url] of (await read(`_astro/${file}`)).matchAll(/url\(([^)]+?\.woff2)\)/g)) urls.add(url.replace(/['"]/g, ''));
+  check(urls.size > 0, '글꼴: 빌드된 CSS에 woff2 글꼴 주소가 없음');
+  for (const url of urls) check(url.startsWith(`${base}/fonts/`) && (await exists(url.slice(base.length + 1))), `글꼴: dist에 없는 파일을 가리킴 ${url}`);
+  check(!/fonts\.googleapis\.com|cdn\.jsdelivr\.net/.test(home), 'index: 외부 글꼴 스타일시트를 다시 불러옴');
+});
 for (const run of checks) await run();
 if (failures.length) {
   console.error(`check-dist: ${failures.length}개 실패\n- ${failures.join('\n- ')}`);

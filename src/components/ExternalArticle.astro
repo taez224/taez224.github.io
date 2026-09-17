@@ -35,10 +35,10 @@ const related = [...new Set([...note.outgoing, ...note.incoming])].filter((path)
   </article>
 </Shell>
 <style>
-  .external-article { width: min(720px, 100% - 48px); margin: 0 auto; padding: 64px 0 96px; }
+  .external-article { width: min(var(--s-reader-column), 100% - 2 * var(--s-page-gutter)); margin: 0 auto; padding: var(--s-page-top-reading) 0 var(--s-page-bottom); }
   .external-meta { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-bottom: 22px; }
-  h1 { margin: 0 0 26px; font-size: var(--t-h1); line-height: 1.35; }
-  .external-summary { margin: 0 0 28px; color: var(--muted); font-size: 19px; line-height: 1.8; }
+  h1 { margin: 0 0 26px; font-size: var(--t-title); line-height: 1.3; }
+  .external-summary { margin: 0 0 28px; color: var(--muted); font-size: var(--t-lead); line-height: 1.8; }
   .read-original { gap: 14px; }
   .external-notice { margin: 14px 0 0; }
   .external-thumbnail { width: 100%; max-width: 480px; margin: 0 auto 28px; }
@@ -49,16 +49,13 @@ const related = [...new Set([...note.outgoing, ...note.incoming])].filter((path)
     -webkit-mask-composite: source-in; mask-composite: intersect;
   }
   .external-related { margin-top: 52px; padding-top: 22px; border-top: 1px solid var(--line); }
-  h2 { margin: 0 0 14px; font-size: 22px; }
+  h2 { margin: 0 0 14px; font-size: var(--t-h3); }
   ul { list-style: none; padding: 0; margin: 0; }
   li { display: flex; align-items: baseline; gap: 20px; padding: 12px 0; border-bottom: 1px solid var(--line); }
   li a { flex: 1; line-height: 1.6; }
   li .meta { flex-shrink: 0; }
   .back-to-posts { display: inline-flex; gap: 8px; margin-top: 34px; font-size: var(--t-side); }
   @media (max-width: 720px) {
-    .external-article { width: calc(100% - 40px); padding: 38px 0 64px; }
-    h1 { font-size: 32px; }
-    .external-summary { font-size: 17px; }
     .external-thumbnail :global(img) { max-height: 220px; }
     .external-related { margin-top: 40px; }
     li { gap: 12px; }

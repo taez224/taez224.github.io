@@ -143,8 +143,8 @@ function applyFilter() { graph.setFilter(currentFilter()); updateCount(); }
 const toggle = (button: Element) => { button.setAttribute('aria-pressed', String(button.getAttribute('aria-pressed') !== 'true')); applyFilter(); };
 for (const button of document.querySelectorAll('[data-topic]')) button.addEventListener('click', () => toggle(button));
 hubFilter?.addEventListener('click', () => toggle(hubFilter));
-// 패널의 시작점·참조·역참조 링크는 페이지로 가지 않고 지도에서 그 노드를 고른다.
-panel.addEventListener('click', (event) => {
+// 패널의 시작점·참조·역참조 링크와 휴대폰 폭 그래프 아래의 시작점 목록은 페이지로 가지 않고 지도에서 그 노드를 고른다.
+for (const list of [panel, document.querySelector('[data-map-start]')]) list?.addEventListener('click', (event) => {
   const link = (event.target as Element).closest<HTMLAnchorElement>('a[data-node]');
   if (!link) return;
   event.preventDefault();
