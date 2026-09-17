@@ -2,13 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { render, renderWithVisibility } from './helpers/markdown.ts';
 
-test('Obsidian image sizes become width and height instead of alt text', () => {
+// 사이트는 그림의 원래 비율을 지키므로 너비만 따른다. 높이는 대체 텍스트에서 떼어 내되 속성으로 내보내지 않는다.
+test('Obsidian image sizes set the width, drop the height and stay out of the alt text', () => {
   const renderer = renderWithVisibility();
   for (const [source, expected] of [
     ['![[picture.png|300]]', '<img src="/assets/picture.png" alt="picture" width="300" />'],
-    ['![[picture.png|300x200]]', '<img src="/assets/picture.png" alt="picture" width="300" height="200" />'],
+    ['![[picture.png|300x200]]', '<img src="/assets/picture.png" alt="picture" width="300" />'],
     ['![설명|320](picture.png)', '<img src="/assets/picture.png" alt="설명" width="320" />'],
-    ['![설명|640x480](https://example.com/a.png)', '<img src="https://example.com/a.png" alt="설명" width="640" height="480" />'],
+    ['![설명|640x480](https://example.com/a.png)', '<img src="https://example.com/a.png" alt="설명" width="640" />'],
     ['![250](https://example.com/b.png)', '<img src="https://example.com/b.png" alt="" width="250" />']
   ]) {
     assert.equal(renderer('x.md', source).trim(), `<p>${expected}</p>`, source);

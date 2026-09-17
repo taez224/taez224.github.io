@@ -139,12 +139,15 @@ function splitWikiTarget(rawTarget: unknown) {
 }
 
 // Obsidian의 그림 크기 표기다. 위키 임베드는 `![[그림.png|300]]`·`|300x200`이고, Markdown 그림은 대체 텍스트 끝의
-// `|300`이나 숫자만 쓴 `![300](주소)`다. 너비만 주면 비율을 유지한다(본문 CSS의 height: auto).
+// `|300`이나 숫자만 쓴 `![300](주소)`다. 사이트는 너비만 따르고 높이는 대체 텍스트에서 떼어 내기만 한다.
+// 그림은 원래 비율로 너비에 맞추므로(본문 CSS의 height: auto) 높이 속성을 내보내면 불러오기 전 자리만 그 높이로
+// 잡혔다가 바뀌어 화면이 움직인다.
 const WIKI_IMAGE_SIZE = /^\s*(\d+)(?:x(\d+))?\s*$/;
+export const MARKDOWN_IMAGE_SIZE = /^(?:([\s\S]*)\|)?\s*(\d+)(?:x(\d+))?\s*$/;
+const sizeAttributes = (width?: string) => (width ? ` width="${width}"` : '');
+
 // 할 일 목록 항목의 첫머리 표시(`[ ]`, `[x]`)다. Obsidian은 괄호 안이 빈칸이 아니면 어떤 글자든 완료로 본다.
 export const TASK_MARKER = /^\[([^\]])\](?:[ \t]+|$)/;
-export const MARKDOWN_IMAGE_SIZE =/^(?:([\s\S]*)\|)?\s*(\d+)(?:x(\d+))?\s*$/;
-const sizeAttributes = (width?: string, height?: string) => `${width ? ` width="${width}"` : ''}${height ? ` height="${height}"` : ''}`;
 
 function renderPrivateNote(label: string, target: string): string {
   let decodedTarget = target;
@@ -164,7 +167,7 @@ function replaceWikiLinks(source: string, context: LinkContext): string {
       if (asset) {
         const size = label.match(WIKI_IMAGE_SIZE);
         const alt = (size ? '' : label) || target.replace(/\.[^.]+$/, '');
-        return `<img src="${escapeHtml(asset.url)}" alt="${escapeHtml(alt)}"${sizeAttributes(size?.[1], size?.[2])}>`;
+        return `<img src="${escapeHtml(asset.url)}" alt="${escapeHtml(alt)}"${sizeAttributes(size?.[1])}>`;
       }
     }
 
@@ -184,7 +187,7 @@ function replaceStandardLinks(source: string, context: LinkContext): string {
     const asset = context.resolveAsset?.(context.sourcePath, target);
     if (!asset) return whole;
     const size = alt.match(MARKDOWN_IMAGE_SIZE);
-    return `<img src="${escapeHtml(asset.url)}" alt="${escapeHtml(size ? size[1] ?? '' : alt)}"${sizeAttributes(size?.[2], size?.[3])}>`;
+    return `<img src="${escapeHtml(asset.url)}" alt="${escapeHtml(size ? size[1] ?? '' : alt)}"${sizeAttributes(size?.[2])}>`;
   });
 
   return source.replace(/\[([^\]]*)\]\(([^)\s]+\.md(?:#[^)]*)?)(?:\s+"[^"]*")?\)/gi, (_whole, label, rawTarget) => {
@@ -393,7 +396,7 @@ function rewriteLine(line: Token[], make: (type: string, content: string) => Tok
   return result;
 }
 
-// 대체 텍스트 자리의 크기 표기를 너비·높이 속성으로 옮기고 나머지만 대체 텍스트로 남긴다.
+// 대체 텍스트 자리의 크기 표기를 너비 속성으로 옮기고 나머지만 대체 텍스트로 남긴다. 높이는 따르지 않는다.
 function applyImageSize(image: Token, Token: TokenConstructor) {
   const size = image.content.match(MARKDOWN_IMAGE_SIZE);
   if (!size) return;
@@ -403,7 +406,6 @@ function applyImageSize(image: Token, Token: TokenConstructor) {
   image.children = alt ? [text] : [];
   image.content = alt;
   image.attrSet('width', size[2]);
-  if (size[3]) image.attrSet('height', size[3]);
 }
 
 function articleTarget(line: string) {
