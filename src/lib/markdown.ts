@@ -120,9 +120,12 @@ function splitWikiTarget(rawTarget: unknown) {
   const target = parts.shift()?.trim() ?? '';
   const label = parts.join('|');
   const hashIndex = target.indexOf('#');
+  // Obsidian은 `노트#상위#하위`처럼 제목 경로를 적을 수 있고 마지막 제목으로 이동한다.
+  const section = hashIndex < 0 ? '' : target.slice(hashIndex + 1).split('#').at(-1)!;
   return {
     target: hashIndex < 0 ? target : target.slice(0, hashIndex),
-    fragment: hashIndex < 0 ? '' : slugifyHeading(target.slice(hashIndex + 1)),
+    fragment: hashIndex < 0 ? '' : slugifyHeading(section),
+    section: section.trim(),
     label
   };
 }
@@ -137,7 +140,7 @@ function renderPrivateNote(label: string, target: string): string {
 function replaceWikiLinks(source: string, context: LinkContext): string {
   return source.replace(/!?\[\[([^\]]+)\]\]/g, (whole, rawTarget) => {
     const embedded = whole.startsWith('!');
-    const { target, fragment, label } = splitWikiTarget(rawTarget);
+    const { target, fragment, section, label } = splitWikiTarget(rawTarget);
     if (!target && !fragment) return whole;
 
     if (embedded) {
@@ -151,7 +154,9 @@ function replaceWikiLinks(source: string, context: LinkContext): string {
     const note = context.resolveNote?.(context.sourcePath, target || context.sourcePath, fragment);
     if (!note) return escapeHtml(label || target || whole);
     if (note.visibility === 'private') return renderPrivateNote(label, target);
-    const display = label || note.title || target;
+    // 같은 문서의 제목 링크(`[[#절]]`)는 지금 읽는 노트의 제목 대신 절 이름을 보인다. 블록 링크는 보일 제목이 없다.
+    const sameNoteHeading = !target && !section.startsWith('^') ? section : '';
+    const display = label || sameNoteHeading || note.title || target;
     return `<a class="internal-note-link" href="${escapeHtml(note.url)}">${escapeHtml(display)}</a>`;
   });
 }
