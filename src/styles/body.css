@@ -5,13 +5,14 @@
 /* 본문의 외부 링크는 사이트 다른 곳(발행처·출처)과 같이 ↗를 붙여 노트 링크와 구분한다. */
 /* 링크 색이 먹색이라 본문 링크는 밑줄로 구분한다. */
 .body a { text-decoration: underline; text-decoration-color: var(--link-underline); text-decoration-thickness: 1px; text-underline-offset: .18em; }
-.body a:hover { text-decoration-color: var(--ink); }
+@media (hover: hover) { .body a:hover { text-decoration-color: var(--ink); } }
 .body .private-note { color: var(--muted); }
 .body .visibility-mark { position: relative; display: inline-block; width: 22px; height: 22px; margin-left: 2px; color: var(--muted); vertical-align: -.2em; cursor: help; }
 .body .visibility-mark::before { position: absolute; left: 5px; top: 10px; width: 10px; height: 8px; border: 1px solid currentColor; border-radius: 2px; content: ""; }
 .body .visibility-mark::after { position: absolute; left: 8px; top: 5px; width: 4px; height: 6px; border: 1px solid currentColor; border-bottom: 0; border-radius: 4px 4px 0 0; content: ""; }
 .body .visibility-hint { position: absolute; z-index: 2; right: 0; bottom: calc(100% + 5px); width: max-content; padding: 5px 8px; border-radius: 4px; background: var(--ink); color: var(--paper); font-size: var(--t-micro); line-height: 1.5; visibility: hidden; }
-.body .visibility-mark:hover .visibility-hint, .body .visibility-mark:focus .visibility-hint { visibility: visible; }
+.body .visibility-mark:focus .visibility-hint { visibility: visible; }
+@media (hover: hover) { .body .visibility-mark:hover .visibility-hint { visibility: visible; } }
 .body a[href^="http"]::after { content: "↗"; margin-left: .15em; font-size: .78em; vertical-align: .1em; }
 .body h2, .body h3, .body h4 { font-family: var(--display); font-weight: 700; line-height: 1.4; letter-spacing: -.02em; scroll-margin-top: 110px; }
 .body h2 { margin: 44px 0 14px; font-size: var(--t-h2); }
@@ -57,7 +58,8 @@
    여는 수단을 따로 두고, 도표 위 오른쪽에 놓아 내용과 겹치지 않게 한다. */
 /* 손가락으로 누르는 자리이므로 글자 크기는 그대로 두고 누를 수 있는 높이를 44px로 잡는다. 이 사이트의 터치 목표다. */
 .body .diagram-open { display: flex; align-items: center; justify-content: center; min-height: 44px; margin: 22px 0 6px auto; padding: 0 14px; border: 1px solid var(--line); border-radius: 4px; background: var(--paper-strong); color: var(--muted); font-size: var(--t-meta); transition: border-color .15s ease, color .15s ease; }
-.body .diagram-open:hover, .body .diagram-open:focus-visible { border-color: var(--ink); color: var(--ink); }
+.body .diagram-open:focus-visible { border-color: var(--ink); color: var(--ink); }
+@media (hover: hover) { .body .diagram-open:hover { border-color: var(--ink); color: var(--ink); } }
 .body .diagram-open + .mermaid { margin-top: 0; }
 /* 크게 보기 다이얼로그. 본문의 도표를 그대로 옮겨 오므로 무대는 스크롤만 맡는다. */
 .diagram-viewer { width: min(96vw, 1600px); max-width: none; height: min(92dvh, 1100px); max-height: none; padding: 0; border: 1px solid var(--line); background: var(--paper); color: var(--ink); }
@@ -66,7 +68,8 @@
 /* 보기를 바꾸는 버튼과 닫는 버튼은 성격이 달라 양끝으로 떼어 놓는다. 나란히 두면 크기를 바꾸려다 닫기 쉽다. */
 .diagram-viewer-tools { flex: none; display: flex; gap: 8px; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--line); }
 .diagram-viewer-tools button { display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 4px; background: var(--paper-strong); color: var(--muted); font-size: var(--t-meta); transition: border-color .15s ease, color .15s ease; }
-.diagram-viewer-tools button:hover, .diagram-viewer-tools button:focus-visible { border-color: var(--ink); color: var(--ink); }
+.diagram-viewer-tools button:focus-visible { border-color: var(--ink); color: var(--ink); }
+@media (hover: hover) { .diagram-viewer-tools button:hover { border-color: var(--ink); color: var(--ink); } }
 /* flex 항목은 기본으로 줄어들므로 원래 크기 모드에서 도표가 무대 폭에 맞춰져 버린다. 축소는 max-width로만 건다.
    가운데 정렬을 justify-content로 하면 내용이 넘칠 때 왼쪽이 잘리므로 margin: auto를 쓴다. */
 .diagram-viewer-stage { display: flex; flex: 1; min-height: 0; padding: 16px; overflow: auto; }
@@ -92,7 +95,7 @@
 .body details.callout > summary::-webkit-details-marker { display: none; }
 .body details.callout > summary::after { position: absolute; top: 5px; right: 4px; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg); transition: transform .15s cubic-bezier(.23, 1, .32, 1); content: ""; }
 .body details.callout[open] > summary::after { transform: translateY(4px) rotate(-135deg); }
-.body details.callout > summary:hover { color: var(--ink); }
+@media (hover: hover) { .body details.callout > summary:hover { color: var(--ink); } }
 .body details.callout:not([open]) { padding-bottom: 12px; }
 @media (prefers-reduced-motion: reduce) { .body details.callout > summary::after { transition: none; } }
 .body .callout-body { margin-top: 6px; font-size: var(--t-summary); line-height: 1.75; }

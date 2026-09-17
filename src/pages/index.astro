@@ -91,7 +91,7 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
 <style>
   .hero { position: relative; height: clamp(400px, calc(100svh - 280px), 500px); overflow: hidden; }
   .hero-map-link { position: absolute; z-index: 1; right: max(var(--s-page-gutter), calc(50% - var(--s-content-max) / 2)); bottom: 16px; padding: 10px 0; font-size: var(--t-side); text-decoration: underline; text-decoration-color: var(--link-underline); text-underline-offset: 4px; }
-  .hero-map-link:hover { text-decoration-color: var(--ink); }
+  @media (hover: hover) { .hero-map-link:hover { text-decoration-color: var(--ink); } }
   /* 그래프 상자는 뷰포트 안에 다 들어온다. 1600px 미만에서는 오른쪽 끝까지, 그 이상은 940px. 맞춤 배율이 상자에 맞춘다. */
   .hero-graph { position: absolute; top: 0; left: calc(50% - 160px); width: min(940px, 50% + 160px); height: 100%; }
   .hero-graph :global(svg), .hero-snapshot { display: block; width: 100%; height: 100%; }

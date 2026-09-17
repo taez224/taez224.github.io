@@ -24,8 +24,8 @@ const icons = {
   .share-control { position: relative; display: inline-flex; flex: none; margin-left: 12px; }
   /* 검색 버튼(.search-trigger)과 같은 44px 상자, 18px 아이콘, 같은 여백. */
   .share-link { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font: inherit; cursor: pointer; transition: background-color .15s ease, color .15s ease; }
-  .share-link:hover { background: var(--accent-soft); }
-  .share-link:hover, .share-link[data-state="done"] { color: var(--accent); }
+  .share-link[data-state="done"] { color: var(--accent); }
+  @media (hover: hover) { .share-link:hover { background: var(--accent-soft); color: var(--accent); } }
   .share-icon { width: 18px; height: 18px; }
   .share-icon :global(svg) { display: block; width: 100%; height: 100%; }
   /* 아이콘은 평소에 공유, 복사된 2초 동안 체크만 보인다. */

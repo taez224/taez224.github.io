@@ -100,12 +100,12 @@ const aboutUrl = withBase('/about/');
   .series-links { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
   .series-links.is-single { grid-template-columns: 1fr; }
   .series-link { display: flex; flex-direction: column; gap: 6px; padding: 14px 18px; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--ink); transition: border-color .15s ease, background-color .15s ease; }
-  .series-link:hover, .series-link:focus-visible { border-color: var(--accent); background: var(--accent-soft); text-decoration: none; outline: none; }
-  .series-link:hover .series-title, .series-link:focus-visible .series-title { color: var(--accent); }
+  .series-link:focus-visible { border-color: var(--accent); background: var(--accent-soft); outline: none; }
+  @media (hover: hover) { .series-link:hover { border-color: var(--accent); background: var(--accent-soft); text-decoration: none; } }
   .series-link.is-next { align-items: flex-end; text-align: right; }
   .series-direction { color: var(--muted); font-size: var(--t-meta); }
   /* 제목은 소제목이 아니라 내비게이션이므로 사이드바 목록과 같은 고딕 15px */
-  .series-title { font-size: var(--t-ui); font-weight: 600; line-height: 1.5; transition: color .15s ease; }
+  .series-title { font-size: var(--t-ui); font-weight: 600; line-height: 1.5; }
   .note-title { margin: 0 0 var(--s-title-gap); font-size: var(--t-title); line-height: 1.3; letter-spacing: -.03em; text-wrap: balance; }
   .mobile-toc { display: none; }
   @media (max-width: 1000px) {

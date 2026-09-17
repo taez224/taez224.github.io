@@ -29,7 +29,8 @@
 html { scroll-behavior: smooth; scroll-padding-top: 100px; }
 body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: var(--t-base); line-height: 1.85; -webkit-font-smoothing: antialiased; word-break: keep-all; overflow-wrap: anywhere; }
 a { color: var(--accent); text-decoration: none; }
-a:hover { text-decoration: underline; text-underline-offset: 4px; }
+/* 호버는 마우스처럼 올려 둘 수 있는 기기에서만 준다. 터치 기기는 탭한 요소에 호버가 남아, 대화상자를 닫은 뒤에도 버튼 판이 깔려 있다. */
+@media (hover: hover) { a:hover { text-decoration: underline; text-underline-offset: 4px; } }
 button, input { font: inherit; }
 button { cursor: pointer; }
 h1, h2, h3, p { margin-top: 0; }
@@ -47,15 +48,14 @@ h1, h2, h3, p { margin-top: 0; }
 .hub-mark::after { content: ""; position: absolute; inset: 2px; border-radius: 50%; background: var(--accent); } /* 지도의 허브 노드처럼 링 안에 점. 빈 링만으로는 눈에 안 띈다. */
 .topic-dot { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 50%; vertical-align: 0; }
 .btn { display: inline-flex; align-items: center; height: 44px; padding: 0 20px; border: 0; border-radius: 4px; background: var(--accent); color: var(--paper-strong); font-size: var(--t-ui); font-weight: 600; line-height: 1.2; transition: background-color .15s ease; }
-.btn:hover { background: var(--muted); color: var(--paper-strong); text-decoration: none; }
+@media (hover: hover) { .btn:hover { background: var(--muted); color: var(--paper-strong); text-decoration: none; } }
 .btn.small { height: 40px; padding: 0 18px; font-size: var(--t-side); }
 /* 글자 버튼: 대화상자·시트를 닫거나 검색을 다시 시도하는 보조 조작. 글자는 작게 두고 누르는 영역만 44px로 잡는다.
    밑줄은 영역이 커져도 글자에 붙도록 테두리 대신 text-decoration으로 긋는다. */
 .text-button { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding: 0; border: 0; background: transparent; color: var(--muted); font-size: var(--t-meta); text-decoration: underline; text-decoration-color: var(--link-underline); text-underline-offset: 4px; transition: color .15s ease, text-decoration-color .15s ease; }
-.text-button:hover { color: var(--ink); text-decoration-color: var(--ink); }
+@media (hover: hover) { .text-button:hover { color: var(--ink); text-decoration-color: var(--ink); } }
 .side-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-side-list-gap); }
 .side-list a { display: block; color: var(--ink); font-size: var(--t-side); line-height: 1.5; }
-.side-list a:hover { color: var(--accent); }
 .list-block { padding: 18px 0; border-bottom: 1px solid var(--line); }
 .list-block .meta { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
 .list-block .meta svg { flex: none; width: 20px; height: 14px; }
@@ -99,7 +99,7 @@ h1, h2, h3, p { margin-top: 0; }
 .site-header { position: sticky; z-index: 20; top: 0; background: var(--paper); border-bottom: 1px solid var(--line); }
 .site-header .wrap { display: flex; align-items: center; height: var(--s-header-height); }
 .wordmark { display: inline-flex; align-items: center; min-height: 44px; font-size: var(--t-wordmark); line-height: 1; color: var(--ink); }
-.wordmark:hover { color: var(--accent); text-decoration: none; }
+@media (hover: hover) { .wordmark:hover { text-decoration: none; } }
 .site-nav { --nav-gap: 28px; align-self: stretch; margin-left: auto; display: flex; align-items: center; gap: var(--nav-gap); font-size: var(--t-ui); }
 /* 메뉴 링크는 글자는 그대로 두고 누르는 영역만 헤더 높이와 메뉴 간격의 절반까지 넓힌다.
    같은 양의 음수 여백으로 되돌려 배치가 바뀌지 않고, 옆 링크의 영역과도 겹치지 않는다. "글"처럼 짧은 메뉴도 손가락으로 맞힐 수 있다. */
@@ -112,7 +112,7 @@ h1, h2, h3, p { margin-top: 0; }
 .site-nav a:focus-visible > span { outline: 2px solid var(--accent); outline-offset: 4px; }
 .site-nav a[aria-current="page"] { color: var(--ink); }
 .search-trigger { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin-left: 12px; margin-right: -13px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); transition: background-color .15s ease, color .15s ease; }
-.search-trigger:hover { background: var(--accent-soft); color: var(--accent); }
+@media (hover: hover) { .search-trigger:hover { background: var(--accent-soft); color: var(--accent); } }
 /* 공유 아이콘이 앞에 보이면 상자를 붙인다. 상자 안 여백만으로 그림 사이가 내비 간격과 비슷해진다.
    360px 미만에서는 헤더 공유 아이콘이 숨고, JS가 없으면 hidden으로 남으므로 그때는 검색 버튼의 원래 여백을 둔다.
    ShareLink의 스크립트가 컨트롤 바로 뒤에 렌더되므로 인접(+)이 아니라 일반 형제(~)로 고른다. */

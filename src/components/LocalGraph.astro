@@ -50,7 +50,8 @@ const lines = (edge: { x1: number; y1: number; x2: number; y2: number; direction
   .node text { font-family: var(--sans); font-size: 11px; fill: var(--ink); paint-order: stroke; stroke: var(--paper); stroke-width: 3.5px; stroke-linejoin: round; pointer-events: none; }
   .node.is-current text { font-weight: 600; }
   a.node { cursor: pointer; outline: none; }
-  a.node:hover circle:last-of-type, a.node:focus-visible circle:last-of-type { stroke: var(--accent); }
+  a.node:focus-visible circle:last-of-type { stroke: var(--accent); }
+  @media (hover: hover) { a.node:hover circle:last-of-type { stroke: var(--accent); } }
   .local-graph-tools { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
   .local-graph-tools a { font-size: var(--t-meta); }
 </style>

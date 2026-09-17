@@ -21,7 +21,7 @@ const { about, contacts, entryUrl, aboutUrl } = Astro.props;
   .about-actions .btn { gap: 14px; }
   /* 인라인으로 두어 글자·공백·화살표 아래에 밑줄 하나가 이어지게 한다. 플렉스로 두면 항목마다 밑줄이 따로 그려져 간격에서 끊긴다. */
   .making-of { font-size: var(--t-side); text-decoration: underline; text-decoration-color: var(--link-underline); text-underline-offset: 4px; }
-  .making-of:hover { text-decoration-color: var(--ink); }
+  @media (hover: hover) { .making-of:hover { text-decoration-color: var(--ink); } }
   @media (max-width: 720px) {
     .about { gap: 14px; }
     .about-actions { margin-top: 6px; column-gap: 16px; }

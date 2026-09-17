@@ -27,7 +27,8 @@
 .graph .node.is-entry .dot { stroke-width: 2.8; }
 .graph .node .select-ring { fill: none; stroke: var(--accent); stroke-width: 2; opacity: 0; }
 .graph .node.is-selected .select-ring, .graph .node:focus-visible .select-ring { opacity: 1; }
-.graph .node:hover .dot, .graph .node.is-neighbor .dot { stroke: var(--accent); stroke-width: 2.2; }
+.graph .node.is-neighbor .dot { stroke: var(--accent); stroke-width: 2.2; }
+@media (hover: hover) { .graph .node:hover .dot { stroke: var(--accent); stroke-width: 2.2; } }
 /* 제목 크기와 테두리는 라벨 층이 정한다. 엔진이 확대 배율의 역수로 인라인 지정해 화면에서는 항상 13px로 보인다. */
 /* 그래프 이름은 엔진이 px 기준 폭으로 배치를 계산하므로 역할 토큰(rem)을 쓰지 않는다. */
 .graph [data-labels] { font-size: 13px; stroke-width: 4.5px; }

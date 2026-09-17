@@ -46,10 +46,10 @@ const blocks = [block('참조', 'out', outgoing), block('역참조', 'in', incom
   .rail a.level-3 { padding-left: 28px; font-size: var(--t-meta); }
   /* 현재 위치 레일은 이 노트의 주제색(NotePage가 --topic으로 준다). */
   .rail a[aria-current="location"] { border-left-color: var(--topic, var(--accent)); color: var(--ink); font-weight: 600; }
-  .rail a:hover { color: var(--accent); text-decoration: none; }
+  @media (hover: hover) { .rail a:hover { color: var(--accent); text-decoration: none; } }
   /* 연재 블록: 접기·스크롤·서수 없이 편 목록 전체. 현재 편은 색과 굵기 하나로만 표시한다. */
   .series-hub { display: block; margin: 4px 0 6px; color: var(--muted); font-size: var(--t-meta); }
-  .series-hub:hover { color: var(--accent); }
+  @media (hover: hover) { .series-hub:hover { color: var(--accent); } }
   .series-list { margin: 0; padding: 0; list-style: none; }
   .series-list a[aria-current="page"] { color: var(--accent); font-weight: 600; }
   @media (pointer: coarse) {

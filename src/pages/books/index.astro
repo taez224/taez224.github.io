@@ -27,7 +27,8 @@ const filters = statusFilters(books);
   /* 거르개는 지도 범례와 같은 방식이다. 누른 것 하나만 aria-pressed로 남는다. */
   .status-filter { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 4px; margin-left: auto; }
   .status-filter button { padding: 4px 7px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font: inherit; cursor: pointer; transition: background-color .15s ease, color .15s ease; }
-  .status-filter button:hover, .status-filter button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+  .status-filter button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+  @media (hover: hover) { .status-filter button:hover { background: var(--accent-soft); color: var(--accent); } }
   .status-filter .count { color: var(--muted); font-variant-numeric: tabular-nums; }
   .status-filter button[aria-pressed="true"] .count { color: inherit; }
   /* 등급 묶음은 공용 장부(.ledger-group)를 쓰고 여백과 굵기만 다르다. */
