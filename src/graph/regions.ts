@@ -63,7 +63,14 @@ export function placeRegionLabels(regions: readonly Region[], obstacles: readonl
     ];
     const inBounds = (b: Box) => b.top >= 0 && b.left >= 0 && (!bounds || (b.right <= bounds.width && b.bottom <= bounds.height));
     const free = (c: { box: Box }) => inBounds(c.box) && !placed.some((b) => overlaps(b, c.box)) && !obstacles.some((o) => ('r' in o ? hitsCircle(c.box, o) : overlaps(c.box, o)));
-    const pick = candidates.find(free) ?? candidates[0];
+    // 네 자리가 모두 막히면 노드나 다른 이름과 겹치는 편이 무대 밖으로 잘리는 것보다 낫다. 무대 안의 자리를 먼저 고르고,
+    // 그런 자리도 없으면 첫 자리(위)를 무대 안으로 밀어 넣는다. 전에는 첫 자리를 그대로 써서 맨 위 영역 이름이 그림 밖으로 잘렸다.
+    const intoBounds = (c: typeof candidates[number]) => {
+      const dx = Math.max(0, -c.box.left) - Math.max(0, bounds ? c.box.right - bounds.width : 0);
+      const dy = Math.max(0, -c.box.top) - Math.max(0, bounds ? c.box.bottom - bounds.height : 0);
+      return { ...c, x: c.x + dx, y: c.y + dy, box: { left: c.box.left + dx, right: c.box.right + dx, top: c.box.top + dy, bottom: c.box.bottom + dy } };
+    };
+    const pick = candidates.find(free) ?? candidates.find((c) => inBounds(c.box)) ?? intoBounds(candidates[0]);
     placed.push(pick.box);
     out.set(region.topic, { x: pick.x, y: pick.y, anchor: pick.anchor });
   }

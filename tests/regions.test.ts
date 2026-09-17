@@ -61,6 +61,24 @@ test('placeRegionLabels keeps names inside the given bounds', () => {
   assert.equal(at.anchor, 'end', '위는 무대 밖, 아래도 밖이면 왼쪽');
 });
 
+test('placeRegionLabels keeps a name inside the bounds even when every spot is blocked', () => {
+  // 맨 위 영역은 위 자리가 무대 밖이고 나머지 세 자리는 노드로 막힌다. 겹치더라도 무대 안에 둔다.
+  const hull = [{ x: 100, y: 10 }, { x: 200, y: 10 }, { x: 200, y: 110 }, { x: 100, y: 110 }];
+  const region = { topic: '철학', count: 4, hull, label: { x: 100, y: 10 } };
+  const blockers = [{ x: 200, y: 140, r: 40 }, { x: 60, y: 10, r: 40 }, { x: 240, y: 10, r: 40 }];
+  const bounds = { width: 400, height: 300 };
+  const at = placeRegionLabels([region], blockers, { bounds }).get('철학')!;
+  const box = regionLabelBox(at, '철학');
+  assert.ok(box.top >= 0 && box.left >= 0 && box.right <= bounds.width && box.bottom <= bounds.height, JSON.stringify(box));
+});
+
+test('placeRegionLabels pushes a name back inside when no spot fits the bounds', () => {
+  const hull = [{ x: 20, y: 10 }, { x: 80, y: 10 }, { x: 80, y: 50 }, { x: 20, y: 50 }];
+  const at = placeRegionLabels([{ topic: 'AI', count: 4, hull, label: { x: 20, y: 10 } }], [], { bounds: { width: 100, height: 60 } }).get('AI')!;
+  const box = regionLabelBox(at, 'AI');
+  assert.ok(box.top >= 0, `위로 잘리지 않는다: ${JSON.stringify(box)}`);
+});
+
 test('topicRegions never draws a territory for 기타', () => {
   const nodes = [{ id: 'x1', topic: '기타' }, { id: 'x2', topic: '기타' }, { id: 'x3', topic: '기타' }, { id: 'x4', topic: '기타' }];
   const positions = new Map(nodes.map((n, i) => [n.id, { x: 100 + i * 40, y: 100 + (i % 2) * 40 }]));
