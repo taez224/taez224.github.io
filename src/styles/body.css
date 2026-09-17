@@ -50,6 +50,20 @@
 .body pre :is(.th-tag, .th-selector) { color: #116329; }
 .body pre .th-link { color: #0969da; }
 .body pre .th-inserted { color: #1a7f37; }
+/* 어두운 화면의 코드 상자는 GitHub Dark 색이다. 배경은 흰 상자 대신 올라온 판(paper-strong)이라 페이지에서 튀지 않는다.
+   라이트처럼 문자열은 청록으로 두어 숫자·링크의 파랑과 구분한다. 가장 흐린 주석(#8b949e)도 이 배경에서 5.26:1이다. */
+@media (prefers-color-scheme: dark) {
+  .body pre { background: var(--paper-strong); color: #e6edf3; }
+  .body pre :is(.th-comment, .th-meta) { color: #8b949e; }
+  .body pre :is(.th-keyword, .th-deleted) { color: #ff7b72; }
+  .body pre :is(.th-function, .th-operator, .th-command) { color: #d2a8ff; }
+  .body pre .th-string { color: #56d4bc; }
+  .body pre :is(.th-number, .th-literal, .th-property, .th-attr, .th-heading) { color: #79c0ff; }
+  .body pre :is(.th-type, .th-variable, .th-code-inline) { color: #ffa657; }
+  .body pre :is(.th-tag, .th-selector) { color: #7ee787; }
+  .body pre .th-link { color: #58a6ff; }
+  .body pre .th-inserted { color: #aff5b4; }
+}
 .body table { display: block; overflow-x: auto; width: 100%; margin: 18px 0; border-collapse: collapse; font-size: var(--t-side); }
 .body th, .body td { min-width: 100px; padding: 7px 10px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
 .body th { background: var(--paper-strong); font-weight: 600; }
