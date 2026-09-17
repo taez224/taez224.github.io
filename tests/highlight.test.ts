@@ -68,9 +68,39 @@ test('Java strings, comments and text blocks keep their boundaries', () => {
 
 test('Java annotations, keywords and numbers are marked without swallowing identifiers', () => {
   const grouped = classed('@Override public long f() { long a = 1_000_000L; return a + x1; }');
-  assert.deepEqual(grouped.get('meta'), ['@Override']);
+  assert.deepEqual(grouped.get('function'), ['@Override', 'f'], '애너테이션은 TS 데코레이터처럼 function이어야 주석 회색과 갈린다');
   assert.ok((grouped.get('keyword') ?? []).includes('public'));
   assert.deepEqual(grouped.get('number'), ['1_000_000L'], 'x1의 1을 숫자로 잡으면 안 된다');
+});
+
+// Java 타입 이름은 대문자로 시작하는 관례를 따른다. 제네릭 인자와 한 글자 타입 매개변수도 같은 색이어야 한다.
+test('Java type names, generic arguments and type parameters are marked as types', () => {
+  const grouped = classed('public <T extends Comparable<T>> Map<String, List<Integer>> index(String[] names, HTTPClient client) {}');
+  assert.deepEqual(grouped.get('type'), ['T', 'Comparable', 'T', 'Map', 'String', 'List', 'Integer', 'String', 'HTTPClient']);
+});
+
+// 전부 대문자인 이름은 Java에서 상수와 enum 값이다. 공개 노트의 Java 블록에서 이런 이름 가운데 클래스는 URI·URL뿐이었다.
+test('all-caps Java constants and enum values are neither types nor functions', () => {
+  const grouped = classed('static final long LIMIT = 10; Status s = Status.ACTIVE; enum Tier { GOLD("gold"), SILVER("silver") } URL u = URI.create(x).toURL(); s.ACTIVE.name();');
+  assert.deepEqual(grouped.get('type'), ['long', 'Status', 'Status', 'Tier', 'URI'], '점 없이 시작해 메서드를 부르는 URI만 타입이고 선언 자리의 URL은 색이 없다');
+  assert.deepEqual(grouped.get('property'), ['ACTIVE', 'create', 'toURL', 'ACTIVE', 'name'], '점 뒤의 ACTIVE는 메서드를 불러도 속성이다');
+  assert.equal(grouped.get('function'), undefined);
+});
+
+// 라이브러리의 TS 문법처럼 점 바로 뒤의 이름은 속성, 점 없이 괄호가 붙은 이름은 함수로 칠한다.
+test('Java member access is marked as properties and unqualified calls and declarations as functions', () => {
+  const grouped = classed('List<String> find(String... args) { if (ok) run(); return notes.stream().map(String::valueOf).filter(n -> helper(n, this.limit)).toList(); }');
+  assert.deepEqual(grouped.get('function'), ['find', 'run', 'helper']);
+  assert.deepEqual(grouped.get('property'), ['stream', 'map', 'valueOf', 'filter', 'limit', 'toList'], '가변 인자 ... 뒤의 이름은 속성이 아니다');
+  assert.deepEqual(grouped.get('type'), ['List', 'String', 'String', 'String']);
+});
+
+// import·package의 경로는 이름 하나라서 조각마다 속성·타입 색을 입히면 줄 전체가 얼룩진다.
+test('Java package and import paths stay unclassified apart from their keywords', () => {
+  const grouped = classed('package garden.sample;\nimport java.util.List;\nimport static org.junit.Assert.assertEquals;\nimport java.util.*;\n\nList<String> names;');
+  assert.deepEqual(grouped.get('keyword'), ['package', 'import', 'import', 'static', 'import']);
+  assert.deepEqual(grouped.get('type'), ['List', 'String']);
+  assert.equal(grouped.get('property'), undefined);
 });
 
 // 라이브러리가 토큰을 더하면 색 없는 클래스가 조용히 생기고, 라이브러리가 토큰을 빼면 CSS에 죽은 규칙이 남는다.
@@ -106,7 +136,7 @@ test('Java identifiers containing Korean, currency signs and combining marks sta
   assert.equal(grouped.get('keyword'), undefined);
   assert.deepEqual(grouped.get('type'), ['int', 'int', 'int', 'int', 'int', 'int']);
   assert.deepEqual(grouped.get('number'), ['0', '2', '3', '4', '5', '6']);
-  assert.deepEqual(classed('@한글설정 @₩Ann public class A {}').get('meta'), ['@한글설정', '@₩Ann']);
+  assert.deepEqual(classed('@한글설정 @₩Ann public class A {}').get('function'), ['@한글설정', '@₩Ann']);
 });
 
 // module-info.java 전용 낱말은 일반 코드에서 변수 이름으로 더 자주 나온다. 그 자리에서 키워드 색이 붙으면 안 된다.
