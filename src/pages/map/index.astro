@@ -38,6 +38,12 @@ const topics = [...topicCounts].map(([name, count]) => ({ name, color: topicColo
             <button type="button" data-graph-zoom="in" aria-label="확대">+</button>
           </div>
         </div>
+        {/* 휴대폰 폭에서는 패널이 노드를 고른 뒤에 열리는 시트라 처음 화면에 들어갈 곳이 없다. 데스크톱 패널의 처음 내용과 같은 목록을 그래프 아래에 둔다. */}
+        <div class="map-start" data-map-start>
+          <p class="meta map-start-hint">노드를 누르면 노트 정보가 아래에서 열립니다.</p>
+          <section class="list-block"><div class="meta">시작점</div><ul class="side-list">{startpoints.map((h) => <li><a href={h.url} data-node={h.id}><i class="hub-mark" aria-hidden="true"></i>{h.displayTitle}</a></li>)}</ul></section>
+          {hubs.length > 0 && <section class="list-block"><div class="meta">허브</div><ul class="side-list">{hubs.map((h) => <li><a href={h.url} data-node={h.id}><i class="hub-mark" aria-hidden="true"></i>{h.displayTitle}</a></li>)}</ul></section>}
+        </div>
       </div>
       <MapPanel startpoints={startpoints} hubs={hubs} />
     </div>
@@ -59,7 +65,8 @@ const topics = [...topicCounts].map(([name, count]) => ({ name, color: topicColo
   @media (hover: hover) { .legend button.legend-item:hover { background: var(--accent-soft); color: var(--accent); } }
   .legend-fold { margin-left: 2px; color: var(--muted); font-weight: 400; }
   .graph-box { position: relative; }
-  .map-stage { min-width: 0; } /* 그리드 아이템이 범례의 min-content 폭으로 늘어나 페이지가 넘치지 않게 */
+  .map-stage { min-width: 0; }
+  .map-start { display: none; } /* 그리드 아이템이 범례의 min-content 폭으로 늘어나 페이지가 넘치지 않게 */
   .graph-controls { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper-strong); }
   .graph-controls button { min-width: 36px; min-height: 36px; padding: 3px 9px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: var(--t-meta); transition: background-color .15s ease, color .15s ease, transform .15s cubic-bezier(.23, 1, .32, 1); }
   .graph-controls button:active { transform: scale(.97); }
@@ -81,6 +88,8 @@ const topics = [...topicCounts].map(([name, count]) => ({ name, color: topicColo
     .map-toolbar .legend::-webkit-scrollbar { display: none; }
     .map-toolbar .legend::after { flex: 0 0 24px; content: ""; }
     .map-toolbar .legend-item { flex: 0 0 auto; min-height: 36px; }
+    .map-start { display: block; padding-top: 14px; }
+    .map-start-hint { margin: 0; }
   }
   /* 손가락으로 누르는 기기에서는 범례와 확대 버튼을 44px로 키운다. 마우스 환경은 한 줄에 범례가 더 들어가도록 작게 둔다. */
   @media (pointer: coarse) {
