@@ -100,6 +100,10 @@ h1, h2, h3, p { margin-top: 0; }
 .site-nav a { display: flex; align-items: center; align-self: stretch; margin: 0 calc(var(--nav-gap) / -2); padding: 0 calc(var(--nav-gap) / 2); color: var(--muted); }
 /* 마지막 메뉴는 바로 옆 공유·검색 버튼의 영역과 겹치지 않도록 오른쪽으로는 넓히지 않는다. */
 .site-nav a:last-child { margin-right: 0; padding-right: 0; }
+/* 누르는 영역을 헤더 높이까지 넓혀서 링크 상자에 포커스 링을 그리면 위는 화면 밖으로 잘리고 아래는 헤더 선을 넘는다.
+   링크 상자 대신 글자(span)에 전역 포커스 링과 같은 모양을 그린다. */
+.site-nav a:focus-visible { outline: none; }
+.site-nav a:focus-visible > span { outline: 2px solid var(--accent); outline-offset: 4px; }
 .site-nav a[aria-current="page"] { color: var(--ink); }
 .search-trigger { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin-left: 12px; margin-right: -13px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); }
 .search-trigger:hover { background: var(--accent-soft); color: var(--accent); }

@@ -9,7 +9,7 @@ const items = [['map', '/map/', '생각 지도'], ['posts', '/posts/', '글'], [
   <div class="wrap">
     <a class="wordmark display" href={withBase('/')} aria-label="TaeZ 홈">TaeZ</a>
     <nav class="site-nav" aria-label="공개 기록">
-      {items.map(([id, href, label]) => <a href={withBase(href)} aria-current={active === id ? 'page' : undefined}>{label}</a>)}
+      {items.map(([id, href, label]) => <a href={withBase(href)} aria-current={active === id ? 'page' : undefined}><span>{label}</span></a>)}
     </nav>
     <ShareLink />
     <button class="search-trigger" type="button" data-search-open aria-label="검색" title="검색">
