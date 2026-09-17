@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { fitViewerSize, setViewerButton } from '../src/scripts/mermaid-viewer.ts';
+import { fitViewerSize, opensFitted, setViewerButton } from '../src/scripts/mermaid-viewer.ts';
 
 type FakeEl = {
   tagName: string; className: string; textContent: string; type: string;
@@ -83,4 +83,11 @@ test('viewer fitting preserves the whole diagram in both wide and tall viewports
   assert.deepEqual(fitViewerSize(400, 2400, 800, 600), { width: 100, height: 600 });
   assert.deepEqual(fitViewerSize(200, 100, 800, 600), { width: 200, height: 100 });
   assert.deepEqual(fitViewerSize(2400, 400, 300, 600), { width: 300, height: 50 });
+});
+
+test('the viewer opens at original size on narrow screens and fitted elsewhere', () => {
+  const screen = (narrow: boolean) => ({ matchMedia: (query: string) => ({ matches: narrow && query === '(max-width: 720px)' }) });
+  assert.equal(opensFitted(screen(true)), false, '좁은 화면에서는 원래 크기로 연다');
+  assert.equal(opensFitted(screen(false)), true);
+  assert.equal(opensFitted(undefined), true, '화면 정보를 모르면 기존처럼 화면에 맞춘다');
 });

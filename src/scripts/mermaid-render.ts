@@ -1,5 +1,5 @@
 import type { Mermaid } from 'mermaid';
-import { FONT_WAIT_MS, LABEL_FONT, LABEL_FONT_PX, MERMAID_CONFIG, MERMAID_PINNED_THEME_CONFIG, MIN_READABLE_LABEL_PX } from './mermaid-config.ts';
+import { FONT_WAIT_MS, LABEL_FONT, LABEL_FONT_PX, MERMAID_CONFIG, MERMAID_PINNED_THEME_CONFIG, MIN_READABLE_LABEL_PX, NARROW_MIN_READABLE_LABEL_PX, NARROW_SCREEN_QUERY } from './mermaid-config.ts';
 import { setViewerButton } from './mermaid-viewer.ts';
 type MermaidRenderer = Pick<Mermaid, 'initialize' | 'run'> & {
   parse(source: string, options: { suppressErrors: true }): Promise<Awaited<ReturnType<Mermaid['parse']>> | false>;
@@ -7,6 +7,8 @@ type MermaidRenderer = Pick<Mermaid, 'initialize' | 'run'> & {
 
 // 컨테이너보다 넓은 도표의 처리다. 조금 넘치는 도표는 줄여도 글자를 읽을 수 있으므로 접어 넣고, 크게 넘치는
 // 도표는 원래 크기로 두어 컨테이너가 가로로 스크롤한다. 스크롤이 생긴 도표만 Tab으로 닿게 한다.
+// 좁은 화면에서는 줄일 수 있는 라벨 하한을 낮춘다. 반환값은 크게 보기가 필요한지다. 넘친 도표와,
+// 넘치지는 않지만 편하게 읽을 크기(MIN_READABLE_LABEL_PX)보다 작게 줄인 도표가 여기에 든다.
 // 컨테이너 폭은 접힌 콜아웃이 열리거나 창 크기가 바뀔 때 달라지므로, 부를 때마다 이전 판단을 지우고 다시 잰다.
 // useMaxWidth가 켜진 도표(상태도 등)는 Mermaid가 width="100%"에 max-width를 함께 주어 원래 크기를 지키므로,
 // 처음 본 인라인 값을 기억해 두고 그 값으로 되돌린 뒤 판단한다. 지워 버리면 SVG가 컨테이너 폭까지 늘어난다.
@@ -30,13 +32,15 @@ export function fitDiagram(container: Element): boolean {
   const availableWidth = container.clientWidth - padding;
   const naturalWidth = svg.getBoundingClientRect?.().width ?? container.scrollWidth;
   const scaledLabelPx = LABEL_FONT_PX * (availableWidth / naturalWidth);
-  if (scaledLabelPx >= MIN_READABLE_LABEL_PX) {
+  const narrow = view?.matchMedia?.(NARROW_SCREEN_QUERY).matches ?? false;
+  const shrunk = scaledLabelPx >= (narrow ? NARROW_MIN_READABLE_LABEL_PX : MIN_READABLE_LABEL_PX);
+  if (shrunk) {
     svg.style.maxWidth = '100%';
     svg.style.height = 'auto';
   }
   const overflowing = container.scrollWidth > container.clientWidth;
   if (overflowing) container.setAttribute('tabindex', '0');
-  return overflowing;
+  return overflowing || (shrunk && scaledLabelPx < MIN_READABLE_LABEL_PX);
 }
 
 function refreshDiagram(container: Element): void {
