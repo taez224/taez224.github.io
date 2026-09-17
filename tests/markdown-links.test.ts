@@ -50,9 +50,11 @@ test('public notes, external links, images, and unresolved targets retain their 
   assert.doesNotMatch(html, /비공개/);
 });
 
-test('heading links follow the last heading of an Obsidian heading path and same-note links show the heading', () => {
+test('heading links hand the heading path to the resolver, default to the last heading and show it for same-note links', () => {
+  const paths: string[] = [];
   const renderer = createMarkdownRenderer({
-    resolveNote: (source, target, fragment) => {
+    resolveNote: (source, target, fragment, headingPath = '') => {
+      paths.push(headingPath);
       const current = target === source;
       return { title: current ? '현재 노트' : '대상 노트', url: `/notes/${current ? 'current' : 'target'}/${fragment ? `#${fragment}` : ''}` };
     },
@@ -63,6 +65,7 @@ test('heading links follow the last heading of an Obsidian heading path and same
   assert.match(html, /href="\/notes\/current\/#같은-절">같은 절<\/a>/);
   assert.match(html, /href="\/notes\/current\/#같은-절">별칭<\/a>/);
   assert.match(html, /href="\/notes\/current\/#block-id">현재 노트<\/a>/);
+  assert.deepEqual(paths, ['상위 절#하위 절', '같은 절', '같은 절', '^block-id']);
 });
 
 test('note resolution leaves code examples and escaped wiki brackets untouched', () => {

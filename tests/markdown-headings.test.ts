@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { PublicNote } from '../src/lib/content-model.ts';
+import { headingAnchor, headingOutline } from '../src/lib/markdown.ts';
 import { render } from './helpers/markdown.ts';
 
 // 목차는 렌더러가 id를 매기면서 함께 모은다. 조립 전체를 돌리지 않고 렌더러의 출력 인자만 검사한다.
@@ -62,6 +63,31 @@ test('the table of contents drops escape backslashes from outline titles', () =>
   assert.deepEqual(headingsOf('## 1\\. Editor Config 요청'), [
     { id: '1-editor-config-요청', level: 2, title: '1. Editor Config 요청' }
   ]);
+});
+
+// 링크 해석은 렌더링하지 않은 노트의 제목 id를 미리 구해 쓴다. 렌더러가 실제로 매기는 id와 순서가 같아야 한다.
+test('the heading outline predicts the ids the renderer assigns', () => {
+  const body = '## 배경\n\n> [!note]\n> ## 배경\n\n```md\n## 코드\n```\n\n%%\n## 숨김\n%%\n\n작은 제목\n---\n\n## 배경\n\n- ## 목록 안\n\n## **굵게** 제목 ^id\n\n# 큰 제목';
+  const rendered = [...render('x.md', body).matchAll(/<h[1-6] id="([^"]+)"/g)].map((match) => match[1]);
+  assert.deepEqual(headingOutline(body).map((heading) => heading.id), rendered);
+  assert.deepEqual(rendered, ['배경', '작은-제목', '배경-2', '굵게-제목', '큰-제목']);
+});
+
+test('Obsidian heading paths pick the heading under the named parents when names repeat', () => {
+  const outline = headingOutline('## A\n### 설정\n## B\n### 설정\n#### 세부\n## C\n### 설정 ^x');
+  for (const [path, id] of [
+    ['B#설정', '설정-2'],
+    ['A#설정', '설정'],
+    ['설정', '설정'],
+    ['B#세부', '세부'],
+    ['B#설정#세부', '세부'],
+    ['없는 상위#설정', '설정'],
+    ['C#설정', '설정-3'],
+    ['없는 제목', '없는-제목'],
+    ['^block-id', 'block-id']
+  ]) {
+    assert.equal(headingAnchor(outline, path), id, path);
+  }
 });
 
 test('setext heading ids leave the underline out', () => {

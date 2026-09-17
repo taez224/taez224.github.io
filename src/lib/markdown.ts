@@ -1,7 +1,9 @@
 import type { PublicNote } from './content-model.ts';
 export type ResolvedNote = { visibility: 'private'; title?: never; url?: never } | { visibility?: 'public'; title?: string; url: string };
 interface Resolvers {
-  resolveNote?: (source: string, target: string, fragment?: string) => ResolvedNote | null | undefined;
+  // fragment는 제목 이름만으로 만든 기본 앵커이고, headingPath는 원문의 제목 경로(`상위#하위`, `^블록`)다.
+  // 대상 문서의 제목 구조를 아는 해석기는 headingPath로 같은 이름의 제목을 구분한다(headingAnchor).
+  resolveNote?: (source: string, target: string, fragment?: string, headingPath?: string) => ResolvedNote | null | undefined;
   resolveAsset?: (source: string, target: string) => { url: string } | null | undefined;
 }
 interface LinkContext extends Resolvers { sourcePath: string }
@@ -122,12 +124,15 @@ function splitWikiTarget(rawTarget: unknown) {
   const target = parts.shift()?.trim() ?? '';
   const label = parts.join('|');
   const hashIndex = target.indexOf('#');
-  // Obsidian은 `노트#상위#하위`처럼 제목 경로를 적을 수 있고 마지막 제목으로 이동한다.
-  const section = hashIndex < 0 ? '' : target.slice(hashIndex + 1).split('#').at(-1)!;
+  // Obsidian은 `노트#상위#하위`처럼 제목 경로를 적을 수 있다. 기본 앵커는 마지막 제목 이름으로 만들고,
+  // 같은 이름의 제목을 경로로 구분하는 일은 대상 문서의 제목 구조를 아는 해석기가 맡는다.
+  const headingPath = hashIndex < 0 ? '' : target.slice(hashIndex + 1);
+  const heading = headingPath.split('#').at(-1)!;
   return {
     target: hashIndex < 0 ? target : target.slice(0, hashIndex),
-    fragment: hashIndex < 0 ? '' : slugifyHeading(section),
-    section: section.trim(),
+    fragment: hashIndex < 0 ? '' : slugifyHeading(heading),
+    headingPath,
+    heading: heading.trim(),
     label
   };
 }
@@ -150,7 +155,7 @@ function renderPrivateNote(label: string, target: string): string {
 function replaceWikiLinks(source: string, context: LinkContext): string {
   return source.replace(/!?\[\[([^\]]+)\]\]/g, (whole, rawTarget) => {
     const embedded = whole.startsWith('!');
-    const { target, fragment, section, label } = splitWikiTarget(rawTarget);
+    const { target, fragment, headingPath, heading, label } = splitWikiTarget(rawTarget);
     if (!target && !fragment) return whole;
 
     if (embedded) {
@@ -162,11 +167,11 @@ function replaceWikiLinks(source: string, context: LinkContext): string {
       }
     }
 
-    const note = context.resolveNote?.(context.sourcePath, target || context.sourcePath, fragment);
+    const note = context.resolveNote?.(context.sourcePath, target || context.sourcePath, fragment, headingPath);
     if (!note) return escapeHtml(label || target || whole);
     if (note.visibility === 'private') return renderPrivateNote(label, target);
     // 같은 문서의 제목 링크(`[[#절]]`)는 지금 읽는 노트의 제목 대신 절 이름을 보인다. 블록 링크는 보일 제목이 없다.
-    const sameNoteHeading = !target && !section.startsWith('^') ? section : '';
+    const sameNoteHeading = !target && !heading.startsWith('^') ? heading : '';
     const display = label || sameNoteHeading || note.title || target;
     return `<a class="internal-note-link" href="${escapeHtml(note.url)}">${escapeHtml(display)}</a>`;
   });
@@ -214,6 +219,47 @@ export function headingId(headingIds: Map<string, number>, text: unknown): strin
   const count = (headingIds.get(baseId) ?? 0) + 1;
   headingIds.set(baseId, count);
   return count === 1 ? baseId : `${baseId}-${count}`;
+}
+
+export interface OutlineHeading { id: string; level: number; text: string }
+
+// 렌더러가 매길 제목 id를 렌더링하지 않고 미리 구한다. 렌더러처럼 본문 흐름(level 0)의 제목만 같은 순서로 센다.
+// 콜아웃·인용·목록 안의 제목은 이 파서에서도 인용문·목록 안이라 level이 0보다 크다.
+export function headingOutline(body: string): OutlineHeading[] {
+  const ids = new Map<string, number>();
+  const tokens = structureParser.parse(stripObsidianComments(body), {});
+  return tokens.flatMap((token, index) => token.type === 'heading_open' && token.level === 0
+    ? [{ id: headingId(ids, tokens[index + 1].content), level: Number(token.tag.slice(1)), text: headingTextForId(tokens[index + 1].content) }]
+    : []);
+}
+
+// Obsidian 제목 경로(`상위#하위`)를 실제 제목 id로 바꾼다. 마지막 이름의 제목 가운데 앞의 이름들이 상위 제목에
+// 순서대로 있는 첫 제목을 고른다. 경로가 맞는 제목이 없으면 이름이 같은 첫 제목, 그것도 없으면 이름으로 만든
+// 기본 앵커를 쓴다. 이름은 글자가 같은 제목을 먼저 찾고, 없으면 id로 바꿨을 때 같은 제목을 찾는다.
+// 블록 링크(`^id`)는 제목이 아니므로 블록 id 그대로 둔다.
+export function headingAnchor(outline: readonly OutlineHeading[], headingPath: string): string {
+  const names = headingPath.split('#').map((name) => headingTextForId(name)).filter(Boolean);
+  const last = headingPath.split('#').at(-1)!.trim();
+  if (!last) return '';
+  if (last.startsWith('^')) return slugifyHeading(last);
+  const target = names.at(-1)!;
+  const parents = names.slice(0, -1);
+  const exact = (text: string, name: string) => text === name;
+  const loose = (text: string, name: string) => slugifyHeading(text) === slugifyHeading(name);
+  const find = (matches: typeof exact, wanted: readonly string[]) => {
+    const ancestors: OutlineHeading[] = [];
+    for (const heading of outline) {
+      while (ancestors.length && ancestors.at(-1)!.level >= heading.level) ancestors.pop();
+      if (matches(heading.text, target)) {
+        let found = 0;
+        for (const ancestor of ancestors) if (found < wanted.length && matches(ancestor.text, wanted[found])) found += 1;
+        if (found === wanted.length) return heading.id;
+      }
+      ancestors.push(heading);
+    }
+    return undefined;
+  };
+  return find(exact, parents) ?? find(loose, parents) ?? find(exact, []) ?? find(loose, []) ?? slugifyHeading(last);
 }
 
 export function stripObsidianComments(source: unknown): string {
@@ -510,7 +556,7 @@ function createMarkdownIt() {
     // 인라인 규칙으로 문서 순서대로 모이도록 일반 콜아웃으로 둔다.
     const context = env.context;
     const target = env.articleCards && type === 'article' && !foldMarker && quotedLines.length === 1 ? articleTarget(quotedLines[0]) : null;
-    const note = target && context ? context.resolveNote?.(context.sourcePath, target.target, target.fragment) : null;
+    const note = target && context ? context.resolveNote?.(context.sourcePath, target.target, target.fragment, target.headingPath) : null;
     if (note && note.visibility !== 'private' && note.url && env.articleCards) {
       const cardIndex = env.articleCards.length;
       const title = note.title || target!.target;

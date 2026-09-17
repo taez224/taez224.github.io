@@ -408,6 +408,20 @@ test('every outline id exists in the rendered body so sidebar links land on a he
   for (const heading of entry.headings) assert.ok(renderedIds.includes(heading.id), `목차 id ${heading.id}가 본문에 없다`);
 });
 
+test('heading path links land on the heading under the named parent when heading names repeat', async () => {
+  const headings = '## A\n### 설정\n## B\n### 설정';
+  const vaultRoot = await makeVault({ ...files,
+    '01_Slipbox/설정 노트.md': `---\ncreated: 2026-09-07\n---\n# 설정 노트\n${headings}\n\n[[#B#설정]] [[#A#설정]]`,
+    '01_Slipbox/연결 노트.md': '---\ncreated: 2026-09-08\n---\n# 연결 노트\n[[설정 노트#B#설정|B의 설정]]'
+  });
+  const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
+  const own = noteAt(garden, '01_Slipbox/설정 노트.md');
+  const renderedIds = [...own.bodyHtml.matchAll(/<h[1-6][^>]*\sid="([^"]+)"/g)].map((match) => match[1]);
+  assert.deepEqual(renderedIds, ['a', '설정', 'b', '설정-2']);
+  assert.deepEqual([...own.bodyHtml.matchAll(/href="[^"#]*#([^"]+)"/g)].map((match) => match[1]), ['설정-2', '설정']);
+  assert.match(noteAt(garden, '01_Slipbox/연결 노트.md').bodyHtml, /href="\/obsidian\/notes\/설정-노트\/#설정-2">B의 설정<\/a>/);
+});
+
 test('a basename shared with an unpublished draft still links to the public note', async () => {
   const vaultRoot = await makeVault({ ...files,
     '20_Projects/blog/AI 활용.md': '---\ncreated: 2026-09-06\nstatus: published\n---\n# AI 활용\n공개 글.',
