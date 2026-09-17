@@ -1,6 +1,6 @@
 import type { Token } from 'markdown-it';
 import sanitizeHtml from 'sanitize-html';
-import { stripObsidianComments, structureParser as parser } from './markdown.ts';
+import { MARKDOWN_IMAGE_SIZE, stripObsidianComments, structureParser as parser } from './markdown.ts';
 
 const stripBlockIds = (value: unknown) => String(value ?? '').replace(/(^|\s)\^[A-Za-z0-9-]+(?=\s|$)/g, '$1');
 
@@ -17,7 +17,12 @@ export function analyzeText(body: string): TextAnalysis {
   const content = (token: Token): string => {
     if (token.type === 'inline') return (token.children ?? []).map(content).join('');
     if (token.type === 'text') return stripBlockIds(token.content);
-    if (['code_inline', 'fence', 'code_block', 'image'].includes(token.type)) return token.content;
+    // 그림의 대체 텍스트에 붙은 Obsidian 크기 표기(`설명|300`)는 글이 아니므로 뺀다.
+    if (token.type === 'image') {
+      const size = token.content.match(MARKDOWN_IMAGE_SIZE);
+      return size ? size[1] ?? '' : token.content;
+    }
+    if (['code_inline', 'fence', 'code_block'].includes(token.type)) return token.content;
     if (token.type === 'softbreak' || token.type === 'hardbreak') return ' ';
     if (token.type === 'html_inline' || token.type === 'html_block') {
       return parser.utils.unescapeAll(sanitizeHtml(token.content, { allowedTags: [], allowedAttributes: {} }));

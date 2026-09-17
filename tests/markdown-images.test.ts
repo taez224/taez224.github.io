@@ -1,6 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { render } from './helpers/markdown.ts';
+import { render, renderWithVisibility } from './helpers/markdown.ts';
+
+test('Obsidian image sizes become width and height instead of alt text', () => {
+  const renderer = renderWithVisibility();
+  for (const [source, expected] of [
+    ['![[picture.png|300]]', '<img src="/assets/picture.png" alt="picture" width="300" />'],
+    ['![[picture.png|300x200]]', '<img src="/assets/picture.png" alt="picture" width="300" height="200" />'],
+    ['![설명|320](picture.png)', '<img src="/assets/picture.png" alt="설명" width="320" />'],
+    ['![설명|640x480](https://example.com/a.png)', '<img src="https://example.com/a.png" alt="설명" width="640" height="480" />'],
+    ['![250](https://example.com/b.png)', '<img src="https://example.com/b.png" alt="" width="250" />']
+  ]) {
+    assert.equal(renderer('x.md', source).trim(), `<p>${expected}</p>`, source);
+  }
+});
+
+test('image labels that are not sizes stay alt text', () => {
+  const renderer = renderWithVisibility();
+  assert.match(renderer('x.md', '![[picture.png|그림]]'), /<img src="\/assets\/picture.png" alt="그림" \/>/);
+  assert.match(renderer('x.md', '![2024년 풍경](https://example.com/c.png)'), /alt="2024년 풍경" \/>/);
+  assert.match(renderer('x.md', '![a|b](https://example.com/d.png)'), /alt="a\|b" \/>/);
+});
 
 test('an italic paragraph right after an image becomes its caption', () => {
   const html = render('x.md', '![카드](https://example.com/a.png)\n\n*링크를 받은 사람은 본문보다 [이 카드](https://example.com/)를 먼저 본다.*');

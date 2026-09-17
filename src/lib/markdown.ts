@@ -130,6 +130,12 @@ function splitWikiTarget(rawTarget: unknown) {
   };
 }
 
+// Obsidian의 그림 크기 표기다. 위키 임베드는 `![[그림.png|300]]`·`|300x200`이고, Markdown 그림은 대체 텍스트 끝의
+// `|300`이나 숫자만 쓴 `![300](주소)`다. 너비만 주면 비율을 유지한다(본문 CSS의 height: auto).
+const WIKI_IMAGE_SIZE = /^\s*(\d+)(?:x(\d+))?\s*$/;
+export const MARKDOWN_IMAGE_SIZE = /^(?:([\s\S]*)\|)?\s*(\d+)(?:x(\d+))?\s*$/;
+const sizeAttributes = (width?: string, height?: string) => `${width ? ` width="${width}"` : ''}${height ? ` height="${height}"` : ''}`;
+
 function renderPrivateNote(label: string, target: string): string {
   let decodedTarget = target;
   try { decodedTarget = decodeURIComponent(target); } catch { /* Keep malformed authored text. */ }
@@ -146,8 +152,9 @@ function replaceWikiLinks(source: string, context: LinkContext): string {
     if (embedded) {
       const asset = context.resolveAsset?.(context.sourcePath, target);
       if (asset) {
-        const alt = label || target.replace(/\.[^.]+$/, '');
-        return `<img src="${escapeHtml(asset.url)}" alt="${escapeHtml(alt)}">`;
+        const size = label.match(WIKI_IMAGE_SIZE);
+        const alt = (size ? '' : label) || target.replace(/\.[^.]+$/, '');
+        return `<img src="${escapeHtml(asset.url)}" alt="${escapeHtml(alt)}"${sizeAttributes(size?.[1], size?.[2])}>`;
       }
     }
 
@@ -165,7 +172,9 @@ function replaceStandardLinks(source: string, context: LinkContext): string {
   if (source.startsWith('![')) return source.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (whole, alt, target) => {
     if (/^(?:https?:)?\/\//i.test(target) || target.startsWith('data:')) return whole;
     const asset = context.resolveAsset?.(context.sourcePath, target);
-    return asset ? `<img src="${escapeHtml(asset.url)}" alt="${escapeHtml(alt)}">` : whole;
+    if (!asset) return whole;
+    const size = alt.match(MARKDOWN_IMAGE_SIZE);
+    return `<img src="${escapeHtml(asset.url)}" alt="${escapeHtml(size ? size[1] ?? '' : alt)}"${sizeAttributes(size?.[2], size?.[3])}>`;
   });
 
   return source.replace(/\[([^\]]*)\]\(([^)\s]+\.md(?:#[^)]*)?)(?:\s+"[^"]*")?\)/gi, (_whole, label, rawTarget) => {
@@ -331,6 +340,19 @@ function rewriteLine(line: Token[], make: (type: string, content: string) => Tok
     if (cursor < token.content.length) result.push(make('text', token.content.slice(cursor)));
   });
   return result;
+}
+
+// 대체 텍스트 자리의 크기 표기를 너비·높이 속성으로 옮기고 나머지만 대체 텍스트로 남긴다.
+function applyImageSize(image: Token, Token: TokenConstructor) {
+  const size = image.content.match(MARKDOWN_IMAGE_SIZE);
+  if (!size) return;
+  const alt = size[1] ?? '';
+  const text = new Token('text', '', 0);
+  text.content = alt;
+  image.children = alt ? [text] : [];
+  image.content = alt;
+  image.attrSet('width', size[2]);
+  if (size[3]) image.attrSet('height', size[3]);
 }
 
 function articleTarget(line: string) {
@@ -536,9 +558,12 @@ function createMarkdownIt() {
 
   // Obsidian의 형광(==글==)과 블록 id(줄 끝의 ^id)를 인라인 토큰에서 바꾼다. 원문을 미리 고치지 않으므로 코드 안의
   // 표기는 저절로 남고, 이스케이프한 `\=`는 text_special 토큰이라 표시로 읽히지 않는다. 그래서 text_join보다 앞에 둔다.
+  // 외부 주소 그림은 vault_links를 거치지 않고 markdown-it의 image 토큰이 되므로 크기 표기를 여기서 떼어 낸다.
   markdown.core.ruler.after('inline', 'obsidian_inline', (state) => {
     for (const token of state.tokens) {
-      if (token.type === 'inline' && token.children) token.children = rewriteObsidianInline(token.children, state.Token);
+      if (token.type !== 'inline' || !token.children) continue;
+      for (const child of token.children) if (child.type === 'image') applyImageSize(child, state.Token);
+      token.children = rewriteObsidianInline(token.children, state.Token);
     }
   });
 
