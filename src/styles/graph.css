@@ -15,6 +15,12 @@
 .graph.hero [data-regions] { opacity: .07; }
 .graph .region { stroke-width: 64; stroke-linejoin: round; transition: opacity .15s ease; } /* 색면 여백 32px. 45px는 경계처럼 오해된다는 사용자 피드백 */
 .graph.map.has-topic-filter [data-regions] { opacity: .1; }
+/* 어두운 화면에서는 같은 불투명도의 색면이 바탕에 묻혀 영역이 보이지 않으므로 올린다. 더 올리면 크게 겹치는 영역이 무거워진다. */
+@media (prefers-color-scheme: dark) {
+  .graph [data-regions] { opacity: .1; }
+  .graph.hero [data-regions] { opacity: .11; }
+  .graph.map.has-topic-filter [data-regions] { opacity: .16; }
+}
 .graph.map .region.is-topic-dim { opacity: .25; }
 .graph [data-region-labels] { pointer-events: none; }
 .graph .region-label { font-family: var(--display); font-weight: 700; letter-spacing: .16em; paint-order: stroke; stroke: var(--paper); stroke-linejoin: round; transition: opacity .15s ease; }

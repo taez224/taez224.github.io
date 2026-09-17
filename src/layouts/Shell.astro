@@ -4,7 +4,7 @@ import '../styles/fonts.css';
 import '../styles/site.css';
 import Header from '../components/Header.astro';
 import SearchDialog from '../components/SearchDialog.astro';
-import { inlineJson, withBase } from '../lib/format.ts';
+import { inlineJson, withBase, topicColorCss } from '../lib/format.ts';
 import { SITE_TITLE } from '../lib/site-meta.ts';
 import { FEED_LINKS } from '../lib/feeds.ts';
 import { structuredData } from '../lib/seo.ts';
@@ -46,6 +46,8 @@ const jsonLd = inlineJson(structuredData({ ogType, kind, pageType, title: path =
     {ogType === 'article' && updated && <meta property="article:modified_time" content={updated} />}
     <script type="application/ld+json" is:inline set:html={jsonLd}></script>
     <meta name="twitter:card" content="summary_large_image" />
+    {/* 주제색 변수. 그래프·주제 점이 var(--topic-…)로 읽어 화면 모드에 따라 바뀐다. */}
+    <style is:inline set:html={topicColorCss()}></style>
     <meta name="theme-color" media="(prefers-color-scheme: light)" content={PALETTE.paper} />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content={DARK_PALETTE.paper} />
     <link rel="icon" href={withBase('/favicon.svg')} type="image/svg+xml" />

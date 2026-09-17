@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { panelModel } from '../src/lib/panel.ts';
-import { GRAPH_COLORS } from '../src/lib/format.ts';
+import { topicColor } from '../src/lib/format.ts';
 
 const hubNote = { path: 'a.md', title: 'A', displayTitle: 'A', url: '/obsidian/notes/a/', kind: 'slipbox' as const, type: 'hub', date: '2026-07-12', topic: 'AI', publicTags: ['AI', '개발'], summary: '자동 발췌', summaryIsExplicit: false };
 const plainNote = { path: 'b.md', title: 'B', displayTitle: 'B', url: '/obsidian/notes/b/', kind: 'slipbox' as const, type: '', date: '2026-08-01', topic: 'AI', publicTags: ['AI'], summary: '명시 요약', summaryIsExplicit: true };
@@ -14,9 +14,9 @@ test('panelModel builds meta, topic dots and reference lists from public edges o
   const model = panelModel(hubNote, notes, edges);
   assert.deepEqual([model.kind, model.date, model.isHub, model.title, model.url], ['노트', '2026.07.12', true, 'A', '/obsidian/notes/a/']);
   assert.deepEqual(model.topics.map((t) => t.name), ['AI', '개발']);
-  assert.equal(model.topics[0].color, GRAPH_COLORS.AI);
+  assert.equal(model.topics[0].color, topicColor('AI'));
   const folded = panelModel(hubNote, notes, edges, { 개발: '기타' });
-  assert.equal(folded.topics[1].color, GRAPH_COLORS.기타, '접힌 주제의 점은 기타 색');
+  assert.equal(folded.topics[1].color, topicColor('기타'), '접힌 주제의 점은 기타 색');
   assert.equal(model.summary, '');
   assert.deepEqual(model.outgoing, [{ path: 'b.md', title: 'B', url: '/obsidian/notes/b/' }]);
   assert.deepEqual(model.incoming, [{ path: 'c.md', title: 'C', url: '/obsidian/dev/c/' }]);

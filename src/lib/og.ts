@@ -15,7 +15,7 @@ import { kindLabel, formatDate, cleanTitle, escapeXml as esc } from './format.ts
 import { estimateTextWidth } from '../graph/label.ts';
 import { localGraphLayout } from '../components/local-graph-layout.ts';
 import { layoutGraph, nodeRadius } from '../graph/layout.ts';
-import { topicColor } from './format.ts';
+import { topicHex } from './format.ts';
 import { PALETTE } from './palette.ts';
 import { ensureOgFonts } from './og-fonts.ts';
 import { projectPaths } from './get-garden.ts';
@@ -221,7 +221,7 @@ function siteSvg({ garden, title, siteLabel }: { garden: OgGarden; title: string
   const box = { width: 440, height: 440 };
   const positions = layoutGraph(garden.nodes, garden.edges, { ...box, pad: 24 });
   const edges = garden.edges.map((e) => { const a = positions.get(e.source), b = positions.get(e.target); return a && b ? `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${LINE}" stroke-width="1.1" stroke-opacity=".6"/>` : ''; }).join('');
-  const nodes = garden.nodes.map((n) => { const p = positions.get(n.id); if (!p) return ''; const r = nodeRadius(n.degree ?? 0, 0.95); const ring = n.type === 'hub' ? `<circle cx="${p.x}" cy="${p.y}" r="${(r + 6).toFixed(1)}" fill="none" stroke="${ACCENT}" stroke-width="1.4" stroke-opacity=".7"/>` : ''; return `${ring}<circle cx="${p.x}" cy="${p.y}" r="${r.toFixed(1)}" fill="${topicColor(n.topic)}" stroke="${PAPER}" stroke-width="2"/>`; }).join('');
+  const nodes = garden.nodes.map((n) => { const p = positions.get(n.id); if (!p) return ''; const r = nodeRadius(n.degree ?? 0, 0.95); const ring = n.type === 'hub' ? `<circle cx="${p.x}" cy="${p.y}" r="${(r + 6).toFixed(1)}" fill="none" stroke="${ACCENT}" stroke-width="1.4" stroke-opacity=".7"/>` : ''; return `${ring}<circle cx="${p.x}" cy="${p.y}" r="${r.toFixed(1)}" fill="${topicHex(n.topic)}" stroke="${PAPER}" stroke-width="2"/>`; }).join('');
   const blockHeight = lineHeight * lines.length;
   const firstBaseline = Math.round((630 - blockHeight) / 2 + size * 0.9);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">

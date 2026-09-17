@@ -110,7 +110,7 @@ TypeScript는 `astro check`가 지원하는 6.x를 쓴다. 현재 TypeScript 7�
 
 `DESIGN.md`는 현재 디자인의 값과 의도를 관리하는 문서다. 화면 작업 전에 Overview와 관련 컴포넌트·반응형·접근성·검증 절을 읽는다. Google Labs의 DESIGN.md 포맷을 따라 YAML에는 대표 토큰을, 본문에는 용도와 적용 이유를 기록한다.
 
-- 사이트 색의 단일 출처는 `src/lib/palette.ts`의 `PALETTE`(밝은 화면)와 `DARK_PALETTE`(어두운 화면)이고, `src/styles/site.css`의 `:root`·`prefers-color-scheme: dark` 블록과 `DESIGN.md`의 색 토큰(어두운 값은 `-dark`)이 같은 값을 쓴다. CSS는 `var(--이름)`으로 읽고, CSS 변수를 못 읽는 OG 카드·Mermaid 설정·`theme-color`만 `PALETTE`를 가져다 쓴다. 세 곳이 어긋나거나 다른 파일에 값을 복제하면 `tests/palette.test.ts`가 실패한다. 주제색은 `src/lib/format.ts`의 `GRAPH_COLORS`에 있고, 본문·그래프·개별 화면의 값은 해당 CSS와 Astro 파일에 있다. 문서와 구현이 어긋나면 의도한 변경인지 확인하고, 문서가 낡은 경우 현재 구현에 맞춘다.
+- 사이트 색의 단일 출처는 `src/lib/palette.ts`의 `PALETTE`(밝은 화면)와 `DARK_PALETTE`(어두운 화면)이고, `src/styles/site.css`의 `:root`·`prefers-color-scheme: dark` 블록과 `DESIGN.md`의 색 토큰(어두운 값은 `-dark`)이 같은 값을 쓴다. CSS는 `var(--이름)`으로 읽고, CSS 변수를 못 읽는 OG 카드·Mermaid 설정·`theme-color`만 `PALETTE`를 가져다 쓴다. 세 곳이 어긋나거나 다른 파일에 값을 복제하면 `tests/palette.test.ts`가 실패한다. 주제색은 `src/lib/format.ts`의 `GRAPH_COLORS`·`DARK_GRAPH_COLORS`에 있고 화면에는 `var(--topic-…)` 변수로 나가며, 본문·그래프·개별 화면의 값은 해당 CSS와 Astro 파일에 있다. 문서와 구현이 어긋나면 의도한 변경인지 확인하고, 문서가 낡은 경우 현재 구현에 맞춘다.
 - 디자인을 개선할 때는 기존 컴포넌트를 출발점으로 삼고, 달라지는 값과 동작을 관련 구현 및 `DESIGN.md`에 함께 반영한다.
 - `npm run design:lint`로 문서 형식과 명시된 색 조합을 검사한다. 이 명령은 `@google/design.md@0.4.0`을 사용한다. 오류가 0이어도 대비 경고와 실제 화면은 별도로 확인한다. lint는 구현 코드와의 값 일치까지 검사하지 않으므로 토큰을 바꿀 때 관련 CSS와 컴포넌트도 대조한다.
 
