@@ -408,6 +408,22 @@ test('every outline id exists in the rendered body so sidebar links land on a he
   for (const heading of entry.headings) assert.ok(renderedIds.includes(heading.id), `목차 id ${heading.id}가 본문에 없다`);
 });
 
+test('wiki and Markdown heading path links land on the heading under the named parent when heading names repeat', async () => {
+  const headings = '## A\n### 설정\n## B\n### 설정';
+  const vaultRoot = await makeVault({ ...files,
+    '01_Slipbox/설정노트.md': `---\ncreated: 2026-09-07\n---\n# 설정노트\n${headings}\n\n[[#B#설정]] [[#A#설정]]`,
+    '01_Slipbox/연결 노트.md': '---\ncreated: 2026-09-08\n---\n# 연결 노트\n[[설정노트#B#설정|B의 설정]] [일반 링크](설정노트.md#B#설정)'
+  });
+  const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
+  const own = noteAt(garden, '01_Slipbox/설정노트.md');
+  const renderedIds = [...own.bodyHtml.matchAll(/<h[1-6][^>]*\sid="([^"]+)"/g)].map((match) => match[1]);
+  assert.deepEqual(renderedIds, ['a', '설정', 'b', '설정-2']);
+  assert.deepEqual([...own.bodyHtml.matchAll(/href="[^"#]*#([^"]+)"/g)].map((match) => match[1]), ['설정-2', '설정']);
+  const linking = noteAt(garden, '01_Slipbox/연결 노트.md').bodyHtml;
+  assert.match(linking, /href="\/obsidian\/notes\/설정노트\/#설정-2">B의 설정<\/a>/);
+  assert.match(linking, /href="\/obsidian\/notes\/설정노트\/#설정-2">일반 링크<\/a>/);
+});
+
 test('a basename shared with an unpublished draft still links to the public note', async () => {
   const vaultRoot = await makeVault({ ...files,
     '20_Projects/blog/AI 활용.md': '---\ncreated: 2026-09-06\nstatus: published\n---\n# AI 활용\n공개 글.',
@@ -629,4 +645,18 @@ test('a development note whose first public tag is 개발/도구 or missing is r
   assert.ok(messages.some((m) => m.includes('first public tag is 개발/도구') && m.includes(`${dev}/Concepts/연결된 개념.md`)), messages.join('\n'));
   assert.ok(messages.some((m) => m.includes('no public tag') && m.includes(`${dev}/Concepts/고립된 개념.md`)), messages.join('\n'));
   assert.ok(garden.notes.some((note) => note.path === `${dev}/Concepts/연결된 개념.md`), '경고만 남기고 노트는 그대로 공개한다');
+});
+
+
+test('encoded Markdown note paths and heading paths resolve with matching references', async () => {
+  const vaultRoot = await makeVault({ ...files,
+    '01_Slipbox/설정 노트.md': '---\ncreated: 2026-09-07\n---\n# 설정 노트\n## 상위 절\n### 하위 절\n## 다른 절\n### 하위 절',
+    '01_Slipbox/인코딩 링크.md': '---\ncreated: 2026-09-08\n---\n# 인코딩 링크\n[이동](설정%20노트.md#다른%20절#하위%20절)'
+  });
+  const garden = await assembleGarden({ vaultRoot, config });
+  const source = noteAt(garden, '01_Slipbox/인코딩 링크.md');
+  const target = noteAt(garden, '01_Slipbox/설정 노트.md');
+  assert.ok(source.bodyHtml.includes(`href="${target.url}#하위-절-2"`));
+  assert.ok(source.outgoing.includes(target.path));
+  assert.ok(target.incoming.includes(source.path));
 });

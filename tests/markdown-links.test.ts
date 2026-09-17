@@ -50,6 +50,25 @@ test('public notes, external links, images, and unresolved targets retain their 
   assert.doesNotMatch(html, /비공개/);
 });
 
+test('wiki and Markdown heading links hand the heading path to the resolver, default to the last heading and show it for same-note links', () => {
+  const paths: string[] = [];
+  const renderer = createMarkdownRenderer({
+    resolveNote: (source, target, fragment, headingPath = '') => {
+      paths.push(headingPath);
+      const current = target === source;
+      return { title: current ? '현재 노트' : '대상 노트', url: `/notes/${current ? 'current' : 'target'}/${fragment ? `#${fragment}` : ''}` };
+    },
+    resolveAsset: () => null
+  });
+  const html = renderer('current.md', '[[대상#상위 절#하위 절]] [[#같은 절]] [[#같은 절|별칭]] [[#^block-id]] [일반 링크](대상.md#상위#하위)');
+  assert.match(html, /href="\/notes\/target\/#하위-절">대상 노트<\/a>/);
+  assert.match(html, /href="\/notes\/current\/#같은-절">같은 절<\/a>/);
+  assert.match(html, /href="\/notes\/current\/#같은-절">별칭<\/a>/);
+  assert.match(html, /href="\/notes\/current\/#block-id">현재 노트<\/a>/);
+  assert.match(html, /href="\/notes\/target\/#하위">일반 링크<\/a>/);
+  assert.deepEqual(paths, ['상위 절#하위 절', '같은 절', '같은 절', '^block-id', '상위#하위']);
+});
+
 test('note resolution leaves code examples and escaped wiki brackets untouched', () => {
   let resolutions = 0;
   const renderer = createMarkdownRenderer({
@@ -69,4 +88,20 @@ test('note resolution leaves code examples and escaped wiki brackets untouched',
   assert.equal(resolutions, 0);
   assert.match(html, /<code>\[\[hidden\/private.md\]\] \[별칭\]\(hidden\/private.md\)<\/code>/);
   assert.doesNotMatch(html, /비공개|class="private-note"/);
+});
+
+
+test('Markdown URLs decode paths and headings once without changing literal wiki targets', () => {
+  const received: [string, string | undefined, string | undefined][] = [];
+  const renderer = createMarkdownRenderer({ resolveNote: (_source, target, fragment, headingPath) => {
+    received.push([target, fragment, headingPath]);
+    return { title: '대상', url: '/notes/target/' };
+  } });
+  renderer('x.md', '[절](설정%20노트.md#상위%20절#하위%20절) [한번](literal%2520.md) [잘못된](bad%ZZ.md) [[literal%20.md]]');
+  assert.deepEqual(received, [
+    ['설정 노트.md', '하위-절', '상위 절#하위 절'],
+    ['literal%20.md', '', ''],
+    ['bad%ZZ.md', '', ''],
+    ['literal%20.md', '', '']
+  ]);
 });

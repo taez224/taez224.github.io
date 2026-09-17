@@ -1,7 +1,9 @@
 import type { PublicNote } from './content-model.ts';
 export type ResolvedNote = { visibility: 'private'; title?: never; url?: never } | { visibility?: 'public'; title?: string; url: string };
 interface Resolvers {
-  resolveNote?: (source: string, target: string, fragment?: string) => ResolvedNote | null | undefined;
+  // fragment는 제목 이름만으로 만든 기본 앵커이고, headingPath는 원문의 제목 경로(`상위#하위`, `^블록`)다.
+  // 대상 문서의 제목 구조를 아는 해석기는 headingPath로 같은 이름의 제목을 구분한다(headingAnchor).
+  resolveNote?: (source: string, target: string, fragment?: string, headingPath?: string) => ResolvedNote | null | undefined;
   resolveAsset?: (source: string, target: string) => { url: string } | null | undefined;
 }
 interface LinkContext extends Resolvers { sourcePath: string }
@@ -13,30 +15,52 @@ import { highlightCode } from './highlight.ts';
 import { escapeHtml } from './format.ts';
 import { isImagePath } from './image-types.ts';
 
+// 제목을 적지 않은 콜아웃의 한국어 기본 제목이다. 별칭은 Obsidian이 제목에 별칭 이름을 쓰는 것처럼 따로 둔다.
 const CALLOUT_TITLES: Record<string, string> = {
   abstract: '요약',
   article: '함께 읽기',
+  attention: '주의',
   bug: '문제',
+  caution: '주의',
+  check: '확인',
+  cite: '인용',
   compare: '비교',
   'compare-stacked': '비교',
   danger: '주의',
+  done: '완료',
+  error: '오류',
   example: '예시',
+  fail: '실패',
   failure: '실패',
   faq: '질문과 답변',
+  help: '도움말',
+  hint: '힌트',
+  important: '중요',
   info: '정보',
+  missing: '누락',
   note: '메모',
   question: '질문',
   quote: '인용',
   success: '성공',
+  summary: '요약',
   tip: '팁',
+  tldr: '요약',
   todo: '할 일',
   warning: '주의'
 };
 
-// markdown-it은 ~~취소선~~을 <s>로 그리므로 del과 함께 s도 허용한다.
+// Obsidian이 기본 종류로 취급하는 별칭이다(https://obsidian.md/help/callouts). 모양은 기본 종류의 클래스를 따르고,
+// 사이트에서 따로 꾸밀 수 있게 별칭 클래스도 함께 단다.
+const CALLOUT_ALIASES: Record<string, string> = {
+  attention: 'warning', caution: 'warning', check: 'success', cite: 'quote', done: 'success', error: 'danger',
+  fail: 'failure', faq: 'question', help: 'question', hint: 'tip', important: 'tip', missing: 'failure',
+  summary: 'abstract', tldr: 'abstract'
+};
+
+// markdown-it은 ~~취소선~~을 <s>로 그리므로 del과 함께 s도 허용한다. input과 label은 할 일 목록의 체크박스와 그 이름이다.
 const ALLOWED_TAGS = [
   'a', 'aside', 'blockquote', 'br', 'code', 'del', 'details', 'div', 'em', 'figcaption',
-  'figure', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'img', 'kbd', 'li', 'mark', 'ol',
+  'figure', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'img', 'input', 'kbd', 'label', 'li', 'mark', 'ol',
   'p', 'pre', 's', 'section', 'small', 'span', 'strong', 'sub', 'summary', 'sup', 'table',
   'tbody', 'td', 'tfoot', 'th', 'thead', 'tr', 'ul'
 ];
@@ -54,6 +78,9 @@ const ALLOWED_ATTRIBUTES = {
   h5: ['class', 'id'],
   h6: ['class', 'id'],
   img: ['alt', 'class', 'height', 'loading', 'src', 'title', 'width'],
+  input: ['checked', 'class', 'disabled', 'type'],
+  label: ['class'],
+  li: ['class'],
   mark: ['class'],
   p: ['class'],
   pre: ['class'],
@@ -98,12 +125,29 @@ function splitWikiTarget(rawTarget: unknown) {
   const target = parts.shift()?.trim() ?? '';
   const label = parts.join('|');
   const hashIndex = target.indexOf('#');
+  // Obsidian은 `노트#상위#하위`처럼 제목 경로를 적을 수 있다. 기본 앵커는 마지막 제목 이름으로 만들고,
+  // 같은 이름의 제목을 경로로 구분하는 일은 대상 문서의 제목 구조를 아는 해석기가 맡는다.
+  const headingPath = hashIndex < 0 ? '' : target.slice(hashIndex + 1);
+  const heading = headingPath.split('#').at(-1)!;
   return {
     target: hashIndex < 0 ? target : target.slice(0, hashIndex),
-    fragment: hashIndex < 0 ? '' : slugifyHeading(target.slice(hashIndex + 1)),
+    fragment: hashIndex < 0 ? '' : slugifyHeading(heading),
+    headingPath,
+    heading: heading.trim(),
     label
   };
 }
+
+// Obsidian의 그림 크기 표기다. 위키 임베드는 `![[그림.png|300]]`·`|300x200`이고, Markdown 그림은 대체 텍스트 끝의
+// `|300`이나 숫자만 쓴 `![300](주소)`다. 사이트는 너비만 따르고 높이는 대체 텍스트에서 떼어 내기만 한다.
+// 그림은 원래 비율로 너비에 맞추므로(본문 CSS의 height: auto) 높이 속성을 내보내면 불러오기 전 자리만 그 높이로
+// 잡혔다가 바뀌어 화면이 움직인다.
+const WIKI_IMAGE_SIZE = /^\s*(\d+)(?:x(\d+))?\s*$/;
+export const MARKDOWN_IMAGE_SIZE = /^(?:([\s\S]*)\|)?\s*(\d+)(?:x(\d+))?\s*$/;
+const sizeAttributes = (width?: string) => (width ? ` width="${width}"` : '');
+
+// 할 일 목록 항목의 첫머리 표시(`[ ]`, `[x]`)다. Obsidian은 괄호 안이 빈칸이 아니면 어떤 글자든 완료로 본다.
+export const TASK_MARKER = /^\[([^\]])\](?:[ \t]+|$)/;
 
 function renderPrivateNote(label: string, target: string): string {
   let decodedTarget = target;
@@ -115,35 +159,54 @@ function renderPrivateNote(label: string, target: string): string {
 function replaceWikiLinks(source: string, context: LinkContext): string {
   return source.replace(/!?\[\[([^\]]+)\]\]/g, (whole, rawTarget) => {
     const embedded = whole.startsWith('!');
-    const { target, fragment, label } = splitWikiTarget(rawTarget);
+    const { target, fragment, headingPath, heading, label } = splitWikiTarget(rawTarget);
     if (!target && !fragment) return whole;
 
     if (embedded) {
       const asset = context.resolveAsset?.(context.sourcePath, target);
       if (asset) {
-        const alt = label || target.replace(/\.[^.]+$/, '');
-        return `<img src="${escapeHtml(asset.url)}" alt="${escapeHtml(alt)}">`;
+        const size = label.match(WIKI_IMAGE_SIZE);
+        const alt = (size ? '' : label) || target.replace(/\.[^.]+$/, '');
+        return `<img src="${escapeHtml(asset.url)}" alt="${escapeHtml(alt)}"${sizeAttributes(size?.[1])}>`;
       }
     }
 
-    const note = context.resolveNote?.(context.sourcePath, target || context.sourcePath, fragment);
+    const note = context.resolveNote?.(context.sourcePath, target || context.sourcePath, fragment, headingPath);
     if (!note) return escapeHtml(label || target || whole);
     if (note.visibility === 'private') return renderPrivateNote(label, target);
-    const display = label || note.title || target;
+    // 같은 문서의 제목 링크(`[[#절]]`)는 지금 읽는 노트의 제목 대신 절 이름을 보인다. 블록 링크는 보일 제목이 없다.
+    const sameNoteHeading = !target && !heading.startsWith('^') ? heading : '';
+    const display = label || sameNoteHeading || note.title || target;
     return `<a class="internal-note-link" href="${escapeHtml(note.url)}">${escapeHtml(display)}</a>`;
   });
+}
+
+// 일반 Markdown URL만 한 번 디코딩한다. 위키링크의 퍼센트 문자는 파일 이름일 수 있어 그대로 둔다.
+// 잘못된 퍼센트 표기는 원문을 유지해 문서 전체의 렌더링을 중단하지 않는다.
+function decodeLinkPart(value: string): string {
+  try { return decodeURIComponent(value); } catch { return value; }
+}
+
+function splitMarkdownTarget(rawTarget: string) {
+  const hash = rawTarget.indexOf('#');
+  const target = decodeLinkPart(hash < 0 ? rawTarget : rawTarget.slice(0, hash));
+  const headingPath = hash < 0 ? '' : rawTarget.slice(hash + 1).split('#').map(decodeLinkPart).join('#');
+  const fragment = headingPath ? slugifyHeading(headingPath.split('#').at(-1)!) : '';
+  return { target, fragment, headingPath };
 }
 
 function replaceStandardLinks(source: string, context: LinkContext): string {
   if (source.startsWith('![')) return source.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (whole, alt, target) => {
     if (/^(?:https?:)?\/\//i.test(target) || target.startsWith('data:')) return whole;
     const asset = context.resolveAsset?.(context.sourcePath, target);
-    return asset ? `<img src="${escapeHtml(asset.url)}" alt="${escapeHtml(alt)}">` : whole;
+    if (!asset) return whole;
+    const size = alt.match(MARKDOWN_IMAGE_SIZE);
+    return `<img src="${escapeHtml(asset.url)}" alt="${escapeHtml(size ? size[1] ?? '' : alt)}"${sizeAttributes(size?.[2])}>`;
   });
 
   return source.replace(/\[([^\]]*)\]\(([^)\s]+\.md(?:#[^)]*)?)(?:\s+"[^"]*")?\)/gi, (_whole, label, rawTarget) => {
-    const { target, fragment } = splitWikiTarget(rawTarget);
-    const note = context.resolveNote?.(context.sourcePath, target, fragment);
+    const { target, fragment, headingPath } = splitMarkdownTarget(rawTarget);
+    const note = context.resolveNote?.(context.sourcePath, target, fragment, headingPath);
     if (note?.visibility === 'private') return renderPrivateNote(label, target);
     return note
       ? `<a class="internal-note-link" href="${escapeHtml(note.url)}">${escapeHtml(label)}</a>`
@@ -174,6 +237,47 @@ export function headingId(headingIds: Map<string, number>, text: unknown): strin
   const count = (headingIds.get(baseId) ?? 0) + 1;
   headingIds.set(baseId, count);
   return count === 1 ? baseId : `${baseId}-${count}`;
+}
+
+export interface OutlineHeading { id: string; level: number; text: string }
+
+// 렌더러가 매길 제목 id를 렌더링하지 않고 미리 구한다. 렌더러처럼 본문 흐름(level 0)의 제목만 같은 순서로 센다.
+// 콜아웃·인용·목록 안의 제목은 이 파서에서도 인용문·목록 안이라 level이 0보다 크다.
+export function headingOutline(body: string): OutlineHeading[] {
+  const ids = new Map<string, number>();
+  const tokens = structureParser.parse(stripObsidianComments(body), {});
+  return tokens.flatMap((token, index) => token.type === 'heading_open' && token.level === 0
+    ? [{ id: headingId(ids, tokens[index + 1].content), level: Number(token.tag.slice(1)), text: headingTextForId(tokens[index + 1].content) }]
+    : []);
+}
+
+// Obsidian 제목 경로(`상위#하위`)를 실제 제목 id로 바꾼다. 마지막 이름의 제목 가운데 앞의 이름들이 상위 제목에
+// 순서대로 있는 첫 제목을 고른다. 경로가 맞는 제목이 없으면 이름이 같은 첫 제목, 그것도 없으면 이름으로 만든
+// 기본 앵커를 쓴다. 이름은 글자가 같은 제목을 먼저 찾고, 없으면 id로 바꿨을 때 같은 제목을 찾는다.
+// 블록 링크(`^id`)는 제목이 아니므로 블록 id 그대로 둔다.
+export function headingAnchor(outline: readonly OutlineHeading[], headingPath: string): string {
+  const names = headingPath.split('#').map((name) => headingTextForId(name)).filter(Boolean);
+  const last = headingPath.split('#').at(-1)!.trim();
+  if (!last) return '';
+  if (last.startsWith('^')) return slugifyHeading(last);
+  const target = names.at(-1)!;
+  const parents = names.slice(0, -1);
+  const exact = (text: string, name: string) => text === name;
+  const loose = (text: string, name: string) => slugifyHeading(text) === slugifyHeading(name);
+  const find = (matches: typeof exact, wanted: readonly string[]) => {
+    const ancestors: OutlineHeading[] = [];
+    for (const heading of outline) {
+      while (ancestors.length && ancestors.at(-1)!.level >= heading.level) ancestors.pop();
+      if (matches(heading.text, target)) {
+        let found = 0;
+        for (const ancestor of ancestors) if (found < wanted.length && matches(ancestor.text, wanted[found])) found += 1;
+        if (found === wanted.length) return heading.id;
+      }
+      ancestors.push(heading);
+    }
+    return undefined;
+  };
+  return find(exact, parents) ?? find(loose, parents) ?? find(exact, []) ?? find(loose, []) ?? slugifyHeading(last);
 }
 
 export function stripObsidianComments(source: unknown): string {
@@ -306,6 +410,18 @@ function rewriteLine(line: Token[], make: (type: string, content: string) => Tok
   return result;
 }
 
+// 대체 텍스트 자리의 크기 표기를 너비 속성으로 옮기고 나머지만 대체 텍스트로 남긴다. 높이는 따르지 않는다.
+function applyImageSize(image: Token, Token: TokenConstructor) {
+  const size = image.content.match(MARKDOWN_IMAGE_SIZE);
+  if (!size) return;
+  const alt = size[1] ?? '';
+  const text = new Token('text', '', 0);
+  text.content = alt;
+  image.children = alt ? [text] : [];
+  image.content = alt;
+  image.attrSet('width', size[2]);
+}
+
 function articleTarget(line: string) {
   const match = line.match(/^\s*\[\[([^\]]+)\]\]\s*$/);
   if (!match) return null;
@@ -320,7 +436,8 @@ const CALLOUT_LINE = /^>\s?(.*)$/;
 
 function createMarkdownIt() {
   const markdown = new MarkdownIt({
-    breaks: false,
+    // 작성 기준인 Obsidian 기본 설정(Strict line breaks 끔)처럼 문단 안의 Enter 한 번을 줄바꿈으로 그린다.
+    breaks: true,
     highlight: highlightCode,
     html: true,
     linkify: true,
@@ -457,7 +574,7 @@ function createMarkdownIt() {
     // 인라인 규칙으로 문서 순서대로 모이도록 일반 콜아웃으로 둔다.
     const context = env.context;
     const target = env.articleCards && type === 'article' && !foldMarker && quotedLines.length === 1 ? articleTarget(quotedLines[0]) : null;
-    const note = target && context ? context.resolveNote?.(context.sourcePath, target.target, target.fragment) : null;
+    const note = target && context ? context.resolveNote?.(context.sourcePath, target.target, target.fragment, target.headingPath) : null;
     if (note && note.visibility !== 'private' && note.url && env.articleCards) {
       const cardIndex = env.articleCards.length;
       const title = note.title || target!.target;
@@ -470,13 +587,16 @@ function createMarkdownIt() {
       return true;
     }
 
-    const open = state.push('callout_open', foldMarker === '-' ? 'details' : 'aside', 1);
+    // 접기 표시가 있으면 Obsidian처럼 접을 수 있는 콜아웃이다. `-`는 접힌 채로, `+`는 펼친 채로 시작한다.
+    const open = state.push('callout_open', foldMarker ? 'details' : 'aside', 1);
     open.block = true;
     open.map = [startLine, next];
+    const kind = type.replace(/[^a-z0-9_-]/gi, '') || 'note';
+    const canonical = CALLOUT_ALIASES[kind];
     open.meta = {
-      folded: foldMarker === '-',
+      expanded: foldMarker === '+',
       title: customTitle?.trim() || CALLOUT_TITLES[type] || type,
-      className: `callout callout-${type.replace(/[^a-z0-9_-]/gi, '') || 'note'}`
+      className: canonical ? `callout callout-${canonical} callout-${kind}` : `callout callout-${kind}`
     };
     // 본문 토큰은 새 상태에서 깊이 0으로 나오므로 현재 깊이를 더해 넣는다. 제목 id 규칙이 level 0만 보기 때문이다.
     const body: Token[] = [];
@@ -493,9 +613,9 @@ function createMarkdownIt() {
     return true;
   });
   markdown.renderer.rules.callout_open = (tokens, index) => {
-    const { folded, title, className } = tokens[index].meta as { folded: boolean; title: string; className: string };
-    return folded
-      ? `<details class="${className}"><summary>${escapeHtml(title)}</summary><div class="callout-body">`
+    const { expanded, title, className } = tokens[index].meta as { expanded: boolean; title: string; className: string };
+    return tokens[index].tag === 'details'
+      ? `<details class="${className}"${expanded ? ' open' : ''}><summary>${escapeHtml(title)}</summary><div class="callout-body">`
       : `<aside class="${className}"><div class="callout-title">${escapeHtml(title)}</div><div class="callout-body">`;
   };
   markdown.renderer.rules.callout_close = (tokens, index) => `</div></${tokens[index].tag}>\n`;
@@ -506,9 +626,35 @@ function createMarkdownIt() {
 
   // Obsidian의 형광(==글==)과 블록 id(줄 끝의 ^id)를 인라인 토큰에서 바꾼다. 원문을 미리 고치지 않으므로 코드 안의
   // 표기는 저절로 남고, 이스케이프한 `\=`는 text_special 토큰이라 표시로 읽히지 않는다. 그래서 text_join보다 앞에 둔다.
+  // 외부 주소 그림은 vault_links를 거치지 않고 markdown-it의 image 토큰이 되므로 크기 표기를 여기서 떼어 낸다.
   markdown.core.ruler.after('inline', 'obsidian_inline', (state) => {
     for (const token of state.tokens) {
-      if (token.type === 'inline' && token.children) token.children = rewriteObsidianInline(token.children, state.Token);
+      if (token.type !== 'inline' || !token.children) continue;
+      for (const child of token.children) if (child.type === 'image') applyImageSize(child, state.Token);
+      token.children = rewriteObsidianInline(token.children, state.Token);
+    }
+  });
+
+  // 할 일 목록은 목록 항목 첫 문단이 `[ ]`·`[x]`로 시작할 때다. 원문(inline.content)으로 판단하므로 이스케이프한
+  // `\[x\]`는 할 일이 아니다. 글자 토큰이 하나로 합쳐진 뒤에 표시를 떼어 내려고 text_join 다음에 둔다.
+  markdown.core.ruler.after('text_join', 'task_list', (state) => {
+    const tokens = state.tokens;
+    for (let index = 2; index < tokens.length; index += 1) {
+      const inline = tokens[index];
+      if (inline.type !== 'inline' || tokens[index - 1].type !== 'paragraph_open' || tokens[index - 2].type !== 'list_item_open') continue;
+      const marker = inline.content.match(TASK_MARKER);
+      const first = inline.children?.[0];
+      if (!marker || first?.type !== 'text' || !first.content.startsWith(`[${marker[1]}]`)) continue;
+      first.content = first.content.replace(TASK_MARKER, '');
+      const checked = marker[1] !== ' ';
+      // label로 체크박스와 항목 글을 묶어 글이 체크박스의 이름이 되게 한다. 중첩 목록은 label 밖에 남으므로
+      // 완료 표시(흐린 색·취소선)를 label에만 걸면 하위 항목으로 번지지 않는다.
+      const open = new state.Token('html_inline', '', 0);
+      open.content = `<label class="task-list-item-label"><input class="task-list-item-checkbox" type="checkbox" disabled${checked ? ' checked' : ''}>`;
+      const close = new state.Token('html_inline', '', 0);
+      close.content = '</label>';
+      inline.children = [open, ...inline.children!, close];
+      tokens[index - 2].attrJoin('class', checked ? 'task-list-item is-checked' : 'task-list-item');
     }
   });
 
@@ -570,6 +716,11 @@ export function createMarkdownRenderer({ resolveNote, resolveAsset }: Resolvers)
       allowedTags: ALLOWED_TAGS,
       allowProtocolRelative: false,
       transformTags: {
+        // 본문에 남는 입력 요소는 할 일 목록의 체크박스뿐이다. 원문에 직접 쓴 input도 누를 수 없는 체크박스로만 남겨 폼이 되지 않게 한다.
+        input: (tagName, attributes) => ({
+          tagName,
+          attribs: { class: 'task-list-item-checkbox', type: 'checkbox', disabled: '', ...(attributes.checked === undefined ? {} : { checked: '' }) }
+        }),
         a: (tagName, attributes) => {
           if (/^https?:\/\//i.test(attributes.href ?? '')) {
             return {

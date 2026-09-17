@@ -13,7 +13,7 @@ type PublicEntry = Omit<PublicNote, 'thumbnail' | 'thumbnailStyle' | 'articleCar
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { createMarkdownRenderer } from './markdown.ts';
+import { createMarkdownRenderer, headingAnchor, headingOutline, type OutlineHeading } from './markdown.ts';
 import { developmentCategory, externalPublicationFor, pathMatches, publicUrl, isIncluded as includedByPolicy, validatePublicationConfig } from './publication.ts';
 import { readBooks } from './books.ts';
 import { createAssetResolver } from './public-assets.ts';
@@ -203,7 +203,14 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
 
   const assets = await createAssetResolver({ vaultRoot, config, base });
 
-  function resolvePublicNote(sourcePath: string, rawTarget: unknown, fragment = '') {
+  // 제목 경로 링크(`노트#상위#하위`)는 대상 노트의 제목 구조로 실제 id를 고른다. 노트마다 처음 필요할 때 한 번 뽑는다.
+  const outlines = new Map<string, OutlineHeading[]>();
+  function outlineFor(relativePath: string, publicContent: string): OutlineHeading[] {
+    if (!outlines.has(relativePath)) outlines.set(relativePath, headingOutline(publicContent));
+    return outlines.get(relativePath)!;
+  }
+
+  function resolvePublicNote(sourcePath: string, rawTarget: unknown, fragment = '', headingPath = '') {
     const target = String(rawTarget ?? '').trim();
     const resolved = target === sourcePath
       ? sourcePath
@@ -212,7 +219,9 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
     if (!publicEntries.has(resolved)) return { visibility: 'private' as const };
     const entry = publicEntries.get(resolved)!;
     if (entry.kind === 'book') return null;
-    return { title: entry.displayTitle || entry.title, url: siteUrl(resolved, entry.contentMode === 'external' ? '' : fragment) };
+    if (entry.contentMode === 'external') return { title: entry.displayTitle || entry.title, url: siteUrl(resolved) };
+    const anchor = headingPath ? headingAnchor(outlineFor(resolved, entry.publicContent), headingPath) : fragment;
+    return { title: entry.displayTitle || entry.title, url: siteUrl(resolved, anchor) };
   }
 
   const renderMarkdown = createMarkdownRenderer({

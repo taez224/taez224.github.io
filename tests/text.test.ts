@@ -59,6 +59,14 @@ test('search text drops prose block ids but keeps code block and inline code con
   assert.equal(searchText('문장 ^prose-id\n\n```md\n코드 ^code-id\n```\n\n`인라인 ^inline-id`'), '문장 코드 ^code-id 인라인 ^inline-id');
 });
 
+test('search text keeps image alt text without Obsidian size suffixes', () => {
+  assert.equal(searchText('![설명|300](https://example.com/a.png) ![250](https://example.com/b.png) ![2024년](https://example.com/c.png) 끝'), '설명 2024년 끝');
+});
+
+test('search text drops task list markers but keeps escaped ones', () => {
+  assert.equal(searchText('- [ ] 할 일\n- [x] 한 일\n- \\[x\\] 글자'), '할 일 한 일 [x] 글자');
+});
+
 // 요약 발췌는 검색 텍스트와 같은 파싱에서 나오되, 본문 흐름의 제목과 코드 블록을 뺀다.
 test('the summary excerpt drops headings and code blocks but keeps inline code', () => {
   assert.deepEqual(analyzeText('## 제목\n\n본문 `인라인`\n\n```\n코드\n```'), { bodyText: '제목 본문 인라인 코드', excerptText: '본문 인라인' });
