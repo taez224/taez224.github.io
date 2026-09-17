@@ -26,6 +26,8 @@
 .body .task-list-item { list-style: none; }
 .body .task-list-item-checkbox { appearance: none; display: inline-block; box-sizing: border-box; width: 14px; height: 14px; margin: 0 8px 0 -22px; vertical-align: -2px; border: 1.5px solid var(--ink); border-radius: 2px; background: var(--paper-strong); cursor: default; }
 .body .task-list-item-checkbox:checked { background: var(--ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2 5 8.7 9.6 3.5' fill='none' stroke='%23fdfdfa' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 10px no-repeat; }
+/* 체크 표시는 채운 먹색 위의 밝은 선이다. 어두운 화면에서는 먹색이 밝아지므로 선을 바탕색으로 바꾼다. */
+@media (prefers-color-scheme: dark) { .body .task-list-item-checkbox:checked { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2 5 8.7 9.6 3.5' fill='none' stroke='%23151b17' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); } }
 .body .task-list-item.is-checked > .task-list-item-label,
 .body .task-list-item.is-checked > p > .task-list-item-label { color: var(--muted); text-decoration: line-through; }
 .body blockquote { margin: 18px 0; padding: 4px 16px; border-left: 3px solid var(--line); color: var(--muted); }
@@ -65,6 +67,7 @@
 .diagram-viewer { width: min(96vw, 1600px); max-width: none; height: min(92dvh, 1100px); max-height: none; padding: 0; border: 1px solid var(--line); background: var(--paper); color: var(--ink); }
 .diagram-viewer[open] { display: flex; flex-direction: column; }
 .diagram-viewer::backdrop { background: rgb(37 46 41 / .55); }
+@media (prefers-color-scheme: dark) { .diagram-viewer::backdrop { background: rgb(0 0 0 / .7); } }
 /* 보기를 바꾸는 버튼과 닫는 버튼은 성격이 달라 양끝으로 떼어 놓는다. 나란히 두면 크기를 바꾸려다 닫기 쉽다. */
 .diagram-viewer-tools { flex: none; display: flex; gap: 8px; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--line); }
 .diagram-viewer-tools button { display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 4px; background: var(--paper-strong); color: var(--muted); font-size: var(--t-meta); transition: border-color .15s ease, color .15s ease; }

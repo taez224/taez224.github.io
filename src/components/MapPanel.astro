@@ -27,6 +27,7 @@ const { startpoints, hubs = [] } = Astro.props;
   .sheet-backdrop { display: none; }
   @media (max-width: 720px) {
     .sheet-backdrop { display: block; position: fixed; inset: 0; z-index: 30; background: color-mix(in srgb, var(--ink) 25%, transparent); }
+    @media (prefers-color-scheme: dark) { .sheet-backdrop { background: rgb(0 0 0 / .45); } }
     .sheet-backdrop[hidden] { display: none; }
     .map-panel { position: fixed; z-index: 31; right: 0; bottom: 0; left: 0; max-height: 55dvh; padding: 12px 20px 24px; border-top: 1px solid var(--line); border-radius: 0; background: var(--paper-strong); box-shadow: none; transform: translateY(100%); transition: transform .2s ease; overflow-y: auto; }
     .map-panel[data-open] { transform: translateY(0); }

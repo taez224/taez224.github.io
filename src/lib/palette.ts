@@ -17,3 +17,19 @@ export const PALETTE = {
   // 지도 간선. 불투명도를 낮춰 그리므로 구분선(line)보다 짙은 값에서 출발한다.
   edge: '#9aab9d'
 } as const;
+
+// 어두운 화면의 같은 역할 값이다. 시스템 설정(prefers-color-scheme: dark)을 따르고, site.css의 미디어 쿼리와 DESIGN.md의 -dark 토큰이 같은 값을 쓴다.
+// 라이트를 뒤집지 않고 먹색과 같은 녹회색 색조로 따로 짰다. 바탕보다 올라온 판(paper-strong, accent-soft)일수록 밝아서 그림자 없이 층이 보인다.
+// 글자는 흰색 대신 옅은 먹색이라 본문 대비가 14:1 안팎이고, muted는 가장 밝은 판(accent-soft) 위에서 4.6:1을 넘는 가장 어두운 값이다.
+export const DARK_PALETTE = {
+  paper: '#151b17',
+  'paper-strong': '#1c221e',
+  ink: '#e1e8e3',
+  muted: '#89948c',
+  line: '#353d37',
+  'accent-soft': '#242b26',
+  warning: '#b37d51',
+  bug: '#ae7e7d',
+  highlight: '#574d24',
+  edge: '#616c64'
+} as const satisfies Record<keyof typeof PALETTE, string>;

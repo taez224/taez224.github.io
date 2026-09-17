@@ -12,6 +12,15 @@ colors:
   warning: '#985d2f'
   bug: '#8e5d5d'
   highlight: '#e7d99b'
+  primary-dark: '#e1e8e3'
+  paper-dark: '#151b17'
+  paper-strong-dark: '#1c221e'
+  muted-dark: '#89948c'
+  line-dark: '#353d37'
+  accent-soft-dark: '#242b26'
+  warning-dark: '#b37d51'
+  bug-dark: '#ae7e7d'
+  highlight-dark: '#574d24'
   code-bg: '#ffffff'
   code-text: '#24292f'
   code-comment: '#6e7781'
@@ -384,6 +393,46 @@ components:
   search-dialog-empty:
     backgroundColor: '{colors.paper-strong}'
     textColor: '{colors.muted}'
+  article-dark:
+    backgroundColor: '{colors.paper-dark}'
+    textColor: '{colors.primary-dark}'
+    typography: '{typography.body}'
+  meta-line-dark:
+    backgroundColor: '{colors.paper-dark}'
+    textColor: '{colors.muted-dark}'
+    typography: '{typography.meta}'
+  selected-meta-dark:
+    backgroundColor: '{colors.accent-soft-dark}'
+    textColor: '{colors.muted-dark}'
+    typography: '{typography.meta}'
+  selected-control-dark:
+    backgroundColor: '{colors.line-dark}'
+    textColor: '{colors.primary-dark}'
+    typography: '{typography.meta}'
+    rounded: '{rounded.control}'
+  button-primary-dark:
+    backgroundColor: '{colors.primary-dark}'
+    textColor: '{colors.paper-strong-dark}'
+    typography: '{typography.ui}'
+    rounded: '{rounded.control}'
+  button-primary-hover-dark:
+    backgroundColor: '{colors.muted-dark}'
+    textColor: '{colors.paper-strong-dark}'
+  callout-title-dark:
+    backgroundColor: '{colors.paper-strong-dark}'
+    textColor: '{colors.muted-dark}'
+    typography: '{typography.callout-title}'
+  callout-warning-title-dark:
+    backgroundColor: '{colors.paper-strong-dark}'
+    textColor: '{colors.warning-dark}'
+    typography: '{typography.callout-title}'
+  callout-bug-title-dark:
+    backgroundColor: '{colors.paper-strong-dark}'
+    textColor: '{colors.bug-dark}'
+    typography: '{typography.callout-title}'
+  text-highlight-dark:
+    backgroundColor: '{colors.highlight-dark}'
+    textColor: '{colors.primary-dark}'
   map-panel:
     backgroundColor: '{colors.paper-strong}'
     textColor: '{colors.primary}'
@@ -418,7 +467,7 @@ Thinking Garden은 글과 개발 노트를 읽으며 관련 생각으로 이어�
 
 `warning`과 `bug`는 본문 콜아웃의 위 괘선·머리표·아이콘에, `highlight`는 형광 표시에 사용한다. 개발은 통합된 주제색을 사용하고, 버그와 글쓰기는 같은 색상 계열을 공유하지만 용도로 구분한다. 그래프 간선은 `--edge`(`#9aab9d`) 색을 낮은 불투명도로 그리며, 투명도는 [graph.css](src/styles/graph.css)에서 관리한다. 먹색의 반투명 변형(인라인 코드 배경, 링크 밑줄, 그림자, 시트 뒤 배경)은 `color-mix()`로 `--ink`에서 만들어 값을 따로 적지 않는다.
 
-다크 모드는 아직 두지 않고 `color-scheme: light`만 선언한다. 도입하지 않기로 정한 것이 아니라 보류다. 2026-09 사이트 전체 디자인 점검을 마친 뒤 다크 팔레트 시안을 비교해 도입 여부를 정한다. 도입한다면 `palette.ts`에 역할별 dark 값을 더하고, 대비 테스트를 두 테마에 적용한다.
+어두운 화면은 운영체제·브라우저 설정(`prefers-color-scheme: dark`)을 따르고 사이트 안에 전환 버튼은 두지 않는다. 헤더에 자리가 없고, 선택을 기억하는 스크립트가 없으니 첫 화면부터 맞는 색으로 그려진다. 값은 [palette.ts](src/lib/palette.ts)의 `DARK_PALETTE`가 단일 출처이고, YAML의 `-dark` 토큰과 `site.css`의 미디어 쿼리가 같은 값을 쓴다. 2026-09 점검 끝에 녹회색·세피아·중성 회색 세 시안을 비교해 먹색과 같은 녹회색 색조를 골랐다. 라이트를 뒤집지 않고 따로 짰다. 바탕(`paper-dark`)보다 올라온 판(`paper-strong-dark`, `accent-soft-dark`)일수록 밝아서 그림자 없이 층이 보인다. 글자는 흰색 대신 옅은 먹색이라 본문 대비가 14:1이고, `muted-dark`는 가장 밝은 판 위에서도 4.6:1이다. 먹색 반투명 변형은 `--ink`를 따라 저절로 바뀌지만, 페이지를 덮는 뒤 배경은 어둡게 해야 하므로 어두운 화면에서는 검정 반투명(검색 50%, 도표 보기 70%, 지도 시트 45%)을 따로 적는다. 검은 글리프인 GitHub·Brunch 로고는 색을 뒤집는다.
 
 도표는 연두색 노드와 먹색 글자를 기본으로 하고, 낮은 채도의 색으로 묶음과 항목을 구분한다. 작성자가 의미를 부여한 색은 유지하며, 세부 팔레트는 [도표 설정](src/scripts/mermaid-config.ts)에서 관리한다.
 

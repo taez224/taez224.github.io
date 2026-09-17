@@ -17,6 +17,8 @@ const shown = contacts.filter((contact) => contact.name !== 'Velog' && contact.i
   .contacts a:active { transform: scale(.97); }
   .contacts img { width: 20px; height: 20px; object-fit: contain; filter: grayscale(1); opacity: .7; transition: opacity .15s ease; }
   .contacts a:focus-visible img { opacity: 1; }
+  /* GitHub·Brunch 로고는 검은 글리프라 어두운 바탕에서 사라진다. 뒤집어 밝은 글리프로 둔다. LinkedIn은 사각형 안의 흰 글자라 그대로 읽힌다. */
+  @media (prefers-color-scheme: dark) { .contacts img:is([src$="/github.svg"], [src$="/brunch.png"]) { filter: grayscale(1) invert(1); } }
   @media (hover: hover) { .contacts a:hover { background: var(--accent-soft); } .contacts a:hover img { opacity: 1; } }
   @media (max-width: 720px) { .contacts a { width: 44px; height: 44px; } }
 </style>
