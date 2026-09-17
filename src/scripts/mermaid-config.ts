@@ -1,5 +1,5 @@
 import type { MermaidConfig } from 'mermaid';
-import { PALETTE } from '../lib/palette.ts';
+import { PALETTE, DARK_PALETTE } from '../lib/palette.ts';
 
 // 도표에서 항목마다 돌려 쓰는 색이다. Mermaid는 묶음(subgraph·복합 상태·유스케이스 경계)과
 // 항목이 여러 개인 도표(클래스도·ER·시퀀스 참여자)에 이 배열의 색을 순서대로 물린다.
@@ -55,58 +55,92 @@ const RENDERING_BASE: MermaidConfig = {
   agentflow: { useMaxWidth: false, minNodeWidth: 60 }
 };
 
+// 어두운 화면의 도표 색이다. 위 두 배열과 같은 색상각을 유지하고 밝기만 다시 골랐다.
+// 테두리는 어두운 도표 바탕(paper-strong)에서 3.4:1, 면은 명도 29%·채도를 낮춘 색이라 바탕과의 차이가 1.13~1.17로
+// 라이트의 깊이와 비슷하고, 먹색 글자는 모든 면에서 11:1을 넘는다.
+const DIAGRAM_DARK_BORDER_COLORS = [
+  '#5b7695', '#8e6d47', '#577b67', '#a25f7d', '#84732d', '#716da7',
+  '#956767', '#3e7c85', '#946291', '#5f7b50', '#826a91', '#767467'
+];
+const DIAGRAM_DARK_FILL_COLORS = [
+  '#1e2c3c', '#372818', '#1b3125', '#39242d', '#312b16', '#2a293c',
+  '#3b2424', '#143035', '#352534', '#242f1e', '#312638', '#2d2c21'
+];
+
+// 화면 모드마다 달라지는 색만 모은 것이다. 나머지 테마 변수는 두 모드가 같다.
+interface DiagramColors { theme: 'redux-color' | 'redux-dark-color'; ink: string; line: string; surface: string; lineColor: string; mainBkg: string; secondaryColor: string; noteBkgColor: string; noteBorderColor: string; borders: string[]; fills: string[] }
+
+function siteDiagramConfig(colors: DiagramColors): MermaidConfig {
+  const { ink, line, surface, borders, fills } = colors;
+  return {
+    ...RENDERING_BASE,
+    // 항목별 색을 켜는 조건이 테마 이름이다. colorThemeGate.ts의 COLOR_THEMES에 redux-color와
+    // redux-dark-color만 들어 있어서, base로 두면 아래 색 배열을 넘겨도 Mermaid가 무시한다.
+    // 그래서 이름만 redux 계열로 두고 색은 themeVariables에서 전부 사이트 값으로 덮는다.
+    theme: colors.theme,
+    themeVariables: {
+      background: surface,
+      lineColor: colors.lineColor,
+      // redux 테마는 글자와 선을 남보라 계열(#28253D)로 두므로 먹색으로 되돌린다.
+      primaryTextColor: ink,
+      textColor: ink,
+      nodeTextColor: ink,
+      titleColor: ink,
+      // 노드 자체는 연두 한 가지로 두고 색은 묶음이 지게 한다. 노드까지 색을 돌리면
+      // 색이 묶음을 뜻하는지 항목을 뜻하는지 읽는 쪽에서 구분할 수 없다.
+      mainBkg: colors.mainBkg,
+      secondaryColor: colors.secondaryColor,
+      tertiaryColor: surface,
+      // 본문의 표·코드·콜아웃과 같은 1px 구분선 색이다. 묶음 테두리만 색을 갖게 하려고 낮게 둔다.
+      nodeBorder: line,
+      stateBorder: line,
+      actorBorder: line,
+      clusterBkg: surface,
+      clusterBorder: line,
+      // 기본값은 형광에 가까운 노랑(#fff5ad)이라 본문의 형광 표시(--highlight)와 같은 계열로 낮춘다.
+      noteBkgColor: colors.noteBkgColor,
+      noteBorderColor: colors.noteBorderColor,
+      noteTextColor: ink,
+      borderColorArray: borders,
+      bkgColorArray: fills,
+      // 유스케이스는 행위자·기능·경계가 각각 고정 색을 쓴다. 배열과 같은 대역에서 골라 맞춘다.
+      usecaseActorBorder: borders[10],
+      usecaseActorBkg: fills[10],
+      usecaseBorder: borders[7],
+      usecaseBkg: fills[7],
+      usecaseBoundaryBorder: line,
+      usecaseBoundaryBkg: surface,
+      usecaseIncludeLine: borders[0],
+      usecaseExtendLine: borders[1],
+      fontFamily: 'Pretendard Variable, Pretendard, sans-serif',
+      fontSize: '16px',
+      // redux 테마는 도표의 모든 글자를 600으로 올린다. 본문 옆에서 도표만 굵어 보이므로 되돌린다.
+      fontWeight: 400,
+      noteFontWeight: 400,
+      // 테두리 2px에 라벨 12px 모서리는 도표만 둥글고 굵어 보인다. 본문의 표·코드와 같은 인상으로 맞춘다.
+      strokeWidth: 1,
+      radius: 4
+    }
+  };
+}
+
 // 도표의 테마·배치·외형을 여기서만 바꾼다. 값을 비교할 때 이 파일 하나만 고치면 된다.
 // 12가 배치·외형·접힘 폭 기본값을 한꺼번에 바꿨으므로, 측정해서 고른 값을 기본값에 맡기지 않고 적어 둔다.
-export const MERMAID_CONFIG: MermaidConfig = {
-  ...RENDERING_BASE,
-  // 항목별 색을 켜는 조건이 테마 이름이다. colorThemeGate.ts의 COLOR_THEMES에 redux-color와
-  // redux-dark-color만 들어 있어서, base로 두면 아래 색 배열을 넘겨도 Mermaid가 무시한다.
-  // 그래서 이름만 redux-color로 두고 색은 themeVariables에서 전부 사이트 값으로 덮는다.
-  theme: 'redux-color',
-  themeVariables: {
-    background: '#fbfaf6',
-    lineColor: '#746f64',
-    // redux-color는 글자와 선을 남보라 계열(#28253D)로 두므로 먹색으로 되돌린다.
-    primaryTextColor: PALETTE.ink,
-    textColor: PALETTE.ink,
-    nodeTextColor: PALETTE.ink,
-    titleColor: PALETTE.ink,
-    // 노드 자체는 연두 한 가지로 두고 색은 묶음이 지게 한다. 노드까지 색을 돌리면
-    // 색이 묶음을 뜻하는지 항목을 뜻하는지 읽는 쪽에서 구분할 수 없다.
-    mainBkg: '#e3ece5',
-    secondaryColor: '#f2efe7',
-    tertiaryColor: '#fbfaf6',
-    // 본문의 표·코드·콜아웃과 같은 1px 구분선 색이다. 묶음 테두리만 색을 갖게 하려고 낮게 둔다.
-    nodeBorder: PALETTE.line,
-    stateBorder: PALETTE.line,
-    actorBorder: PALETTE.line,
-    clusterBkg: '#fbfaf6',
-    clusterBorder: PALETTE.line,
-    // 기본값은 형광에 가까운 노랑(#fff5ad)이라 본문의 형광 표시(--highlight)와 같은 계열로 낮춘다.
-    noteBkgColor: '#f4efd8',
-    noteBorderColor: '#c9b978',
-    noteTextColor: PALETTE.ink,
-    borderColorArray: DIAGRAM_BORDER_COLORS,
-    bkgColorArray: DIAGRAM_FILL_COLORS,
-    // 유스케이스는 행위자·기능·경계가 각각 고정 색을 쓴다. 배열과 같은 대역에서 골라 맞춘다.
-    usecaseActorBorder: '#80698f',
-    usecaseActorBkg: '#ebe6ef',
-    usecaseBorder: '#4a8791',
-    usecaseBkg: '#e2f1f4',
-    usecaseBoundaryBorder: PALETTE.line,
-    usecaseBoundaryBkg: '#fbfaf6',
-    usecaseIncludeLine: '#5d7897',
-    usecaseExtendLine: '#9a7852',
-    fontFamily: 'Pretendard Variable, Pretendard, sans-serif',
-    fontSize: '16px',
-    // redux-color는 도표의 모든 글자를 600으로 올린다. 본문 옆에서 도표만 굵어 보이므로 되돌린다.
-    fontWeight: 400,
-    noteFontWeight: 400,
-    // 테두리 2px에 라벨 12px 모서리는 도표만 둥글고 굵어 보인다. 본문의 표·코드와 같은 인상으로 맞춘다.
-    strokeWidth: 1,
-    radius: 4
-  }
-};
+export const MERMAID_CONFIG: MermaidConfig = siteDiagramConfig({
+  theme: 'redux-color', ink: PALETTE.ink, line: PALETTE.line, surface: '#fbfaf6', lineColor: '#746f64',
+  mainBkg: '#e3ece5', secondaryColor: '#f2efe7', noteBkgColor: '#f4efd8', noteBorderColor: '#c9b978',
+  borders: DIAGRAM_BORDER_COLORS, fills: DIAGRAM_FILL_COLORS
+});
+
+// 어두운 화면(prefers-color-scheme: dark)에서 쓰는 같은 설정이다. 바탕은 본문의 도표 상자와 같은 올라온 판이다.
+// 선 색은 바탕에서 4.65:1, 노드 면(#203329)과 메모 면 위의 먹색 글자는 10.7:1 이상이다.
+export const MERMAID_DARK_CONFIG: MermaidConfig = siteDiagramConfig({
+  theme: 'redux-dark-color', ink: DARK_PALETTE.ink, line: DARK_PALETTE.line, surface: DARK_PALETTE['paper-strong'], lineColor: '#8e897d',
+  mainBkg: '#203329', secondaryColor: '#2f271e', noteBkgColor: '#342e15', noteBorderColor: '#827333',
+  borders: DIAGRAM_DARK_BORDER_COLORS, fills: DIAGRAM_DARK_FILL_COLORS
+});
+
+export const DARK_SCHEME_QUERY = '(prefers-color-scheme: dark)';
 
 // 앞머리나 init 지시문으로 테마를 지정한 도표에 쓰는 설정이다. 그런 도표는 그 테마의 색을 보여 주려는 것이므로
 // 사이트 색이 도표별 테마에 섞이지 않도록 초기화 설정에서 팔레트를 제외한다.

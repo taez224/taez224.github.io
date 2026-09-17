@@ -1,5 +1,5 @@
-import type { Mermaid } from 'mermaid';
-import { FONT_WAIT_MS, LABEL_FONT, LABEL_FONT_PX, MERMAID_CONFIG, MERMAID_PINNED_THEME_CONFIG, MIN_READABLE_LABEL_PX, NARROW_MIN_READABLE_LABEL_PX, NARROW_SCREEN_QUERY } from './mermaid-config.ts';
+import type { Mermaid, MermaidConfig } from 'mermaid';
+import { DARK_SCHEME_QUERY, FONT_WAIT_MS, LABEL_FONT, LABEL_FONT_PX, MERMAID_CONFIG, MERMAID_DARK_CONFIG, MERMAID_PINNED_THEME_CONFIG, MIN_READABLE_LABEL_PX, NARROW_MIN_READABLE_LABEL_PX, NARROW_SCREEN_QUERY } from './mermaid-config.ts';
 import { setViewerButton } from './mermaid-viewer.ts';
 type MermaidRenderer = Pick<Mermaid, 'initialize' | 'run'> & {
   parse(source: string, options: { suppressErrors: true }): Promise<Awaited<ReturnType<Mermaid['parse']>> | false>;
@@ -90,10 +90,17 @@ export function pinsOwnTheme(parsed: Exclude<Awaited<ReturnType<Mermaid['parse']
   return typeof theme === 'string' && theme.trim().length > 0;
 }
 
-export async function renderMermaidBlocks(blocks: Element[], mermaid: MermaidRenderer, fontWaitMs = FONT_WAIT_MS): Promise<void> {
-  mermaid.initialize(MERMAID_CONFIG);
+// 화면 모드에 맞는 사이트 설정이다. 창이 없는 환경(테스트 대역)에서는 밝은 화면으로 그린다.
+export function siteConfigFor(view: Pick<Window, 'matchMedia'> | null | undefined): MermaidConfig {
+  return view?.matchMedia?.(DARK_SCHEME_QUERY).matches ? MERMAID_DARK_CONFIG : MERMAID_CONFIG;
+}
+
+// 그린 도표와 되돌릴 원문 코드 블록의 짝을 돌려준다. 화면 모드가 바뀌면 이 짝으로 원문을 되살려 다시 그린다.
+export async function renderMermaidBlocks(blocks: Element[], mermaid: MermaidRenderer, fontWaitMs = FONT_WAIT_MS, siteConfig = siteConfigFor(blocks[0]?.ownerDocument?.defaultView)): Promise<{ container: Element; pre: Element }[]> {
+  const rendered: { container: Element; pre: Element }[] = [];
+  mermaid.initialize(siteConfig);
   // 설정은 부를 때마다 기본값에서 다시 만들어지므로 도표마다 필요한 것만 갈아 끼우면 된다.
-  let applied = MERMAID_CONFIG;
+  let applied = siteConfig;
   await requestLabelFont(blocks, fontWaitMs);
   for (const code of blocks) {
     const pre = code.closest('pre');
@@ -110,7 +117,7 @@ export async function renderMermaidBlocks(blocks: Element[], mermaid: MermaidRen
       // 앞머리와 init 지시문의 병합·우선순위는 Mermaid의 공개 파서에 맡긴다.
       const parsed = await mermaid.parse(source, { suppressErrors: true });
       if (!parsed) { container.replaceWith(pre); continue; }
-      const config = pinsOwnTheme(parsed) ? MERMAID_PINNED_THEME_CONFIG : MERMAID_CONFIG;
+      const config = pinsOwnTheme(parsed) ? MERMAID_PINNED_THEME_CONFIG : siteConfig;
       if (config !== applied) {
         mermaid.initialize(config);
         applied = config;
@@ -118,9 +125,11 @@ export async function renderMermaidBlocks(blocks: Element[], mermaid: MermaidRen
       await mermaid.run({ nodes: [container] });
       refreshDiagram(container);
       refitOnResize(container);
+      rendered.push({ container, pre });
     } catch {
       // 오류가 난 도표만 원문으로 되돌려 다른 도표는 계속 렌더링한다.
       container.replaceWith(pre);
     }
   }
+  return rendered;
 }
