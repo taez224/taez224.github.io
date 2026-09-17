@@ -29,6 +29,7 @@
 .graph .node.is-selected .select-ring, .graph .node:focus-visible .select-ring { opacity: 1; }
 .graph .node:hover .dot, .graph .node.is-neighbor .dot { stroke: var(--accent); stroke-width: 2.2; }
 /* 제목 크기와 테두리는 라벨 층이 정한다. 엔진이 확대 배율의 역수로 인라인 지정해 화면에서는 항상 13px로 보인다. */
+/* 그래프 이름은 엔진이 px 기준 폭으로 배치를 계산하므로 역할 토큰(rem)을 쓰지 않는다. */
 .graph [data-labels] { font-size: 13px; stroke-width: 4.5px; }
 .graph .label { font-family: var(--sans); fill: var(--ink); paint-order: stroke; stroke: var(--paper); stroke-linejoin: round; pointer-events: none; }
 .graph .label.is-entry { fill: var(--accent); font-weight: 700; }

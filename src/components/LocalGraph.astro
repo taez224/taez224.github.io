@@ -46,6 +46,7 @@ const lines = (edge: { x1: number; y1: number; x2: number; y2: number; direction
   .edge.is-in { stroke-dasharray: 5 4; }
   .node circle { stroke: var(--paper); stroke-width: 2.5; }
   .node .ring { fill: none; stroke: var(--accent); stroke-width: 1.2; stroke-opacity: .65; }
+  /* 작은 그래프의 이름은 SVG 좌표 안에서 px 기준으로 배치하므로 역할 토큰(rem)을 쓰지 않는다. */
   .node text { font-family: var(--sans); font-size: 11px; fill: var(--ink); paint-order: stroke; stroke: var(--paper); stroke-width: 3.5px; stroke-linejoin: round; pointer-events: none; }
   .node.is-current text { font-weight: 600; }
   a.node { cursor: pointer; outline: none; }

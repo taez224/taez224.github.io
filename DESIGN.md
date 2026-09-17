@@ -25,51 +25,87 @@ colors:
   code-link: '#0969da'
   code-inserted: '#1a7f37'
 typography:
-  reader-title:
+  title:
     fontFamily: Gowun Batang
     fontSize: 46px
     fontWeight: 700
     lineHeight: 1.3
     letterSpacing: -0.03em
-  reader-title-mobile:
+  title-mobile:
     fontFamily: Gowun Batang
     fontSize: 32px
     fontWeight: 700
     lineHeight: 1.3
     letterSpacing: -0.03em
-  page-title:
+  hero:
     fontFamily: Gowun Batang
-    fontSize: 28px
+    fontSize: 32px
     fontWeight: 700
-    lineHeight: 1.4
+    lineHeight: 1.45
     letterSpacing: -0.02em
-  section-title:
-    fontFamily: Gowun Batang
-    fontSize: 24px
-    fontWeight: 700
-    lineHeight: 1.4
-    letterSpacing: -0.02em
-  featured-title:
+  featured:
     fontFamily: Gowun Batang
     fontSize: 34px
     fontWeight: 700
     lineHeight: 1.3
     letterSpacing: -0.02em
-  featured-title-tablet:
+  featured-tablet:
     fontFamily: Gowun Batang
     fontSize: 28px
     fontWeight: 700
     lineHeight: 1.3
     letterSpacing: -0.02em
-  featured-title-mobile:
+  featured-mobile:
     fontFamily: Gowun Batang
     fontSize: 24px
     fontWeight: 700
     lineHeight: 1.3
     letterSpacing: -0.02em
-  article-h2:
+  page:
+    fontFamily: Gowun Batang
+    fontSize: 28px
+    fontWeight: 700
+    lineHeight: 1.4
+    letterSpacing: -0.02em
+  section:
+    fontFamily: Gowun Batang
+    fontSize: 24px
+    fontWeight: 700
+    lineHeight: 1.4
+    letterSpacing: -0.02em
+  section-mobile:
+    fontFamily: Gowun Batang
+    fontSize: 20px
+    fontWeight: 700
+    lineHeight: 1.4
+    letterSpacing: -0.02em
+  h2:
     fontFamily: Gowun Batang
     fontSize: 26px
+    fontWeight: 700
+    lineHeight: 1.4
+    letterSpacing: -0.02em
+  h2-mobile:
+    fontFamily: Gowun Batang
+    fontSize: 22px
+    fontWeight: 700
+    lineHeight: 1.4
+    letterSpacing: -0.02em
+  h3:
+    fontFamily: Gowun Batang
+    fontSize: 21px
+    fontWeight: 700
+    lineHeight: 1.4
+    letterSpacing: -0.02em
+  h3-mobile:
+    fontFamily: Gowun Batang
+    fontSize: 19px
+    fontWeight: 700
+    lineHeight: 1.4
+    letterSpacing: -0.02em
+  h4:
+    fontFamily: Gowun Batang
+    fontSize: 17px
     fontWeight: 700
     lineHeight: 1.4
     letterSpacing: -0.02em
@@ -79,26 +115,104 @@ typography:
     fontWeight: 400
     lineHeight: 1.65
     letterSpacing: -0.01em
-  control:
-    fontFamily: Pretendard Variable
-    fontSize: 15px
-    fontWeight: 600
-    lineHeight: 1.2
-  control-small:
-    fontFamily: Pretendard Variable
-    fontSize: 14px
-    fontWeight: 600
-    lineHeight: 1.2
-  list-title:
-    fontFamily: Pretendard Variable
+  ledger:
+    fontFamily: Gowun Batang
+    fontSize: 40px
+    fontWeight: 700
+    lineHeight: 1
+    letterSpacing: -0.02em
+  ledger-mobile:
+    fontFamily: Gowun Batang
+    fontSize: 30px
+    fontWeight: 700
+    lineHeight: 1
+    letterSpacing: -0.02em
+  ledger-year:
+    fontFamily: Gowun Batang
+    fontSize: 32px
+    fontWeight: 700
+    lineHeight: 1
+    letterSpacing: -0.02em
+  ledger-year-mobile:
+    fontFamily: Gowun Batang
+    fontSize: 24px
+    fontWeight: 700
+    lineHeight: 1
+    letterSpacing: -0.02em
+  ledger-word:
+    fontFamily: Gowun Batang
+    fontSize: 18px
+    fontWeight: 700
+    lineHeight: 1.4
+    letterSpacing: -0.02em
+  ledger-word-mobile:
+    fontFamily: Gowun Batang
+    fontSize: 17px
+    fontWeight: 700
+    lineHeight: 1.4
+    letterSpacing: -0.02em
+  wordmark:
+    fontFamily: Gowun Batang
+    fontSize: 22px
+    fontWeight: 700
+    lineHeight: 1
+    letterSpacing: -0.02em
+  wordmark-mobile:
+    fontFamily: Gowun Batang
     fontSize: 20px
-    fontWeight: 600
-    lineHeight: 1.45
+    fontWeight: 700
+    lineHeight: 1
+    letterSpacing: -0.02em
+  base:
+    fontFamily: Pretendard Variable
+    fontSize: 17px
+    fontWeight: 400
+    lineHeight: 1.85
+  base-mobile:
+    fontFamily: Pretendard Variable
+    fontSize: 16px
+    fontWeight: 400
+    lineHeight: 1.85
   body:
     fontFamily: Pretendard Variable
     fontSize: 17px
     fontWeight: 400
     lineHeight: 1.85
+  summary:
+    fontFamily: Pretendard Variable
+    fontSize: 16px
+    fontWeight: 400
+    lineHeight: 1.75
+  summary-mobile:
+    fontFamily: Pretendard Variable
+    fontSize: 15px
+    fontWeight: 400
+    lineHeight: 1.75
+  list:
+    fontFamily: Pretendard Variable
+    fontSize: 20px
+    fontWeight: 600
+    lineHeight: 1.45
+  list-mobile:
+    fontFamily: Pretendard Variable
+    fontSize: 18px
+    fontWeight: 600
+    lineHeight: 1.45
+  list-small:
+    fontFamily: Pretendard Variable
+    fontSize: 17px
+    fontWeight: 600
+    lineHeight: 1.55
+  ui:
+    fontFamily: Pretendard Variable
+    fontSize: 15px
+    fontWeight: 600
+    lineHeight: 1.5
+  ui-small:
+    fontFamily: Pretendard Variable
+    fontSize: 14px
+    fontWeight: 600
+    lineHeight: 1.2
   side:
     fontFamily: Pretendard Variable
     fontSize: 14px
@@ -109,17 +223,17 @@ typography:
     fontSize: 13px
     fontWeight: 400
     lineHeight: 1.6
+  micro:
+    fontFamily: Pretendard Variable
+    fontSize: 12px
+    fontWeight: 400
+    lineHeight: 1.5
   callout-title:
     fontFamily: Pretendard Variable
     fontSize: 13px
     fontWeight: 600
     lineHeight: 1.5
     letterSpacing: 0.04em
-  callout-body:
-    fontFamily: Pretendard Variable
-    fontSize: 15.5px
-    fontWeight: 400
-    lineHeight: 1.75
   code:
     fontFamily: SFMono-Regular
     fontSize: 14px
@@ -150,14 +264,14 @@ components:
   button-primary:
     backgroundColor: '{colors.primary}'
     textColor: '{colors.paper-strong}'
-    typography: '{typography.control}'
+    typography: '{typography.ui}'
     rounded: '{rounded.control}'
     padding: '0 20px'
     height: 44px
   button-primary-small:
     backgroundColor: '{colors.primary}'
     textColor: '{colors.paper-strong}'
-    typography: '{typography.control-small}'
+    typography: '{typography.ui-small}'
     rounded: '{rounded.control}'
     padding: '0 18px'
     height: 40px
@@ -194,7 +308,7 @@ components:
   callout:
     backgroundColor: '{colors.paper-strong}'
     textColor: '{colors.primary}'
-    typography: '{typography.callout-body}'
+    typography: '{typography.summary}'
     rounded: '{rounded.none}'
     padding: '12px 18px 16px'
   callout-title:
@@ -301,11 +415,13 @@ Thinking Garden은 글과 개발 노트를 읽으며 관련 생각으로 이어�
 
 Gowun Batang은 제목과 요약·인용 콜아웃에, Pretendard Variable은 본문·목록·조작 요소에 사용한다. 제목은 700 굵기로 두고 요약·인용은 400으로 흘려 제목보다 한 단계 물러나게 한다. 그래서 Gowun Batang은 400과 700 두 파일을 불러온다. 한 굵기만 불러오면 브라우저가 다른 굵기 요청을 그 파일로 대신 그리므로, 명조에 새 굵기를 쓰려면 글꼴 요청에도 함께 추가한다. 대체 서체는 `site.css`의 `--display`와 `--sans`를 따른다. 코드는 `code` 토큰에 적은 SFMono-Regular를 대표로 삼아 `ui-monospace`, SFMono-Regular, Menlo 순서의 시스템 고정폭 서체를 사용한다. 긴 한국어 문장은 `keep-all`로 단어를 묶고 긴 URL은 가용 폭에 맞춰 줄바꿈한다.
 
-리더와 페이지 제목은 화면의 역할에 따라 `reader-title`, `page-title`, `section-title`, `featured-title` 토큰을 사용한다. 본문·목록·보조 정보는 `body`, `list-title`, `side`, `meta` 토큰으로 위계를 나눈다. 일반 UI의 모바일 기본 글자 크기는 16px이며 본문은 `body` 토큰을 유지한다.
+글자 크기는 역할 토큰으로만 정한다. YAML의 typography 토큰마다 `site.css`의 `--t-이름` 변수가 있고, 변수는 rem이라 브라우저의 기본 글자 크기 설정을 따른다. 폭에 따라 달라지는 역할은 `-mobile`(720px 이하), `-tablet`(721~1000px) 토큰으로 적고, CSS는 해당 미디어 쿼리의 `:root`에서 변수 값만 바꾼다. 그래서 컴포넌트에는 글자 크기용 미디어 쿼리가 없고 단계 전체가 함께 줄어든다. 예외는 그래프 SVG의 이름 글자뿐이다. 엔진이 px 기준 폭으로 배치를 계산하므로 px로 둔다. 굵기는 400·600·700 세 단계만 쓴다. 토큰과 CSS 변수의 일치, px 글자 크기와 다른 굵기의 재등장은 `tests/typography.test.ts`가 검사한다.
+
+제목 역할은 `title`(글 제목, 리더와 소개 페이지), `hero`(홈 소개 제목), `featured`(대표 글), `page`(목록 페이지), `section`(홈 절 제목·지도 패널), `ledger`·`ledger-year`·`ledger-word`(장부 라벨), 본문 안의 `h2`·`h3`·`h4`로 나눈다. 모바일에서는 이 단계들을 함께 줄여 글 제목과 h2, 페이지 제목과 장부 연도 라벨, 절 제목과 대표 글 제목이 같은 크기로 겹치지 않게 한다. 본문·목록·보조 정보는 `body`(읽는 본문), `summary`(목록 요약·콜아웃 본문), `list`·`list-small`(목록 제목), `ui`(내비·버튼·검색 결과), `side`(사이드바·표·코드), `meta`, `micro`(단축키·출처 같은 작은 표기)로 위계를 나눈다. 페이지 기본 글자인 `base`는 모바일에서 16px로 줄지만 읽는 본문 `body`는 17px을 유지한다.
 
 리더 제목과 홈 대표 글·연재 제목은 `text-wrap: balance`로 줄 길이를 고르게 배분한다. 제목 원문과 글자 크기는 유지하며 지원하지 않는 브라우저에서는 기본 줄바꿈을 사용한다.
 
-본문의 제목, 목록의 제목, 홈의 절 제목과 대표 글 제목은 서로 다른 역할의 토큰으로 구분한다. 제목 아래 요약과 요약 콜아웃은 `lead` 토큰을 사용한다. 본문 H3·H4처럼 상위 토큰으로 묶지 않은 요소는 `body.css`의 해당 규칙을 따르며, 역할이 늘어나면 토큰을 추가한다.
+제목 아래 요약, 요약·인용 콜아웃 본문, 외부 발행 글의 요약은 `lead` 토큰을 사용한다. 새 역할이 생기면 비슷한 크기의 기존 토큰에 합칠 수 있는지 먼저 보고, 합칠 수 없을 때만 토큰을 추가한다.
 
 ## Layout
 
@@ -341,7 +457,7 @@ Gowun Batang은 제목과 요약·인용 콜아웃에, Pretendard Variable은 �
 - **목록:** 장부 격자를 두 단계로 나눈다. 왼쪽 열에는 연도·분류·등급 라벨을 명조로 크게 두고(등급 40px, 연도 32px, 분류 18px), 오른쪽 블록의 각 행이 다시 제목·메타와 요약을 좌우로 나눈다. 요약은 세 줄까지 표시하며, 720px 이하에서는 두 단계가 모두 세로로 쌓인다. 메타 줄의 구분점은 다음 항목과 함께 줄바꿈되도록 붙인다.
 - **개발 노트 목록:** 카테고리는 섹션 제목으로 표시하고, 각 행의 메타 줄에는 첫 공개 태그와 날짜를 표시한다. 어떤 태그가 앞에 오는지는 vault 속성 스키마의 태그 순서 규칙이 정하며, 사이트는 순서를 고쳐 쓰지 않는다. 첫 태그가 섹션 제목과 같은 말이면 빌드 로그가 알려 주므로 vault에서 태그를 손본다.
 - **연재 탐색:** 이전·다음 링크는 1px 테두리와 `14px 18px` 여백을 사용한다. 호버·키보드 포커스에서 먹색 테두리와 밝은 배경으로 강조한다.
-- **콜아웃:** 인쇄물의 박스 주석처럼 본문과 구분한다. 가는 선만으로는 본문의 일부처럼 읽혀서 세 단서를 겹친다. 페이지보다 한 단계 밝은 `paper-strong` 판, 위쪽 2px 먹색 괘선(`callout-rule`), 본문보다 작은 `callout-body` 활자(15.5px/1.75)다. 아래쪽은 `line` 선으로 닫고, 사방 테두리와 한쪽 막대는 두지 않는다. 여백은 `12px 18px 16px`다. 머리표는 `callout-title` 토큰(13px/600)이고, 앞에 종류별 14px 선 아이콘을 둔다. 아이콘은 머리표 색을 따르며 목록에 없는 종류는 Obsidian처럼 메모의 연필을 쓴다. 팁은 화살표, 질문은 물음표 원 아이콘이다. 요약·인용은 본문을 명조로 흘리고, 경고·위험·실패는 `warning`, 버그는 `bug`로 위 괘선과 머리표를 칠한다. 접을 수 있는 콜아웃은 머리표 줄에 펼침 표시를 두며, `-`는 머리표 줄만 보이게 접힌 채로, `+`는 펼친 채로 시작한다. 꺾쇠는 150ms 동안 ease-out 곡선(`cubic-bezier(.23, 1, .32, 1)`)으로 돈다. `hint`·`summary` 같은 별칭은 기본 종류의 모양을 따른다. 비교(`compare`)는 본문을 최소 `20rem` 칸의 격자로 두고 안쪽 콜아웃 하나를 한 칸으로 삼으며, 칸에서는 판·괘선·여백과 아이콘을 걷어내 머리표와 도표만 남긴다. `compare-stacked`는 칸을 한 줄에 하나씩 놓는다. 종류는 열린 집합이라 이름을 모르는 종류도 같은 구조로 출력하고 CSS가 뜻을 준다.
+- **콜아웃:** 인쇄물의 박스 주석처럼 본문과 구분한다. 가는 선만으로는 본문의 일부처럼 읽혀서 세 단서를 겹친다. 페이지보다 한 단계 밝은 `paper-strong` 판, 위쪽 2px 먹색 괘선(`callout-rule`), 본문보다 작은 `summary` 활자(16px, 모바일 15px, 줄 간격 1.75)다. 아래쪽은 `line` 선으로 닫고, 사방 테두리와 한쪽 막대는 두지 않는다. 여백은 `12px 18px 16px`다. 머리표는 `callout-title` 토큰(13px/600)이고, 앞에 종류별 14px 선 아이콘을 둔다. 아이콘은 머리표 색을 따르며 목록에 없는 종류는 Obsidian처럼 메모의 연필을 쓴다. 팁은 화살표, 질문은 물음표 원 아이콘이다. 요약·인용은 본문을 명조로 흘리고, 경고·위험·실패는 `warning`, 버그는 `bug`로 위 괘선과 머리표를 칠한다. 접을 수 있는 콜아웃은 머리표 줄에 펼침 표시를 두며, `-`는 머리표 줄만 보이게 접힌 채로, `+`는 펼친 채로 시작한다. 꺾쇠는 150ms 동안 ease-out 곡선(`cubic-bezier(.23, 1, .32, 1)`)으로 돈다. `hint`·`summary` 같은 별칭은 기본 종류의 모양을 따른다. 비교(`compare`)는 본문을 최소 `20rem` 칸의 격자로 두고 안쪽 콜아웃 하나를 한 칸으로 삼으며, 칸에서는 판·괘선·여백과 아이콘을 걷어내 머리표와 도표만 남긴다. `compare-stacked`는 칸을 한 줄에 하나씩 놓는다. 종류는 열린 집합이라 이름을 모르는 종류도 같은 구조로 출력하고 CSS가 뜻을 준다.
 - **할 일 목록:** 글머리표 자리에 14px 체크박스를 두고, 1.5px `ink` 테두리와 2px 모서리로 그린다. 완료하면 `ink`로 채우고 밝은 체크 표시를 넣는다. 공개 사이트에서 누를 수 없으므로 `disabled`를 유지하고 포인터 커서·호버 효과를 두지 않는다. 체크박스와 항목 글을 label로 묶어 글이 체크박스의 이름이 되게 하고, 완료한 항목은 그 글에만 Obsidian처럼 `muted` 색과 취소선을 적용해 하위 항목으로 번지지 않게 한다.
 - **코드 블록:** 강조는 빌드 때 끝내고 방문자에게 스크립트를 보내지 않는다. 다루지 않는 언어와 도표 원문은 색 없이 원문 그대로 둔다.
 - **도표:** 본문과 같은 서체로 라벨을 읽기 쉽게 표시한다. 넓은 도표는 내부 스크롤과 확대 보기로 읽으며, 키보드로도 조작할 수 있게 한다.

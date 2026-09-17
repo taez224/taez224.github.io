@@ -90,11 +90,11 @@ const aboutUrl = withBase('/about/');
   .modified-date::before { content: '·'; margin: 0 8px; }
   .note-meta .kicker { color: var(--accent); }
   /* 제목 아래 요약: 본문의 요약 콜아웃과 같은 명조 활자를 쓴다. 큰 제목과 무게가 겹치지 않게 테두리와 배경 없이 왼쪽 선만 둔다. */
-  .note-lead { margin: -12px 0 36px; padding-left: 18px; border-left: 3px solid var(--accent); color: var(--ink); font-family: var(--display); font-size: 18.5px; line-height: 1.65; letter-spacing: -.01em; }
+  .note-lead { margin: -12px 0 36px; padding-left: 18px; border-left: 3px solid var(--accent); color: var(--ink); font-family: var(--display); font-size: var(--t-lead); line-height: 1.65; letter-spacing: -.01em; }
   /* 이전·다음 편 카드는 테두리가 있어 본문과 구분된다. 구분선은 아래 페이지 끝 줄에만 둔다. */
   .note-end { margin-top: 56px; }
   .series-start { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin: -12px 0 36px; padding: 22px 24px; border-left: 3px solid var(--accent); background: var(--accent-soft); }
-  .series-start p { margin: 4px 0 0; font-size: 16px; line-height: 1.5; }
+  .series-start p { margin: 4px 0 0; font-size: var(--t-summary); line-height: 1.75; }
   .series-start .btn { flex-shrink: 0; gap: 14px; }
   /* 이전·다음 편 카드: 둘 다 얇은 선과 종이색만 쓴다. 채움이나 강조 테두리는 호버·포커스에서만 나타나 카드가 본문 톤에서 튀지 않는다. */
   .series-links { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
@@ -103,10 +103,10 @@ const aboutUrl = withBase('/about/');
   .series-link:hover, .series-link:focus-visible { border-color: var(--accent); background: var(--accent-soft); text-decoration: none; outline: none; }
   .series-link:hover .series-title, .series-link:focus-visible .series-title { color: var(--accent); }
   .series-link.is-next { align-items: flex-end; text-align: right; }
-  .series-direction { color: var(--muted); font-size: var(--t-meta); font-weight: 500; }
+  .series-direction { color: var(--muted); font-size: var(--t-meta); }
   /* 제목은 소제목이 아니라 내비게이션이므로 사이드바 목록과 같은 고딕 15px */
-  .series-title { font-size: 15px; font-weight: 600; line-height: 1.5; transition: color .15s ease; }
-  .note-title { margin: 0 0 40px; font-size: var(--t-h1); line-height: 1.3; letter-spacing: -.03em; text-wrap: balance; }
+  .series-title { font-size: var(--t-ui); font-weight: 600; line-height: 1.5; transition: color .15s ease; }
+  .note-title { margin: 0 0 40px; font-size: var(--t-title); line-height: 1.3; letter-spacing: -.03em; text-wrap: balance; }
   .mobile-toc { display: none; }
   @media (max-width: 1000px) {
     .note-view { grid-template-columns: minmax(0, 720px); gap: 20px; }
@@ -122,7 +122,7 @@ const aboutUrl = withBase('/about/');
   }
   @media (max-width: 720px) {
     .note-view { padding: 32px 0 64px; }
-    .note-title { font-size: 32px; margin-bottom: 28px; }
+    .note-title { margin-bottom: 28px; }
     /* 목차를 누르는 영역은 유지하고 제목·본문과의 바깥 여백만 줄인다. */
     .mobile-toc { margin: -12px 0 16px; }
     /* 이 폭에서는 제목 아래 여백이 28px로 줄어들어 위쪽 당김을 완화한다 */

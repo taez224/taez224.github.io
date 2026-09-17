@@ -34,11 +34,11 @@ const credits = [book.author, book.publisher].filter(Boolean).join(' · ');
   .cover.is-missing img + .placeholder { display: flex; }
   .credits { margin-top: 5px; }
   .assessment { display: flow-root; margin-top: 16px; }
-  h3 { margin: 0; font-size: 17px; font-weight: 600; line-height: 1.55; }
+  h3 { margin: 0; font-size: var(--t-list-small); font-weight: 600; line-height: 1.55; }
   .rating { float: right; display: inline-flex; align-items: center; gap: 4px; margin: 4px 0 0 12px; color: var(--accent); line-height: 1.4; white-space: nowrap; }
-  .rating .star { font-size: 12px; }
-  .rating .value { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
-  .note { margin: 0; font-size: 16px; line-height: 1.75; }
+  .rating .star { font-size: var(--t-micro); }
+  .rating .value { font-size: var(--t-side); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .note { margin: 0; font-size: var(--t-summary); line-height: 1.75; }
   .reading { margin-top: 14px; }
   @media (max-width: 480px) { .book { grid-template-columns: 68px minmax(0, 1fr); gap: 14px; } .cover { width: 68px; height: 100px; } }
 </style>
