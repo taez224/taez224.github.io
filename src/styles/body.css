@@ -75,33 +75,49 @@
 .body figure { margin: 18px 0 22px; }
 .body figure img { margin: 0 auto; }
 .body figcaption { margin-top: 8px; color: var(--muted); font-size: var(--t-meta); line-height: 1.6; text-align: center; }
-/* 콜아웃은 코드 블록·표와 같은 그릇(종이색 판 + 1px 선)을 쓴다. 종류는 색 채움이 아니라 제목 아래 선, 왼쪽 막대, 활자로 구분한다.
-   요약·인용은 먹색 막대에 명조로 흘리고, 경고·버그만 막대에 색을 준다. 팁은 제목 앞 화살표, 질문은 점선 막대. */
-.body .callout { margin: 26px 0; padding: 12px 18px 16px; border: 1px solid var(--line); background: var(--paper-strong); }
+/* 콜아웃은 인쇄물의 박스 주석처럼 본문에서 떼어 낸다. 가는 선 두 줄만으로는 본문의 일부처럼 읽혀서 세 단서를 겹친다.
+   페이지보다 한 단계 밝은 판(표 머리·도표와 같은 paper-strong), 시작을 알리는 2px 위 괘선, 본문보다 작은 활자와 좁은 줄 폭이다.
+   사방 테두리나 한쪽 막대는 두지 않는다. 판을 더 짙게 칠하면 muted 머리표가 4.5:1을 넘기 어려워 판 색은 옅게 둔다.
+   종류는 머리표 앞 아이콘으로, 경고·버그는 위 괘선과 머리표의 색으로 구분한다. 요약·인용은 본문을 명조로 흘린다. */
+.body .callout { --callout-color: var(--muted); --callout-rule: var(--ink); margin: 26px 0; padding: 12px 18px 16px; border-top: 2px solid var(--callout-rule); border-bottom: 1px solid var(--line); background: var(--paper-strong); }
 .body .callout + .callout { margin-top: 16px; }
-.body .callout summary, .body .callout-title { display: block; padding-bottom: 8px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: var(--t-meta); font-weight: 600; letter-spacing: .04em; }
-/* 접히는 콜아웃: 제목 줄 오른쪽 꺾쇠가 펼칠 수 있음을 알린다. 접힌 동안은 제목 아래 선을 걷어 빈 절의 머리처럼 보이지 않게 한다.
+.body .callout > :is(.callout-title, summary) { display: block; color: var(--callout-color); font-size: var(--t-meta); font-weight: 600; letter-spacing: .04em; line-height: 1.5; }
+/* 아이콘은 마스크로 찍어 머리표 색을 그대로 따른다. 렌더러가 SVG를 출력하지 않아도 되고, 종류마다 --callout-icon만 바꾸면 된다.
+   중첩된 콜아웃은 .callout 규칙이 변수를 다시 정하므로 바깥 종류의 아이콘·색을 물려받지 않는다. */
+.body .callout > :is(.callout-title, summary)::before { display: inline-block; width: 14px; height: 14px; margin-right: 6px; vertical-align: -2px; background: currentColor; -webkit-mask: var(--callout-icon) center / 14px no-repeat; mask: var(--callout-icon) center / 14px no-repeat; content: ""; }
+/* 접히는 콜아웃: 머리표 줄 오른쪽 꺾쇠가 펼칠 수 있음을 알린다. 꺾쇠는 누른 순간부터 움직여야 반응이 빠르게 느껴지므로
+   기본 ease 대신 처음에 빠르고 끝에서 감속하는 ease-out 곡선을 쓴다.
    summary가 display: block이면 크롬·파이어폭스는 기본 삼각형을 지우지만 사파리는 -webkit 마커를 따로 그린다. */
 .body details.callout > summary { position: relative; padding-right: 24px; cursor: pointer; }
 .body details.callout > summary::-webkit-details-marker { display: none; }
-.body details.callout > summary::after { position: absolute; top: 6px; right: 4px; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg); transition: transform .15s ease; content: ""; }
-.body details.callout[open] > summary::after { transform: translateY(5px) rotate(-135deg); }
+.body details.callout > summary::after { position: absolute; top: 5px; right: 4px; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg); transition: transform .15s cubic-bezier(.23, 1, .32, 1); content: ""; }
+.body details.callout[open] > summary::after { transform: translateY(4px) rotate(-135deg); }
 .body details.callout > summary:hover { color: var(--ink); }
 .body details.callout:not([open]) { padding-bottom: 12px; }
-.body details.callout:not([open]) > summary { padding-bottom: 0; border-bottom: 0; }
 @media (prefers-reduced-motion: reduce) { .body details.callout > summary::after { transition: none; } }
-.body .callout-body { margin-top: 12px; }
+.body .callout-body { margin-top: 6px; font-size: 15.5px; line-height: 1.75; }
 .body .callout-body > :first-child { margin-top: 0; }
 .body .callout-body > :last-child { margin-bottom: 0; }
-/* 별칭(summary·tldr·faq 등)은 렌더러가 기본 종류의 클래스를 함께 달므로 기본 종류 이름만 적는다. */
-.body :is(.callout-abstract, .callout-quote) { border-left: 3px solid var(--accent); }
+/* 아이콘은 16px 격자에 1.5px 선으로 그리고 14px로 줄여 찍는다. 목록에 없는 종류는 Obsidian처럼 note의 연필을 쓴다.
+   별칭(summary·tldr·faq 등)은 렌더러가 기본 종류의 클래스를 함께 달므로 기본 종류 이름만 적는다. */
+.body .callout { --callout-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 2.5l2.5 2.5L6 12.5l-3.5 1 1-3.5zM9.5 4L12 6.5'/%3E%3C/svg%3E"); }
+.body .callout-abstract { --callout-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='2.5' width='10' height='11' rx='1.5'/%3E%3Cpath d='M6 6h4M6 8.5h4M6 11h2.5'/%3E%3C/svg%3E"); }
+.body .callout-info { --callout-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='8' cy='8' r='6'/%3E%3Cpath d='M8 7.5V11'/%3E%3Cpath d='M8 5h.01' stroke-width='2'/%3E%3C/svg%3E"); }
+.body .callout-todo { --callout-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='8' cy='8' r='6'/%3E%3Cpath d='M5.5 8.2l1.7 1.7 3.3-3.4'/%3E%3C/svg%3E"); }
+.body .callout-tip { --callout-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 8h11M9 3.5L13.5 8 9 12.5'/%3E%3C/svg%3E"); }
+.body .callout-success { --callout-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8.5l3 3 7-7'/%3E%3C/svg%3E"); }
+.body .callout-question { --callout-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='8' cy='8' r='6'/%3E%3Cpath d='M6.3 6.3a1.8 1.8 0 0 1 3.5.6c0 1.2-1.8 1.5-1.8 2.6'/%3E%3Cpath d='M8 11.6h.01' stroke-width='2'/%3E%3C/svg%3E"); }
+.body .callout-warning { --callout-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 2.5L14 13H2z'/%3E%3Cpath d='M8 6.5v3'/%3E%3Cpath d='M8 11.3h.01' stroke-width='2'/%3E%3C/svg%3E"); }
+.body .callout-failure { --callout-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.5 4.5l7 7M11.5 4.5l-7 7'/%3E%3C/svg%3E"); }
+.body .callout-danger { --callout-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 1.5L3.5 9H8l-1 5.5L12.5 7H8z'/%3E%3C/svg%3E"); }
+.body .callout-bug { --callout-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='5.5' width='6' height='8' rx='3'/%3E%3Cpath d='M8 8.5v5M5 9H2.5M13.5 9H11M5 12H3M13 12h-2M6 3.5l1 2M10 3.5l-1 2'/%3E%3C/svg%3E"); }
+.body .callout-example { --callout-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 4h7.5M6 8h7.5M6 12h7.5'/%3E%3Cpath d='M2.8 4h.01M2.8 8h.01M2.8 12h.01' stroke-width='2'/%3E%3C/svg%3E"); }
+.body .callout-quote { --callout-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6.5 4H3v4h3.5v1c0 1.5-1 2.5-2.5 3M13 4H9.5v4H13v1c0 1.5-1 2.5-2.5 3'/%3E%3C/svg%3E"); }
+.body .callout-compare { --callout-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='2.5' y='3' width='11' height='10' rx='1'/%3E%3Cpath d='M8 3v10'/%3E%3C/svg%3E"); }
+.body .callout-compare-stacked { --callout-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='2.5' y='3' width='11' height='10' rx='1'/%3E%3Cpath d='M2.5 8h11'/%3E%3C/svg%3E"); }
 .body :is(.callout-abstract, .callout-quote) .callout-body { font-family: var(--display); font-size: 18.5px; line-height: 1.65; letter-spacing: -.01em; }
-.body .callout-question { border-left: 3px dashed var(--line); }
-.body .callout-tip :is(.callout-title, summary)::before { content: "→ "; }
-.body :is(.callout-warning, .callout-danger, .callout-failure) { border-left: 3px solid var(--warning); }
-.body :is(.callout-warning, .callout-danger, .callout-failure) :is(.callout-title, summary) { color: var(--warning); }
-.body .callout-bug { border-left: 3px solid var(--bug); }
-.body .callout-bug :is(.callout-title, summary) { color: var(--bug); }
+.body :is(.callout-warning, .callout-danger, .callout-failure) { --callout-color: var(--warning); --callout-rule: var(--warning); }
+.body .callout-bug { --callout-color: var(--bug); --callout-rule: var(--bug); }
 /* 같은 도표를 설정만 바꿔 견주는 콜아웃이다. 바깥 콜아웃의 본문을 격자로 두고 안쪽 콜아웃 하나가 한 칸이 된다.
    칸 최소 폭을 20rem으로 두면 좁은 화면에서 저절로 한 줄로 내려가 미디어 쿼리가 필요 없다.
    min()으로 감싸지 않으면 본문이 20rem보다 좁은 320px 화면에서 칸이 본문을 밀어내 페이지 전체가 가로로 스크롤한다. */
@@ -109,12 +125,12 @@
 .body .callout-compare > .callout-body { grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); }
 /* 본문 폭을 다 쓰는 도표를 견주는 묶음이다. 두 열로 두면 칸이 도표의 절반도 담지 못해 나란히 둔 의미가 사라지므로 한 줄에 하나씩 놓는다. */
 .body .callout-compare-stacked > .callout-body { grid-template-columns: 1fr; }
-/* 칸은 바깥 콜아웃의 판 안에 있으므로 판·선·여백을 걷어내 제목과 도표만 남긴다. 칸 사이는 격자 간격에 맡긴다.
+/* 칸은 바깥 콜아웃의 판 안에 있으므로 판·괘선·여백을 걷어내 머리표와 도표만 남긴다. 칸 사이는 격자 간격에 맡긴다.
+   안쪽 콜아웃의 종류는 표시에 쓰지 않으므로 경고·버그 칸이어도 머리표를 보조 글자색으로 되돌린다.
    격자 항목의 기본 최소 폭은 내용 크기다. 0으로 내려야 넓은 도표가 칸을 밀어내지 않고 도표 안에서 가로로 스크롤한다. */
-.body :is(.callout-compare, .callout-compare-stacked) > .callout-body > .callout { min-width: 0; margin: 0; padding: 0; border: 0; background: none; }
-/* 칸 제목의 밑줄은 바로 아래 도표 틀의 윗선과 겹쳐 선이 두 줄로 보이고, 바깥 제목과 모양이 같아 위계가 흐려진다.
-   선을 빼서 칸 제목을 도표에 붙은 이름으로 읽히게 한다. */
-.body :is(.callout-compare, .callout-compare-stacked) > .callout-body > .callout > :is(.callout-title, summary) { padding-bottom: 0; border-bottom: 0; }
+.body :is(.callout-compare, .callout-compare-stacked) > .callout-body > .callout { --callout-color: var(--muted); min-width: 0; margin: 0; padding: 0; border: 0; background: none; }
+/* 칸 머리표에도 아이콘을 달면 바깥 머리표와 모양이 같아 위계가 흐려진다. 아이콘을 빼서 칸 머리표를 도표에 붙은 이름으로 읽히게 한다. */
+.body :is(.callout-compare, .callout-compare-stacked) > .callout-body > .callout > :is(.callout-title, summary)::before { content: none; }
 @media (max-width: 720px) {
   /* 설명 열이 지나치게 잘게 접히지 않도록 너비를 확보하고 표 안에서 가로로 읽는다. */
   .body th:not(:first-child), .body td:not(:first-child) { min-width: 180px; }

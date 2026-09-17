@@ -110,6 +110,17 @@ typography:
     fontSize: 13px
     fontWeight: 400
     lineHeight: 1.6
+  callout-title:
+    fontFamily: Pretendard Variable
+    fontSize: 13px
+    fontWeight: 600
+    lineHeight: 1.5
+    letterSpacing: 0.04em
+  callout-body:
+    fontFamily: Pretendard Variable
+    fontSize: 15.5px
+    fontWeight: 400
+    lineHeight: 1.75
   code:
     fontFamily: SFMono-Regular
     fontSize: 14px
@@ -180,14 +191,25 @@ components:
   callout:
     backgroundColor: '{colors.paper-strong}'
     textColor: '{colors.primary}'
+    typography: '{typography.callout-body}'
     rounded: '{rounded.none}'
     padding: '12px 18px 16px'
+  callout-title:
+    backgroundColor: '{colors.paper-strong}'
+    textColor: '{colors.muted}'
+    typography: '{typography.callout-title}'
+  callout-rule:
+    backgroundColor: '{colors.primary}'
+    rounded: '{rounded.none}'
+    height: 2px
   callout-warning-title:
     backgroundColor: '{colors.paper-strong}'
     textColor: '{colors.warning}'
+    typography: '{typography.callout-title}'
   callout-bug-title:
     backgroundColor: '{colors.paper-strong}'
     textColor: '{colors.bug}'
+    typography: '{typography.callout-title}'
   code-block:
     backgroundColor: '{colors.code-bg}'
     textColor: '{colors.code-text}'
@@ -264,7 +286,7 @@ Thinking Garden은 글과 개발 노트를 읽으며 관련 생각으로 이어�
 | 조직 | `#4a8791` | 심리 | `#a4617f` |
 | 기타 | `#817f72` |  |  |
 
-`warning`과 `bug`는 본문 콜아웃의 제목·왼쪽 선에, `highlight`는 형광 표시에 사용한다. 개발은 통합된 주제색을 사용하고, 버그와 글쓰기는 같은 색상 계열을 공유하지만 용도로 구분한다. 그래프 간선의 색과 투명도는 [graph.css](src/styles/graph.css)에서 관리한다.
+`warning`과 `bug`는 본문 콜아웃의 위 괘선·머리표·아이콘에, `highlight`는 형광 표시에 사용한다. 개발은 통합된 주제색을 사용하고, 버그와 글쓰기는 같은 색상 계열을 공유하지만 용도로 구분한다. 그래프 간선의 색과 투명도는 [graph.css](src/styles/graph.css)에서 관리한다.
 
 도표는 연두색 노드와 먹색 글자를 기본으로 하고, 낮은 채도의 색으로 묶음과 항목을 구분한다. 작성자가 의미를 부여한 색은 유지하며, 세부 팔레트는 [도표 설정](src/scripts/mermaid-config.ts)에서 관리한다.
 
@@ -314,7 +336,7 @@ Gowun Batang은 제목과 요약·인용 콜아웃에, Pretendard Variable은 �
 - **목록:** 장부 격자를 두 단계로 나눈다. 왼쪽 열에는 연도·분류·등급 라벨을 명조로 크게 두고(등급 40px, 연도 32px, 분류 18px), 오른쪽 블록의 각 행이 다시 제목·메타와 요약을 좌우로 나눈다. 요약은 세 줄까지 표시하며, 720px 이하에서는 두 단계가 모두 세로로 쌓인다. 메타 줄의 구분점은 다음 항목과 함께 줄바꿈되도록 붙인다.
 - **개발 노트 목록:** 카테고리는 섹션 제목으로 표시하고, 각 행의 메타 줄에는 첫 공개 태그와 날짜를 표시한다. 어떤 태그가 앞에 오는지는 vault 속성 스키마의 태그 순서 규칙이 정하며, 사이트는 순서를 고쳐 쓰지 않는다. 첫 태그가 섹션 제목과 같은 말이면 빌드 로그가 알려 주므로 vault에서 태그를 손본다.
 - **연재 탐색:** 이전·다음 링크는 1px 테두리와 `14px 18px` 여백을 사용한다. 호버·키보드 포커스에서 먹색 테두리와 밝은 배경으로 강조한다.
-- **콜아웃:** 기본 여백은 `12px 18px 16px`다. 제목과 아래 선, 왼쪽 막대가 종류를 구분한다. 요약·인용은 명조, 질문은 점선, 팁은 화살표, 경고·버그는 의미별 색을 사용한다. 접을 수 있는 콜아웃은 제목 줄에 펼침 표시를 두며, `-`는 제목 줄만 보이게 접힌 채로, `+`는 펼친 채로 시작한다. `hint`·`summary` 같은 별칭은 기본 종류의 모양을 따른다. 비교(`compare`)는 본문을 최소 `20rem` 칸의 격자로 두고 안쪽 콜아웃 하나를 한 칸으로 삼으며, 칸에서는 판·선·여백과 제목 밑줄을 걷어내 제목과 도표만 남긴다. `compare-stacked`는 칸을 한 줄에 하나씩 놓는다. 종류는 열린 집합이라 이름을 모르는 종류도 같은 구조로 출력하고 CSS가 뜻을 준다.
+- **콜아웃:** 인쇄물의 박스 주석처럼 본문과 구분한다. 가는 선만으로는 본문의 일부처럼 읽혀서 세 단서를 겹친다. 페이지보다 한 단계 밝은 `paper-strong` 판, 위쪽 2px 먹색 괘선(`callout-rule`), 본문보다 작은 `callout-body` 활자(15.5px/1.75)다. 아래쪽은 `line` 선으로 닫고, 사방 테두리와 한쪽 막대는 두지 않는다. 여백은 `12px 18px 16px`다. 머리표는 `callout-title` 토큰(13px/600)이고, 앞에 종류별 14px 선 아이콘을 둔다. 아이콘은 머리표 색을 따르며 목록에 없는 종류는 Obsidian처럼 메모의 연필을 쓴다. 팁은 화살표, 질문은 물음표 원 아이콘이다. 요약·인용은 본문을 명조로 흘리고, 경고·위험·실패는 `warning`, 버그는 `bug`로 위 괘선과 머리표를 칠한다. 접을 수 있는 콜아웃은 머리표 줄에 펼침 표시를 두며, `-`는 머리표 줄만 보이게 접힌 채로, `+`는 펼친 채로 시작한다. 꺾쇠는 150ms 동안 ease-out 곡선(`cubic-bezier(.23, 1, .32, 1)`)으로 돈다. `hint`·`summary` 같은 별칭은 기본 종류의 모양을 따른다. 비교(`compare`)는 본문을 최소 `20rem` 칸의 격자로 두고 안쪽 콜아웃 하나를 한 칸으로 삼으며, 칸에서는 판·괘선·여백과 아이콘을 걷어내 머리표와 도표만 남긴다. `compare-stacked`는 칸을 한 줄에 하나씩 놓는다. 종류는 열린 집합이라 이름을 모르는 종류도 같은 구조로 출력하고 CSS가 뜻을 준다.
 - **할 일 목록:** 글머리표 자리에 14px 체크박스를 두고, 1.5px `ink` 테두리와 2px 모서리로 그린다. 완료하면 `ink`로 채우고 밝은 체크 표시를 넣는다. 공개 사이트에서 누를 수 없으므로 `disabled`를 유지하고 포인터 커서·호버 효과를 두지 않는다. 체크박스와 항목 글을 label로 묶어 글이 체크박스의 이름이 되게 하고, 완료한 항목은 그 글에만 Obsidian처럼 `muted` 색과 취소선을 적용해 하위 항목으로 번지지 않게 한다.
 - **코드 블록:** 강조는 빌드 때 끝내고 방문자에게 스크립트를 보내지 않는다. 다루지 않는 언어와 도표 원문은 색 없이 원문 그대로 둔다.
 - **도표:** 본문과 같은 서체로 라벨을 읽기 쉽게 표시한다. 넓은 도표는 내부 스크롤과 확대 보기로 읽으며, 키보드로도 조작할 수 있게 한다.
@@ -337,7 +359,7 @@ Gowun Batang은 제목과 요약·인용 콜아웃에, Pretendard Variable은 �
 
 호버와 선택은 색·선·링으로 즉시 알아볼 수 있게 한다. 키보드 포커스는 전역 2px 윤곽선과 4px 간격으로 표시하고, 연재 링크와 그래프는 각자의 테두리·링을 사용한다. 본문과 조작 요소의 상태 변화는 150ms, 모바일 지도 패널의 열림·닫힘은 200ms, 그래프의 선택 이동은 320ms 안에서 처리한다. 그래프의 드래그·확대는 장식용 자동 모션이 아니라 사용자의 입력에 따른 조작이다. `prefers-reduced-motion`에서는 전환과 부드러운 스크롤을 끄고, 모바일에서는 조작 영역과 주변 간격을 함께 확인한다.
 
-콜아웃 경고·버그 제목 색은 `--warning`, `--bug` 변수와 YAML 토큰을 함께 사용한다. 공식 린터는 컴포넌트에 선언한 배경·글자 색의 대비만 검사하므로, 포커스 표시·아이콘·선의 비텍스트 대비와 키보드 동작은 실제 화면에서 별도로 확인한다.
+콜아웃의 경고·버그 괘선과 머리표 색은 `--warning`, `--bug` 변수와 YAML 토큰을 함께 사용한다. 콜아웃 판을 `paper-strong`보다 짙게 칠하지 않는 이유는 대비다. 짙은 판 위에서는 `muted` 머리표와 보조 글자가 4.5:1을 넘기 어렵다. 공식 린터는 컴포넌트에 선언한 배경·글자 색의 대비만 검사하므로, 포커스 표시·아이콘·선의 비텍스트 대비와 키보드 동작은 실제 화면에서 별도로 확인한다.
 
 ## Maintenance & Validation
 
