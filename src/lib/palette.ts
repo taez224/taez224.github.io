@@ -5,8 +5,9 @@ export const PALETTE = {
   paper: '#f7f7f2',
   'paper-strong': '#fdfdfa',
   ink: '#252e29',
+  // 보조 글자는 muted 한 단계뿐이다. 종이색 위에서 4.5:1을 지키는 가장 옅은 회색이 muted와 거의 같아서
+  // 더 낮은 위계는 색을 옅게 하지 않고 글자 크기로 나눈다(옛 faint #687267은 muted와의 대비가 1.08이었다).
   muted: '#626d64',
-  faint: '#687267',
   line: '#d8ded4',
   'accent-soft': '#e7e9e3',
   warning: '#985d2f',

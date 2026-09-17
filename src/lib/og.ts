@@ -22,7 +22,7 @@ import { projectPaths } from './get-garden.ts';
 import { pngDimensions } from './png.ts';
 import { imageMimeType } from './image-types.ts';
 
-const PAPER = PALETTE.paper, INK = PALETTE.ink, MUTED = PALETTE.muted, FAINT = PALETTE.faint, ACCENT = PALETTE.ink, LINE = PALETTE.edge;
+const PAPER = PALETTE.paper, INK = PALETTE.ink, MUTED = PALETTE.muted, ACCENT = PALETTE.ink, LINE = PALETTE.edge;
 
 // ---- PNG 캐시 ----
 // 키는 최종 SVG 문자열 + 폰트 파일 정체 + resvg 버전에서 계산한다. 카드를 바꾸는 코드(템플릿·제목 접기·색상표·배치)는
@@ -193,7 +193,7 @@ export function ogSvg({ note, outgoing, incoming, siteLabel, thumbnailDataUri: t
 ${rightPanel}
 ${lines.map((line, index) => `<text x="72" y="${firstBaseline + index * lineHeight}" font-family="Gowun Batang" font-weight="700" font-size="${size}" letter-spacing="-1.5" fill="${INK}">${esc(line)}</text>`).join('\n')}
 <text x="72" y="560" font-family="Pretendard" font-size="26" fill="${MUTED}">${esc(meta)}</text>
-<text x="1128" y="560" text-anchor="end" font-family="Pretendard" font-size="22" fill="${FAINT}">${esc(siteLabel)}</text>
+<text x="1128" y="560" text-anchor="end" font-family="Pretendard" font-size="22" fill="${MUTED}">${esc(siteLabel)}</text>
 </svg>`;
 }
 
@@ -229,7 +229,7 @@ function siteSvg({ garden, title, siteLabel }: { garden: OgGarden; title: string
 <text x="72" y="94" font-family="Gowun Batang" font-weight="700" font-size="34" fill="${INK}">TaeZ</text>
 <g transform="translate(700 95)">${edges}${nodes}</g>
 ${lines.map((line, index) => `<text x="72" y="${firstBaseline + index * lineHeight}" font-family="Gowun Batang" font-weight="700" font-size="${size}" letter-spacing="-2" fill="${INK}">${esc(line)}</text>`).join('\n')}
-<text x="1128" y="560" text-anchor="end" font-family="Pretendard" font-size="22" fill="${FAINT}">${esc(siteLabel)}</text>
+<text x="1128" y="560" text-anchor="end" font-family="Pretendard" font-size="22" fill="${MUTED}">${esc(siteLabel)}</text>
 </svg>`;
 }
 

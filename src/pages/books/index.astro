@@ -28,7 +28,7 @@ const filters = statusFilters(books);
   .status-filter { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 4px; margin-left: auto; }
   .status-filter button { padding: 4px 7px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font: inherit; cursor: pointer; }
   .status-filter button:hover, .status-filter button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
-  .status-filter .count { color: var(--faint); font-variant-numeric: tabular-nums; }
+  .status-filter .count { color: var(--muted); font-variant-numeric: tabular-nums; }
   .status-filter button[aria-pressed="true"] .count { color: inherit; }
   /* 등급 묶음은 공용 장부(.ledger-group)를 쓰고 여백과 굵기만 다르다. */
   .books-page .ledger-group { padding-bottom: 28px; }

@@ -53,7 +53,7 @@ const topics = [...topicCounts].map(([name, count]) => ({ name, color: topicColo
   .legend { display: flex; flex: 1 1 auto; flex-wrap: wrap; align-items: center; gap: 4px 12px; min-width: 0; }
   .legend-item { display: inline-flex; align-items: center; gap: 5px; padding: 4px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: var(--t-meta); white-space: nowrap; }
   .legend button.legend-item:hover, .legend button.legend-item[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
-  .legend-fold { margin-left: 2px; color: var(--faint); font-weight: 400; }
+  .legend-fold { margin-left: 2px; color: var(--muted); font-weight: 400; }
   .graph-box { position: relative; }
   .map-stage { min-width: 0; } /* 그리드 아이템이 범례의 min-content 폭으로 늘어나 페이지가 넘치지 않게 */
   .graph-controls { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper-strong); }

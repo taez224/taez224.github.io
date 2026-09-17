@@ -1,6 +1,6 @@
 :root {
   color-scheme: light;
-  --paper: #f7f7f2; --paper-strong: #fdfdfa; --ink: #252e29; --muted: #626d64; --faint: #687267;
+  --paper: #f7f7f2; --paper-strong: #fdfdfa; --ink: #252e29; --muted: #626d64;
   /* UI의 기본 색은 먹색 하나이며 주제색과 의미 상태색만 예외로 사용한다. accent 토큰은 이름만 남기고 값은 먹색이다(2026-09-07). */
   --line: #d8ded4; --accent: #252e29; --accent-soft: #e7e9e3; --warning: #985d2f; --bug: #8e5d5d; --highlight: #e7d99b;
   --edge: #9aab9d;
@@ -25,7 +25,7 @@ h1, h2, h3, p { margin-top: 0; }
 .wrap { width: min(1180px, 100% - 48px); margin: 0 auto; }
 .display { font-family: var(--display); font-weight: 700; letter-spacing: -.02em; }
 .meta { font-size: var(--t-meta); line-height: 1.6; color: var(--muted); font-variant-numeric: tabular-nums; }
-.count { color: var(--faint); }
+.count { color: var(--muted); }
 /* 허브 표시: 지도 범례·허브 노드의 링과 같은 기호. 제목 앞에 둔다(이모지 대신). */
 .hub-mark { position: relative; display: inline-block; width: 11px; height: 11px; margin-right: 8px; border: 1.5px solid var(--accent); border-radius: 50%; vertical-align: 0; }
 .hub-mark::after { content: ""; position: absolute; inset: 2px; border-radius: 50%; background: var(--accent); } /* 지도의 허브 노드처럼 링 안에 점. 빈 링만으로는 눈에 안 띈다. */
@@ -115,12 +115,12 @@ main { min-height: 60vh; }
 .search-head { display: flex; align-items: center; gap: 12px; margin: 0; padding: 14px 16px; border-bottom: 1px solid var(--line); }
 .search-head input { flex: 1; min-width: 0; padding: 4px 0; border: 0; outline: 0; background: transparent; font-size: 16px; }
 .search-head input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; }
-.search-head kbd { color: var(--faint); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+.search-head kbd { color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
 .search-close { padding: 3px 0; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: var(--muted); font-size: var(--t-meta); }
 .search-results { max-height: 55vh; overflow-y: auto; padding: 8px 16px 14px; }
 .search-results:empty::before { display: block; padding: 18px 0 8px; color: var(--muted); content: "제목·요약·본문으로 찾아보세요."; font-size: var(--t-meta); }
 .search-item { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 12px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--line); }
-.search-kind { color: var(--faint); font-size: 12px; }
+.search-kind { color: var(--muted); font-size: 12px; }
 .search-item a { display: block; color: var(--ink); font-size: 15px; font-weight: 600; }
 .search-item small { display: block; margin-top: 3px; overflow: hidden; color: var(--muted); font-size: var(--t-meta); line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
 .search-empty { padding: 18px 0 8px; color: var(--muted); font-size: var(--t-meta); }

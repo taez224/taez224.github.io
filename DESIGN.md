@@ -7,7 +7,6 @@ colors:
   paper: '#f7f7f2'
   paper-strong: '#fdfdfa'
   muted: '#626d64'
-  faint: '#687267'
   line: '#d8ded4'
   accent-soft: '#e7e9e3'
   warning: '#985d2f'
@@ -178,7 +177,7 @@ components:
     typography: '{typography.meta}'
   count:
     backgroundColor: '{colors.paper}'
-    textColor: '{colors.faint}'
+    textColor: '{colors.muted}'
     typography: '{typography.meta}'
   series-link:
     backgroundColor: '{colors.paper}'
@@ -274,7 +273,7 @@ Thinking Garden은 글과 개발 노트를 읽으며 관련 생각으로 이어�
 
 ## Colors
 
-`primary`는 `--ink`와 `--accent`에 대응하며 글자와 주요 조작을 표시한다. `paper`는 페이지 배경, `paper-strong`은 표 머리·콜아웃·도표·대화상자 배경이다. 코드 상자는 강조 테마의 흰 배경(`code-bg`)을 쓴다. `muted`와 `faint`는 보조 정보의 위계를, `line`은 내용의 구획을 나타낸다. `accent-soft`는 호버·선택 배경에 사용한다. `warning`, `bug`, `highlight`는 각각 `--warning`, `--bug`, `--highlight`로 연결해 본문 상태와 강조를 표현한다. 본문 링크는 먹색 글자에 밑줄을 더해 주변 문장과 구분한다.
+`primary`는 `--ink`와 `--accent`에 대응하며 글자와 주요 조작을 표시한다. `paper`는 페이지 배경, `paper-strong`은 표 머리·콜아웃·도표·대화상자 배경이다. 코드 상자는 강조 테마의 흰 배경(`code-bg`)을 쓴다. `muted`는 보조 정보를, `line`은 내용의 구획을 나타낸다. 보조 글자색은 `muted` 한 단계만 둔다. 종이색 위에서 4.5:1을 지키는 가장 옅은 회색이 `muted`와 거의 같아서, 개수나 단축키처럼 더 낮은 위계는 색을 옅게 하지 않고 글자 크기로 나눈다. `accent-soft`는 호버·선택 배경에 사용한다. `warning`, `bug`, `highlight`는 각각 `--warning`, `--bug`, `--highlight`로 연결해 본문 상태와 강조를 표현한다. 본문 링크는 먹색 글자에 밑줄을 더해 주변 문장과 구분한다.
 
 주제색은 노드·영역·태그 점·지도 영역 이름·현재 목차 위치에 사용한다. 색과 함께 주제 이름, 허브 링, 연결 목록을 제공해 의미를 읽을 수 있게 한다. 아래 값은 `GRAPH_COLORS`와 대응한다.
 
