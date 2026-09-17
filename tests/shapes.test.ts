@@ -19,12 +19,12 @@ const styleText = (path: string) => (path.endsWith('.css') ? read(path) : [...re
 const rules = (path: string) => [...styleText(path).replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)]
   .map((m) => ({ path, selector: m[1].trim(), body: m[2] }));
 const allRules = sourceFiles('src', /\.(css|astro)$/).filter((path) => !path.endsWith('fonts.css')).flatMap(rules);
+// 아이콘을 CSS 선으로 그린 곳은 아이콘 크기에 맞춘 곡률과 선이라 모양 토큰 대상이 아니다.
+const iconDrawings = /visibility-mark::|task-list-item-checkbox|sheet-grip::before|summary::after/;
 
 test('border radii stay on the DESIGN.md rounded tokens', () => {
   const yaml = read('DESIGN.md').match(/^rounded:\n((?: {2}.+\n)+)/m)?.[1] ?? '';
   const allowed = new Set([...yaml.matchAll(/: (\d+px)$/gm)].map((m) => m[1]).concat('50%'));
-  // 아이콘을 CSS로 그린 곳은 아이콘 크기에 맞춘 곡률이라 토큰 대상이 아니다.
-  const iconDrawings = /visibility-mark::|task-list-item-checkbox|sheet-grip::before/;
   const found = allRules.filter((rule) => !iconDrawings.test(rule.selector)).flatMap((rule) => [...rule.body.matchAll(/border-radius:\s*([^;]+)/g)]
     .filter((m) => m[1].trim().split(/\s+/).some((value) => value !== '0' && !allowed.has(value)))
     .map((m) => `${rule.path}: ${rule.selector} { border-radius: ${m[1].trim()} }`));
@@ -39,5 +39,14 @@ test('state transitions use the documented durations', () => {
     .flatMap((m) => [...m[1].matchAll(/(?<![\w(,.])(\d*\.?\d+m?s)\b/g)].map((t) => t[1]))
     .filter((duration) => !allowed.has(duration))
     .map((duration) => `${rule.path}: ${rule.selector} (${duration})`));
+  assert.deepEqual(found, []);
+});
+
+test('thick one-sided borders stay on quotes and the table of contents rail', () => {
+  // 카드·안내 상자의 한쪽 막대는 장식으로 읽힌다. 인용문과 목차 레일만 관례로 남긴다.
+  const allowed = /blockquote|\.rail\b/;
+  const found = allRules.filter((rule) => !allowed.test(rule.selector) && !iconDrawings.test(rule.selector)).flatMap((rule) => [...rule.body.matchAll(/border-(?:left|right)(?:-width)?:\s*(\d*\.?\d+)px/g)]
+    .filter((m) => Number(m[1]) > 1)
+    .map((m) => `${rule.path}: ${rule.selector} (${m[0]})`));
   assert.deepEqual(found, []);
 });
