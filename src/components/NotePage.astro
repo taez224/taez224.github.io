@@ -69,7 +69,7 @@ const aboutUrl = withBase('/about/');
     </article>
     <NoteSidebar note={note} headings={note.headings} outgoing={outgoing} incoming={incoming} mapUrl={mapUrl} series={series} />
     <footer class="note-footer">
-      {endLink && <a href={parentUrl}>{endLink}</a>}
+      {endLink && <a href={parentUrl}><span aria-hidden="true">←</span> {endLink}</a>}
       <a class="about-link" href={aboutUrl}>이 위키에 대해 <span aria-hidden="true">→</span></a>
     </footer>
   </div>
@@ -117,7 +117,11 @@ const aboutUrl = withBase('/about/');
     .note-side { position: static; max-height: none; overflow: visible; padding-top: 0; } /* 본문과의 경계선은 첫 블록의 위 선이 맡는다(숨긴 목차가 앞 형제로 남아 선이 생긴다) */
     .note-side .rail-scroll { display: none; }
     .mobile-toc { display: block; margin: -8px 0 28px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-    .mobile-toc summary { padding: 11px 0; color: var(--muted); font-size: var(--t-side); cursor: pointer; }
+    /* 펼침 표시는 브라우저 기본 삼각형 대신 접히는 콜아웃과 같은 꺾쇠를 줄 오른쪽 끝에 둔다. */
+    .mobile-toc summary { position: relative; padding: 11px 24px 11px 0; color: var(--muted); font-size: var(--t-side); list-style: none; cursor: pointer; }
+    .mobile-toc summary::-webkit-details-marker { display: none; }
+    .mobile-toc summary::after { position: absolute; top: calc(50% - 5px); right: 4px; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg); transition: transform .15s cubic-bezier(.23, 1, .32, 1); content: ""; }
+    .mobile-toc[open] summary::after { transform: translateY(4px) rotate(-135deg); }
     .mobile-toc nav { display: flex; flex-direction: column; gap: 4px; padding-bottom: 14px; }
     .mobile-toc nav a { padding: 5px 0; font-size: var(--t-side); line-height: 1.5; }
     .mobile-toc nav a.level-3 { padding-left: 16px; color: var(--muted); }
