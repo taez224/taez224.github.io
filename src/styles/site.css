@@ -13,6 +13,12 @@
   --t-ledger: 2.5rem; --t-ledger-year: 2rem; --t-ledger-word: 1.125rem; --t-wordmark: 1.375rem; /* 40 32 18 22 */
   --t-base: 1.0625rem; --t-body: 1.0625rem; --t-summary: 1rem; --t-list: 1.25rem; --t-list-small: 1.0625rem; /* 17 17 16 20 17 */
   --t-ui: .9375rem; --t-side: .875rem; --t-meta: .8125rem; --t-micro: .75rem; /* 15 14 13 12 */
+  /* 구조 간격 토큰. DESIGN.md spacing과 같은 값이다. 페이지 틀(폭·좌우 여백·열·헤더·페이지 위아래)만 토큰으로 두고,
+     컴포넌트 안쪽의 작은 여백은 모양에 맞춘 값이라 묶지 않는다. 페이지 위쪽 여백은 목록형(index)과 읽는 페이지(reading) 두 단계라
+     같은 종류의 페이지를 오갈 때 제목이 같은 높이에서 시작한다. */
+  --s-content-max: 1180px; --s-page-gutter: 24px; --s-column-gap: 40px; --s-reader-column: 720px; --s-sidebar: 310px;
+  --s-header-height: 72px; --s-page-top-index: 36px; --s-page-top-reading: 56px; --s-page-bottom: 96px;
+  --s-title-gap: 40px; --s-paragraph-gap: 22px; --s-side-list-gap: 8px;
 }
 /* 대표 글 제목은 두 열 배치가 좁아지는 태블릿 폭에서 한 단계 줄인다. */
 @media (min-width: 721px) and (max-width: 1000px) { :root { --t-featured: 1.75rem; } } /* 28 */
@@ -30,7 +36,7 @@ h1, h2, h3, p { margin-top: 0; }
 .skip-link { position: absolute; z-index: 40; top: -80px; padding: 12px; background: var(--paper-strong); }
 .skip-link:focus { top: 8px; }
 
-.wrap { width: min(1180px, 100% - 48px); margin: 0 auto; }
+.wrap { width: min(var(--s-content-max), 100% - 2 * var(--s-page-gutter)); margin: 0 auto; }
 .display { font-family: var(--display); font-weight: 700; letter-spacing: -.02em; }
 .meta { font-size: var(--t-meta); line-height: 1.6; color: var(--muted); font-variant-numeric: tabular-nums; }
 .count { color: var(--muted); }
@@ -41,7 +47,7 @@ h1, h2, h3, p { margin-top: 0; }
 .btn { display: inline-flex; align-items: center; height: 44px; padding: 0 20px; border: 0; border-radius: 4px; background: var(--accent); color: var(--paper-strong); font-size: var(--t-ui); font-weight: 600; line-height: 1.2; }
 .btn:hover { background: var(--muted); color: var(--paper-strong); text-decoration: none; }
 .btn.small { height: 40px; padding: 0 18px; font-size: var(--t-side); }
-.side-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.side-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-side-list-gap); }
 .side-list a { display: block; color: var(--ink); font-size: var(--t-side); line-height: 1.5; }
 .side-list a:hover { color: var(--accent); }
 .list-block { padding: 18px 0; border-bottom: 1px solid var(--line); }
@@ -82,7 +88,7 @@ h1, h2, h3, p { margin-top: 0; }
 .scroll-list.is-long[data-overflow]::after { position: absolute; right: 0; bottom: 0; left: 0; height: 36px; pointer-events: none; background: linear-gradient(180deg, transparent 0%, var(--paper) 100%); content: ""; }
 
 .site-header { position: sticky; z-index: 20; top: 0; background: var(--paper); border-bottom: 1px solid var(--line); }
-.site-header .wrap { display: flex; align-items: center; height: 72px; }
+.site-header .wrap { display: flex; align-items: center; height: var(--s-header-height); }
 .wordmark { font-size: var(--t-wordmark); line-height: 1; color: var(--ink); }
 .wordmark:hover { color: var(--accent); text-decoration: none; }
 .site-nav { margin-left: auto; display: flex; align-items: center; gap: 28px; font-size: var(--t-ui); }
@@ -104,10 +110,9 @@ main { min-height: 60vh; }
     --t-title: 2rem; --t-featured: 1.5rem; --t-section: 1.25rem; --t-h2: 1.375rem; --t-h3: 1.1875rem; /* 32 24 20 22 19 */
     --t-ledger: 1.875rem; --t-ledger-year: 1.5rem; --t-ledger-word: 1.0625rem; --t-wordmark: 1.25rem; /* 30 24 17 20 */
     --t-base: 1rem; --t-summary: .9375rem; --t-list: 1.125rem; /* 16 15 18 */
+    --s-page-gutter: 20px; --s-header-height: 56px; --s-page-top-index: 24px; --s-page-top-reading: 32px; --s-page-bottom: 64px; --s-title-gap: 28px;
   }
-  .wrap { width: calc(100% - 40px); }
   /* 헤더는 한 줄. 워드마크·내비·검색이 320px 폭에서도 줄바꿈 없이 들어간다. */
-  .site-header .wrap { height: 56px; }
   .site-nav { gap: 14px; font-size: var(--t-side); }
   .site-nav a { white-space: nowrap; }
   .search-trigger { margin-left: 6px; margin-right: -12px; }

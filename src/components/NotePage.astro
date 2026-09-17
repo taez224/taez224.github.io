@@ -75,7 +75,7 @@ const aboutUrl = withBase('/about/');
   </div>
 </Shell>
 <style is:global>
-  .note-view { display: grid; grid-template-columns: minmax(0, 720px) 310px; justify-content: space-between; gap: 40px; align-items: start; padding: 56px 0 96px; }
+  .note-view { display: grid; grid-template-columns: minmax(0, var(--s-reader-column)) var(--s-sidebar); justify-content: space-between; gap: var(--s-column-gap); align-items: start; padding: var(--s-page-top-reading) 0 var(--s-page-bottom); }
   .note-side { position: sticky; top: 100px; max-height: calc(100dvh - 120px); overflow-y: auto; padding-top: 82px; scrollbar-gutter: stable; }
   .note-view > .note-side { grid-column: 2; grid-row: 1 / span 2; }
   /* 페이지 끝 한 줄: 왼쪽은 목록으로 돌아가는 링크, 오른쪽은 사이트 소개. 목록 링크가 없는 노트(slipbox)에서도 소개 링크는 오른쪽에 둔다.
@@ -106,10 +106,10 @@ const aboutUrl = withBase('/about/');
   .series-direction { color: var(--muted); font-size: var(--t-meta); }
   /* 제목은 소제목이 아니라 내비게이션이므로 사이드바 목록과 같은 고딕 15px */
   .series-title { font-size: var(--t-ui); font-weight: 600; line-height: 1.5; transition: color .15s ease; }
-  .note-title { margin: 0 0 40px; font-size: var(--t-title); line-height: 1.3; letter-spacing: -.03em; text-wrap: balance; }
+  .note-title { margin: 0 0 var(--s-title-gap); font-size: var(--t-title); line-height: 1.3; letter-spacing: -.03em; text-wrap: balance; }
   .mobile-toc { display: none; }
   @media (max-width: 1000px) {
-    .note-view { grid-template-columns: minmax(0, 720px); gap: 20px; }
+    .note-view { grid-template-columns: minmax(0, var(--s-reader-column)); gap: 20px; }
     /* 한 열에서는 본문과 연결 목록을 먼저 읽고, 목록 링크와 사이트 소개가 있는 페이지 끝 줄로 이동한다. */
     .note-view > .note-side { grid-column: 1; grid-row: auto; }
     .note-side { position: static; max-height: none; overflow: visible; padding-top: 0; } /* 본문과의 경계선은 첫 블록의 위 선이 맡는다(숨긴 목차가 앞 형제로 남아 선이 생긴다) */
@@ -121,8 +121,6 @@ const aboutUrl = withBase('/about/');
     .mobile-toc nav a.level-3 { padding-left: 16px; color: var(--muted); }
   }
   @media (max-width: 720px) {
-    .note-view { padding: 32px 0 64px; }
-    .note-title { margin-bottom: 28px; }
     /* 목차를 누르는 영역은 유지하고 제목·본문과의 바깥 여백만 줄인다. */
     .mobile-toc { margin: -12px 0 16px; }
     /* 이 폭에서는 제목 아래 여백이 28px로 줄어들어 위쪽 당김을 완화한다 */

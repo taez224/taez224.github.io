@@ -44,10 +44,11 @@ const topics = [...topicCounts].map(([name, count]) => ({ name, color: topicColo
   </div>
 </Shell>
 <style is:global>
-  .map-page { padding: 24px 0 48px; }
-  .map-layout { display: grid; grid-template-columns: minmax(0, 1fr) 310px; gap: 40px; margin-top: 16px; align-items: stretch; }
-  .graph-box { height: calc(100dvh - 270px); min-height: 420px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-  .map-panel { max-height: calc(100dvh - 270px + 88px); }
+  .map-page { padding: var(--s-page-top-index) 0 48px; }
+  .map-layout { display: grid; grid-template-columns: minmax(0, 1fr) var(--s-sidebar); gap: var(--s-column-gap); margin-top: 16px; align-items: stretch; }
+  /* 무대는 화면 높이에서 헤더·제목·범례·아래 여백(246px)과 페이지 위쪽 여백을 뺀 만큼이다. 패널은 여기에 범례 줄(88px)만큼 더 길다. */
+  .graph-box { height: calc(100dvh - 246px - var(--s-page-top-index)); min-height: 420px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .map-panel { max-height: calc(100dvh - 158px - var(--s-page-top-index)); }
   /* 범례는 위 한 줄, 확대 컨트롤은 지도 앱처럼 무대 오른쪽 아래에 띄운다. */
   .map-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
   .legend { display: flex; flex: 1 1 auto; flex-wrap: wrap; align-items: center; gap: 4px 12px; min-width: 0; }
@@ -59,15 +60,14 @@ const topics = [...topicCounts].map(([name, count]) => ({ name, color: topicColo
   .graph-controls { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper-strong); }
   .graph-controls button { min-width: 36px; min-height: 36px; padding: 3px 9px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: var(--t-meta); }
   .graph-controls button:hover { color: var(--accent); }
-  @media (max-width: 999.98px) {
+  @media (max-width: 1000px) {
     .map-layout { grid-template-columns: 1fr; gap: 24px; }
     .graph-box { height: 60vh; min-height: 360px; }
     .map-panel .scroll-list.is-long .side-list { max-height: none; }
     .map-panel .scroll-list.is-long::after { display: none; }
   }
-  @media (min-width: 720.02px) and (max-width: 999.98px) { .map-panel { max-height: none; } }
+  @media (min-width: 721px) and (max-width: 1000px) { .map-panel { max-height: none; } }
   @media (max-width: 720px) {
-    .map-page { padding-top: 16px; }
     .graph-box { width: 100vw; margin-left: calc(50% - 50vw); height: 60vh; }
     .graph-controls button { min-width: 40px; min-height: 40px; }
     /* 범례는 한 줄 가로 스크롤. 오른쪽 끝을 옅게 해 더 있음을 알린다. */

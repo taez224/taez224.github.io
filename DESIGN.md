@@ -252,6 +252,12 @@ spacing:
   header-height-mobile: 56px
   title-gap: 40px
   title-gap-mobile: 28px
+  page-top-index: 36px
+  page-top-index-mobile: 24px
+  page-top-reading: 56px
+  page-top-reading-mobile: 32px
+  page-bottom: 96px
+  page-bottom-mobile: 64px
 rounded:
   none: 0px
   control: 4px
@@ -427,7 +433,11 @@ Gowun Batang은 제목과 요약·인용 콜아웃에, Pretendard Variable은 �
 
 ## Layout
 
-공통 컨테이너와 리더 열은 `content-max`, `page-gutter`, `reader-column`, `sidebar`, `column-gap` 토큰을 따른다. 1000px 이하에서는 한 열로 바뀌고 참조·역참조가 본문 뒤로 이동한다. 720px 이하에서는 좌우 여백과 접힘 목차·하단 시트 규칙을 모바일 값으로 바꾼다.
+공통 컨테이너와 리더 열은 `content-max`, `page-gutter`, `reader-column`, `sidebar`, `column-gap` 토큰을 따른다. YAML의 spacing 토큰마다 `site.css`에 `--s-이름` 변수가 있고, 모바일 값은 720px 이하 미디어 쿼리의 `:root`에서 바꾼다. 토큰으로 묶는 것은 페이지 틀(폭, 좌우 여백, 열, 헤더, 페이지 위아래 여백, 제목 아래 간격, 문단 간격)뿐이다. 컴포넌트 안쪽의 작은 여백은 모양에 맞춘 값이라 토큰으로 묶지 않는다. 토큰과 CSS 변수의 일치, 페이지 틀 크기를 숫자로 다시 적는 경우, 목록에 없는 전환 폭은 `tests/spacing.test.ts`가 검사한다.
+
+헤더 아래 첫 요소까지의 여백은 두 단계다. 글·개발 노트·책장·지도처럼 목록을 보여 주는 페이지는 `page-top-index`, 리더·소개·외부 발행 글처럼 읽는 페이지는 `page-top-reading`을 쓴다. 같은 종류의 페이지를 오갈 때 제목이 같은 높이에서 시작한다. 지도 무대 높이는 화면 높이에서 고정된 머리 높이와 `page-top-index`를 빼서 계산한다.
+
+전환 폭은 720px(모바일)과 1000px(한 열)이 기본이고, `(max-width: 720px)`·`(min-width: 721px)`·`(max-width: 1000px)`로 적는다. 그 밖에는 홈 히어로의 1240px, 책장의 480px, 좁은 헤더에서 공유 아이콘을 숨기는 359/360px만 쓴다. 1000px 이하에서는 한 열로 바뀌고 참조·역참조가 본문 뒤로 이동한다. 720px 이하에서는 좌우 여백과 접힘 목차·하단 시트 규칙을 모바일 값으로 바꾼다.
 
 모바일 목록은 열을 세로로 쌓고, 긴 표·코드는 블록 안에서 가로로 스크롤한다. 지도 주제 필터는 한 줄로 스크롤하며, 노트를 선택하면 720px 이하에서 하단 시트가 열린다. 상세 노트에서는 태그와 연결 목록으로 주제·관계를 확인한다. [NotePage](src/components/NotePage.astro)와 [지도 페이지](src/pages/map/index.astro)가 폭에 따른 배치를 정한다.
 

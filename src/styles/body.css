@@ -1,7 +1,7 @@
 /* 렌더링한 Markdown 본문(.body). 노트 본문(NotePage)과 소개 페이지(about)가 함께 불러온다.
    콜아웃·비공개 표시처럼 사이트 렌더러(markdown.ts)만 만드는 요소도 여기에 둔다. */
 .body { font-size: var(--t-body); line-height: 1.85; }
-.body p { margin: 0 0 22px; }
+.body p { margin: 0 0 var(--s-paragraph-gap); }
 /* 본문의 외부 링크는 사이트 다른 곳(발행처·출처)과 같이 ↗를 붙여 노트 링크와 구분한다. */
 /* 링크 색이 먹색이라 본문 링크는 밑줄로 구분한다. */
 .body a { text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--ink) 35%, transparent); text-decoration-thickness: 1px; text-underline-offset: .18em; }
@@ -17,7 +17,7 @@
 .body h2 { margin: 44px 0 14px; font-size: var(--t-h2); }
 .body h3 { margin: 32px 0 10px; font-size: var(--t-h3); }
 .body h4 { margin: 24px 0 8px; font-size: var(--t-h4); }
-.body ul, .body ol { margin: 0 0 22px; padding-left: 22px; }
+.body ul, .body ol { margin: 0 0 var(--s-paragraph-gap); padding-left: 22px; }
 .body li { margin: 6px 0; }
 /* 할 일 목록. 글머리표 자리에 체크박스를 둔다. 브라우저가 누를 수 없는 체크박스를 흐리게 그리므로 기본 모양을 지우고
    먹색 테두리와 체크 표시로 상태를 선명하게 보인다. 누를 수 있다는 인상을 주지 않도록 포인터 커서와 호버 효과는 두지 않는다.
