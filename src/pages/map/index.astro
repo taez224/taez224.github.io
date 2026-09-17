@@ -52,14 +52,15 @@ const topics = [...topicCounts].map(([name, count]) => ({ name, color: topicColo
   /* 범례는 위 한 줄, 확대 컨트롤은 지도 앱처럼 무대 오른쪽 아래에 띄운다. */
   .map-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
   .legend { display: flex; flex: 1 1 auto; flex-wrap: wrap; align-items: center; gap: 4px 12px; min-width: 0; }
-  .legend-item { display: inline-flex; align-items: center; gap: 5px; padding: 4px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: var(--t-meta); white-space: nowrap; }
+  .legend-item { display: inline-flex; align-items: center; gap: 5px; padding: 4px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: var(--t-meta); white-space: nowrap; transition: background-color .15s ease, color .15s ease; }
   .legend button.legend-item:hover, .legend button.legend-item[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
   .legend-fold { margin-left: 2px; color: var(--muted); font-weight: 400; }
   .graph-box { position: relative; }
   .map-stage { min-width: 0; } /* 그리드 아이템이 범례의 min-content 폭으로 늘어나 페이지가 넘치지 않게 */
   .graph-controls { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper-strong); }
-  .graph-controls button { min-width: 36px; min-height: 36px; padding: 3px 9px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: var(--t-meta); }
-  .graph-controls button:hover { color: var(--accent); }
+  .graph-controls button { min-width: 36px; min-height: 36px; padding: 3px 9px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: var(--t-meta); transition: background-color .15s ease, color .15s ease; }
+  /* 확대 버튼도 범례·필터와 같은 투명 버튼이라 호버 때 같은 옅은 판을 깐다. */
+  .graph-controls button:hover { background: var(--accent-soft); color: var(--accent); }
   @media (max-width: 1000px) {
     .map-layout { grid-template-columns: 1fr; gap: 24px; }
     .graph-box { height: 60vh; min-height: 360px; }
