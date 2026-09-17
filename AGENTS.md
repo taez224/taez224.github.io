@@ -1,19 +1,19 @@
 # Agent Instructions
 
-AI 코딩 에이전트가 이 저장소에서 작업할 때의 지침이다. Codex는 이 파일을 직접 읽고, Claude Code는 `CLAUDE.md`가 이 파일을 가져온 뒤 Claude 전용 절을 덧붙인다.
+AI 코딩 에이전트가 이 저장소에서 작업할 때 따르는 지침이다. Codex는 이 파일을 직접 읽고, Claude Code는 `CLAUDE.md`가 이 파일을 가져온 뒤 Claude 전용 절을 덧붙인다.
 
 ## 이 저장소가 하는 일
 
-TaeZ's Thinking Garden(https://taez224.github.io/)을 짓는 Astro 7 정적 사이트다. **노트 원본은 이 저장소에 없다.** 별도 저장소 `taez224/obsidian`(Obsidian vault)을 읽어서 공개 가능한 부분만 사이트로 낸다.
+TaeZ's Thinking Garden(https://taez224.github.io/)을 만드는 Astro 7 정적 사이트다. **노트 원본은 이 저장소에 없다.** 별도 저장소 `taez224/obsidian`(Obsidian vault)을 읽어서 공개할 수 있는 부분만 사이트에 싣는다.
 
-- 로컬: vault는 옆 폴더 `../obsidian`에 클론돼 있다. 다른 위치면 `GARDEN_VAULT_ROOT`로 지정한다. dev와 build 모두 vault가 있어야 돈다.
-- CI(`.github/workflows/deploy.yml`): vault를 `vault/`에 두 번째 checkout하고 `GARDEN_VAULT_ROOT`로 넘긴다. main push, 매일 04:00 KST, 수동 실행(`gh workflow run deploy.yml`)으로 돈다. PR에서는 같은 검사를 실행하되 배포하지 않는다. **vault만 바뀌면 다음 예약 빌드까지 사이트에 반영되지 않는다.**
-- 노트 작성 규칙(frontmatter 속성, 허용 값)의 정본은 vault의 `99_Templates/_property-schema.md`다. 사이트 쪽 표시 규칙은 `AUTHORING.md`에 있다. 콘텐츠 렌더링을 바꾸기 전에 먼저 읽는다.
-- 방문자용 소개 원고는 `src/content/about.md`에서 관리한다. `src/pages/about.astro`가 일반 Markdown으로 렌더링하며, vault 노트 컬렉션에는 포함하지 않는다.
+- 로컬: vault는 옆 폴더 `../obsidian`에 클론돼 있다. 다른 위치면 `GARDEN_VAULT_ROOT`로 지정한다. dev와 build 모두 vault가 있어야 실행된다.
+- CI(`.github/workflows/deploy.yml`): vault를 `vault/`에 한 번 더 checkout하고 `GARDEN_VAULT_ROOT`로 넘긴다. main push, 매일 04:00 KST, 수동 실행(`gh workflow run deploy.yml`) 때 실행된다. PR에서는 같은 검사를 실행하되 배포하지 않는다. **vault만 바뀌면 다음 예약 빌드까지 사이트에 반영되지 않는다.**
+- 노트 작성 규칙(frontmatter 속성, 허용 값)의 정본은 vault의 `99_Templates/_property-schema.md`다. 사이트의 표시 규칙은 `AUTHORING.md`에 있으므로 콘텐츠 렌더링을 바꾸기 전에 먼저 읽는다.
+- 방문자용 소개 원고는 `src/content/about.md`다. `src/pages/about.astro`가 일반 Markdown으로 렌더링하며, vault 노트 컬렉션에는 넣지 않는다.
 
 ## 명령
 
-Node 26.8.2(`.nvmrc`, `package.json`의 `engines`)와 커밋된 `package-lock.json`을 쓴다. CI와 같다. `sharp`는 Astro가 선택 의존성으로만 가져오지만 썸네일 최적화와 OG 카드의 썸네일 변환이 쓰므로 직접 의존성으로 선언한다. `overrides`의 `lodash-es`는 Mermaid 12가 쓰는 chevrotain이 취약한 4.17.23을 고정하기 때문에 둔 것이다. chevrotain 계열 세 패키지가 4.18 이상을 선언하면 override를 빼고 `npm audit --omit=dev`와 도표 렌더링을 다시 확인한다.
+Node 26.8.2(`.nvmrc`, `package.json`의 `engines`)와 커밋된 `package-lock.json`을 쓴다. CI도 같은 버전을 쓴다.
 
 ```bash
 nvm use                      # .nvmrc에 고정한 Node 버전 선택
@@ -21,81 +21,47 @@ npm ci                       # 잠근 의존성 설치
 npm run check                # TS 소스·설정·빌드 도구·타입 계약 검사
 npm run check:astro          # Astro 컴포넌트·페이지 전체 타입 검사
 npm test                     # node --test tests/*.test.ts
-node --test tests/garden.test.ts                                  # 파일 하나
-node --test --test-name-pattern="slug" tests/garden.test.ts       # 이름으로 골라 실행
+node --test --test-name-pattern="slug" tests/garden.test.ts   # 파일 하나에서 이름으로 골라 실행
 npm run dev                  # astro dev. vault 파일을 감시해 다시 조립한다
 npm run build                # astro build && node scripts/check-dist.ts
 npm run preview              # dist를 서빙한다. 먼저 build가 있어야 한다
-npm run snapshot:markdown -- write|verify   # 공개 본문 전체의 조립 결과를 저장했다가 바이트 단위로 견준다
+npm run design:lint          # DESIGN.md 형식과 선언한 색 조합의 대비 검사
+npm run snapshot:markdown -- write|verify   # 공개 본문 전체의 조립 결과를 저장했다가 바이트 단위로 비교
 npm run fonts:vendor         # 글꼴 버전을 올릴 때만. public/fonts와 src/styles/fonts.css를 다시 만든다
 ```
 
-사이트 글꼴(Pretendard, Gowun Batang)은 자체 호스팅한다. `scripts/vendor-fonts.ts`가 고정 버전 npm 패키지에서 woff2 조각만 받아 `public/fonts/`에 커밋해 두므로 빌드와 dev에는 네트워크가 필요 없다. 글꼴 버전은 스크립트의 패키지 버전으로 올리고, 생성된 `fonts.css`는 직접 고치지 않는다.
-
-`snapshot:markdown`은 Markdown 렌더러·본문 정리·목차·검색 텍스트·링크 해석을 고치거나 markdown-it·sanitize-html을 올릴 때의 회귀 검사다. 고치기 전에 `write`, 고친 뒤에 `verify`를 돌린다. 실제 vault를 읽기 전용으로 읽는다. config.json이나 스냅샷 형식이 다르면 종료 코드 2로 중단하며, 원문이 바뀐 노트도 전체 동일로 판정하지 않는다. 산출물 차이는 종료 코드 1이다. 자동 테스트가 아니므로 문법 검증은 임시 입력을 쓰는 단위 테스트로 한다.
-
-`npm run build`는 dist를 검사하는 `scripts/check-dist.ts`까지 통과해야 성공이다. 메타데이터·OG PNG·공개 범위·페이지와 데이터 연결·그래프 초기화에 필요한 산출물을 검사하고, 사이트 안 링크가 실제 페이지를 가리키는지 확인한다. 문구·폰트·아이콘·배치·콘텐츠 개수는 고정하지 않는다. Markdown 문법은 임시 입력을 쓰는 단위 테스트로 검증한다.
-
-환경 변수: `GARDEN_VAULT_ROOT`(vault 경로), `GARDEN_PROJECT_ROOT`(기본 cwd), `GARDEN_OG_CACHE_DIR`, `GARDEN_DIST_DIR`(check-dist 대상).
+- `npm run build`는 `scripts/check-dist.ts`까지 통과해야 성공이다. 이 검사는 메타데이터, OG PNG, 공개 범위, 페이지와 데이터의 연결, 그래프 초기화에 필요한 산출물, 사이트 안 링크를 확인한다. 문구·글꼴·아이콘·배치·콘텐츠 개수는 고정하지 않는다.
+- `snapshot:markdown`은 Markdown 렌더러, 본문 정리, 목차, 검색 텍스트, 링크 해석을 고치거나 markdown-it·sanitize-html을 올릴 때 쓰는 회귀 검사다. 고치기 전에 `write`, 고친 뒤에 `verify`를 실행한다. 실제 vault를 읽기 전용으로 읽고, 산출물이 다르면 종료 코드 1, config.json이나 스냅샷 형식이 다르면 종료 코드 2로 끝난다. 원문이 바뀐 노트가 있으면 전체 동일로 판정하지 않는다. 자동 테스트가 아니므로 Markdown 문법은 임시 입력을 쓰는 단위 테스트로 검증한다.
+- 글꼴(Pretendard, Gowun Batang)은 자체 호스팅한다. `scripts/vendor-fonts.ts`가 고정 버전 npm 패키지에서 woff2 조각을 받아 `public/fonts/`에 커밋해 두므로 빌드와 dev에 네트워크가 필요 없다. 글꼴 버전은 스크립트의 패키지 버전으로 올리고, 생성된 `fonts.css`는 직접 고치지 않는다.
+- `sharp`는 Astro가 선택 의존성으로만 가져오지만 썸네일 최적화와 OG 카드가 쓰므로 직접 의존성으로 선언한다.
+- `overrides`의 `lodash-es`는 Mermaid 12가 쓰는 chevrotain이 취약한 4.17.23을 고정하기 때문에 둔 것이다. chevrotain 계열 세 패키지가 4.18 이상을 선언하면 override를 빼고 `npm audit --omit=dev`와 도표 렌더링을 다시 확인한다.
+- 환경 변수: `GARDEN_VAULT_ROOT`(vault 경로), `GARDEN_PROJECT_ROOT`(기본 cwd), `GARDEN_OG_CACHE_DIR`, `GARDEN_DIST_DIR`(check-dist 대상).
 
 ## 아키텍처
 
-핵심은 "vault를 한 번 조립하고, 모두가 그 결과를 읽는다"이다.
+`src/lib/garden.ts`의 `assembleGarden()`이 vault를 한 번 조립하고, 나머지는 모두 그 결과를 읽는다. 페이지(`src/pages/**`)는 `getCollection('notes'|'books')`로 읽고, 엔드포인트(`data/*.json.ts`, `og/*.png.ts`, `rss.xml.ts`, `llms.txt.ts`)는 `getGarden()`으로 읽는다. `get-garden.ts`가 결과를 메모이즈하고, dev에서는 2초가 지나면 다시 조립한다.
 
-```
-config.json ──▶ publication.ts (공개 판정)
-                     │
-                     ▼
-   assembleGarden()  src/lib/garden.ts      vault 전체를 읽어 notes/books/nodes/edges/stats/assetCopies를 만든다
-                     │  (get-garden.ts가 메모이즈. dev에서는 2초 지나면 다시 읽는다)
-        ┌────────────┼──────────────────┬──────────────────┐
-        ▼            ▼                  ▼                  ▼
- Content Layer   정적 엔드포인트      OG 카드            vault-assets 통합
- loaders/vault   data/site.json      og/*.png           config.assets에 적힌 파일만
- → getCollection data/search.json    (resvg, 캐시)       dist/assets/vault/로 복사
- → 페이지        rss, feeds, llms.txt
-        └────────────┴──────────────────┴──────────────────┘
-                     ▼
-              scripts/check-dist.ts
-```
-
-- **페이지**(`src/pages/**`)는 `getCollection('notes'|'books')`로 읽고, **엔드포인트**(`data/*.json.ts`, `og/*.png.ts`, `rss.xml.ts`, `llms.txt.ts`)는 `getGarden()`을 직접 부른다. 둘 다 같은 조립 결과다.
-- **조립 모듈**: `garden.ts`는 공개 후보를 고르고 노트 레코드와 공개 색인을 만든 뒤 각 단계를 잇는다. 파일 탐색과 frontmatter는 `vault-files.ts`, 공개 본문과 요약은 `note-body.ts`, 검색 텍스트와 요약 발췌는 `text.ts`의 `analyzeText`(한 번 파싱), 위키 링크 해석은 `links.ts`가 맡는다. Obsidian 문법(콜아웃·위키링크·형광·블록 id·그림 설명·한글 강조)은 모두 `markdown.ts`의 `createMarkdownIt` 안에 markdown-it 규칙으로 있고, 목차는 렌더러가 제목 id를 매기면서 `headings` 출력 인자로 함께 모은다. 책장은 `books.ts`의 `readBooks`, 블로그의 연재·발행처 묶음은 `blog.ts`의 `assembleBlog`, 개발 노트 분류는 `development.ts`의 `groupDevelopment`가 만든다. 본문·썸네일이 쓸 수 있는 자산과 dist로 복사할 목록은 `public-assets.ts`의 `createAssetResolver`가 정한다. 노트 링크 해석과 렌더링은 공개 색인에 기대므로 `garden.ts`에 둔다. 이 모듈들은 `garden.ts`를 import하지 않고 레코드 목록만 받으므로 순환 의존이 생기지 않는다.
-- **클라이언트 JS**: 홈(`hero.ts`)과 지도(`map.ts`)는 페이지에 인라인된 노드·간선(`data-hero-data`, `data-map-data`, `graph-data.ts`)으로 스크립트 실행 즉시 그래프를 올린다. 홈은 빌드 때 계산한 좌표까지 싣고, 지도는 무대 크기에 맞춰 배치한다. 지도 패널이 쓰는 노트 정보·참조 관계도 같은 JSON에 실어 fetch가 없다. 검색만 `search.json`을 열 때 fetch한다. `data/site.json`은 공개 데이터 엔드포인트이자 check-dist의 기준 자료로 남는다. `integrations/module-preload.ts`가 빌드 산출물의 정적 import를 따라가 엔진 청크에 `modulepreload`를 달고, 지도 페이지 스크립트는 `<head>`로 옮겨 `blocking="render"`를 달아 그래프가 올라간 뒤에 첫 화면을 그린다(지도는 무대 크기가 화면마다 달라 스냅샷을 둘 수 없다). 그 전에 보이는 데스크톱 스냅샷(`snapshot.ts`의 `desktop` 프리셋)은 엔진과 같은 배치 규칙(`label.ts`의 `placeLabels`)과 같은 맞춤으로 그려서 교체가 눈에 띄지 않는다. 제목 배치 규칙을 바꾸면 두 쪽이 같이 바뀐다. 그래프는 프레임워크 없는 SVG 엔진 `src/graph/engine.ts`가 그린다. `src/graph`의 나머지 모듈은 DOM을 만지지 않는 순수 함수이고 각각 단위 테스트가 있다.
-- **dev 감시**: `loaders/vault.ts`가 include 루트·Books·`config.json`·검토된 자산을 watcher에 등록하고, `refresh-coordinator.ts`가 디바운스와 직렬화를 맡아 notes·books 스토어를 한 번의 재조립으로 채운다.
-- **OG 카드**: `src/lib/og.ts`. 최종 SVG 문자열 + 폰트 정체 + resvg 버전의 해시가 캐시 키라 수동 버전 상수가 없다. 캐시는 `node_modules/.cache/garden-og-images`와 `garden-og-fonts`이고 CI가 복원한다. 폰트는 고정 출처와 SHA-256으로 다운로드 및 캐시를 검증한다.
+- 조립 코드의 규칙(모듈 의존 방향, 공개 본문 변환, URL과 슬러그, OG 카드 캐시)은 `src/lib/AGENTS.md`에 있다. `src/lib/`을 고치기 전에 읽는다.
+- 조립이 읽는 입력을 새로 더하면 `src/loaders/vault.ts`의 `watchPathsFor`에도 더한다. 빠뜨리면 dev에서 그 파일을 고쳐도 다시 조립되지 않는다.
+- 홈과 지도는 페이지에 인라인한 JSON(`data-hero-data`, `data-map-data`)으로 그래프를 그리므로 fetch하지 않는다. fetch는 검색이 `search.json`을 열 때만 한다. `data/site.json`은 페이지가 쓰지 않지만 공개 데이터 엔드포인트이자 check-dist의 기준 자료라 남긴다.
+- 그래프는 프레임워크 없는 SVG 엔진 `src/graph/engine.ts`가 그린다. `src/graph`의 나머지 모듈은 DOM을 쓰지 않는 순수 함수이고 모듈마다 단위 테스트가 있다.
+- 홈은 빌드 때 그린 SVG 스냅샷(`src/graph/snapshot.ts`)을 먼저 보여 주고, 엔진이 올라오면 교체한다. 두 쪽이 같은 제목 배치 규칙(`label.ts`의 `placeLabels`)과 맞춤을 써야 교체가 눈에 띄지 않으므로, 배치 규칙을 바꾸면 두 쪽이 함께 바뀌는지 확인한다.
+- 지도는 무대 크기가 화면마다 달라 스냅샷을 둘 수 없다. 대신 `src/integrations/module-preload.ts`가 지도 스크립트를 `<head>`로 옮기고 `blocking="render"`를 달아, 그래프가 올라간 뒤에 첫 화면을 그린다.
 
 ### 공개 범위 규칙 (바꿀 때 주의)
 
 - `config.json`의 `include`/`exclude`가 폴더 단위 규칙이고, `src/lib/publication.ts`의 `privateRoots`는 config와 무관하게 항상 비공개다. Development 폴더는 `_`나 `.`로 시작하는 경로 조각이 있으면 뺀다. `include`에 적은 폴더가 vault에 없으면 빌드가 멈추므로, vault에서 공개 폴더의 이름을 바꾸면 `config.json`도 함께 고친다.
-- 블로그(`20_Projects/blog`)는 `status: published`이거나 `type: series`만 들어온다. 발행된 편이 없는 연재 허브는 조립 단계에서 뺀다.
-- `externalPublications`에 걸리는 글은 `contentMode: 'external'`이 돼 본문·목차·검색 텍스트 없이 소개 페이지만 낸다. 규칙에 걸리면 `source`가 그 호스트의 유효한 https URL이어야 하고 아니면 빌드가 실패한다.
-- 링크·카드로 비공개 노트가 새지 않도록 설계돼 있다. 비공개 대상은 존재 여부만 기록하고 제목·요약·본문을 절대 출력하지 않는다. HTML, 검색 데이터, 그래프 데이터 어디로도 비공개 메타데이터와 외부 발행 글 본문을 내보내지 않는다.
-
-### 공개 본문 변환
-
-vault 원문은 건드리지 않고 사이트로 나가는 사본만 바꾼다(`note-body.ts`의 `publicBody`).
-
-- 첫 H1, Obsidian 주석(`%% %%`), `AUTHOR_ONLY_SECTIONS`(현재 `운영 메모`) 절을 뺀다.
-- 정리한 공개 본문으로 자동 요약·검색 텍스트·본문 링크를 계산하고, 목차는 렌더링에서 나온다. 명시한 `summary`를 우선하며, 외부 발행 글에는 본문 발췌 요약을 만들지 않는다.
-- 연재 목차와 이전·다음 탐색은 `series`와 `series_order`로 만든다. 본문 목록은 자동으로 제거하지 않는다.
-- 참조·역참조는 본문 링크와 `related` 목록의 위키링크를 합쳐 만든다. 공개 대상만 연결하고 중복은 제거한다. 전체 지도에는 기존 그래프 후보 규칙을 적용한다.
-- 본문 링크는 렌더러의 Markdown 규칙으로 해석한다. 코드·주석·이스케이프된 예시와 운영 메모의 링크는 연결로 세지 않는다.
-- `> [!article]` 콜아웃에 링크 하나만 있으면 대상 글의 제목·요약·썸네일로 카드를 만든다(`article-card.ts`).
-- 태그: `HIDDEN_TAGS`(slipbox, blog, inbox, clippings)와 `프로젝트/*`는 어디에도 안 보인다. 주제(topic)는 첫 공개 태그의 첫 조각이고 `GRAPH_COLORS`가 색을 준다(`format.ts`).
-
-### URL과 슬러그
-
-`/posts/<slug>/`(blog), `/notes/<slug>/`(slipbox), `/dev/<slug>/`(development). 슬러그는 frontmatter `slug`가 있으면 그것, 없으면 제목에서 만든다(한글 유지, 소문자, 기호는 `-`). 같은 kind에서 충돌하면 빌드가 실패하고 `slug`를 달라고 한다(`src/lib/slug.ts`).
-**기존 URL과 fragment는 슬러그 생성 규칙이나 헤딩 id 규칙이 정해지기 전까지 당분간 유동적으로 관리하며 과거 호환도 신경쓰지 않는다.**
+- 블로그(`20_Projects/blog`)는 `status: published`이거나 `type: series`인 글만 들어온다. 발행된 편이 없는 연재 허브는 조립 단계에서 뺀다.
+- `externalPublications` 규칙에 걸리는 글은 `contentMode: 'external'`이 되어 본문·목차·검색 텍스트 없이 소개 페이지만 만든다. 이때 `source`가 그 호스트의 유효한 https URL이 아니면 빌드가 실패한다.
+- 비공개 노트는 존재 여부만 기록하고 제목·요약·본문을 절대 출력하지 않는다. HTML, 검색 데이터, 그래프 데이터 어디에도 비공개 메타데이터와 외부 발행 글의 본문을 내보내지 않는다.
 
 ## TypeScript 검사
 
-애플리케이션(`src/`)과 빌드 도구는 TypeScript로 작성한다. `tsconfig.json`은 Astro strict 설정을 사용하고 `allowJs`는 끈다. `npm run check`는 `tsconfig.check.json`으로 TS 소스·설정·빌드 검사기·타입 계약 테스트를 검사하고, `npm run check:astro`는 Astro 컴포넌트와 페이지까지 검사한다. CI에서 둘 다 통과해야 한다.
-
-`content-model.ts`는 노트 컬렉션 필드를 Zod 스키마로 공유하고 공개 노트·책·그래프·패널·컬렉션 엔트리 타입을 정의한다. 조립 노트의 썸네일 경로와 Astro 컬렉션의 이미지 메타데이터는 구분한다. 임시 vault 통합 테스트로 실제 조립 결과를 대조한다.
-
-TypeScript는 `astro check`가 지원하는 6.x를 쓴다. 현재 TypeScript 7은 검사 도구에 필요한 programmatic API를 제공하지 않는다. 상대 import에는 실제 `.ts` 확장자를 적고 타입은 `import type`으로 가져온다. 테스트도 TypeScript이고 `node:test`를 그대로 쓰며, Node 26의 타입 스트리핑으로 빌드 단계 없이 실행한다. 소스·설정·빌드 도구와 테스트가 모두 `npm run check`의 검사 대상이다. `erasableSyntaxOnly`로 실행 코드 변환이 필요한 enum·매개변수 프로퍼티를 막는다. Mermaid는 npm 의존성으로 관리하며 필요한 페이지에서 동적 import로 불러온다.
+- 애플리케이션(`src/`), 빌드 도구, 테스트를 모두 TypeScript로 쓴다. `tsconfig.json`은 Astro strict 설정이고 `allowJs`는 끈다. `npm run check`(`tsconfig.check.json`)와 `npm run check:astro`가 CI에서 모두 통과해야 한다.
+- TypeScript는 `astro check`가 지원하는 6.x를 쓴다. TypeScript 7은 검사 도구에 필요한 programmatic API를 아직 제공하지 않는다.
+- 상대 import에는 실제 `.ts` 확장자를 적고, 타입은 `import type`으로 가져온다.
+- 테스트는 Node 26의 타입 스트리핑으로 빌드 단계 없이 실행한다. 그래서 `erasableSyntaxOnly`로 enum과 매개변수 프로퍼티처럼 실행 코드 변환이 필요한 문법을 막는다.
+- Mermaid는 npm 의존성으로 관리하고, 도표가 있는 페이지에서만 동적 import로 불러온다.
 
 ## 코드 스타일
 
@@ -108,11 +74,11 @@ TypeScript는 `astro check`가 지원하는 6.x를 쓴다. 현재 TypeScript 7�
 
 ## 디자인
 
-`DESIGN.md`는 현재 디자인의 값과 의도를 관리하는 문서다. 화면 작업 전에 Overview와 관련 컴포넌트·반응형·접근성·검증 절을 읽는다. Google Labs의 DESIGN.md 포맷을 따라 YAML에는 대표 토큰을, 본문에는 용도와 적용 이유를 기록한다.
+화면 작업 전에 `DESIGN.md`의 Overview와 관련 절을 읽는다. 이 문서는 Google Labs의 DESIGN.md 형식으로 현재 디자인의 값과 의도를 기록한다.
 
-- 사이트 색의 단일 출처는 `src/lib/palette.ts`의 `PALETTE`(밝은 화면)와 `DARK_PALETTE`(어두운 화면)이고, `src/styles/site.css`의 `:root`·`prefers-color-scheme: dark` 블록과 `DESIGN.md`의 색 토큰(어두운 값은 `-dark`)이 같은 값을 쓴다. CSS는 `var(--이름)`으로 읽고, CSS 변수를 못 읽는 OG 카드·Mermaid 설정·`theme-color`만 `PALETTE`를 가져다 쓴다. 세 곳이 어긋나거나 다른 파일에 값을 복제하면 `tests/palette.test.ts`가 실패한다. 주제색은 `src/lib/format.ts`의 `GRAPH_COLORS`·`DARK_GRAPH_COLORS`에 있고 화면에는 `var(--topic-…)` 변수로 나가며, 본문·그래프·개별 화면의 값은 해당 CSS와 Astro 파일에 있다. 문서와 구현이 어긋나면 의도한 변경인지 확인하고, 문서가 낡은 경우 현재 구현에 맞춘다.
-- 디자인을 개선할 때는 기존 컴포넌트를 출발점으로 삼고, 달라지는 값과 동작을 관련 구현 및 `DESIGN.md`에 함께 반영한다.
-- `npm run design:lint`로 문서 형식과 명시된 색 조합을 검사한다. 이 명령은 `@google/design.md@0.4.0`을 사용한다. 오류가 0이어도 대비 경고와 실제 화면은 별도로 확인한다. lint는 구현 코드와의 값 일치까지 검사하지 않으므로 토큰을 바꿀 때 관련 CSS와 컴포넌트도 대조한다.
+- 디자인은 기존 컴포넌트에서 출발해 고치고, 달라지는 값과 동작을 구현과 `DESIGN.md`에 함께 반영한다. 어느 값이 어느 파일에서 오고 어떤 테스트가 문서와 구현의 일치를 검사하는지는 `DESIGN.md`의 「문서와 구현의 대응」 표에 있다. 문서와 구현이 어긋나면 의도한 변경인지 확인하고, 문서가 낡았으면 현재 구현에 맞춘다.
+- 사이트 색의 단일 출처는 `src/lib/palette.ts`의 `PALETTE`(밝은 화면)와 `DARK_PALETTE`(어두운 화면)다. CSS는 `var(--이름)`으로 읽고, CSS 변수를 읽지 못하는 OG 카드·Mermaid 설정·`theme-color` 메타만 이 상수를 가져다 쓴다. 다른 파일에 색 값을 복제하면 `tests/palette.test.ts`가 실패한다.
+- `npm run design:lint`(`@google/design.md@0.4.0`)는 문서 형식과 선언한 색 조합의 대비만 검사한다. 오류가 0이어도 실제 화면은 따로 확인한다.
 
 ## 한국어 문체
 
@@ -140,15 +106,16 @@ Codex는 이 절만 읽고, Claude Code는 여기에 더해 위의 output-style 
 ## 테스트
 
 - `node:test`와 `node:assert/strict`를 쓰고 파일 이름은 `*.test.ts`다. 테스트 이름은 관찰 가능한 동작을 서술한다.
-- **테스트는 임시 vault로 돈다.** `tests/garden.test.ts`의 `makeVault()`처럼 `os.tmpdir()`에 최소 파일을 만들어 검증한다. 실제 `../obsidian`을 테스트에서 읽지 않는다.
-- 동작을 바꾸면 회귀 테스트를 더한다. 특히 Markdown 렌더링, 링크 해석, 공개 판정은 빠짐없이.
-- 코드를 넘기기 전에 `npm run check`, `npm run check:astro`, `npm test`, `npm run build`를 모두 돌린다. UI 변경은 데스크톱과 모바일 폭을 확인한다.
+- **테스트는 임시 vault로 실행한다.** `tests/garden.test.ts`의 `makeVault()`처럼 `os.tmpdir()`에 최소 파일을 만들어 검증하고, 실제 `../obsidian`은 테스트에서 읽지 않는다.
+- 동작을 바꾸면 회귀 테스트를 더한다. Markdown 렌더링, 링크 해석, 공개 판정을 바꿀 때는 빠짐없이 더한다.
+- 코드를 넘기기 전에 `npm run check`, `npm run check:astro`, `npm test`, `npm run build`를 모두 실행한다. `DESIGN.md`를 고쳤으면 `npm run design:lint`도 실행한다.
+- 화면을 바꿨으면 데스크톱과 모바일 폭, 밝은 화면과 어두운 화면을 모두 확인한다. 확인할 폭과 상태는 `DESIGN.md`의 「검사」 절에 있다.
 
 ## 작업 규칙
 
 - 새 표시 문법이나 조건을 추가하면 `AUTHORING.md`와 관련 테스트를 고친다. 공개 범위나 배포 산출물의 필수 조건이 바뀔 때만 `check-dist.ts`를 고친다. frontmatter 속성을 바꾸면 vault의 속성 스키마도 고친다.
 - 생성물인 `dist/`와 `.astro/`는 편집하지 않는다.
-- `docs/`(리디자인 스펙·계획서)는 `.git/info/exclude`로 로컬 전용이다. `git add` 하지 않는다. 사이트가 vault 안에 있던 시절(`basePath: /obsidian`) 기준이라 경로가 낡았다.
+- `docs/`는 설계 문서, 계획서, 비교 기록을 두는 로컬 전용 폴더다(`.git/info/exclude`). `git add` 하지 않는다. 2026-09-06 리디자인 문서들은 사이트가 vault 안에 있던 시절(`basePath: /obsidian`) 기준이라 경로가 낡았다.
 - 독자에게 `published`·`slipbox`·`blog`·`프로젝트/*`·`status` 같은 내부 메타데이터 값을 보이지 않는다. 문구와 배치 변경은 화면에서 검토한다.
 
 ## 커밋 규칙
@@ -162,7 +129,7 @@ type(scope): 명사형 제목
 - `type`: `feat`, `fix`, `refactor`, `style`, `docs`, `test`, `chore`, `ci`.
 - `scope`는 선택이고 바뀐 영역 이름을 쓴다(`map`, `graph`, `reader`, `og`, `rss`, `search`, `build` 등). 닫힌 목록이 아니므로 새 영역이 생기면 그 이름을 그대로 쓰고 이 줄은 고치지 않는다. 이 저장소 전체가 garden이므로 `garden` scope는 쓰지 않는다.
 - 예: `feat(map): 범례 필터를 주제·허브 토글로 변경`, `fix(og): 썸네일 없는 글의 카드 그래프 폴백`, `docs: 에이전트 지침을 AGENTS.md로 통합`.
-- 커밋과 push는 사용자가 요청할 때만 한다. 커밋은 한 가지 변경에 집중한다. `main` 에서의 push가 곧 배포다.
+- 커밋과 push는 사용자가 요청할 때만 한다. 커밋은 한 가지 변경에 집중한다. `main`에서의 push가 곧 배포다.
 
 ## PR 작성
 
@@ -174,14 +141,15 @@ type(scope): 명사형 제목
 코드 수정은 주 에이전트가 직접 한다. 하위 에이전트에게는 조사와 검증만 나눈다. 도구별 수단은 다르지만 규칙은 같다.
 
 - 수단: Codex는 `luna_worker`, Claude Code는 Agent 도구(하위 에이전트).
-- 위임하는 일: 코드 경로 추적, 기존 테스트 커버리지 확인, 문서·스펙 대조, 테스트·빌드 실행 결과 확인처럼 소스를 바꾸지 않는 조사·검증. 서로 파일 범위가 겹치지 않는 독립 작업이 2개 이상일 때만 병렬로 돌린다.
+- 위임하는 일: 코드 경로 추적, 기존 테스트 커버리지 확인, 문서·스펙 대조, 테스트·빌드 실행 결과 확인처럼 소스를 바꾸지 않는 조사·검증. 서로 파일 범위가 겹치지 않는 독립 작업이 2개 이상일 때만 병렬로 실행한다.
 - 위임하지 않는 일: 설계, 구현, 리팩터링, 테스트 작성, 공개 범위(`config.json`, `publication.ts`) 판단. 구현 작업을 통째로 넘기지 않는다.
 - 각 위임에는 읽을 파일 범위, 기대 결과, 검증 방법을 명시한다. 소스와 vault(`../obsidian`)는 읽기 전용이다.
-- 하위 에이전트의 결과는 근거이지 승인이 아니다. 주 에이전트가 최종 diff를 검토하고 `npm test`와 `npm run build`를 직접 돌려 확인한다.
+- 하위 에이전트의 결과는 근거이지 승인이 아니다. 주 에이전트가 최종 diff를 검토하고 `npm test`와 `npm run build`를 직접 실행해 확인한다.
 
 ## 에이전트 설정 파일 배치
 
 - `AGENTS.md`가 정본이다. `CLAUDE.md`는 `@AGENTS.md`로 이 파일을 가져온 뒤 Claude Code 전용 지침만 덧붙인다. 공통 지침은 여기에만 쓴다.
+- 한 폴더에만 해당하는 지침은 그 폴더의 `AGENTS.md`에 쓰고, 같은 폴더에 `@AGENTS.md` 한 줄만 담은 `CLAUDE.md`를 둔다. Claude Code는 그 폴더의 파일을 읽을 때 이 `CLAUDE.md`를 불러온다. Codex는 시작할 때 저장소 루트부터 실행 위치까지의 `AGENTS.md`만 읽으므로, 루트 `AGENTS.md`에 하위 지침을 가리키는 줄을 남긴다. 현재 하위 지침은 `src/lib/AGENTS.md` 하나다.
 - Claude와 Codex가 함께 쓰는 스킬의 정본은 `.agents/skills/<skill-name>/`에 둔다. Codex는 이 경로를 직접 읽는다. 이 저장소에는 아직 스킬이 없다.
 - Claude Code는 `.claude/skills/`만 읽으므로 `.claude/skills/<skill-name>`에 정본을 가리키는 **상대 심볼릭 링크**만 둔다. `.codex/skills/`에는 링크를 만들지 않는다.
 - `SKILL.md`는 두 도구가 읽을 수 있는 공통 지침으로 유지하고, 도구 전용 런타임은 `.claude/workflows/` 또는 `.codex/`에 분리한다.
