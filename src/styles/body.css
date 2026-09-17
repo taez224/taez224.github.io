@@ -4,7 +4,7 @@
 .body p { margin: 0 0 var(--s-paragraph-gap); }
 /* 본문의 외부 링크는 사이트 다른 곳(발행처·출처)과 같이 ↗를 붙여 노트 링크와 구분한다. */
 /* 링크 색이 먹색이라 본문 링크는 밑줄로 구분한다. */
-.body a { text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--ink) 35%, transparent); text-decoration-thickness: 1px; text-underline-offset: .18em; }
+.body a { text-decoration: underline; text-decoration-color: var(--link-underline); text-decoration-thickness: 1px; text-underline-offset: .18em; }
 .body a:hover { text-decoration-color: var(--ink); }
 .body .private-note { color: var(--muted); }
 .body .visibility-mark { position: relative; display: inline-block; width: 22px; height: 22px; margin-left: 2px; color: var(--muted); vertical-align: -.2em; cursor: help; }
