@@ -13,24 +13,46 @@ import { highlightCode } from './highlight.ts';
 import { escapeHtml } from './format.ts';
 import { isImagePath } from './image-types.ts';
 
+// 제목을 적지 않은 콜아웃의 한국어 기본 제목이다. 별칭은 Obsidian이 제목에 별칭 이름을 쓰는 것처럼 따로 둔다.
 const CALLOUT_TITLES: Record<string, string> = {
   abstract: '요약',
   article: '함께 읽기',
+  attention: '주의',
   bug: '문제',
+  caution: '주의',
+  check: '확인',
+  cite: '인용',
   compare: '비교',
   'compare-stacked': '비교',
   danger: '주의',
+  done: '완료',
+  error: '오류',
   example: '예시',
+  fail: '실패',
   failure: '실패',
   faq: '질문과 답변',
+  help: '도움말',
+  hint: '힌트',
+  important: '중요',
   info: '정보',
+  missing: '누락',
   note: '메모',
   question: '질문',
   quote: '인용',
   success: '성공',
+  summary: '요약',
   tip: '팁',
+  tldr: '요약',
   todo: '할 일',
   warning: '주의'
+};
+
+// Obsidian이 기본 종류로 취급하는 별칭이다(https://obsidian.md/help/callouts). 모양은 기본 종류의 클래스를 따르고,
+// 사이트에서 따로 꾸밀 수 있게 별칭 클래스도 함께 단다.
+const CALLOUT_ALIASES: Record<string, string> = {
+  attention: 'warning', caution: 'warning', check: 'success', cite: 'quote', done: 'success', error: 'danger',
+  fail: 'failure', faq: 'question', help: 'question', hint: 'tip', important: 'tip', missing: 'failure',
+  summary: 'abstract', tldr: 'abstract'
 };
 
 // markdown-it은 ~~취소선~~을 <s>로 그리므로 del과 함께 s도 허용한다.
@@ -470,13 +492,16 @@ function createMarkdownIt() {
       return true;
     }
 
-    const open = state.push('callout_open', foldMarker === '-' ? 'details' : 'aside', 1);
+    // 접기 표시가 있으면 Obsidian처럼 접을 수 있는 콜아웃이다. `-`는 접힌 채로, `+`는 펼친 채로 시작한다.
+    const open = state.push('callout_open', foldMarker ? 'details' : 'aside', 1);
     open.block = true;
     open.map = [startLine, next];
+    const kind = type.replace(/[^a-z0-9_-]/gi, '') || 'note';
+    const canonical = CALLOUT_ALIASES[kind];
     open.meta = {
-      folded: foldMarker === '-',
+      expanded: foldMarker === '+',
       title: customTitle?.trim() || CALLOUT_TITLES[type] || type,
-      className: `callout callout-${type.replace(/[^a-z0-9_-]/gi, '') || 'note'}`
+      className: canonical ? `callout callout-${canonical} callout-${kind}` : `callout callout-${kind}`
     };
     // 본문 토큰은 새 상태에서 깊이 0으로 나오므로 현재 깊이를 더해 넣는다. 제목 id 규칙이 level 0만 보기 때문이다.
     const body: Token[] = [];
@@ -493,9 +518,9 @@ function createMarkdownIt() {
     return true;
   });
   markdown.renderer.rules.callout_open = (tokens, index) => {
-    const { folded, title, className } = tokens[index].meta as { folded: boolean; title: string; className: string };
-    return folded
-      ? `<details class="${className}"><summary>${escapeHtml(title)}</summary><div class="callout-body">`
+    const { expanded, title, className } = tokens[index].meta as { expanded: boolean; title: string; className: string };
+    return tokens[index].tag === 'details'
+      ? `<details class="${className}"${expanded ? ' open' : ''}><summary>${escapeHtml(title)}</summary><div class="callout-body">`
       : `<aside class="${className}"><div class="callout-title">${escapeHtml(title)}</div><div class="callout-body">`;
   };
   markdown.renderer.rules.callout_close = (tokens, index) => `</div></${tokens[index].tag}>\n`;

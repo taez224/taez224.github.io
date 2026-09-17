@@ -24,6 +24,23 @@ test('a callout folded with - starts closed as details with its title as the sum
   assert.match(render('x.md', '> [!note]-\n> 본문'), /<details class="callout callout-note"><summary>메모<\/summary>/);
 });
 
+test('a callout folded with + is collapsible but starts open', () => {
+  const html = render('x.md', '> [!note]+ 제목\n> 본문');
+  assert.match(html, /^<details class="callout callout-note" open><summary>제목<\/summary><div class="callout-body"><p>본문<\/p>/);
+});
+
+test('callout aliases take their base type look while keeping their own class and Korean title', () => {
+  for (const [source, className, title] of [
+    ['> [!hint]\n> 본문', 'callout callout-tip callout-hint', '힌트'],
+    ['> [!TLDR]\n> 본문', 'callout callout-abstract callout-tldr', '요약'],
+    ['> [!faq]\n> 본문', 'callout callout-question callout-faq', '질문과 답변'],
+    ['> [!error] 직접 쓴 제목\n> 본문', 'callout callout-danger callout-error', '직접 쓴 제목'],
+    ['> [!tip]\n> 본문', 'callout callout-tip', '팁']
+  ]) {
+    assert.match(render('x.md', source), new RegExp(`^<aside class="${className}"><div class="callout-title">${title}</div>`), source);
+  }
+});
+
 test('a callout inside a list item stays inside that item', () => {
   const html = render('x.md', '- 항목\n  > [!note] 제목\n  > 본문\n- 다음 항목');
   assert.match(html, /<li>항목<aside class="callout callout-note"><div class="callout-title">제목<\/div><div class="callout-body"><p>본문<\/p>\n<\/div><\/aside>\n<\/li>\n<li>다음 항목<\/li>/);

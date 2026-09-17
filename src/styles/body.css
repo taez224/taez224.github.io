@@ -84,9 +84,10 @@
 .body .callout-body { margin-top: 12px; }
 .body .callout-body > :first-child { margin-top: 0; }
 .body .callout-body > :last-child { margin-bottom: 0; }
-.body :is(.callout-summary, .callout-abstract, .callout-tldr, .callout-quote) { border-left: 3px solid var(--accent); }
-.body :is(.callout-summary, .callout-abstract, .callout-tldr, .callout-quote) .callout-body { font-family: var(--display); font-size: 18.5px; line-height: 1.65; letter-spacing: -.01em; }
-.body :is(.callout-question, .callout-faq) { border-left: 3px dashed var(--line); }
+/* 별칭(summary·tldr·faq 등)은 렌더러가 기본 종류의 클래스를 함께 달므로 기본 종류 이름만 적는다. */
+.body :is(.callout-abstract, .callout-quote) { border-left: 3px solid var(--accent); }
+.body :is(.callout-abstract, .callout-quote) .callout-body { font-family: var(--display); font-size: 18.5px; line-height: 1.65; letter-spacing: -.01em; }
+.body .callout-question { border-left: 3px dashed var(--line); }
 .body .callout-tip :is(.callout-title, summary)::before { content: "→ "; }
 .body :is(.callout-warning, .callout-danger, .callout-failure) { border-left: 3px solid var(--warning); }
 .body :is(.callout-warning, .callout-danger, .callout-failure) :is(.callout-title, summary) { color: var(--warning); }
