@@ -53,7 +53,9 @@ const topics = [...topicCounts].map(([name, count]) => ({ name, color: topicColo
   .map-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
   .legend { display: flex; flex: 1 1 auto; flex-wrap: wrap; align-items: center; gap: 4px 12px; min-width: 0; }
   .legend-item { display: inline-flex; align-items: center; gap: 5px; padding: 4px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: var(--t-meta); white-space: nowrap; transition: background-color .15s ease, color .15s ease; }
-  .legend button.legend-item[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+  /* 선택은 책장 필터처럼 호버보다 짙은 판이다. 이 판 위에서 보조색은 3.94:1이라 접힌 주제 이름도 먹색으로 올린다. */
+  .legend button.legend-item[aria-pressed="true"] { background: var(--line); color: var(--accent); }
+  .legend button.legend-item[aria-pressed="true"] .legend-fold { color: inherit; }
   @media (hover: hover) { .legend button.legend-item:hover { background: var(--accent-soft); color: var(--accent); } }
   .legend-fold { margin-left: 2px; color: var(--muted); font-weight: 400; }
   .graph-box { position: relative; }
