@@ -19,6 +19,10 @@
 .body h4 { margin: 24px 0 8px; font-size: 17px; }
 .body ul, .body ol { margin: 0 0 22px; padding-left: 22px; }
 .body li { margin: 6px 0; }
+/* 할 일 목록. 글머리표 자리에 체크박스를 두고, 완료한 항목은 Obsidian처럼 흐린 색에 취소선을 긋는다. */
+.body .task-list-item { list-style: none; }
+.body .task-list-item-checkbox { margin: 0 8px 0 -22px; vertical-align: -2px; accent-color: var(--accent); }
+.body .task-list-item.is-checked { color: var(--muted); text-decoration: line-through; }
 .body blockquote { margin: 18px 0; padding: 4px 16px; border-left: 3px solid var(--line); color: var(--muted); }
 .body pre { overflow-x: auto; margin: 18px 0; padding: 14px 16px; border: 1px solid var(--line); background: var(--paper-strong); font-size: 14px; line-height: 1.6; }
 .body code { padding: 1px 4px; background: rgba(36,39,32,.08); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .88em; }

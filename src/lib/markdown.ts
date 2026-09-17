@@ -55,10 +55,10 @@ const CALLOUT_ALIASES: Record<string, string> = {
   summary: 'abstract', tldr: 'abstract'
 };
 
-// markdown-it은 ~~취소선~~을 <s>로 그리므로 del과 함께 s도 허용한다.
+// markdown-it은 ~~취소선~~을 <s>로 그리므로 del과 함께 s도 허용한다. input은 할 일 목록의 체크박스다.
 const ALLOWED_TAGS = [
   'a', 'aside', 'blockquote', 'br', 'code', 'del', 'details', 'div', 'em', 'figcaption',
-  'figure', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'img', 'kbd', 'li', 'mark', 'ol',
+  'figure', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'img', 'input', 'kbd', 'li', 'mark', 'ol',
   'p', 'pre', 's', 'section', 'small', 'span', 'strong', 'sub', 'summary', 'sup', 'table',
   'tbody', 'td', 'tfoot', 'th', 'thead', 'tr', 'ul'
 ];
@@ -76,6 +76,8 @@ const ALLOWED_ATTRIBUTES = {
   h5: ['class', 'id'],
   h6: ['class', 'id'],
   img: ['alt', 'class', 'height', 'loading', 'src', 'title', 'width'],
+  input: ['checked', 'class', 'disabled', 'type'],
+  li: ['class'],
   mark: ['class'],
   p: ['class'],
   pre: ['class'],
@@ -133,7 +135,9 @@ function splitWikiTarget(rawTarget: unknown) {
 // Obsidian의 그림 크기 표기다. 위키 임베드는 `![[그림.png|300]]`·`|300x200`이고, Markdown 그림은 대체 텍스트 끝의
 // `|300`이나 숫자만 쓴 `![300](주소)`다. 너비만 주면 비율을 유지한다(본문 CSS의 height: auto).
 const WIKI_IMAGE_SIZE = /^\s*(\d+)(?:x(\d+))?\s*$/;
-export const MARKDOWN_IMAGE_SIZE = /^(?:([\s\S]*)\|)?\s*(\d+)(?:x(\d+))?\s*$/;
+// 할 일 목록 항목의 첫머리 표시(`[ ]`, `[x]`)다. Obsidian은 괄호 안이 빈칸이 아니면 어떤 글자든 완료로 본다.
+export const TASK_MARKER = /^\[([^\]])\](?:[ \t]+|$)/;
+export const MARKDOWN_IMAGE_SIZE =/^(?:([\s\S]*)\|)?\s*(\d+)(?:x(\d+))?\s*$/;
 const sizeAttributes = (width?: string, height?: string) => `${width ? ` width="${width}"` : ''}${height ? ` height="${height}"` : ''}`;
 
 function renderPrivateNote(label: string, target: string): string {
@@ -567,6 +571,25 @@ function createMarkdownIt() {
     }
   });
 
+  // 할 일 목록은 목록 항목 첫 문단이 `[ ]`·`[x]`로 시작할 때다. 원문(inline.content)으로 판단하므로 이스케이프한
+  // `\[x\]`는 할 일이 아니다. 글자 토큰이 하나로 합쳐진 뒤에 표시를 떼어 내려고 text_join 다음에 둔다.
+  markdown.core.ruler.after('text_join', 'task_list', (state) => {
+    const tokens = state.tokens;
+    for (let index = 2; index < tokens.length; index += 1) {
+      const inline = tokens[index];
+      if (inline.type !== 'inline' || tokens[index - 1].type !== 'paragraph_open' || tokens[index - 2].type !== 'list_item_open') continue;
+      const marker = inline.content.match(TASK_MARKER);
+      const first = inline.children?.[0];
+      if (!marker || first?.type !== 'text' || !first.content.startsWith(`[${marker[1]}]`)) continue;
+      first.content = first.content.replace(TASK_MARKER, '');
+      const checked = marker[1] !== ' ';
+      const box = new state.Token('html_inline', '', 0);
+      box.content = `<input class="task-list-item-checkbox" type="checkbox" disabled${checked ? ' checked' : ''}>`;
+      inline.children!.unshift(box);
+      tokens[index - 2].attrJoin('class', checked ? 'task-list-item is-checked' : 'task-list-item');
+    }
+  });
+
   // 문서의 목차를 소유한 렌더만 headingIds를 넘긴다. 콜아웃 본문의 토큰은 level이 0보다 커서 번호를 매기지 않고 id도 두지 않는다.
   // 인용·목록 안의 헤딩(level > 0)도 같은 이유로 건너뛴다. 목차(env.headings)도 여기서 같이 모으므로 앵커와 목차가 어긋날 수 없다.
   const defaultHeadingOpen = markdown.renderer.rules.heading_open;
@@ -625,6 +648,11 @@ export function createMarkdownRenderer({ resolveNote, resolveAsset }: Resolvers)
       allowedTags: ALLOWED_TAGS,
       allowProtocolRelative: false,
       transformTags: {
+        // 본문에 남는 입력 요소는 할 일 목록의 체크박스뿐이다. 원문에 직접 쓴 input도 누를 수 없는 체크박스로만 남겨 폼이 되지 않게 한다.
+        input: (tagName, attributes) => ({
+          tagName,
+          attribs: { class: 'task-list-item-checkbox', type: 'checkbox', disabled: '', ...(attributes.checked === undefined ? {} : { checked: '' }) }
+        }),
         a: (tagName, attributes) => {
           if (/^https?:\/\//i.test(attributes.href ?? '')) {
             return {
