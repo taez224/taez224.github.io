@@ -9,7 +9,8 @@ export const PALETTE = {
   // 더 낮은 위계는 색을 옅게 하지 않고 글자 크기로 나눈다(옛 faint #687267은 muted와의 대비가 1.08이었다).
   muted: '#626d64',
   line: '#d8ded4',
-  'accent-soft': '#e7e9e3',
+  // 호버·선택 배경. 그 위에 muted 보조 글자(개수, 연재 방향 표시)가 올라가므로 muted가 4.5:1을 넘는 가장 짙은 값으로 둔다.
+  'accent-soft': '#ecede8',
   warning: '#985d2f',
   bug: '#8e5d5d',
   highlight: '#e7d99b',

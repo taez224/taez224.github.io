@@ -2,7 +2,7 @@
   color-scheme: light;
   --paper: #f7f7f2; --paper-strong: #fdfdfa; --ink: #252e29; --muted: #626d64;
   /* UI의 기본 색은 먹색 하나이며 주제색과 의미 상태색만 예외로 사용한다. accent 토큰은 이름만 남기고 값은 먹색이다(2026-09-07). */
-  --line: #d8ded4; --accent: #252e29; --accent-soft: #e7e9e3; --warning: #985d2f; --bug: #8e5d5d; --highlight: #e7d99b;
+  --line: #d8ded4; --accent: #252e29; --accent-soft: #ecede8; --warning: #985d2f; --bug: #8e5d5d; --highlight: #e7d99b;
   --edge: #9aab9d;
   --display: 'Gowun Batang', 'Apple Myungjo', 'Nanum Myeongjo', serif;
   --sans: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
