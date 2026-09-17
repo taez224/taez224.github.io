@@ -58,7 +58,7 @@ function renderDesktop(nodes: readonly GraphNode[], edges: readonly GraphEdge[],
   const radiusOf = (node: GraphNode) => nodeRadius(node.degree ?? 0, 0.9);
   const placed = nodes.filter((node) => at(node.id));
   const regions = topicRegions(nodes, positions);
-  const regionLabelAt = placeRegionLabels(regions, placed.map((node) => ({ ...at(node.id), r: radiusOf(node) + 4 })), { fontSize: 15, measure: estimateTextWidth, bounds: { width, height } });
+  const regionLabelAt = placeRegionLabels(regions, placed.map((node) => ({ ...at(node.id), r: radiusOf(node) + 4 })), { fontSize: 15, scale: u, measure: estimateTextWidth, bounds: { width, height } });
   const obstacles = [
     ...placed.map((node) => nodeBox(at(node.id), radiusOf(node) + 2 * u)),
     ...regions.map((r) => regionLabelBox(regionLabelAt.get(r.topic)!, r.topic, { fontSize: 15, measure: estimateTextWidth, scale: u }))

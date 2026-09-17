@@ -46,10 +46,13 @@ const hitsCircle = (box: Box, c: Circle) => { const nx = Math.max(box.left, Math
 // 영역 이름 자리. 껍질의 위·아래·왼쪽·오른쪽 순으로 시도해 장애물(노드 원 {x,y,r} 또는 상자 {left,right,top,bottom})과
 // 먼저 놓인 이름에 겹치지 않는 첫 자리를 준다. 다 막히면 위. 결과는 주제 → { x, y(기준선), anchor }.
 // bounds({ width, height })를 주면 무대 밖으로 나가는 자리는 쓰지 않는다.
-export function placeRegionLabels(regions: readonly Region[], obstacles: readonly (Box | Circle)[] = [], { fontSize = 15, pad = 18, measure = (text, size) => [...text].length * size, bounds = null }: { fontSize?: number; pad?: number; measure?: (text: string, size: number) => number; bounds?: Size | null } = {}): Map<string, LabelPosition> {
+// scale은 regionLabelBox와 같은 뜻(화면 1px당 장면 단위)이다. 이름과 껍질과의 간격은 화면 크기로 그리므로 자리도 화면 크기로 잰다.
+// 이 값을 빼면 그래프가 작게 그려지는 폭(홈 721~1000px)에서 실제 이름이 계산보다 몇 배 넓어져 서로 겹친다.
+export function placeRegionLabels(regions: readonly Region[], obstacles: readonly (Box | Circle)[] = [], { fontSize = 15, pad: padPx = 18, measure = (text, size) => [...text].length * size, bounds = null, scale = 1 }: { fontSize?: number; pad?: number; measure?: (text: string, size: number) => number; bounds?: Size | null; scale?: number } = {}): Map<string, LabelPosition> {
   const placed: Box[] = [], out = new Map<string, LabelPosition>();
+  const pad = padPx * scale;
   for (const region of regions) {
-    const w = measure(region.topic, fontSize) * 1.16, h = fontSize * 1.2;
+    const w = measure(region.topic, fontSize) * 1.16 * scale, h = fontSize * 1.2 * scale;
     const ext = { top: region.hull[0], bottom: region.hull[0], left: region.hull[0], right: region.hull[0] };
     for (const q of region.hull) { if (q.y < ext.top.y) ext.top = q; if (q.y > ext.bottom.y) ext.bottom = q; if (q.x < ext.left.x) ext.left = q; if (q.x > ext.right.x) ext.right = q; }
     const candidates = [

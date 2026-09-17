@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { convexHull, topicRegions, regionPath, placeRegionLabels } from '../src/graph/regions.ts';
+import { convexHull, topicRegions, regionPath, placeRegionLabels, regionLabelBox } from '../src/graph/regions.ts';
 
 test('convexHull drops interior points and keeps corners', () => {
   const hull = convexHull([{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }, { x: 0, y: 10 }, { x: 5, y: 5 }]);
@@ -40,6 +40,18 @@ test('placeRegionLabels moves a name off nodes and other names', () => {
   assert.ok(blockedTop.y > 200, '위가 막히면 아래');
   const both = placeRegionLabels(regions, []);
   assert.notDeepEqual(both.get('AI'), both.get('개발'), '두 이름은 같은 자리를 쓰지 않는다');
+});
+
+test('placeRegionLabels keeps screen-sized names apart when the graph is drawn small', () => {
+  // 이름은 화면에서 같은 크기로 그린다. 그래프가 작게 그려지면(화면 1px = 장면 3단위) 장면 좌표로는 이름이 세 배 넓다.
+  const regions = [
+    { topic: 'AI', count: 3, hull: [{ x: 100, y: 100 }, { x: 130, y: 200 }, { x: 70, y: 200 }], label: { x: 100, y: 100 } },
+    { topic: '개발', count: 3, hull: [{ x: 140, y: 100 }, { x: 170, y: 200 }, { x: 110, y: 200 }], label: { x: 140, y: 100 } }
+  ];
+  const at = placeRegionLabels(regions, [], { scale: 3 });
+  const [a, b] = regions.map((region) => regionLabelBox(at.get(region.topic)!, region.topic, { scale: 3 }));
+  const overlap = a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+  assert.equal(overlap, false, '화면 크기로 그린 두 이름이 겹치지 않는다');
 });
 
 test('placeRegionLabels keeps names inside the given bounds', () => {
