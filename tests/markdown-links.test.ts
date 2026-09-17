@@ -50,7 +50,7 @@ test('public notes, external links, images, and unresolved targets retain their 
   assert.doesNotMatch(html, /비공개/);
 });
 
-test('heading links hand the heading path to the resolver, default to the last heading and show it for same-note links', () => {
+test('wiki and Markdown heading links hand the heading path to the resolver, default to the last heading and show it for same-note links', () => {
   const paths: string[] = [];
   const renderer = createMarkdownRenderer({
     resolveNote: (source, target, fragment, headingPath = '') => {
@@ -60,12 +60,13 @@ test('heading links hand the heading path to the resolver, default to the last h
     },
     resolveAsset: () => null
   });
-  const html = renderer('current.md', '[[대상#상위 절#하위 절]] [[#같은 절]] [[#같은 절|별칭]] [[#^block-id]]');
+  const html = renderer('current.md', '[[대상#상위 절#하위 절]] [[#같은 절]] [[#같은 절|별칭]] [[#^block-id]] [일반 링크](대상.md#상위#하위)');
   assert.match(html, /href="\/notes\/target\/#하위-절">대상 노트<\/a>/);
   assert.match(html, /href="\/notes\/current\/#같은-절">같은 절<\/a>/);
   assert.match(html, /href="\/notes\/current\/#같은-절">별칭<\/a>/);
   assert.match(html, /href="\/notes\/current\/#block-id">현재 노트<\/a>/);
-  assert.deepEqual(paths, ['상위 절#하위 절', '같은 절', '같은 절', '^block-id']);
+  assert.match(html, /href="\/notes\/target\/#하위">일반 링크<\/a>/);
+  assert.deepEqual(paths, ['상위 절#하위 절', '같은 절', '같은 절', '^block-id', '상위#하위']);
 });
 
 test('note resolution leaves code examples and escaped wiki brackets untouched', () => {

@@ -191,8 +191,8 @@ function replaceStandardLinks(source: string, context: LinkContext): string {
   });
 
   return source.replace(/\[([^\]]*)\]\(([^)\s]+\.md(?:#[^)]*)?)(?:\s+"[^"]*")?\)/gi, (_whole, label, rawTarget) => {
-    const { target, fragment } = splitWikiTarget(rawTarget);
-    const note = context.resolveNote?.(context.sourcePath, target, fragment);
+    const { target, fragment, headingPath } = splitWikiTarget(rawTarget);
+    const note = context.resolveNote?.(context.sourcePath, target, fragment, headingPath);
     if (note?.visibility === 'private') return renderPrivateNote(label, target);
     return note
       ? `<a class="internal-note-link" href="${escapeHtml(note.url)}">${escapeHtml(label)}</a>`
