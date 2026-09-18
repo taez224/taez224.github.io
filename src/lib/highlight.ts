@@ -40,7 +40,7 @@ const UNNAMED_LANGUAGES = new Set(['', 'text', 'plaintext', 'txt']);
 export function codeLanguageLabel(lang: string): string {
   const key = lang.trim().toLowerCase();
   if (UNNAMED_LANGUAGES.has(key)) return '';
-  return LANGUAGE_LABELS[key] ?? lang.trim();
+  return Object.hasOwn(LANGUAGE_LABELS, key) ? LANGUAGE_LABELS[key] : lang.trim();
 }
 
 // markdown-it의 highlight 옵션에 맞춘 반환값이다. 빈 문자열을 주면 markdown-it이 원문을 이스케이프한다.

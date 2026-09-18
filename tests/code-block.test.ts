@@ -25,6 +25,8 @@ test('codeLanguageLabel leaves plain text and missing languages unnamed', () => 
 
 test('codeLanguageLabel shows an unknown language as written', () => {
   assert.equal(codeLanguageLabel('zig'), 'zig');
+  assert.equal(codeLanguageLabel('constructor'), 'constructor');
+  assert.equal(codeLanguageLabel('__proto__'), '__proto__');
 });
 
 test('a fenced block with a language gets a head row naming it above the code', () => {
@@ -134,6 +136,26 @@ test('a failed copy says so and tells the reader to select the code instead', as
     assert.match(ui.status(block).textContent, /복사하지 못했습니다/);
     assert.match(ui.status(block).textContent, /직접 선택/);
     assert.equal([...ui.timers.values()][0].delay, 5000);
+  }
+});
+
+test('an older clipboard response cannot replace the latest copy result', async () => {
+  for (const latestFails of [false, true]) {
+    const pending: { resolve: () => void; reject: (error: Error) => void }[] = [];
+    const block = codeBlock('class A {}', 'Java');
+    const ui = setup([block], { writeText: () => new Promise<void>((resolve, reject) => pending.push({ resolve, reject })) });
+    const first = ui.click(block);
+    const second = ui.click(block);
+    if (latestFails) pending[1].reject(new Error('denied')); else pending[1].resolve();
+    await second;
+    const expectedState = ui.button(block).dataset.state;
+    const expectedStatus = ui.status(block).textContent;
+    const timer = [...ui.timers.keys()][0];
+    if (latestFails) pending[0].resolve(); else pending[0].reject(new Error('denied'));
+    await first;
+    assert.equal(ui.button(block).dataset.state, expectedState);
+    assert.equal(ui.status(block).textContent, expectedStatus);
+    assert.deepEqual([...ui.timers.keys()], [timer], '이전 요청은 최신 안내의 표시 시간도 바꾸지 않는다');
   }
 });
 

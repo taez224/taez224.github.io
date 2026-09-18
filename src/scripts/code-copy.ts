@@ -31,6 +31,7 @@ for (const block of document.querySelectorAll<HTMLElement>('.body .code-block'))
   head.append(status, button);
 
   let timer = 0;
+  let requestVersion = 0;
   const reset = () => {
     window.clearTimeout(timer);
     delete button.dataset.state;
@@ -48,8 +49,15 @@ for (const block of document.querySelectorAll<HTMLElement>('.body .code-block'))
     timer = window.setTimeout(reset, failed ? 5000 : 2000);
   };
   button.addEventListener('click', async () => {
+    const version = ++requestVersion;
     reset();
     // 클립보드 API가 없는 환경(http 주소, 일부 내장 브라우저)도 여기서 실패로 처리된다.
-    try { await navigator.clipboard.writeText(code.textContent ?? ''); settle('done'); } catch { settle('error'); }
+    // 연속으로 눌렀을 때 늦게 끝난 이전 요청이 최신 결과와 타이머를 덮지 않게 한다.
+    try {
+      await navigator.clipboard.writeText(code.textContent ?? '');
+      if (version === requestVersion) settle('done');
+    } catch {
+      if (version === requestVersion) settle('error');
+    }
   });
 }
