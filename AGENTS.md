@@ -41,7 +41,7 @@ npm run fonts:vendor         # 글꼴 버전을 올릴 때만. public/fonts와 s
 
 `src/lib/garden.ts`의 `assembleGarden()`이 vault를 한 번 조립하고, 나머지는 모두 그 결과를 읽는다. 페이지(`src/pages/**`)는 `getCollection('notes'|'books')`로 읽고, 엔드포인트(`data/*.json.ts`, `og/*.png.ts`, `rss.xml.ts`, `llms.txt.ts`)는 `getGarden()`으로 읽는다. `get-garden.ts`가 결과를 메모이즈하고, dev에서는 2초가 지나면 다시 조립한다.
 
-- 조립 코드의 규칙(모듈 의존 방향, 공개 본문 변환, URL과 슬러그, OG 카드 캐시)은 `src/lib/AGENTS.md`에 있다. `src/lib/`을 고치기 전에 읽는다.
+- 조립 코드의 규칙(모듈 책임과 의존 방향, 빌드를 멈추는 조건, OG 카드 캐시)은 `src/lib/AGENTS.md`에 있다. `src/lib/`을 고치기 전에 읽는다.
 - 조립이 읽는 입력을 새로 더하면 `src/loaders/vault.ts`의 `watchPathsFor`에도 더한다. 빠뜨리면 dev에서 그 파일을 고쳐도 다시 조립되지 않는다.
 - 홈과 지도는 페이지에 인라인한 JSON(`data-hero-data`, `data-map-data`)으로 그래프를 그리므로 fetch하지 않는다. fetch는 검색이 `search.json`을 열 때만 한다. `data/site.json`은 페이지가 쓰지 않지만 공개 데이터 엔드포인트이자 check-dist의 기준 자료라 남긴다.
 - 그래프는 프레임워크 없는 SVG 엔진 `src/graph/engine.ts`가 그린다. `src/graph`의 나머지 모듈은 DOM을 쓰지 않는 순수 함수이고 모듈마다 단위 테스트가 있다.
