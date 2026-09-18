@@ -107,7 +107,6 @@ test('every code block gets a copy button, and a head row is made where none was
     const head = block.children[0];
     assert.equal(head.className, 'code-head');
     assert.ok(ui.button(block), '복사 버튼이 있다');
-    assert.equal(ui.button(block).attributes.get('aria-label'), '코드 복사');
   }
   assert.equal(bare.children[0].querySelector('code-lang'), null, '언어 이름은 새로 만들지 않는다');
 });
@@ -168,4 +167,14 @@ test('the copy button hover plate fits inside the code head row', () => {
   assert.ok(Number.isFinite(head) && Number.isFinite(plate), `머리 줄 ${head}px, 판 ${plate}px`);
   assert.ok(plate < head, `판 ${plate}px가 머리 줄 ${head}px보다 작다`);
   assert.doesNotMatch(css, /\.code-copy:hover \{[^}]*background/, '버튼 전체에는 호버 판을 깔지 않는다');
+});
+
+test('the copy button name includes the language so several buttons can be told apart', () => {
+  // 화면 낭독기의 버튼 목록에서 모든 버튼이 "코드 복사"로만 들리면 어느 블록인지 알 수 없다.
+  const named = codeBlock('class A {}', 'Java');
+  const bare = codeBlock('ls -al');
+  const ui = setup([named, bare]);
+  assert.equal(ui.button(named).attributes.get('aria-label'), 'Java 코드 복사');
+  assert.equal(ui.button(named).title, 'Java 코드 복사');
+  assert.equal(ui.button(bare).attributes.get('aria-label'), '코드 복사', '이름 없는 블록은 언어 없이 부른다');
 });

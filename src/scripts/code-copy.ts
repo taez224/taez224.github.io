@@ -18,11 +18,14 @@ for (const block of document.querySelectorAll<HTMLElement>('.body .code-block'))
     head.className = 'code-head';
     block.prepend(head);
   }
+  // 한 페이지에 복사 버튼이 여럿이라 화면 낭독기의 버튼 목록에서 구분되도록 언어 이름을 넣는다.
+  const language = head.querySelector('.code-lang')?.textContent ?? '';
+  const name = language ? `${language} 코드 복사` : '코드 복사';
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'code-copy';
-  button.title = '코드 복사';
-  button.setAttribute('aria-label', '코드 복사');
+  button.title = name;
+  button.setAttribute('aria-label', name);
   button.innerHTML = COPY_ICON;
   // 성공은 체크 아이콘이 보여 주므로 화면 낭독기에만 알리고, 실패는 할 일을 알려야 하므로 눈에도 보인다.
   const status = document.createElement('span');
