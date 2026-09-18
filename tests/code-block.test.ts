@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { stripTypeScriptTypes } from 'node:module';
 import { codeLanguageLabel } from '../src/lib/highlight.ts';
@@ -134,4 +135,15 @@ test('a failed copy says so and tells the reader to select the code instead', as
     assert.match(ui.status(block).textContent, /직접 선택/);
     assert.equal([...ui.timers.values()][0].delay, 5000);
   }
+});
+
+test('the copy button hover plate fits inside the code head row', () => {
+  // 누르는 영역(44px)에 판을 깔면 34px 머리 줄 위아래로 넘친다. 판은 아이콘 둘레의 작은 상자에만 칠한다.
+  const css = readFileSync(new URL('../src/styles/body.css', import.meta.url), 'utf8');
+  const px = (rule: string, prop: string) => Number(css.match(new RegExp(`\\n${rule.replace(/[.[\]]/g, '\\$&')} \\{[^}]*?${prop}:\\s*(\\d+)px`))?.[1] ?? NaN);
+  const head = px('.body .code-head', 'min-height');
+  const plate = px('.body .code-copy-plate', 'height');
+  assert.ok(Number.isFinite(head) && Number.isFinite(plate), `머리 줄 ${head}px, 판 ${plate}px`);
+  assert.ok(plate < head, `판 ${plate}px가 머리 줄 ${head}px보다 작다`);
+  assert.doesNotMatch(css, /\.code-copy:hover \{[^}]*background/, '버튼 전체에는 호버 판을 깔지 않는다');
 });

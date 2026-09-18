@@ -640,7 +640,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 호버 미디어 쿼리 | 각 CSS와 Astro 스타일 | `tests/interaction-states.test.ts` |
 | 버튼·링크 공통 모양(`.btn`, `.text-button`) | `src/styles/site.css` | 없음 |
 | 본문 모양(콜아웃, 표, 도표 상자) | `src/styles/body.css` | 없음 |
-| 코드 블록 머리 줄과 복사 버튼 | `src/lib/markdown.ts`, `src/scripts/code-copy.ts`, `src/styles/body.css` | `tests/code-block.test.ts`, `tests/interaction-states.test.ts` |
+| 코드 블록 머리 줄과 복사 버튼 | `src/lib/markdown.ts`, `src/scripts/code-copy.ts`, `src/styles/body.css` | `tests/code-block.test.ts` |
 | 공유 안내의 위치·폭·표시 시간 | `src/components/ShareLink.astro` | 없음 |
 | 폭에 따른 리더·지도 배치 | `src/components/NotePage.astro`, `src/pages/map/index.astro` | 없음 |
 
