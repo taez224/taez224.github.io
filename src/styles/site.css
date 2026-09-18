@@ -189,14 +189,15 @@ main { min-height: 60vh; }
 .search-head kbd { color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--t-micro); }
 /* 닫기는 44px 글자 버튼이라 음수 여백으로 머리 줄 높이를 지킨다. */
 .search-close { margin-block: -7px; }
-.search-results { max-height: 55vh; overflow-y: auto; padding: 8px 16px 14px; }
-/* 결과 자리의 안내·불러오는 중·결과 없음·실패는 같은 모양으로 둔다. 무엇이 바뀌었는지는 문구가 알린다. */
-.search-results:empty::before, .search-status { display: block; margin: 0; padding: 18px 0 8px; color: var(--muted); font-size: var(--t-meta); line-height: 1.6; }
-.search-results:empty::before { content: "제목·요약·본문으로 찾아보세요."; }
-.search-retry { margin-top: -6px; }
-.search-item { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 12px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.search-results { max-height: 55vh; overflow-y: auto; padding: 0 16px 14px; }
+/* 입력 안내·불러오는 중·결과 개수·결과 없음·실패를 한 줄이 맡는다. 결과를 스크롤해도 개수가 남도록 결과 영역 밖에 둔다. */
+.search-status { margin: 0; padding: 14px 16px 6px; color: var(--muted); font-size: var(--t-meta); line-height: 1.6; }
+.search-retry, .search-more { margin-top: 10px; }
+.search-item { position: relative; display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 12px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--line); }
 .search-kind { color: var(--muted); font-size: var(--t-micro); }
 .search-item a { display: block; color: var(--ink); font-size: var(--t-ui); font-weight: 600; }
+/* 제목만 누를 수 있으면 한 줄짜리 결과의 누르는 영역이 27.75px에 그친다. 줄 전체를 같은 링크로 덮어 종류·요약·여백 어디를 눌러도 열린다. */
+.search-item a::after { content: ''; position: absolute; inset: 0; }
 .search-item small { display: block; margin-top: 3px; overflow: hidden; color: var(--muted); font-size: var(--t-meta); line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 720px) {
   .search-item { grid-template-columns: 48px minmax(0, 1fr); gap: 8px; }

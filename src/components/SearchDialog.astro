@@ -8,6 +8,7 @@ import { withBase } from '../lib/format.ts';
     <kbd data-search-hint hidden></kbd>
     <button type="button" class="text-button search-close">닫기</button>
   </form>
-  <div id="search-results" class="search-results" aria-live="polite"></div>
+  <p id="search-status" class="search-status" role="status">제목·요약·본문으로 찾아보세요.</p>
+  <div id="search-results" class="search-results"></div>
 </dialog>
 <script src="../scripts/search.ts"></script>

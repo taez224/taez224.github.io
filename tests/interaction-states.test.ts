@@ -37,3 +37,13 @@ test('hover styles apply only on devices that can hover', () => {
     .map(({ selector }) => `${path}: ${selector}`));
   assert.deepEqual(found, []);
 });
+
+test('search results are clickable across the whole row', () => {
+  // 한 줄짜리 결과의 제목 링크는 27.75px이라 44px 목표에 못 미친다. 링크의 ::after로 줄 전체를 덮어 누르는 영역만 넓힌다.
+  const css = read('src/styles/site.css');
+  const row = css.match(/\n\.search-item \{([^}]+)\}/)?.[1] ?? '';
+  const stretch = css.match(/\n\.search-item a::after \{([^}]+)\}/)?.[1] ?? '';
+  assert.match(row, /position:\s*relative/);
+  assert.match(stretch, /position:\s*absolute/);
+  assert.match(stretch, /inset:\s*0/);
+});

@@ -1,16 +1,22 @@
-import { matchRecord, normalizeQuery, type SearchRecord } from '../lib/search-match.ts';
+import { matchRecord, normalizeQuery, resultCountLabel, SEARCH_PAGE, type SearchRecord } from '../lib/search-match.ts';
 import { escapeHtml } from '../lib/format.ts';
 import { searchShortcut } from '../lib/shortcuts.ts';
+
+interface Hit { r: SearchRecord; m: NonNullable<ReturnType<typeof matchRecord>> }
 
 const dialog = document.querySelector<HTMLDialogElement>('#search')!;
 const input = document.querySelector<HTMLInputElement>('#search-input')!;
 const results = document.getElementById('search-results')!;
+const status = document.getElementById('search-status')!;
 const hint = document.querySelector<HTMLElement>('[data-search-hint]')!;
 const form = dialog.querySelector('.search-head');
 const closeButton = dialog.querySelector('.search-close');
 const triggers = [...document.querySelectorAll<HTMLButtonElement>('[data-search-open]')];
+const EMPTY_HINT = status.textContent ?? '';
 let index: Promise<SearchRecord[]> | null = null;
 let queryVersion = 0;
+let hits: Hit[] = [];
+let shown = 0;
 
 const shortcut = searchShortcut(navigator.platform, navigator.userAgent, navigator.maxTouchPoints);
 if (shortcut) { hint.textContent = shortcut; hint.hidden = false; for (const t of triggers) t.title = `검색 (${shortcut})`; }
@@ -23,20 +29,41 @@ function loadIndex(): Promise<SearchRecord[]> {
   return index;
 }
 function open() { if (!dialog.open) dialog.showModal(); input.focus(); input.select(); render(); }
+function itemHtml({ r, m }: Hit): string {
+  return `<div class="search-item"><span class="search-kind">${escapeHtml(r.label)}</span><div><a href="${escapeHtml(r.url)}">${escapeHtml(r.title)}</a><small>${escapeHtml(m.snippet || r.summary || '')}</small></div></div>`;
+}
+// 결과를 다시 그리면 눌렀던 더 보기 버튼이 사라지므로, 새로 붙인 첫 결과로 초점을 옮겨 키보드 사용자가 자리를 잃지 않게 한다.
+function paint(focusFrom = -1) {
+  const page = hits.slice(0, shown);
+  status.textContent = resultCountLabel(hits.length, page.length);
+  const more = shown < hits.length ? '<button type="button" class="text-button search-more" data-search-more>더 보기</button>' : '';
+  results.innerHTML = page.map(itemHtml).join('') + more;
+  results.querySelector('[data-search-more]')?.addEventListener('click', () => {
+    const from = shown;
+    shown = Math.min(shown + SEARCH_PAGE, hits.length);
+    paint(from);
+  }, { once: true });
+  if (focusFrom >= 0) results.querySelectorAll<HTMLAnchorElement>('.search-item a')[focusFrom]?.focus();
+}
 async function render() {
   const version = ++queryVersion;
   const terms = normalizeQuery(input.value);
-  if (!terms.length) { results.replaceChildren(); return; }
-  results.innerHTML = '<p class="search-status">검색 색인을 불러오는 중입니다.</p>';
+  hits = [];
+  shown = 0;
+  if (!terms.length) { status.textContent = EMPTY_HINT; results.replaceChildren(); return; }
+  status.textContent = '검색 색인을 불러오는 중입니다.';
+  results.replaceChildren();
   try {
     const records = await loadIndex();
     if (version !== queryVersion || !dialog.open) return;
-    const hits = records.map((r) => ({ r, m: matchRecord(r, terms) })).filter((x): x is { r: SearchRecord; m: NonNullable<ReturnType<typeof matchRecord>> } => x.m !== null).sort((a, b) => b.m.score - a.m.score).slice(0, 30);
-    if (!hits.length) { results.innerHTML = '<p class="search-status">검색 결과가 없습니다.</p>'; return; }
-    results.innerHTML = hits.map(({ r, m }) => `<div class="search-item"><span class="search-kind">${escapeHtml(r.label)}</span><div><a href="${escapeHtml(r.url)}">${escapeHtml(r.title)}</a><small>${escapeHtml(m.snippet || r.summary || '')}</small></div></div>`).join('');
+    hits = records.map((r) => ({ r, m: matchRecord(r, terms) })).filter((x): x is Hit => x.m !== null).sort((a, b) => b.m.score - a.m.score);
+    if (!hits.length) { status.textContent = '검색 결과가 없습니다.'; return; }
+    shown = Math.min(SEARCH_PAGE, hits.length);
+    paint();
   } catch {
     if (version !== queryVersion || !dialog.open) return;
-    results.innerHTML = '<p class="search-status">검색을 불러오지 못했습니다.</p><button type="button" class="text-button search-retry" data-search-retry>다시 시도</button>';
+    status.textContent = '검색을 불러오지 못했습니다.';
+    results.innerHTML = '<button type="button" class="text-button search-retry" data-search-retry>다시 시도</button>';
     results.querySelector('[data-search-retry]')?.addEventListener('click', render, { once: true });
   }
 }
