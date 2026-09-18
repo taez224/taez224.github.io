@@ -113,6 +113,7 @@ Codex는 이 절만 읽고, Claude Code는 여기에 더해 위의 output-style 
 
 ## 작업 규칙
 
+- `AGENTS.md`, `DESIGN.md`, `AUTHORING.md`를 점검하거나 최신화할 때는 `doc-audit` 스킬의 절차를 따른다. 문장을 다듬기 전에 서술을 코드와 대조한다.
 - 새 표시 문법이나 조건을 추가하면 `AUTHORING.md`와 관련 테스트를 고친다. 공개 범위나 배포 산출물의 필수 조건이 바뀔 때만 `check-dist.ts`를 고친다. frontmatter 속성을 바꾸면 vault의 속성 스키마도 고친다.
 - 생성물인 `dist/`와 `.astro/`는 편집하지 않는다.
 - `docs/`는 설계 문서, 계획서, 비교 기록을 두는 로컬 전용 폴더다(`.git/info/exclude`). `git add` 하지 않는다. 2026-09-06 리디자인 문서들은 사이트가 vault 안에 있던 시절(`basePath: /obsidian`) 기준이라 경로가 낡았다.
@@ -150,7 +151,7 @@ type(scope): 명사형 제목
 
 - `AGENTS.md`가 정본이다. `CLAUDE.md`는 `@AGENTS.md`로 이 파일을 가져온 뒤 Claude Code 전용 지침만 덧붙인다. 공통 지침은 여기에만 쓴다.
 - 한 폴더에만 해당하는 지침은 그 폴더의 `AGENTS.md`에 쓰고, 같은 폴더에 `@AGENTS.md` 한 줄만 담은 `CLAUDE.md`를 둔다. Claude Code는 그 폴더의 파일을 읽을 때 이 `CLAUDE.md`를 불러온다. Codex는 시작할 때 저장소 루트부터 실행 위치까지의 `AGENTS.md`만 읽으므로, 루트 `AGENTS.md`에 하위 지침을 가리키는 줄을 남긴다. 현재 하위 지침은 `src/lib/AGENTS.md` 하나다.
-- Claude와 Codex가 함께 쓰는 스킬의 정본은 `.agents/skills/<skill-name>/`에 둔다. Codex는 이 경로를 직접 읽는다. 이 저장소에는 아직 스킬이 없다.
+- Claude와 Codex가 함께 쓰는 스킬의 정본은 `.agents/skills/<skill-name>/`에 둔다. Codex는 이 경로를 직접 읽는다. 지금 있는 스킬은 지침 문서를 점검하는 `doc-audit` 하나다.
 - Claude Code는 `.claude/skills/`만 읽으므로 `.claude/skills/<skill-name>`에 정본을 가리키는 **상대 심볼릭 링크**만 둔다. `.codex/skills/`에는 링크를 만들지 않는다.
 - `SKILL.md`는 두 도구가 읽을 수 있는 공통 지침으로 유지하고, 도구 전용 런타임은 `.claude/workflows/` 또는 `.codex/`에 분리한다.
 - `.mcp.json`의 `qmd`는 vault 노트를 검색하는 MCP 서버다. 색인은 `~/.cache/qmd`에 전역으로 있어 이 저장소에서도 vault를 찾는다. 색인이 오래됐으면 `qmd update`로 다시 만든다.
