@@ -32,6 +32,26 @@
 .body .task-list-item.is-checked > p > .task-list-item-label { color: var(--muted); text-decoration: line-through; }
 .body blockquote { margin: 18px 0; padding: 4px 16px; border-left: 3px solid var(--line); color: var(--muted); }
 .body pre { overflow-x: auto; margin: 18px 0; padding: 14px 16px; border: 1px solid var(--line); background: #ffffff; color: #24292f; font-size: var(--t-side); line-height: 1.6; }
+/* 코드 블록 머리 줄: 언어 이름과 복사 버튼을 상자 안 첫 줄에 두고 1px 선으로 코드와 나눈다.
+   테두리는 감싼 상자가 맡고 pre는 테두리 없이 들어간다. 머리 줄 바탕은 코드 상자와 같은 색이다. */
+.body .code-block { margin: 18px 0; border: 1px solid var(--line); }
+.body .code-block > pre { margin: 0; border: 0; }
+.body .code-head { display: flex; align-items: center; gap: 8px; min-height: 34px; padding: 0 6px 0 16px; border-bottom: 1px solid var(--line); background: #ffffff; }
+.body .code-lang { margin-right: auto; color: var(--muted); font-size: var(--t-micro); letter-spacing: .02em; }
+/* 복사 버튼의 누르는 영역은 헤더의 링크 복사와 같은 44px이고, 머리 줄 높이를 지키려고 위아래 음수 여백을 짝지운다.
+   호버 판과 포커스 윤곽선은 44px 전체에 그리면 34px 머리 줄 밖으로 넘치므로 아이콘 둘레의 28px 판에만 그린다. */
+.body .code-copy { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 44px; height: 44px; margin: -5px 0 -5px auto; padding: 0; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+.body .code-copy-plate { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; }
+.body .code-copy-plate svg { width: 16px; height: 16px; }
+.body .code-copy:active .code-copy-plate { transform: scale(.97); }
+.body .code-copy:focus-visible { outline: none; }
+.body .code-copy:focus-visible .code-copy-plate { outline: 2px solid var(--accent); outline-offset: 2px; }
+.body .code-copy[data-state="done"] { color: var(--accent); }
+@media (hover: hover) {
+  .body .code-copy:hover { color: var(--accent); }
+  .body .code-copy:hover .code-copy-plate { background: var(--accent-soft); }
+}
+.body .code-copy-status { color: var(--muted); font-size: var(--t-micro); line-height: 1.4; text-align: right; }
 .body code { padding: 1px 4px; background: color-mix(in srgb, var(--ink) 8%, transparent); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .88em; }
 .body pre code { padding: 0; background: transparent; font-size: inherit; }
 /* 코드 상자는 사이트 톤보다 문법 구분을 앞세워 @tanstack/highlight에 든 GitHub Light 테마의 배경·글자·토큰 색을 그대로 쓰며, 이곳에서만 관리한다.
@@ -54,6 +74,7 @@
    라이트처럼 문자열은 청록으로 두어 숫자·링크의 파랑과 구분한다. 가장 흐린 주석(#8b949e)도 이 배경에서 5.26:1이다. */
 @media (prefers-color-scheme: dark) {
   .body pre { background: var(--paper-strong); color: #e6edf3; }
+  .body .code-head { background: var(--paper-strong); }
   .body pre :is(.th-comment, .th-meta) { color: #8b949e; }
   .body pre :is(.th-keyword, .th-deleted) { color: #ff7b72; }
   .body pre :is(.th-function, .th-operator, .th-command) { color: #d2a8ff; }

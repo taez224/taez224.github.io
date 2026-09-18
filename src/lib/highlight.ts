@@ -27,6 +27,22 @@ const highlighter = createHighlighter({
 // 누군가 등록하면 그때부터 이 목록만 남는다. 도표를 색칠하지 않는 것은 등록 여부와 무관한 결정이다.
 export const EXCLUDED_LANGUAGES = new Set(['mermaid']);
 
+// 코드 블록 머리 줄에 보이는 언어 이름. 강조 여부와 따로 정한다. gradle처럼 색을 입히지 않는 언어도
+// 작성자가 적은 언어라 이름은 보이고, 목록에 없는 언어는 적은 그대로 보인다. text는 "언어 없음"과 같다.
+const LANGUAGE_LABELS: Record<string, string> = {
+  java: 'Java', js: 'JavaScript', javascript: 'JavaScript', ts: 'TypeScript', typescript: 'TypeScript',
+  tsx: 'TSX', jsx: 'JSX', yaml: 'YAML', yml: 'YAML', json: 'JSON', css: 'CSS', html: 'HTML', xml: 'XML',
+  markdown: 'Markdown', md: 'Markdown', python: 'Python', py: 'Python', dockerfile: 'Dockerfile',
+  bash: 'Bash', shell: 'Shell', sh: 'Shell', zsh: 'Zsh', gradle: 'Gradle', kotlin: 'Kotlin', sql: 'SQL', c: 'C'
+};
+const UNNAMED_LANGUAGES = new Set(['', 'text', 'plaintext', 'txt']);
+
+export function codeLanguageLabel(lang: string): string {
+  const key = lang.trim().toLowerCase();
+  if (UNNAMED_LANGUAGES.has(key)) return '';
+  return LANGUAGE_LABELS[key] ?? lang.trim();
+}
+
 // markdown-it의 highlight 옵션에 맞춘 반환값이다. 빈 문자열을 주면 markdown-it이 원문을 이스케이프한다.
 // 완성된 <pre> 블록을 돌려주면 markdown-it이 그것을 그대로 쓰면서 language-* 클래스를 떼어 내고,
 // 그러면 mermaid-render.ts의 `code.language-mermaid` 선택자가 도표를 찾지 못한다. 안쪽 토큰만 돌려준다.
