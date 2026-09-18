@@ -11,7 +11,7 @@ interface RenderContext extends LinkContext { markdown: InstanceType<typeof Mark
 
 import MarkdownIt, { type Token } from 'markdown-it';
 import sanitizeHtml from 'sanitize-html';
-import { highlightCode } from './highlight.ts';
+import { codeLanguageLabel, EXCLUDED_LANGUAGES, highlightCode } from './highlight.ts';
 import { escapeHtml } from './format.ts';
 import { isImagePath } from './image-types.ts';
 
@@ -677,6 +677,22 @@ function createMarkdownIt() {
       ? defaultHeadingOpen(tokens, index, options, env, self)
       : `<${token.tag}${self.renderAttrs(token)}>`;
   };
+
+  // 코드 블록을 감싸고, 언어를 적었으면 머리 줄에 그 이름을 둔다. 복사 버튼은 스크립트가 있어야 동작하므로
+  // code-copy.ts가 붙이고, 이름 없는 블록의 머리 줄도 그때 만든다. 스크립트가 없으면 빈 머리 줄이 남지 않는다.
+  // mermaid 블록은 감싸지 않는다. mermaid.ts가 pre를 도표로 통째로 바꾸기 때문이다.
+  const defaultFence = markdown.renderer.rules.fence!;
+  const defaultCodeBlock = markdown.renderer.rules.code_block!;
+  const wrapCode = (html: string, label: string) => {
+    const head = label ? `<div class="code-head"><span class="code-lang">${escapeHtml(label)}</span></div>` : '';
+    return `<div class="code-block">${head}${html.trimEnd()}</div>\n`;
+  };
+  markdown.renderer.rules.fence = (tokens, index, options, env, self) => {
+    const lang = tokens[index].info.trim().split(/\s+/)[0] ?? '';
+    const html = defaultFence(tokens, index, options, env, self);
+    return EXCLUDED_LANGUAGES.has(lang.toLowerCase()) ? html : wrapCode(html, codeLanguageLabel(lang));
+  };
+  markdown.renderer.rules.code_block = (tokens, index, options, env, self) => wrapCode(defaultCodeBlock(tokens, index, options, env, self), '');
   return markdown;
 }
 

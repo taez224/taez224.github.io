@@ -67,7 +67,7 @@ test('a single line break inside a paragraph, list item or callout shows as a li
 });
 
 test('line breaks inside code blocks and inline code stay as written', () => {
-  assert.equal(render('x.md', '```text\n첫 줄\n둘째 줄\n```').trim(), '<pre><code class="language-text">첫 줄\n둘째 줄\n</code></pre>');
+  assert.equal(render('x.md', '```text\n첫 줄\n둘째 줄\n```').trim(), '<div class="code-block"><pre><code class="language-text">첫 줄\n둘째 줄\n</code></pre></div>');
   assert.doesNotMatch(render('x.md', '`여러\n줄`'), /<br/);
 });
 
