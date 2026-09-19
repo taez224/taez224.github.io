@@ -57,3 +57,16 @@ test('touch devices keep only focus highlighting so a tap does not leave a highl
   nodes[0].fire('focus');
   assert.ok(rows[0].linked);
 });
+
+test('linked notes remain highlighted until both hover and focus leave the group', () => {
+  const { nodes, rows } = sidebar();
+  rows[0].fire('focus');
+  nodes[0].fire('mouseenter');
+  nodes[0].fire('mouseleave');
+  assert.ok(nodes[0].linked && rows[2].linked, '다른 짝에서 마우스가 나가도 포커스는 남는다');
+  rows[2].fire('mouseenter');
+  rows[0].fire('blur');
+  assert.ok(nodes[0].linked, '포커스가 나가도 같은 노트 줄의 호버는 남는다');
+  rows[2].fire('mouseleave');
+  assert.ok(!nodes[0].linked && !rows[0].linked && !rows[2].linked);
+});

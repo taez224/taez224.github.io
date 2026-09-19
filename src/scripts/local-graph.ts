@@ -10,14 +10,17 @@ if (graph) {
   for (const node of graph.querySelectorAll<SVGAElement>('a.node')) {
     const href = node.getAttribute('href');
     const pair: Element[] = [node, ...rows.filter((row) => row.getAttribute('href') === href)];
-    const mark = (on: boolean) => { for (const element of pair) element.classList.toggle('is-linked', on); };
+    const hovered = new Set<Element>();
+    const focused = new Set<Element>();
+    // 같은 노트의 다른 줄을 가리키거나 키보드 포커스가 남아 있으면 강조를 유지한다.
+    const mark = () => { for (const element of pair) element.classList.toggle('is-linked', hovered.size > 0 || focused.size > 0); };
     for (const element of pair) {
       if (canHover) {
-        element.addEventListener('mouseenter', () => mark(true));
-        element.addEventListener('mouseleave', () => mark(false));
+        element.addEventListener('mouseenter', () => { hovered.add(element); mark(); });
+        element.addEventListener('mouseleave', () => { hovered.delete(element); mark(); });
       }
-      element.addEventListener('focus', () => mark(true));
-      element.addEventListener('blur', () => mark(false));
+      element.addEventListener('focus', () => { focused.add(element); mark(); });
+      element.addEventListener('blur', () => { focused.delete(element); mark(); });
     }
   }
 }
