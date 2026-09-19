@@ -28,10 +28,12 @@ const lines = (edge: { x1: number; y1: number; x2: number; y2: number; direction
             <text x={node.x} y={node.y + 29} text-anchor="middle">이 노트</text>
           </g>
         : <a class="node" href={node.url} aria-label={cleanTitle(node.title)}>
-            {/* 이웃에는 제목을 적지 않는다. 링크 이름은 aria-label이 확실히 주고, title은 마우스 툴팁이다. 목록의 같은 줄도 함께 강조된다(local-graph.ts). */}
+            {/* 제목은 단어 경계에서 두 줄까지 줄여 보이고(local-graph-layout.ts), 전체 제목은 툴팁(title)과 목록의 같은 줄이 보여 준다.
+                링크 이름은 aria-label이 준다. 목록의 같은 줄은 호버·포커스에서 함께 강조된다(local-graph.ts). */}
             <title>{cleanTitle(node.title)}</title>
             <circle cx={node.x} cy={node.y} r="14" fill="transparent" />
             <circle cx={node.x} cy={node.y} r="6" fill={node.color} />
+            {node.label && <text x={node.label.x} y={node.label.y} text-anchor="middle">{node.label.lines.map((line, index) => <tspan x={node.label!.x} dy={index ? 13 : undefined}>{line}</tspan>)}</text>}
           </a>)}
     </g>
   </svg>
@@ -44,7 +46,11 @@ const lines = (edge: { x1: number; y1: number; x2: number; y2: number; direction
   /* 참조·역참조와 같은 블록이다. 위 선은 사이드바가 긋고, 제목 모양은 site.css의 .list-block이 준다.
      여백은 사이드바의 블록 여백(20px)과 같게 두고, 목록 블록의 아래 선은 쓰지 않는다. */
   .local-graph { padding: 20px 0; border-bottom: 0; }
-  .local-graph svg { display: block; width: 100%; height: 190px; overflow: visible; }
+  /* 위아래 이웃의 두 줄 제목은 그림 가장자리까지 오므로, 블록 제목과 아래 링크에서 떨어지게 그림 위아래에 여백을 둔다.
+     세로 여백은 블록 제목의 아래 여백(8px)·링크의 위 여백(10px)과 겹쳐 큰 값만 남으므로 그보다 크게 잡는다. */
+  .local-graph svg { display: block; width: 100%; height: 190px; margin: 16px 0 18px; overflow: visible; }
+  /* 안내 문장은 보조 글자다. 블록 제목에 쓰는 .list-block > .meta 규칙(먹색·굵기 600)을 받지 않게 되돌린다. */
+  .local-graph > p.meta { display: block; margin: 8px 0 0; color: var(--muted); font-weight: 400; }
   .local-graph svg:focus, .local-graph svg:focus-visible { outline: none; }
   .edge { stroke: var(--accent); stroke-width: 1.2; stroke-opacity: .75; }
   .edge.is-in { stroke-dasharray: 5 4; }

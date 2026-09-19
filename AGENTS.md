@@ -7,7 +7,7 @@ AI 코딩 에이전트가 이 저장소에서 작업할 때 따르는 지침이�
 TaeZ's Thinking Garden(https://taez224.github.io/)을 만드는 Astro 7 정적 사이트다. **노트 원본은 이 저장소에 없다.** 별도 저장소 `taez224/obsidian`(Obsidian vault)을 읽어서 공개할 수 있는 부분만 사이트에 싣는다.
 
 - 로컬: vault는 옆 폴더 `../obsidian`에 클론돼 있다. 다른 위치면 `GARDEN_VAULT_ROOT`로 지정한다. dev와 build 모두 vault가 있어야 실행된다.
-- CI(`.github/workflows/deploy.yml`): vault를 `vault/`에 한 번 더 checkout하고 `GARDEN_VAULT_ROOT`로 넘긴다. main push, 매일 04:00 KST, 수동 실행(`gh workflow run deploy.yml`) 때 실행된다. PR에서는 같은 검사를 실행하되 배포하지 않는다. **vault만 바뀌면 다음 예약 빌드까지 사이트에 반영되지 않는다.**
+- CI(`.github/workflows/deploy.yml`): vault를 `vault/`에 한 번 더 checkout하고 `GARDEN_VAULT_ROOT`로 넘긴다. main push, 매일 04:00 KST, 수동 실행(`gh workflow run deploy.yml`) 때 실행된다. PR에서는 같은 검사에 브라우저 회귀 검사를 더해 실행하되 배포하지 않는다. **vault만 바뀌면 다음 예약 빌드까지 사이트에 반영되지 않는다.**
 - 노트 작성 규칙(frontmatter 속성, 허용 값)의 정본은 vault의 `99_Templates/_property-schema.md`다. 사이트의 표시 규칙은 `AUTHORING.md`에 있으므로 콘텐츠 렌더링을 바꾸기 전에 먼저 읽는다.
 - 방문자용 소개 원고는 `src/content/about.md`다. `src/pages/about.astro`가 일반 Markdown으로 렌더링하며, vault 노트 컬렉션에는 넣지 않는다.
 
@@ -21,6 +21,7 @@ npm ci                       # 잠근 의존성 설치
 npm run check                # TS 소스·설정·빌드 도구·타입 계약 검사
 npm run check:astro          # Astro 컴포넌트·페이지 전체 타입 검사
 npm test                     # node --test tests/*.test.ts
+npm run test:browser         # 임시 vault로 실제 페이지를 빌드해 Chromium 회귀 검사
 node --test --test-name-pattern="slug" tests/garden.test.ts   # 파일 하나에서 이름으로 골라 실행
 npm run dev                  # astro dev. vault 파일을 감시해 다시 조립한다
 npm run build                # astro build && node scripts/check-dist.ts
@@ -107,9 +108,10 @@ Codex는 이 절만 읽고, Claude Code는 여기에 더해 위의 output-style 
 ## 테스트
 
 - `node:test`와 `node:assert/strict`를 쓰고 파일 이름은 `*.test.ts`다. 테스트 이름은 관찰 가능한 동작을 서술한다.
+- 브라우저 회귀 검사는 `npm run test:browser`로 실행한다. 처음에는 `npx playwright install chromium`으로 브라우저를 설치한다. 밝은·어두운 화면과 데스크톱·터치 모바일에서 각주, 복사, 연결 강조, 홈 지도 전환을 검사한다. `tests/browser/server.ts`가 임시 vault·빌드·캐시를 만들고 종료할 때 지우므로 실제 vault와 평소 `dist/`는 쓰지 않는다. 결과가 코드에만 달려 있어 CI는 PR에서만 돌린다. 가짜 DOM 단위 테스트로 재현할 수 없는 동작(누른 좌표의 판정, 복제한 요소의 이벤트, 창 크기 변화)만 여기에 둔다.
 - **테스트는 임시 vault로 실행한다.** `tests/garden.test.ts`의 `makeVault()`처럼 `os.tmpdir()`에 최소 파일을 만들어 검증하고, 실제 `../obsidian`은 테스트에서 읽지 않는다.
 - 동작을 바꾸면 회귀 테스트를 더한다. Markdown 렌더링, 링크 해석, 공개 판정을 바꿀 때는 빠짐없이 더한다.
-- 코드를 넘기기 전에 `npm run check`, `npm run check:astro`, `npm test`, `npm run build`를 모두 실행한다. `DESIGN.md`를 고쳤으면 `npm run design:lint`도 실행한다.
+- 코드를 넘기기 전에 `npm run check`, `npm run check:astro`, `npm test`, `npm run build`를 모두 실행한다. `DESIGN.md`를 고쳤으면 `npm run design:lint`도, 브라우저 스크립트나 CSS의 동작을 바꿨으면 `npm run test:browser`도 실행한다.
 - 화면을 바꿨으면 데스크톱과 모바일 폭, 밝은 화면과 어두운 화면을 모두 확인한다. 확인할 폭과 상태는 `DESIGN.md`의 「검사」 절에 있다.
 
 ## 작업 규칙

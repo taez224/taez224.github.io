@@ -14,7 +14,8 @@
     "fonts:vendor": "node scripts/vendor-fonts.ts",
     "test": "node --test tests/*.test.ts",
     "check": "tsc --project tsconfig.check.json",
-    "check:astro": "astro check"
+    "check:astro": "astro check",
+    "test:browser": "playwright test --config tests/browser/playwright.config.ts"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",
@@ -30,6 +31,7 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
     "@google/design.md": "0.4.0",
+    "@playwright/test": "^1.63.0",
     "@types/node": "^26.5.1",
     "@types/sanitize-html": "^2.16.1",
     "typescript": "^6.0.3"

@@ -75,6 +75,16 @@ jobs:
       - name: Test
         run: npm test
 
+      # 브라우저 회귀 검사는 실제 vault가 아니라 고정된 임시 vault로 페이지를 만든다. 결과가 코드에만 달려 있으므로
+      # 코드가 바뀌는 PR에서만 돌리고, 새벽 빌드와 병합 뒤 main 배포는 Chromium 설치 없이 빠르게 짓는다.
+      - name: Install test browser
+        if: github.event_name == 'pull_request'
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser regression tests
+        if: github.event_name == 'pull_request'
+        run: npm run test:browser
+
       - name: Build
         run: npm run build
 
