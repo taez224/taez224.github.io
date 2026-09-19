@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { extractNoteTargets } from '../src/lib/markdown.ts';
 import { analyzeText } from '../src/lib/text.ts';
-import { render } from './helpers/markdown.ts';
+import { render, renderWithVisibility } from './helpers/markdown.ts';
 
 // 각주 문법은 Obsidian과 같다. 본문에는 윗첨자 번호만, 글 끝에는 "각주" 목록이 나온다.
 const footnoteList = (html: string) => html.match(/<section class="footnotes">[\s\S]*<\/section>/)?.[0] ?? '';
@@ -52,6 +52,14 @@ test('footnote text keeps Obsidian inline syntax such as highlights', () => {
   const html = render('note.md', '본문[^1] 인라인^[==바로 쓴 형광==]\n\n[^1]: ==정의한 형광==');
   assert.match(footnoteList(html), /<mark>정의한 형광<\/mark>/);
   assert.match(footnoteList(html), /<mark>바로 쓴 형광<\/mark>/);
+});
+
+test('a private note linked from a footnote shows only the safe author label', () => {
+  // 각주 내용도 본문 링크와 같은 규칙을 거쳐, 비공개 노트의 경로·제목·조각을 내보내지 않는다.
+  const html = renderWithVisibility()('x.md', '본문[^1] 인라인^[[[hidden/private.md#SECRET_FRAGMENT|인라인 별칭]]]\n\n[^1]: [[hidden/private.md#SECRET_FRAGMENT|정의 별칭]]');
+  assert.match(footnoteList(html), /<span class="private-note">정의 별칭 /);
+  assert.match(footnoteList(html), /<span class="private-note">인라인 별칭 /);
+  assert.doesNotMatch(html, /hidden\/|private\.md|SECRET|NEVER_SHOW/);
 });
 
 test('the footnote list title stays out of the table of contents', () => {
