@@ -94,3 +94,23 @@ test('home switches both ways across the live graph breakpoint without duplicate
     }
   }
 });
+
+test('local graph shows up to six neighbors with two-line titles that never overlap', async ({ page }) => {
+  await page.goto('/notes/browser-many/');
+  await expect(page.locator('.local-graph a.node')).toHaveCount(6);
+  const note = page.locator('.local-graph > p.meta');
+  await expect(note).toContainText('6개만');
+  await expect(note).toHaveCSS('font-weight', '400');
+  const boxes = await page.locator('.local-graph a.node text').evaluateAll((texts) => texts.map((text) => {
+    const box = text.getBoundingClientRect();
+    return { left: box.left, right: box.right, top: box.top, bottom: box.bottom, lines: text.querySelectorAll('tspan').length };
+  }));
+  const circles = await page.locator('.local-graph circle').evaluateAll((items) => items.map((item) => item.getBoundingClientRect()).map(({ left, right, top, bottom }) => ({ left, right, top, bottom })));
+  const overlap = (a: typeof boxes[number] | typeof circles[number], b: typeof boxes[number] | typeof circles[number]) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+  for (const [index, box] of boxes.entries()) {
+    expect(box.lines).toBeLessThanOrEqual(2);
+    for (const other of boxes.slice(index + 1)) expect(overlap(box, other)).toBe(false);
+    // 제목은 자기 노드의 누르는 원(투명) 안쪽으로 조금 들어올 수 있으므로 보이는 점만 검사한다.
+    for (const circle of circles.filter((c) => c.right - c.left <= 20)) expect(overlap(box, circle)).toBe(false);
+  }
+});

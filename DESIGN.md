@@ -581,7 +581,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 - **연재 탐색:** 이전·다음 편 카드는 1px 구분선 색 테두리와 `14px 18px` 여백을 쓰고, 호버·키보드 포커스에서 먹색 테두리와 호버 판으로 강조한다. 연재 허브 제목 아래의 1편 안내도 같은 이동 안내라 같은 테두리 카드(`16px 18px`)에 채운 버튼을 둔다.
 - **연결 탐색:** 참조는 실선, 역참조는 점선이고, 전체 연결은 목록으로도 읽는다. 노드 선택과 키보드 포커스는 링으로, 목차의 현재 위치는 주제색 선과 굵은 글자로 표시한다.
   - 노트 사이드바의 블록은 목차를 빼고 모두 위 선으로 시작한다. 목차가 없는 글에서도 첫 블록이 제목 옆에 떠 보이지 않고, 모바일에서는 이 선이 본문과의 경계가 된다.
-  - 사이드바의 작은 그래프는 참조·역참조와 같은 블록이라 작은 제목 "연결"과 이웃 수를 단다. 이웃 노드에는 제목을 적지 않는다. 좁은 그래프에 들어가도록 자른 제목은 바로 아래 목록과 같은 정보를 흐리게 되풀이할 뿐이라, 그래프는 연결의 모양을 보여 주고 제목은 목록이 맡는다. 노드와 목록의 같은 노트 줄은 마우스를 올리거나 포커스하면 함께 강조된다. 노드는 누르는 원에 호버 판을 깔고, 줄은 링크 호버와 같은 밑줄을 긋는다. 강조는 마우스와 키보드 포커스가 모두 그 짝을 벗어났을 때 풀린다.
+  - 사이드바의 작은 그래프는 참조·역참조와 같은 블록이라 작은 제목 "연결"과 이웃 수를 단다. 이웃 노드에는 제목을 약 100px 폭 안에서 단어 경계로 두 줄까지 적고, 넘치면 줄임표로 맺는다. 글자 수로 자르면 단어 가운데가 끊기고, 한 줄로는 어떤 생각이 연결됐는지 알기 어렵다. 위쪽 이웃은 제목을 노드 위에, 나머지는 아래에 두어 가운데 노드와 관계선에서 떨어뜨린다. 제목이 읽히도록 이웃은 6개까지만 그리고, 더 있으면 글자를 줄이지 않고 아래 목록으로 안내한다. 전체 제목은 마우스 툴팁과 목록의 같은 줄이 보여 준다. 노드와 목록의 같은 노트 줄은 마우스를 올리거나 포커스하면 함께 강조된다. 노드는 누르는 원에 호버 판을 깔고, 줄은 링크 호버와 같은 밑줄을 긋는다. 강조는 마우스와 키보드 포커스가 모두 그 짝을 벗어났을 때 풀린다.
 - **페이지 끝:** 노트 페이지 끝 줄에는 목록으로 돌아가는 링크만 둔다. 사이트 소개 링크는 바닥글에 있다.
 
 ### 검색
@@ -650,7 +650,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 코드 블록 머리 줄과 복사 버튼 | `src/lib/markdown.ts`, `src/scripts/code-copy.ts`, `src/styles/body.css` | `tests/code-block.test.ts` |
 | 각주 번호·목록·판 | `src/lib/markdown.ts`, `src/scripts/footnotes.ts`, `src/styles/body.css` | `tests/markdown-footnotes.test.ts`, `tests/footnotes.test.ts` |
 | 공유 안내의 위치·폭·표시 시간 | `src/components/ShareLink.astro` | 없음 |
-| 사이드바 작은 그래프와 목록의 함께 강조 | `src/components/LocalGraph.astro`, `src/scripts/local-graph.ts`, `src/components/NoteSidebar.astro` | `tests/local-graph-links.test.ts` |
+| 사이드바 작은 그래프의 제목과 목록의 함께 강조 | `src/components/local-graph-layout.ts`, `src/components/LocalGraph.astro`, `src/scripts/local-graph.ts`, `src/components/NoteSidebar.astro` | `tests/local-graph.test.ts`, `tests/local-graph-links.test.ts`, `tests/browser/reader.spec.ts` |
 | 폭에 따른 리더·지도 배치 | `src/components/NotePage.astro`, `src/pages/map/index.astro` | 없음 |
 | 홈 지도의 폭 전환(살아 있는 지도와 정적 그림) | `src/scripts/hero-graph.ts`, `src/pages/index.astro` | `tests/hero-graph.test.ts` |
 
