@@ -109,7 +109,7 @@ const endLink = note.kind === 'slipbox' ? null : parent.listLabel;
     .note-view { grid-template-columns: minmax(0, var(--s-reader-column)); gap: 20px; }
     /* 한 열에서는 본문과 연결 목록을 먼저 읽고, 목록 링크와 사이트 소개가 있는 페이지 끝 줄로 이동한다. */
     .note-view > .note-side { grid-column: 1; grid-row: auto; }
-    .note-side { position: static; max-height: none; overflow: visible; padding-top: 0; } /* 본문과의 경계선은 첫 블록의 위 선이 맡는다(숨긴 목차가 앞 형제로 남아 선이 생긴다) */
+    .note-side { position: static; max-height: none; overflow: visible; padding-top: 0; } /* 본문과의 경계선은 목차를 뺀 첫 블록의 위 선이 맡는다 */
     .note-side .rail-scroll { display: none; }
     .mobile-toc { display: block; margin: -8px 0 28px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
     /* 펼침 표시는 브라우저 기본 삼각형 대신 접히는 콜아웃과 같은 꺾쇠를 줄 오른쪽 끝에 둔다. */

@@ -7,7 +7,8 @@ interface Props { note: PublicNote | CollectionNote; outgoing: PublicNote[]; inc
 const { note, outgoing, incoming, mapUrl } = Astro.props;
 const width = 310, height = 190;
 const layout = localGraphLayout(note, outgoing, incoming, { width, height });
-const short = (title: string) => ([...title].length > 12 ? [...title].slice(0, 11).join('') + '…' : title);
+// 블록 제목의 수는 그린 이웃이 아니라 전체 이웃이다. 서로 참조하는 노트는 한 번만 센다.
+const neighborCount = layout.nodes.length - 1 + layout.hidden;
 // 서로 참조하는 이웃은 지도처럼 선 두 개를 벌려 그려 두 방향을 모두 보인다. 벌리는 폭도 지도 엔진과 같다.
 const lines = (edge: { x1: number; y1: number; x2: number; y2: number; direction: string }) => {
   if (edge.direction !== 'both') return [edge];
@@ -15,7 +16,8 @@ const lines = (edge: { x1: number; y1: number; x2: number; y2: number; direction
   return [{ ...offsetLine(center, neighbor, 1), direction: 'out' }, { ...offsetLine(center, neighbor, -1), direction: 'in' }];
 };
 ---
-<div class="local-graph">
+<div class="local-graph list-block">
+  <div class="meta">연결<span class="count">{neighborCount}</span></div>
   <svg viewBox={`0 0 ${width} ${height}`} role="group" aria-label="이 노트의 연결">
     <g>
       {layout.edges.flatMap(lines).map((line) => <line class={`edge is-${line.direction}`} x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} />)}
@@ -26,9 +28,10 @@ const lines = (edge: { x1: number; y1: number; x2: number; y2: number; direction
             <text x={node.x} y={node.y + 29} text-anchor="middle">이 노트</text>
           </g>
         : <a class="node" href={node.url} aria-label={cleanTitle(node.title)}>
+            {/* 이웃에는 제목을 적지 않는다. 링크 이름은 aria-label이 확실히 주고, title은 마우스 툴팁이다. 목록의 같은 줄도 함께 강조된다(local-graph.ts). */}
+            <title>{cleanTitle(node.title)}</title>
             <circle cx={node.x} cy={node.y} r="14" fill="transparent" />
             <circle cx={node.x} cy={node.y} r="6" fill={node.color} />
-            <text class="label-short" x={node.x} y={node.y + 22} text-anchor="middle">{short(cleanTitle(node.title))}</text>
           </a>)}
     </g>
   </svg>
@@ -38,8 +41,9 @@ const lines = (edge: { x1: number; y1: number; x2: number; y2: number; direction
   {layout.hidden > 0 && <p class="meta">가까운 연결 {layout.nodes.length - 1}개만 그렸습니다. 전체는 아래 목록에 있습니다.</p>}
 </div>
 <style>
-  /* 위아래 선은 사이드바가 블록 사이에 긋는다. 여기서는 그림 앞뒤 여백만 둔다. */
-  .local-graph { padding: 14px 0 20px; }
+  /* 참조·역참조와 같은 블록이다. 위 선은 사이드바가 긋고, 제목 모양은 site.css의 .list-block이 준다.
+     여백은 사이드바의 블록 여백(20px)과 같게 두고, 목록 블록의 아래 선은 쓰지 않는다. */
+  .local-graph { padding: 20px 0; border-bottom: 0; }
   .local-graph svg { display: block; width: 100%; height: 190px; overflow: visible; }
   .local-graph svg:focus, .local-graph svg:focus-visible { outline: none; }
   .edge { stroke: var(--accent); stroke-width: 1.2; stroke-opacity: .75; }
@@ -52,6 +56,10 @@ const lines = (edge: { x1: number; y1: number; x2: number; y2: number; direction
   a.node { cursor: pointer; outline: none; }
   a.node:focus-visible circle:last-of-type { stroke: var(--accent); }
   @media (hover: hover) { a.node:hover circle:last-of-type { stroke: var(--accent); } }
+  /* 목록의 같은 줄에 마우스를 올리거나 포커스하면 노드도 강조한다. 누르는 원(14px)에 호버 판을 깐다. */
+  a.node.is-linked circle:first-of-type { fill: var(--accent-soft); }
+  a.node.is-linked circle:last-of-type { stroke: var(--accent); }
   .local-graph-tools { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
   .local-graph-tools a { font-size: var(--t-meta); }
 </style>
+<script src="../scripts/local-graph.ts"></script>
