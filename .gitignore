@@ -14,3 +14,7 @@ codex_result/
 # Claude Code 로컬 전용
 .claude/settings.local.json
 .claude/worktrees/
+
+# 브라우저 회귀 검사 산출물
+test-results/
+playwright-report/
