@@ -32,17 +32,17 @@ const seriesNote = series?.noteUrl ? garden.notes.find((note) => note.url === se
 const seriesEntry = seriesNote?.thumbnail ? await getEntry('notes', `${kindPrefix(seriesNote.kind)}/${seriesNote.slug}`) : null;
 const seriesThumbnail = seriesEntry?.data.thumbnail;
 const softSeriesThumbnail = seriesNote?.thumbnailStyle === 'soft';
-// 모바일 홈의 정적 지도. <img>가 아니라 인라인이라 영역 이름에 페이지 서체가 적용된다. 데스크톱은 hero.js가 살아 있는 지도로 바꾼다.
+// 모바일 홈의 정적 지도. <img>가 아니라 인라인이라 영역 이름에 페이지 서체가 적용된다. 720px보다 넓으면 hero-graph.ts가 살아 있는 지도를 올리고 CSS가 이 그림을 가린다.
 const positions = layoutGraph(garden.nodes, garden.edges, { width: 1000, height: 640, ...ATLAS_LAYOUT });
 const snapshotLabel = `생각 지도. 노드 ${garden.stats.nodes}개와 연결 ${garden.stats.edges}개.`;
-// 데스크톱(1000px 초과)은 hero.js가 살아 있는 지도로 바꾸기 전까지 같은 모습의 정적 그림을 보여 교체가 눈에 띄지 않게 한다.
+// 데스크톱(1000px 초과)은 hero-graph.ts가 살아 있는 지도를 올리기 전까지 같은 모습의 정적 그림을 보여 교체가 눈에 띄지 않게 한다.
 const snapshotDesktop = renderSnapshotSvg(garden.nodes, garden.edges, positions, { width: 1000, height: 640, preset: 'desktop', pixelHeight: 500, label: snapshotLabel });
 const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { width: 1000, height: 640, font: 26, regionFont: 30, compactRegionFont: 46, strokeWidth: 2, label: snapshotLabel });
 ---
 <Shell title="TaeZ" description={garden.home.about} path="/">
   <section class="hero" aria-label="소개와 생각 지도">
     <div class="hero-about"><About about={garden.home.about} contacts={garden.home.contacts} entryUrl={entry?.url ?? withBase('/map/')} aboutUrl={withBase('/about/')} /></div>
-    {/* 살아 있는 지도가 첫 화면 전에 올라오도록 데이터와 좌표를 페이지에 둔다. hero.js는 fetch 없이 이걸 읽는다. */}
+    {/* 살아 있는 지도가 첫 화면 전에 올라오도록 데이터와 좌표를 페이지에 둔다. hero-graph.ts는 fetch 없이 이걸 읽는다. */}
     <div class="hero-graph" data-graph><script type="application/json" data-hero-data is:inline set:html={inlineJson(inlineGraph(garden.nodes, garden.edges, { positions }))}></script><a class="hero-snapshot" href={withBase('/map/')} aria-label="생각 지도 보기"><Fragment set:html={snapshotDesktop} /><Fragment set:html={snapshot} /></a></div>
     <div class="hero-fade" aria-hidden="true"></div>
     <a class="hero-map-link" href={withBase('/map/')}>생각 지도 보기 <span aria-hidden="true">→</span></a>
@@ -97,6 +97,13 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
   .hero-graph :global(svg), .hero-snapshot { display: block; width: 100%; height: 100%; }
   .hero-graph .hero-snapshot :global(.is-mobile) { display: none; }
   .hero-snapshot :global(.snap-regions-compact) { display: none; }
+  /* 살아 있는 지도는 넓은 폭에서만 보인다. 경계는 hero-graph.ts의 LIVE_HERO_QUERY와 같다.
+     엔진을 그린 뒤 휴대폰 폭으로 줄이면 엔진을 숨기고 정적 그림을 다시 보인다. */
+  .hero-graph > :global(.graph) { display: none; }
+  @media (min-width: 721px) {
+    .hero-graph > :global(.graph) { display: block; }
+    .hero-graph.is-live .hero-snapshot { display: none; }
+  }
   /* 스냅샷의 색면 불투명도는 SVG 속성이라 어두운 화면에서는 CSS로 엔진과 같은 값까지 올린다. */
   @media (prefers-color-scheme: dark) { .hero-snapshot :global([data-regions]) { opacity: .11; } }
   /* 오른쪽·위·아래 가장자리를 옅게. 색면과 간선이 헤더 선·대표 글 선에 닿거나 화면 끝에서 뚝 잘리지 않게 한다. 왼쪽은 종이색 그라데이션이 맡는다. */

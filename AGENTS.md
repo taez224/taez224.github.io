@@ -45,7 +45,8 @@ npm run fonts:vendor         # 글꼴 버전을 올릴 때만. public/fonts와 s
 - 조립이 읽는 입력을 새로 더하면 `src/loaders/vault.ts`의 `watchPathsFor`에도 더한다. 빠뜨리면 dev에서 그 파일을 고쳐도 다시 조립되지 않는다.
 - 홈과 지도는 페이지에 인라인한 JSON(`data-hero-data`, `data-map-data`)으로 그래프를 그리므로 fetch하지 않는다. fetch는 검색이 `search.json`을 열 때만 한다. `data/site.json`은 페이지가 쓰지 않지만 공개 데이터 엔드포인트이자 check-dist의 기준 자료라 남긴다.
 - 그래프는 프레임워크 없는 SVG 엔진 `src/graph/engine.ts`가 그린다. `src/graph`의 나머지 모듈은 DOM을 쓰지 않는 순수 함수이고 모듈마다 단위 테스트가 있다.
-- 홈은 빌드 때 그린 SVG 스냅샷(`src/graph/snapshot.ts`)을 먼저 보여 주고, 엔진이 올라오면 교체한다. 두 쪽이 같은 제목 배치 규칙(`label.ts`의 `placeLabels`)과 맞춤을 써야 교체가 눈에 띄지 않으므로, 배치 규칙을 바꾸면 두 쪽이 함께 바뀌는지 확인한다.
+- 홈은 빌드 때 그린 SVG 스냅샷(`src/graph/snapshot.ts`)을 먼저 보여 주고, 넓은 화면에서는 엔진이 올라오면 스냅샷을 가린다. 두 쪽이 같은 제목 배치 규칙(`label.ts`의 `placeLabels`)과 맞춤을 써야 교체가 눈에 띄지 않으므로, 배치 규칙을 바꾸면 두 쪽이 함께 바뀌는지 확인한다.
+- 휴대폰 폭(720px 이하)에서는 엔진을 숨기고 스냅샷을 보인다. 창을 줄이거나 기기를 돌려도 스냅샷이 돌아와야 하므로, 스냅샷은 DOM에서 지우지 않고 CSS로만 가린다. 이 폭 경계는 `src/scripts/hero-graph.ts`의 `LIVE_HERO_QUERY`와 `src/pages/index.astro`의 미디어 쿼리 두 곳에 있고, `tests/hero-graph.test.ts`가 둘이 같은지 검사한다.
 - 지도는 무대 크기가 화면마다 달라 스냅샷을 둘 수 없다. 대신 `src/integrations/module-preload.ts`가 지도 스크립트를 `<head>`로 옮기고 `blocking="render"`를 달아, 그래프가 올라간 뒤에 첫 화면을 그린다.
 
 ### 공개 범위 규칙 (바꿀 때 주의)
