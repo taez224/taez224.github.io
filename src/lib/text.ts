@@ -5,7 +5,7 @@ import { MARKDOWN_IMAGE_SIZE, TASK_MARKER, stripObsidianComments, structureParse
 const stripBlockIds = (value: unknown) => String(value ?? '').replace(/(^|\s)\^[A-Za-z0-9-]+(?=\s|$)/g, '$1');
 
 // 검색·요약용 텍스트를 한 번의 파싱으로 만든다. bodyText는 본문 전체이고 excerptText는 코드 블록과
-// 본문 흐름의 제목 줄(`#`로 시작하는 ATX 제목)을 뺀 것이다. 요약은 후자를 잘라 만든다.
+// 본문 흐름의 제목 줄(`#`로 시작하는 ATX 제목), 각주를 뺀 것이다. 요약은 후자를 잘라 만든다.
 export interface TextAnalysis { bodyText: string; excerptText: string }
 
 export function analyzeText(body: string): TextAnalysis {
@@ -33,7 +33,10 @@ export function analyzeText(body: string): TextAnalysis {
   const full: string[] = [];
   const excerpt: string[] = [];
   let skippingHeading = false;
+  // 각주 목록은 문서 끝에 모인다. 검색에는 넣되 요약은 본문 흐름만으로 만든다.
+  let inFootnotes = false;
   for (const [index, token] of tokens.entries()) {
+    if (token.type === 'footnote_block_open') inFootnotes = true;
     let text = content(token);
     // 할 일 목록 항목의 `[ ]`·`[x]` 표시는 글이 아니므로 뺀다. 이스케이프 여부는 원문(token.content)으로 가린다.
     if (token.type === 'inline' && tokens[index - 1]?.type === 'paragraph_open' && tokens[index - 2]?.type === 'list_item_open'
@@ -42,7 +45,7 @@ export function analyzeText(body: string): TextAnalysis {
     // 요약은 본문 흐름의 ATX 제목과 코드 블록을 뺀다. 제목 줄을 원문에서 지우던 규칙과 같은 대상이다.
     if (token.type === 'heading_open' && token.level === 0 && token.markup.startsWith('#')) skippingHeading = true;
     const isCode = token.type === 'fence' || token.type === 'code_block';
-    if (text && !skippingHeading && !isCode) excerpt.push(text);
+    if (text && !skippingHeading && !isCode && !inFootnotes) excerpt.push(text);
     if (token.type === 'heading_close' && token.level === 0) skippingHeading = false;
   }
   const join = (parts: string[]) => parts.join(' ').replace(/\s+/g, ' ').trim();

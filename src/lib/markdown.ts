@@ -10,6 +10,7 @@ interface LinkContext extends Resolvers { sourcePath: string }
 interface RenderContext extends LinkContext { markdown: InstanceType<typeof MarkdownIt> }
 
 import MarkdownIt, { type Token } from 'markdown-it';
+import footnote from 'markdown-it-footnote';
 import sanitizeHtml from 'sanitize-html';
 import { codeLanguageLabel, EXCLUDED_LANGUAGES, highlightCode } from './highlight.ts';
 import { escapeHtml } from './format.ts';
@@ -66,7 +67,7 @@ const ALLOWED_TAGS = [
 ];
 
 const ALLOWED_ATTRIBUTES = {
-  a: ['class', 'data-note-path', 'href', 'rel', 'target', 'title'],
+  a: ['aria-label', 'class', 'data-note-path', 'href', 'id', 'rel', 'target', 'title'],
   aside: ['class', 'data-article-card'],
   code: ['class'],
   details: ['class', 'open'],
@@ -80,13 +81,14 @@ const ALLOWED_ATTRIBUTES = {
   img: ['alt', 'class', 'height', 'loading', 'src', 'title', 'width'],
   input: ['checked', 'class', 'disabled', 'type'],
   label: ['class'],
-  li: ['class'],
+  li: ['class', 'id'],
   mark: ['class'],
   p: ['class'],
   pre: ['class'],
   section: ['class'],
   span: ['class', 'id', 'role', 'aria-label', 'aria-hidden', 'tabindex'],
   summary: ['class'],
+  sup: ['class'],
   table: ['class'],
   td: ['class', 'colspan', 'rowspan'],
   th: ['class', 'colspan', 'rowspan']
@@ -230,7 +232,8 @@ function inlineCodeEnd(source: string, start: number): number {
 
 // 사이트 규칙 없이 문법 구조만 보는 파서다. 주석 제거의 코드 범위, 목차의 제목 위치, 검색 텍스트 추출이 같이 쓴다.
 // 렌더러 인스턴스와 달리 노트 해석기가 필요 없어 어디서든 env 없이 부를 수 있다.
-export const structureParser = new MarkdownIt({ html: true });
+// 각주 규칙을 함께 써야 검색 텍스트와 요약에 `[^1]`과 정의 줄이 글자로 섞이지 않는다.
+export const structureParser = new MarkdownIt({ html: true }).use(footnote);
 // 헤딩 id. 같은 제목이 되풀이되면 -2, -3을 붙인다. 렌더러가 id를 매기면서 목차도 같이 모으므로 앵커와 목차가 어긋나지 않는다.
 export function headingId(headingIds: Map<string, number>, text: unknown): string {
   const baseId = slugifyHeading(headingTextForId(text));
@@ -693,6 +696,31 @@ function createMarkdownIt() {
     return EXCLUDED_LANGUAGES.has(lang.toLowerCase()) ? html : wrapCode(html, codeLanguageLabel(lang));
   };
   markdown.renderer.rules.code_block = (tokens, index, options, env, self) => wrapCode(defaultCodeBlock(tokens, index, options, env, self), '');
+
+  // Obsidian 각주([^1], [^이름], ^[인라인]). 번호는 Obsidian처럼 처음 부른 순서로 매긴다. 본문에는 윗첨자 번호를,
+  // 글 끝에는 "각주" 목록을 둔다. 번호를 누르면 footnotes.ts가 그 자리에 판을 띄우고, 스크립트가 없거나
+  // 브라우저가 판을 붙이지 못하면 링크대로 목록으로 간다. 정의를 문서 끝으로 옮기는 플러그인의 core 규칙이
+  // 형광·블록 id 규칙(obsidian_inline)보다 먼저 돌아야 인라인 각주의 내용도 같은 규칙을 거치므로 마지막에 등록한다.
+  markdown.use(footnote);
+  type FootnoteMeta = { id: number; subId: number };
+  const footnoteRefId = ({ id, subId }: FootnoteMeta) => subId > 0 ? `fnref-${id + 1}-${subId + 1}` : `fnref-${id + 1}`;
+  markdown.renderer.rules.footnote_ref = (tokens, index) => {
+    const meta = tokens[index].meta as FootnoteMeta;
+    const n = meta.id + 1;
+    return `<sup class="footnote-ref"><a href="#fn-${n}" id="${footnoteRefId(meta)}" aria-label="각주 ${n}">${n}</a></sup>`;
+  };
+  // 목록 제목은 본문 제목(heading 토큰)이 아니라 여기서 쓰는 글자라 목차에 들어가지 않는다. 구분선은 CSS가 그린다.
+  markdown.renderer.rules.footnote_block_open = () => '<section class="footnotes"><h2 class="footnotes-title">각주</h2>\n<ol>\n';
+  markdown.renderer.rules.footnote_block_close = () => '</ol>\n</section>\n';
+  markdown.renderer.rules.footnote_open = (tokens, index) => `<li id="fn-${(tokens[index].meta as FootnoteMeta).id + 1}">`;
+  markdown.renderer.rules.footnote_close = () => '</li>\n';
+  // ↩는 번호를 단 자리로 돌아가는 링크다. 같은 각주를 여러 번 불렀으면 부른 자리마다 하나씩 둔다.
+  // U+FE0E는 iOS가 화살표를 그림 문자로 바꾸지 않게 한다.
+  markdown.renderer.rules.footnote_anchor = (tokens, index) => {
+    const meta = tokens[index].meta as FootnoteMeta;
+    const where = meta.subId > 0 ? `${meta.subId + 1}번째 곳으로` : '곳으로';
+    return ` <a href="#${footnoteRefId(meta)}" class="footnote-backref" aria-label="${meta.id + 1}번 각주를 단 ${where}">↩\uFE0E</a>`;
+  };
   return markdown;
 }
 
