@@ -35,10 +35,11 @@ const hasNeighbors = outgoing.length + incoming.length > 0;
   </section>)}
 </aside>
 <style>
-  /* 사이드바의 리듬: 블록 사이에 선 하나, 여백은 20px 한 값. 블록이 자기 선을 따로 갖지 않는다(연재 아래 선과 그래프 위 선이 겹치고 그래프 아래가 유독 넓던 문제). */
+  /* 사이드바의 리듬: 블록마다 위에 선 하나, 여백은 20px 한 값. 블록이 자기 아래 선을 따로 갖지 않는다(연재 아래 선과 그래프 위 선이 겹치고 그래프 아래가 유독 넓던 문제).
+     목차는 왼쪽 레일이 경계라 위 선을 두지 않는다. 목차가 없는 글에서도 첫 블록이 위 선으로 시작해야 제목 옆에 떠 보이지 않는다. */
   .note-side { display: flex; flex-direction: column; }
-  /* 로컬 그래프는 다른 컴포넌트의 루트라 스코프 속성이 없다. 형제 규칙은 :global로 두어야 그래프와 그 다음 블록에도 선이 붙는다. */
-  .note-side > :global(* + *) { border-top: 1px solid var(--line); }
+  /* 로컬 그래프는 다른 컴포넌트의 루트라 스코프 속성이 없다. :global로 두어야 그래프에도 선이 붙는다. */
+  .note-side > :global(:not(.rail-scroll)) { border-top: 1px solid var(--line); }
   .rail-scroll { padding-bottom: 24px; }
   .note-side .list-block { padding: 20px 0; border-bottom: 0; }
   .map-link { padding: 20px 0; font-size: var(--t-meta); }
@@ -59,6 +60,8 @@ const hasNeighbors = outgoing.length + incoming.length > 0;
   @media (hover: hover) { .series-hub:hover { color: var(--accent); } }
   .series-list { margin: 0; padding: 0; list-style: none; }
   .series-list a[aria-current="page"] { color: var(--accent); font-weight: 600; }
+  /* 로컬 그래프의 노드에 마우스를 올리거나 포커스하면 같은 노트의 줄을 링크 호버와 같은 밑줄로 강조한다(local-graph.ts). */
+  .side-list a.is-linked { text-decoration: underline; text-underline-offset: 4px; }
   @media (pointer: coarse) {
     .rail a { padding-block: calc((44px - 1.5em) / 2); }
     .series-hub { padding-block: 10px; margin-block: -6px -4px; }
