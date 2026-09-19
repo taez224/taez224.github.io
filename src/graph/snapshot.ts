@@ -10,7 +10,7 @@ const n = (value: number) => +value.toFixed(2);
 
 // 홈의 정적 지도. 페이지에 인라인되므로 서체·색은 페이지 토큰(--display, --sans, --paper, --accent)을 쓴다.
 // preset 'mobile': 높이 280px 상자용. viewBox 배율이 작아 글자를 크게 두고 허브 제목은 아래에만 놓는다(데스크톱 미만에서 그대로 보이는 그림).
-// preset 'desktop': 높이 pixelHeight 상자용. hero.js가 올리는 살아 있는 그래프와 같은 크기·자리로 그려, 교체가 눈에 띄지 않게 한다.
+// preset 'desktop': 높이 pixelHeight 상자용. hero-graph.ts가 올리는 살아 있는 그래프와 같은 크기·자리로 그려, 교체가 눈에 띄지 않게 한다.
 // 휴대폰 폭 영역 이름 층이 그림 위로 넘어갈 수 있는 높이(장면 단위). 홈 CSS의 모바일 그림 상자 높이가 이 여백을 포함한다.
 export const COMPACT_TOP_MARGIN = 56;
 
