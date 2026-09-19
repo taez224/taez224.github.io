@@ -50,7 +50,7 @@ test('mermaid blocks stay bare so the diagram script can replace them', () => {
 });
 
 // 복사 스크립트를 Node와 같은 타입 제거 방식으로 읽는다. share.test.ts와 같은 방식이다.
-const source = stripTypeScriptTypes(await fs.readFile(new URL('../src/scripts/code-copy.ts', import.meta.url), 'utf8')).replace(/^export \{\};\s*/, '');
+const source = stripTypeScriptTypes(await fs.readFile(new URL('../src/scripts/code-copy.ts', import.meta.url), 'utf8')).replace(/^export \{\};\s*/, '').replace(/^export function/gm, 'function');
 
 // 스크립트가 실제로 쓰는 DOM 기능만 갖춘 가짜 요소.
 class FakeElement {
@@ -86,7 +86,7 @@ function codeBlock(code: string, label = '') {
 function setup(blocks: FakeElement[], clipboard?: { writeText: (text: string) => Promise<void> }) {
   const timers = new Map<number, { fn: () => void; delay: number }>();
   let next = 0;
-  vm.runInNewContext(source, {
+  const context = vm.createContext({
     navigator: { clipboard },
     document: { querySelectorAll: () => blocks, createElement: (tag: string) => new FakeElement(tag) },
     window: {
@@ -94,9 +94,10 @@ function setup(blocks: FakeElement[], clipboard?: { writeText: (text: string) =>
       clearTimeout(id: number) { timers.delete(id); }
     }
   });
+  vm.runInContext(source, context);
   const button = (block: FakeElement) => block.querySelector('code-copy')!;
   const status = (block: FakeElement) => block.querySelector('code-copy-status')!;
-  return { timers, button, status, click: (block: FakeElement) => button(block).listeners.get('click')!() };
+  return { timers, button, status, initialize: () => vm.runInContext('setupCodeCopy()', context), click: (block: FakeElement) => button(block).listeners.get('click')!() };
 }
 
 test('every code block gets a copy button, and a head row is made where none was built', () => {
@@ -177,4 +178,26 @@ test('the copy button name includes the language so several buttons can be told 
   assert.equal(ui.button(named).attributes.get('aria-label'), 'Java 코드 복사');
   assert.equal(ui.button(named).title, 'Java 코드 복사');
   assert.equal(ui.button(bare).attributes.get('aria-label'), '코드 복사', '이름 없는 블록은 언어 없이 부른다');
+});
+
+test('cloned copy controls are initialized without duplicating buttons or status', async () => {
+  const block = codeBlock('const value = 1;');
+  const blocks = [block];
+  let copied = '';
+  const ui = setup(blocks, { writeText: async (text) => { copied = text; } });
+  const clone = (el: FakeElement): FakeElement => {
+    const copy = new FakeElement(el.tagName);
+    copy.className = el.className; copy.textContent = el.textContent;
+    copy.children = el.children.map(clone);
+    return copy;
+  };
+  const cloned = clone(block);
+  blocks.push(cloned);
+  ui.initialize();
+  ui.initialize();
+  assert.equal(cloned.children[0].children.length, 2);
+  await ui.click(cloned);
+  assert.equal(copied, 'const value = 1;');
+  assert.equal(ui.button(cloned).dataset.state, 'done');
+  assert.equal(ui.button(block).dataset.state, undefined);
 });

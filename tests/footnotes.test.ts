@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import { stripTypeScriptTypes } from 'node:module';
 
 // 각주 판 스크립트를 Node와 같은 타입 제거 방식으로 읽는다. share.test.ts, code-block.test.ts와 같은 방식이다.
-const source = stripTypeScriptTypes(await fs.readFile(new URL('../src/scripts/footnotes.ts', import.meta.url), 'utf8')).replace(/^export \{\};\s*/, '');
+const source = stripTypeScriptTypes(await fs.readFile(new URL('../src/scripts/footnotes.ts', import.meta.url), 'utf8')).replace(/^import .*;\s*/m, '');
 
 // 스크립트가 실제로 쓰는 DOM 기능만 갖춘 가짜 요소.
 class FakeElement {
@@ -62,8 +62,10 @@ function page({ anchorPositioning = true } = {}) {
   const refs = [ref(1), ref(2)];
   const items = new Map([['fn-1', item(1, '첫 각주다.')], ['fn-2', item(2, '둘째 각주다.')]]);
   const body = new FakeElement('body');
+  const initialized: FakeElement[] = [];
   const documentListeners = new Map<string, (event: unknown) => void>();
   vm.runInNewContext(source, {
+    setupCodeCopy: (root: FakeElement) => initialized.push(root),
     CSS: { supports: (query: string) => anchorPositioning && /anchor-name/.test(query) },
     HTMLElement: { prototype: { showPopover() {} } },
     document: {
@@ -82,13 +84,15 @@ function page({ anchorPositioning = true } = {}) {
     target.listeners.get('click')?.({ detail: keyboard ? 0 : 1, preventDefault: () => { prevented = true; } });
     return prevented;
   };
-  return { refs, panel, press, key: (key: string) => documentListeners.get('keydown')?.({ key }) };
+  return { refs, panel, press, initialized, key: (key: string) => documentListeners.get('keydown')?.({ key }) };
 }
 
 test('pressing a footnote number opens its text in a panel without the back links', () => {
-  const { refs, panel, press } = page();
+  const { refs, panel, press, initialized } = page();
   assert.equal(press(refs[0]), true, '글 끝으로 이동하지 않는다');
   assert.equal(panel()!.open, true);
+  assert.equal(initialized.length, 1);
+  assert.equal(initialized[0], panel()!.children[1], '복제한 각주 내용의 코드 복사 버튼을 초기화한다');
   assert.match(panel()!.textContent, /^1첫 각주다\.$/, '번호와 각주 문장만 담고 ↩는 뺀다');
   assert.equal(refs[0].getAttribute('aria-expanded'), 'true');
   assert.ok(refs[0].classList.contains('is-open'), '판이 붙을 번호에 표시를 단다');
@@ -135,10 +139,10 @@ test('browsers that cannot pin the panel to the number keep the plain links', ()
 test('footnote styles keep the sizes DESIGN.md documents', async () => {
   const css = await fs.readFile(new URL('../src/styles/body.css', import.meta.url), 'utf8');
   const rule = (selector: string) => css.match(new RegExp(`\\n${selector.replace(/[.()[\]:,*+]/g, '\\$&')} \\{([^}]*)\\}`))?.[1] ?? '';
-  // 번호와 ↩는 가로 44px, 세로 본문 한 줄로 누르는 영역을 넓힌다(DESIGN.md 44px 규칙).
-  const hit = rule('.body :is(.footnote-ref a, .footnote-backref)::before');
-  assert.match(hit, /width: 44px/);
-  assert.match(hit, /height: 30px/);
+  // 번호의 누르는 영역은 위아래로만 넓힌다. 가로로 넓히면 붙어 있는 다른 번호를 덮는다.
+  assert.match(rule('.body .footnote-ref a::before'), /inset: -\d+px 0 -\d+px;/);
+  assert.doesNotMatch(rule('.body .footnote-ref a'), /min-width/, '번호는 앞 글자에 붙는다');
+  assert.doesNotMatch(css, /footnote-backref[^{}]*::before/);
   // 목록과 판의 글자는 본문 바로 아래 읽는 글자 단계다.
   assert.match(rule('.body .footnotes'), /font-size: var\(--t-summary\)/);
   assert.match(rule('.body.footnote-panel'), /font-size: var\(--t-summary\)/);

@@ -9,36 +9,36 @@ const footnoteList = (html: string) => html.match(/<section class="footnotes">[\
 
 test('a footnote reference becomes a superscript number linked to the list at the end', () => {
   const html = render('note.md', '본문이다.[^1]\n\n[^1]: 각주 내용이다.');
-  assert.match(html, /<p>본문이다\.<sup class="footnote-ref"><a href="#fn-1" id="fnref-1" aria-label="각주 1">1<\/a><\/sup><\/p>/);
+  assert.match(html, /<p>본문이다\.<sup class="footnote-ref"><a href="#fn:1" id="fnref:1" aria-label="각주 1">1<\/a><\/sup><\/p>/);
   const list = footnoteList(html);
   assert.match(list, /^<section class="footnotes"><h2 class="footnotes-title">각주<\/h2>\s*<ol>/);
-  assert.match(list, /<li id="fn-1"><p>각주 내용이다\. <a href="#fnref-1" class="footnote-backref" aria-label="1번 각주를 단 곳으로">↩︎<\/a><\/p>\s*<\/li>/);
+  assert.match(list, /<li id="fn:1"><p>각주 내용이다\. <a href="#fnref:1" class="footnote-backref" aria-label="1번 각주를 단 곳으로">↩︎<\/a><\/p>\s*<\/li>/);
   assert.doesNotMatch(html, /\[\^1\]/, '정의 줄이 글자로 남지 않는다');
   assert.doesNotMatch(html, /<hr/, '목록 앞 구분선은 CSS가 그린다');
 });
 
 test('named footnotes are numbered in the order they are first referenced, like Obsidian', () => {
   const html = render('note.md', '가[^b] 나[^a]\n\n[^a]: 에이\n[^b]: 비');
-  assert.match(html, /가<sup class="footnote-ref"><a href="#fn-1" id="fnref-1" aria-label="각주 1">1<\/a><\/sup>/);
-  assert.match(html, /나<sup class="footnote-ref"><a href="#fn-2" id="fnref-2" aria-label="각주 2">2<\/a><\/sup>/);
+  assert.match(html, /가<sup class="footnote-ref"><a href="#fn:1" id="fnref:1" aria-label="각주 1">1<\/a><\/sup>/);
+  assert.match(html, /나<sup class="footnote-ref"><a href="#fn:2" id="fnref:2" aria-label="각주 2">2<\/a><\/sup>/);
   assert.ok(footnoteList(html).indexOf('비') < footnoteList(html).indexOf('에이'), '먼저 부른 각주가 목록 앞에 온다');
 });
 
 test('an inline footnote joins the same numbered list', () => {
   const html = render('note.md', '본문^[바로 쓴 각주] 다음[^1]\n\n[^1]: 정의한 각주');
-  assert.match(html, /본문<sup class="footnote-ref"><a href="#fn-1"/);
-  assert.match(html, /다음<sup class="footnote-ref"><a href="#fn-2"/);
-  assert.match(footnoteList(html), /<li id="fn-1"><p>바로 쓴 각주 <a/);
-  assert.match(footnoteList(html), /<li id="fn-2"><p>정의한 각주 <a/);
+  assert.match(html, /본문<sup class="footnote-ref"><a href="#fn:1"/);
+  assert.match(html, /다음<sup class="footnote-ref"><a href="#fn:2"/);
+  assert.match(footnoteList(html), /<li id="fn:1"><p>바로 쓴 각주 <a/);
+  assert.match(footnoteList(html), /<li id="fn:2"><p>정의한 각주 <a/);
 });
 
 test('a footnote referenced twice gets one back link per reference', () => {
   const html = render('note.md', '가[^1] 나[^1]\n\n[^1]: 내용');
-  assert.match(html, /가<sup class="footnote-ref"><a href="#fn-1" id="fnref-1" aria-label="각주 1">1<\/a>/);
-  assert.match(html, /나<sup class="footnote-ref"><a href="#fn-1" id="fnref-1-2" aria-label="각주 1">1<\/a>/);
+  assert.match(html, /가<sup class="footnote-ref"><a href="#fn:1" id="fnref:1" aria-label="각주 1">1<\/a>/);
+  assert.match(html, /나<sup class="footnote-ref"><a href="#fn:1" id="fnref:1-2" aria-label="각주 1">1<\/a>/);
   const list = footnoteList(html);
-  assert.match(list, /<a href="#fnref-1" class="footnote-backref" aria-label="1번 각주를 단 곳으로">/);
-  assert.match(list, /<a href="#fnref-1-2" class="footnote-backref" aria-label="1번 각주를 단 2번째 곳으로">/);
+  assert.match(list, /<a href="#fnref:1" class="footnote-backref" aria-label="1번 각주를 단 곳으로">/);
+  assert.match(list, /<a href="#fnref:1-2" class="footnote-backref" aria-label="1번 각주를 단 2번째 곳으로">/);
 });
 
 test('a footnote reference without a definition stays as written', () => {
@@ -78,4 +78,13 @@ test('search text keeps footnote text while the summary excerpt leaves it out', 
   assert.match(text.bodyText, /정의한 각주 문장이다/);
   assert.match(text.bodyText, /인라인 각주/);
   assert.doesNotMatch(text.bodyText, /\[\^1\]/);
+});
+
+test('footnote anchors do not collide with heading or block IDs', () => {
+  const html = render('note.md', '## fn-1\n\n## fnref-1\n\n본문[^a] 다시[^a]\n\n블록 ^fn-2\n\n[^a]: 내용');
+  const ids = [...html.matchAll(/ id="([^"]+)"/g)].map((match) => match[1]);
+  assert.equal(new Set(ids).size, ids.length);
+  assert.ok(ids.includes('fn-1'));
+  assert.ok(ids.includes('fn:1'));
+  for (const match of html.matchAll(/href="#([^"]+)"/g)) assert.ok(ids.includes(match[1]));
 });

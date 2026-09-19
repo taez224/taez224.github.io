@@ -703,16 +703,17 @@ function createMarkdownIt() {
   // 형광·블록 id 규칙(obsidian_inline)보다 먼저 돌아야 인라인 각주의 내용도 같은 규칙을 거치므로 마지막에 등록한다.
   markdown.use(footnote);
   type FootnoteMeta = { id: number; subId: number };
-  const footnoteRefId = ({ id, subId }: FootnoteMeta) => subId > 0 ? `fnref-${id + 1}-${subId + 1}` : `fnref-${id + 1}`;
+  // 제목과 블록 ID에는 들어갈 수 없는 콜론으로 각주의 ID 공간을 구분한다.
+  const footnoteRefId = ({ id, subId }: FootnoteMeta) => subId > 0 ? `fnref:${id + 1}-${subId + 1}` : `fnref:${id + 1}`;
   markdown.renderer.rules.footnote_ref = (tokens, index) => {
     const meta = tokens[index].meta as FootnoteMeta;
     const n = meta.id + 1;
-    return `<sup class="footnote-ref"><a href="#fn-${n}" id="${footnoteRefId(meta)}" aria-label="각주 ${n}">${n}</a></sup>`;
+    return `<sup class="footnote-ref"><a href="#fn:${n}" id="${footnoteRefId(meta)}" aria-label="각주 ${n}">${n}</a></sup>`;
   };
   // 목록 제목은 본문 제목(heading 토큰)이 아니라 여기서 쓰는 글자라 목차에 들어가지 않는다. 구분선은 CSS가 그린다.
   markdown.renderer.rules.footnote_block_open = () => '<section class="footnotes"><h2 class="footnotes-title">각주</h2>\n<ol>\n';
   markdown.renderer.rules.footnote_block_close = () => '</ol>\n</section>\n';
-  markdown.renderer.rules.footnote_open = (tokens, index) => `<li id="fn-${(tokens[index].meta as FootnoteMeta).id + 1}">`;
+  markdown.renderer.rules.footnote_open = (tokens, index) => `<li id="fn:${(tokens[index].meta as FootnoteMeta).id + 1}">`;
   markdown.renderer.rules.footnote_close = () => '</li>\n';
   // ↩는 번호를 단 자리로 돌아가는 링크다. 같은 각주를 여러 번 불렀으면 부른 자리마다 하나씩 둔다.
   // U+FE0E는 iOS가 화살표를 그림 문자로 바꾸지 않게 한다.

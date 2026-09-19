@@ -1,4 +1,4 @@
-export {};
+import { setupCodeCopy } from './code-copy.ts';
 // 각주 번호를 누르면 번호 아래에 그 각주를 판으로 띄운다. 판을 번호에 붙이고 화면 가장자리와 아래 공간을 피하는 일은
 // CSS anchor positioning이 맡고(body.css의 .footnote-panel), 판을 맨 위 층에 올리는 일은 popover가 맡는다.
 // 둘 중 하나라도 없는 브라우저에서는 손대지 않으므로 번호가 링크대로 글 끝 각주 목록으로 가고, ↩로 돌아온다.
@@ -35,6 +35,8 @@ if (refs.length && typeof HTMLElement.prototype.showPopover === 'function' && CS
     content.className = 'footnote-panel-body';
     content.append(...copy.childNodes);
     panel.replaceChildren(number, content);
+    // 복제한 버튼에는 이벤트가 따라오지 않으므로 각주 판의 버튼도 초기화한다.
+    setupCodeCopy(content);
     // 판은 is-open인 번호에 붙는다(anchor-name). 한 번에 하나만 열리므로 이름 하나를 옮겨 단다.
     ref.classList.add('is-open');
     ref.setAttribute('aria-expanded', 'true');
