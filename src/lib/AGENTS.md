@@ -6,7 +6,7 @@ vault를 사이트 데이터로 조립하는 코드에 적용하는 규칙이다
 
 - `garden.ts`는 공개 후보를 고르고 노트 레코드와 공개 색인을 만든 뒤 각 단계의 결과를 모은다. 노트 링크 해석과 렌더링은 공개 색인이 필요하므로 여기 둔다.
 - 단계별 모듈(`vault-files.ts`, `note-body.ts`, `text.ts`, `links.ts`, `books.ts`, `blog.ts`, `development.ts`, `public-assets.ts`)은 `garden.ts`를 import하지 않는다. 이 방향을 지켜야 순환 의존이 생기지 않는다. 받는 값은 모듈마다 다르다. `note-body.ts`·`text.ts`·`links.ts`는 본문 문자열을, `vault-files.ts`·`books.ts`·`public-assets.ts`는 vault 경로와 `config`를, `blog.ts`·`development.ts`는 레코드 목록을 받는다.
-- Obsidian 문법(콜아웃, 위키링크, 형광, 블록 id, 그림 설명, 한글 강조, 할 일 목록)은 모두 `markdown.ts`의 `createMarkdownIt` 안에 markdown-it 규칙으로 둔다. 코드 강조는 `highlight.ts`가 `highlight` 옵션으로 붙고, 라이브러리에 없는 Java만 `highlight-java.ts`에 직접 정의한다.
+- Obsidian 문법(콜아웃, 위키링크, 형광, 블록 id, 그림 설명, 한글 강조, 할 일 목록)은 모두 `markdown.ts`의 `createMarkdownIt` 안에 markdown-it 규칙으로 둔다. 각주만 `markdown-it-footnote` 플러그인을 쓰고 출력 마크업을 여기서 정한다. 플러그인은 `structureParser`에도 넣어야 검색 텍스트와 요약에 `[^1]`과 정의 줄이 글자로 섞이지 않는다. 코드 강조는 `highlight.ts`가 `highlight` 옵션으로 붙고, 라이브러리에 없는 Java만 `highlight-java.ts`에 직접 정의한다.
 - 목차는 렌더러가 제목 id를 매길 때 `headings` 출력 인자로 함께 모으므로 따로 계산하지 않는다. 예외는 제목 경로 링크(`[[노트#상위#하위]]`)다. 대상 노트의 앵커를 고르려고 `garden.ts`가 `headingOutline`으로 그 노트의 제목 구조를 한 번 더 계산한다.
 - 검색 텍스트와 요약 발췌는 `text.ts`의 `analyzeText`가 한 번의 파싱으로 함께 만든다.
 - 공개 자산은 공개 폴더와 Books 폴더 안에서 Markdown이 아니고 `exclude`에 걸리지 않은 파일, 그리고 `config.json`의 `assets`에 적은 파일이다. 본문과 썸네일이 실제로 가리킬 수 있는 것은 그중 이미지 확장자뿐이다(`public-assets.ts`). 본문이 쓴 자산만 `assetCopies`에 모여 `src/integrations/vault-assets.ts`가 `dist/assets/vault/`로 복사한다. 썸네일은 `copy: false`로 해석해 이 목록에 넣지 않고 Astro의 이미지 파이프라인이 처리한다.
