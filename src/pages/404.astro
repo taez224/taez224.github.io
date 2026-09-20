@@ -1,9 +1,28 @@
 ---
 import Shell from '../layouts/Shell.astro';
 import { withBase } from '../lib/format.ts';
+import { markPath } from '../lib/mark.ts';
+// 없는 페이지가 어떤 상태인지 그림으로 먼저 말한다. 참조로 이어지던 길이 중간에 끊기고, 건너편 자리는 비어 있다.
+// 노트를 점으로 참조를 선으로 두는 지도의 구조를 따르되, 모양은 격자에 맞춘 네모라 지도의 둥근 노드와는 다르다.
+// 표시 크기를 격자에서 계산하므로 한 칸이 언제나 정확히 CELL px이고, 칸마다 굵기가 달라지지 않는다.
+const BROKEN_LINK = [
+  '..................########',
+  '######............########',
+  '######............##....##',
+  '######.#####...##.##....##',
+  '######.#####...##.##....##',
+  '######............##....##',
+  '######............########',
+  '..................########'
+];
+const CELL = 6;
 ---
 <Shell title="찾을 수 없는 페이지" description="주소가 바뀌었거나 공개되지 않은 노트입니다." path="/404/">
   <section class="wrap not-found">
+    <svg
+      class="not-found-art" width={BROKEN_LINK[0].length * CELL} height={BROKEN_LINK.length * CELL}
+      viewBox={`0 0 ${BROKEN_LINK[0].length} ${BROKEN_LINK.length}`} shape-rendering="crispEdges" fill="currentColor" aria-hidden="true"
+    ><path d={markPath(BROKEN_LINK)} /></svg>
     <h1 class="display">찾을 수 없는 페이지</h1>
     <p>주소가 바뀌었거나 공개되지 않은 노트입니다. 생각 지도에서 다시 찾거나 검색해 보세요.</p>
     {/* 안내 문구가 권하는 두 길(지도, 검색)을 바로 누를 수 있게 둔다. 검색 버튼은 헤더 검색과 같은 대화상자를 연다. */}
@@ -16,6 +35,8 @@ import { withBase } from '../lib/format.ts';
 </Shell>
 <style>
   .not-found { padding: var(--s-page-top-reading) 0 var(--s-page-bottom); }
+  /* 그림은 제목보다 먼저 보이지만 먼저 읽히면 안 된다. 보조색으로 두어 제목과 두 갈래 길이 앞에 온다. */
+  .not-found-art { display: block; margin: 0 0 24px; color: var(--muted); }
   .not-found h1 { margin: 0 0 16px; font-size: var(--t-page); line-height: 1.4; }
   .not-found p { max-width: 32em; margin: 0; color: var(--muted); }
   .not-found-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; margin-top: 28px; }
