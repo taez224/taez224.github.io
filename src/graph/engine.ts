@@ -265,6 +265,8 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
       const dim = topicOut || (state.selected && id !== state.selected && !neighbors.has(id));
       g.classList.toggle('is-faint', Boolean(previewId && !previewNear.has(id)));
       g.classList.toggle('is-dim', Boolean(dim));
+      // 흐려진 노드는 탭 순서에서 뺀다. 남겨 두면 필터를 걸어도 보이지 않는 노드를 수십 번 지나가야 한다.
+      g.setAttribute('tabindex', focusable && !dim ? '0' : '-1');
       g.classList.toggle('is-selected', id === state.selected);
       g.classList.toggle('is-neighbor', neighbors.has(id));
       g.setAttribute('aria-pressed', String(id === state.selected));

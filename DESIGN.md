@@ -638,7 +638,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 - 검색 결과 줄은 제목만으로는 27.75px이라, 링크가 줄 전체를 덮어 44px을 넘긴다.
 - 각주 번호는 좌우 3px만 두어 앞 글자에 붙이고, 누르는 영역은 위아래로만 넓혀 본문 한 줄 높이(약 30px)로 둔다. 가로로 넓히면 붙어 있는 다른 번호나 본문 링크를 덮어 다른 각주가 열린다. 글 끝 목록의 ↩는 줄 끝에 있어 최소 너비 24px과 좌우 4px 안쪽 여백을 실제 배치 공간에 둔다. 둘 다 문장 속 대상이라 WCAG 2.5.8의 예외에 해당한다.
 
-키보드 포커스는 전역 2px 윤곽선과 4px 간격으로 표시하고, 연재 탐색 카드와 그래프는 각자의 테두리와 링을 쓴다. 움직임의 길이는 다음과 같다.
+키보드 포커스는 전역 2px 윤곽선과 4px 간격으로 표시하고, 연재 탐색 카드와 그래프는 각자의 테두리와 링을 쓴다. 지도에서 필터나 선택으로 흐려진 노드는 탭 순서에서 뺀다. 남겨 두면 보이지 않는 대상을 수십 번 지나가야 한다. 흐리게 만드는 일은 노드 묶음이 아니라 보이는 점에만 걸어 포커스 링이 함께 흐려지지 않게 한다. 불투명도는 부분 트리를 한 층으로 합성하므로 자식에서 되돌릴 수 없다. 움직임의 길이는 다음과 같다.
 
 - 본문과 조작 요소의 상태 변화: 150ms.
 - 누르는 순간 채운 버튼·아이콘 버튼·지도 확대 버튼이 97%로 줄어드는 반응: 150ms ease-out.
@@ -663,7 +663,8 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 글자 크기와 굵기 | `site.css`의 `--t-*` | `tests/typography.test.ts` |
 | 페이지 틀 간격과 전환 폭 | `site.css`의 `--s-*` | `tests/spacing.test.ts` |
 | 모서리, 전환 시간, 한쪽 막대, 그림자 | 각 CSS와 Astro 스타일 | `tests/shapes.test.ts` |
-| 호버 미디어 쿼리 | 각 CSS와 Astro 스타일 | `tests/interaction-states.test.ts` |
+| 호버 미디어 쿼리, 흐린 노드의 포커스 링 | 각 CSS와 Astro 스타일 | `tests/interaction-states.test.ts` |
+| 지도에서 흐려진 노드의 탭 순서 | `src/graph/engine.ts` | `tests/browser/map.spec.ts` |
 | 버튼·링크 공통 모양(`.btn`, `.text-button`) | `src/styles/site.css` | 없음 |
 | 본문 모양(콜아웃, 표, 도표 상자) | `src/styles/body.css` | 없음 |
 | 코드 블록 머리 줄과 복사 버튼 | `src/lib/markdown.ts`, `src/scripts/code-copy.ts`, `src/styles/body.css` | `tests/code-block.test.ts` |

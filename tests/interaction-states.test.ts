@@ -38,6 +38,22 @@ test('hover styles apply only on devices that can hover', () => {
   assert.deepEqual(found, []);
 });
 
+// 한 블록의 선언만 뽑는다. 중첩된 @규칙 안에서도 가장 안쪽 블록만 짝지어진다.
+const blocks = (css: string) => [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+  .map(([, selector, body]) => ({ parts: selector.split(',').map((part) => part.trim()), body }));
+const blockFor = (css: string, selector: string) => blocks(css).find((rule) => rule.parts.includes(selector))?.body ?? '';
+
+test('dimming a graph node leaves its focus ring readable', () => {
+  // 흐리게 만드는 일을 노드 묶음에 걸면 자식인 포커스 링까지 곱해져 종이색 위에서 1.5:1이 된다.
+  // opacity는 부분 트리를 한 층으로 합성하므로 자식에서 되돌릴 수 없다. 보이는 점에만 걸어야 링이 살아남는다.
+  const css = read('src/styles/graph.css');
+  for (const state of ['is-dim', 'is-faint']) {
+    assert.doesNotMatch(blockFor(css, `.graph .node.${state}`), /opacity/, `.graph .node.${state}에 묶음 불투명도가 없다`);
+    const marks = blocks(css).filter((rule) => rule.parts.some((part) => part.includes(`.node.${state} `)) && /opacity/.test(rule.body));
+    assert.ok(marks.length > 0, `.node.${state}의 점은 흐려진다`);
+  }
+});
+
 test('search results are clickable across the whole row', () => {
   // 한 줄짜리 결과의 제목 링크는 27.75px이라 44px 목표에 못 미친다. 링크의 ::after로 줄 전체를 덮어 누르는 영역만 넓힌다.
   const css = read('src/styles/site.css');
