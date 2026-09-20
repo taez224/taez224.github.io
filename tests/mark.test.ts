@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
+import { Resvg } from '@resvg/resvg-js';
 import { MARK } from '../src/lib/palette.ts';
 import { FAVICON_GRID, SEAL_GRID, markPath } from '../src/lib/mark.ts';
 
@@ -31,10 +32,21 @@ test('the favicon prints the favicon grid in the mark red on a paper square', ()
   assert.match(favicon, new RegExp(`viewBox="0 0 ${FAVICON_GRID.length} ${FAVICON_GRID.length}"`), '격자와 좌표계가 같다');
   assert.ok(favicon.includes(`d="${markPath(FAVICON_GRID)}"`), '도안이 격자와 어긋나지 않는다');
   assert.ok(favicon.includes(MARK.red), '표식 색을 쓴다');
-  assert.ok(favicon.includes(MARK.paper), '종이색 바탕 위에 찍는다');
+  assert.ok(favicon.includes(MARK.paper), '비워 새긴 글자를 종이색으로 칠한다');
   assert.match(favicon, /shape-rendering="crispEdges"/, '칸 경계를 흐리지 않는다');
   // 표식 색 말고 다른 색이 섞이면 팔레트 밖의 색이 하나 더 생긴다.
   assert.deepEqual([...new Set([...favicon.matchAll(/#[0-9a-f]{6}/g)].map((match) => match[0]))].sort(), [MARK.red, MARK.paper].sort());
+});
+
+test('the favicon leaves its four corners empty so the tab strip shows through', async () => {
+  // 네 귀를 비워 도장 모서리를 낸다. 바탕을 통째로 깔면 그 빈칸이 종이색이 되어 어두운 탭 줄에서 밝은 점으로 보인다.
+  const size = FAVICON_GRID.length;
+  const png = new Resvg(favicon, { fitTo: { mode: 'width', value: size } }).render().asPng();
+  const { data, info } = await sharp(png).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const alpha = (x: number, y: number) => data[(y * info.width + x) * info.channels + 3];
+  for (const [x, y] of [[0, 0], [size - 1, 0], [0, size - 1], [size - 1, size - 1]]) assert.equal(alpha(x, y), 0, `${x},${y} 귀퉁이`);
+  assert.equal(alpha(1, 0), 255, '귀퉁이 옆은 칠한다');
+  assert.equal(alpha(size >> 1, size >> 1), 255, '가운데는 칠한다');
 });
 
 test('the touch icon prints the same grid on paper at a whole-number scale', async () => {

@@ -13,7 +13,11 @@ const TOUCH_SIZE = 180, SCALE = 10, MARGIN = 10;
 const rgb = (hex: string) => [1, 3, 5].map((start) => Number.parseInt(hex.slice(start, start + 2), 16));
 
 const size = FAVICON_GRID.length;
-const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges"><rect width="${size}" height="${size}" fill="${MARK.paper}"/><path fill="${MARK.red}" d="${markPath(FAVICON_GRID)}"/></svg>\n`;
+// 도안은 네 귀를 비워 도장 모서리를 낸다. 종이색 바탕을 통째로 깔면 그 빈칸까지 칠해져 어두운 탭 줄에서 밝은 점 네 개가 남는다.
+// 그래서 바탕 없이 표식과 글자를 따로 칠한다. 글자는 격자의 빈칸에서 네 귀를 뺀 나머지다.
+const isCorner = (x: number, y: number) => (x === 0 || x === size - 1) && (y === 0 || y === size - 1);
+const letters = FAVICON_GRID.map((row, y) => [...row].map((cell, x) => (cell === '.' && !isCorner(x, y) ? '#' : '.')).join(''));
+const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges"><path fill="${MARK.red}" d="${markPath(FAVICON_GRID)}"/><path fill="${MARK.paper}" d="${markPath(letters)}"/></svg>\n`;
 writeFileSync(new URL('../public/favicon.svg', import.meta.url), svg);
 
 const [paper, red] = [rgb(MARK.paper), rgb(MARK.red)];
