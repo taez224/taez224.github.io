@@ -54,6 +54,15 @@ test('dimming a graph node leaves its focus ring readable', () => {
   }
 });
 
+test('the search input takes its colors and focus ring from the site rules', () => {
+  // 사이트에 하나뿐인 글자 입력란이다. UA 기본값에 맡기면 어두운 화면에서 자리 표시 글자가 3.51:1이 되고 포커스 표시가 사라진다.
+  const css = read('src/styles/site.css');
+  const input = blockFor(css, '.search-head input');
+  assert.match(input, /(^|;)\s*color:\s*var\(--/, '글자색이 토큰이다');
+  assert.doesNotMatch(input, /outline:\s*(0|none)/, '전역 포커스 표시를 끄지 않는다');
+  assert.match(blockFor(css, '.search-head input::placeholder'), /color:\s*var\(--/, '자리 표시 글자도 토큰이다');
+});
+
 test('search results are clickable across the whole row', () => {
   // 한 줄짜리 결과의 제목 링크는 27.75px이라 44px 목표에 못 미친다. 링크의 ::after로 줄 전체를 덮어 누르는 영역만 넓힌다.
   const css = read('src/styles/site.css');
