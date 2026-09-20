@@ -297,7 +297,8 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
       status: entry.status,
       type: entry.type,
       isEntry: Boolean(entry.isEntry),
-      tags: entry.tags,
+      // 노드는 공개 데이터 파일로 그대로 나가므로 화면에서 감추는 태그(`프로젝트/*`, slipbox 등)를 걸러 싣는다.
+      tags: publicTags(entry.tags),
       topic: entry.topic,
       topicTag: entry.topic,
       date: entry.date,
