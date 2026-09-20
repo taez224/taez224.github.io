@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { stripTypeScriptTypes } from 'node:module';
 import { codeLanguageLabel } from '../src/lib/highlight.ts';
+import { pixelIcon } from '../src/lib/pixel-icons.ts';
 import { render } from './helpers/markdown.ts';
 
 test('codeLanguageLabel turns fence languages into the names readers know', () => {
@@ -50,7 +51,8 @@ test('mermaid blocks stay bare so the diagram script can replace them', () => {
 });
 
 // 복사 스크립트를 Node와 같은 타입 제거 방식으로 읽는다. share.test.ts와 같은 방식이다.
-const source = stripTypeScriptTypes(await fs.readFile(new URL('../src/scripts/code-copy.ts', import.meta.url), 'utf8')).replace(/^export \{\};\s*/, '').replace(/^export function/gm, 'function');
+// 스크립트는 모듈이 아니라 가짜 DOM 위에서 한 덩어리로 돌린다. 아이콘 도안은 import 대신 실제 함수를 컨텍스트에 넣어 준다.
+const source = stripTypeScriptTypes(await fs.readFile(new URL('../src/scripts/code-copy.ts', import.meta.url), 'utf8')).replace(/^export \{\};\s*/, '').replace(/^import .*;\s*/m, '').replace(/^export function/gm, 'function');
 
 // 스크립트가 실제로 쓰는 DOM 기능만 갖춘 가짜 요소.
 class FakeElement {
@@ -87,6 +89,7 @@ function setup(blocks: FakeElement[], clipboard?: { writeText: (text: string) =>
   const timers = new Map<number, { fn: () => void; delay: number }>();
   let next = 0;
   const context = vm.createContext({
+    pixelIcon,
     navigator: { clipboard },
     document: { querySelectorAll: () => blocks, createElement: (tag: string) => new FakeElement(tag) },
     window: {

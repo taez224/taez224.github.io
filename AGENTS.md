@@ -29,6 +29,7 @@ npm run preview              # dist를 서빙한다. 먼저 build가 있어야 �
 npm run design:lint          # DESIGN.md 형식과 선언한 색 조합의 대비 검사
 npm run snapshot:markdown -- write|verify   # 공개 본문 전체의 조립 결과를 저장했다가 바이트 단위로 비교
 npm run fonts:vendor         # 글꼴 버전을 올릴 때만. public/fonts와 src/styles/fonts.css를 다시 만든다
+npm run mark:build           # 표식 도안을 고쳤을 때만. public/favicon.svg와 apple-touch-icon.png를 다시 만든다
 ```
 
 - `npm run build`는 `scripts/check-dist.ts`까지 통과해야 성공이다. 이 검사는 메타데이터, OG PNG, 공개 범위, 페이지와 데이터의 연결, 그래프 초기화에 필요한 산출물, 사이트 안 링크를 확인한다. 문구·글꼴·아이콘·배치·콘텐츠 개수는 고정하지 않는다.
@@ -80,6 +81,7 @@ npm run fonts:vendor         # 글꼴 버전을 올릴 때만. public/fonts와 s
 
 - 디자인은 기존 컴포넌트에서 출발해 고치고, 달라지는 값과 동작을 구현과 `DESIGN.md`에 함께 반영한다. 어느 값이 어느 파일에서 오고 어떤 테스트가 문서와 구현의 일치를 검사하는지는 `DESIGN.md`의 「문서와 구현의 대응」 표에 있다. 문서와 구현이 어긋나면 의도한 변경인지 확인하고, 문서가 낡았으면 현재 구현에 맞춘다.
 - 사이트 색의 단일 출처는 `src/lib/palette.ts`의 `PALETTE`(밝은 화면)와 `DARK_PALETTE`(어두운 화면)다. CSS는 `var(--이름)`으로 읽고, CSS 변수를 읽지 못하는 OG 카드·Mermaid 설정·`theme-color` 메타만 이 상수를 가져다 쓴다. 다른 파일에 색 값을 복제하면 `tests/palette.test.ts`가 실패한다.
+- 픽셀 도안의 단일 출처는 `src/lib/mark.ts`(개인 표식)와 `src/lib/pixel-icons.ts`(조작 아이콘)의 격자다. 한 칸이 1px이므로 격자 칸 수와 표시 크기가 어긋나면 도안이 흐려지고, `tests/mark.test.ts`와 `tests/pixel-icons.test.ts`가 실패한다. 파비콘과 터치 아이콘은 `npm run mark:build`가 만드는 생성물이라 직접 고치지 않는다.
 - `npm run design:lint`(`@google/design.md@0.4.0`)는 문서 형식과 선언한 색 조합의 대비만 검사한다. 오류가 0이어도 실제 화면은 따로 확인한다.
 
 ## 한국어 문체
