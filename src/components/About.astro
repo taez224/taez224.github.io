@@ -8,7 +8,7 @@ const { about, contacts, mapUrl, aboutUrl } = Astro.props;
   <p>{about}</p>
   <div class="about-actions">
     {/* 둘러보는 두 길을 같은 무게로 한 줄에 둔다. 채운 버튼을 두면 화면에서 가장 강한 신호가 읽기가 아닌 곳을 가리키므로,
-       홈의 주요 행동 자리는 아래의 대표 글에 맡긴다. 지도로 가는 길을 여기 두는 것은 휴대폰 폭에서 지도가 누를 수 없는 그림이기 때문이다. */}
+       홈의 주요 행동 자리는 아래의 대표 글에 맡긴다. 지도로 가는 길을 여기 두는 것은 넓은 화면에서 그림이 살아 있는 지도로 바뀌어 지도 자체로 가는 길이 사라지기 때문이다. */}
     <a class="hero-link" href={mapUrl}>생각 지도 보기</a>
     {aboutUrl && <a class="hero-link" href={aboutUrl}>이 위키에 대해</a>}
   </div>

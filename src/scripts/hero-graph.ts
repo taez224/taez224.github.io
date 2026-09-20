@@ -16,7 +16,7 @@ export function drawHeroGraph(box: HTMLElement): HeroGraph {
     interactiveGraph = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     interactiveGraph.setAttribute('role', 'group');
     interactiveGraph.setAttribute('aria-label', `생각 지도. 노드 ${nodes.length}개와 연결 ${edges.length}개. 노드를 누르면 그 노트를 엽니다.`);
-    // 호버로 제목을 보고 누르는 것이라 지도를 거치지 않고 노트를 바로 연다. 지도 입구는 버튼과 헤더 탭이 맡는다.
+    // 호버로 제목을 보고 누르는 것이라 지도를 거치지 않고 노트를 바로 연다. 지도 입구는 소개문 아래 링크와 헤더 메뉴가 맡는다.
     const open = (id: string) => { const node = nodes.find((n) => n.id === id); if (node) window.location.href = node.url; };
     box.append(interactiveGraph);
     // 홈에서는 노드를 탭 순서에서 뺀다(36개를 지나야 대표 글에 닿는다). 키보드 탐색은 지도 페이지가 맡는다.

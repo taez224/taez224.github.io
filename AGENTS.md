@@ -41,7 +41,7 @@ npm run mark:build           # 표식 도안을 고쳤을 때만. public/favicon
 
 ## 아키텍처
 
-`src/lib/garden.ts`의 `assembleGarden()`이 vault를 한 번 조립하고, 나머지는 모두 그 결과를 읽는다. 페이지(`src/pages/**`)는 `getCollection('notes'|'books')`로 읽고, 엔드포인트(`data/*.json.ts`, `og/*.png.ts`, `rss.xml.ts`, `llms.txt.ts`)는 `getGarden()`으로 읽는다. `get-garden.ts`가 결과를 메모이즈하고, dev에서는 2초가 지나면 다시 조립한다.
+`src/lib/garden.ts`의 `assembleGarden()`이 vault를 한 번 조립하고, 나머지는 모두 그 결과를 읽는다. 노트 상세 페이지 셋(`posts/[slug]`, `notes/[slug]`, `dev/[slug]`)은 `getCollection('notes')`로 읽고, 나머지 페이지와 엔드포인트(`data/*.json.ts`, `og/*.png.ts`, `rss.xml.ts`, `feeds/[kind].xml.ts`, `llms.txt.ts`)는 `getGarden()`으로 읽는다. `get-garden.ts`가 결과를 메모이즈하고, dev에서는 2초가 지나면 다시 조립한다.
 
 - 조립 코드의 규칙(모듈 책임과 의존 방향, 빌드를 멈추는 조건, OG 카드 캐시)은 `src/lib/AGENTS.md`에 있다. `src/lib/`을 고치기 전에 읽는다.
 - 조립이 읽는 입력을 새로 더하면 `src/loaders/vault.ts`의 `watchPathsFor`에도 더한다. 빠뜨리면 dev에서 그 파일을 고쳐도 다시 조립되지 않는다.
@@ -110,7 +110,7 @@ Codex는 이 절만 읽고, Claude Code는 여기에 더해 위의 output-style 
 ## 테스트
 
 - `node:test`와 `node:assert/strict`를 쓰고 파일 이름은 `*.test.ts`다. 테스트 이름은 관찰 가능한 동작을 서술한다.
-- 브라우저 회귀 검사는 `npm run test:browser`로 실행한다. 처음에는 `npx playwright install chromium`으로 브라우저를 설치한다. 밝은·어두운 화면과 데스크톱·터치 모바일에서 각주, 복사, 연결 강조, 홈 지도 전환을 검사한다. `tests/browser/server.ts`가 임시 vault·빌드·캐시를 만들고 종료할 때 지우므로 실제 vault와 평소 `dist/`는 쓰지 않는다. 결과가 코드에만 달려 있어 CI는 PR에서만 돌린다. 가짜 DOM 단위 테스트로 재현할 수 없는 동작(누른 좌표의 판정, 복제한 요소의 이벤트, 창 크기 변화)만 여기에 둔다.
+- 브라우저 회귀 검사는 `npm run test:browser`로 실행한다. 처음에는 `npx playwright install chromium`으로 브라우저를 설치한다. 밝은·어두운 화면과 데스크톱·터치 모바일에서 검사하며, 지금 있는 검사는 `tests/browser/reader.spec.ts`(각주, 복사, 연결 강조, 홈 지도 전환, 로컬 그래프), `tests/browser/map.spec.ts`(흐려진 노드의 탭 순서), `tests/browser/home.spec.ts`(첫 화면과 최근 기록의 누르는 영역)다. `tests/browser/server.ts`가 임시 vault·빌드·캐시를 만들고 종료할 때 지우므로 실제 vault와 평소 `dist/`는 쓰지 않는다. 결과가 코드에만 달려 있어 CI는 PR에서만 돌린다. 실제 배치와 입력이 있어야 알 수 있는 것(누른 좌표의 판정, 요소가 겹치는지, 복제한 요소의 이벤트, 창 크기 변화, 상태에 따른 탭 순서)만 여기에 둔다.
 - **테스트는 임시 vault로 실행한다.** `tests/garden.test.ts`의 `makeVault()`처럼 `os.tmpdir()`에 최소 파일을 만들어 검증하고, 실제 `../obsidian`은 테스트에서 읽지 않는다.
 - 동작을 바꾸면 회귀 테스트를 더한다. Markdown 렌더링, 링크 해석, 공개 판정을 바꿀 때는 빠짐없이 더한다.
 - 코드를 넘기기 전에 `npm run check`, `npm run check:astro`, `npm test`, `npm run build`를 모두 실행한다. `DESIGN.md`를 고쳤으면 `npm run design:lint`도, 브라우저 스크립트나 CSS의 동작을 바꿨으면 `npm run test:browser`도 실행한다.
@@ -146,7 +146,7 @@ type(scope): 명사형 제목
 
 코드 수정은 주 에이전트가 직접 한다. 하위 에이전트에게는 조사와 검증만 나눈다. 도구별 수단은 다르지만 규칙은 같다.
 
-- 수단: Codex는 `luna_worker`, Claude Code는 Agent 도구(하위 에이전트).
+- 수단: Codex는 `luna_worker`, Claude Code는 Agent 도구다. 어떤 하위 에이전트를 고를지는 각 도구의 전용 지침이 정한다.
 - 위임하는 일: 코드 경로 추적, 기존 테스트 커버리지 확인, 문서·스펙 대조, 테스트·빌드 실행 결과 확인처럼 소스를 바꾸지 않는 조사·검증. 서로 파일 범위가 겹치지 않는 독립 작업이 2개 이상일 때만 병렬로 실행한다.
 - 위임하지 않는 일: 설계, 구현, 리팩터링, 테스트 작성, 공개 범위(`config.json`, `publication.ts`) 판단. 구현 작업을 통째로 넘기지 않는다.
 - 각 위임에는 읽을 파일 범위, 기대 결과, 검증 방법을 명시한다. 소스와 vault(`../obsidian`)는 읽기 전용이다.
