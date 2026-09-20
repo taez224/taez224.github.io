@@ -63,6 +63,19 @@ test('the search input takes its colors and focus ring from the site rules', () 
   assert.match(blockFor(css, '.search-head input::placeholder'), /color:\s*var\(--/, '자리 표시 글자도 토큰이다');
 });
 
+test('hit areas widened for touch do not overlap the line above', () => {
+  // padding-block으로 넓힌 링크는 위아래로 그만큼 커진다. 줄 간격이 넓힌 양의 두 배보다 좁으면 두 줄의 누르는 영역이 겹치고,
+  // 겹친 자리에서는 뒤 줄이 이겨서 앞 줄의 글자를 눌러도 다른 곳으로 간다.
+  const css = styleText('src/components/NotePage.astro').replace(/\/\*[\s\S]*?\*\//g, '');
+  const coarse = css.slice(css.indexOf('@media (pointer: coarse)'));
+  const pad = Number(blockFor(coarse, '.note-meta a').match(/padding-block:\s*(\d+)px/)?.[1] ?? 0);
+  // 터치에서 줄 간격을 따로 정하지 않으면 기본 규칙의 gap이 그대로 쓰인다. 두 값 중 실제로 적용되는 쪽을 본다.
+  const base = blockFor(css, '.note-meta').match(/(?:^|;)\s*gap:\s*(\d+)px/)?.[1] ?? '0';
+  const gap = Number(blockFor(coarse, '.note-meta').match(/row-gap:\s*(\d+)px/)?.[1] ?? base);
+  assert.ok(pad > 0, '메타 줄의 링크는 터치에서 누르는 영역을 넓힌다');
+  assert.ok(gap >= pad * 2, `메타 줄의 줄 간격 ${gap}px이 위아래로 넓힌 ${pad}px의 두 배 이상이다`);
+});
+
 test('search results are clickable across the whole row', () => {
   // 한 줄짜리 결과의 제목 링크는 27.75px이라 44px 목표에 못 미친다. 링크의 ::after로 줄 전체를 덮어 누르는 영역만 넓힌다.
   const css = read('src/styles/site.css');

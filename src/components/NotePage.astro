@@ -136,7 +136,12 @@ const endLink = note.kind === 'slipbox' ? null : parent.listLabel;
   @media (pointer: coarse) {
     .mobile-toc nav { gap: 0; }
     .mobile-toc nav a { padding-block: calc((44px - 1.5em) / 2); }
-    .note-meta a, .note-footer a { padding-block: 12px; margin-block: -12px; }
+    /* 메타 줄은 좁은 화면에서 두 줄로 접힌다. 줄 간격(8px)의 절반까지만 넓혀 두 줄의 누르는 영역이 맞닿기만 하게 한다.
+       12px씩 넓히면 16px 겹치고, 겹친 자리에서는 뒤 줄이 이겨 앞 줄의 글자를 눌러도 다른 곳으로 간다.
+       줄 간격을 24px로 벌려 44px을 채우는 대신 28.8px을 택했다. 그렇게 하면 같은 덩어리 안의 간격이 제목까지의 14px보다 넓어진다.
+       페이지 끝 줄은 링크가 하나뿐이라 겹칠 일이 없어 44px을 채운다. */
+    .note-meta a { padding-block: 4px; margin-block: -4px; }
+    .note-footer a { padding-block: 12px; margin-block: -12px; }
   }
 </style>
 <script src="../scripts/mermaid.ts"></script>
