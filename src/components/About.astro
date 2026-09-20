@@ -28,5 +28,7 @@ const { about, contacts, mapUrl, aboutUrl } = Astro.props;
     /* 모바일 첫 화면은 글과 지도 탐색에 집중한다. 연락처는 소개 페이지에서 볼 수 있다. */
     .about :global(.contacts) { display: none; }
   }
-  @media (pointer: coarse) { .hero-link { padding-block: 12px; margin-block: -12px; } }
+  /* 위아래로 넓힌 영역이 다음 요소에 닿지 않도록 넓힌 만큼 아래 여백을 둔다. 휴대폰 폭에서는 바로 아래가 지도 그림이라,
+     닿으면 그림의 윗변을 눌렀는데 소개 페이지가 열린다. */
+  @media (pointer: coarse) { .hero-link { padding-block: 12px; margin-block: -12px; } .about-actions { margin-bottom: 12px; } }
 </style>
