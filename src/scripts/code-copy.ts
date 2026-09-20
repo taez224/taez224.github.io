@@ -3,9 +3,10 @@
 // 동작과 모양은 헤더의 링크 복사(share.ts)와 같다. 복사하면 2초 동안 체크를, 실패하면 5초 동안 안내를 보인다.
 // 복사하는 값은 code의 글자 그대로다. 강조용 span은 textContent에 섞이지 않는다.
 // 아이콘은 호버 판을 그리는 작은 상자(code-copy-plate) 안에 둔다. 판을 44px 버튼 전체에 깔면 머리 줄 밖으로 넘친다.
-const icon = (body: string) => `<span class="code-copy-plate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg></span>`;
-const COPY_ICON = icon('<rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"></path>');
-const DONE_ICON = icon('<path d="m5 12 5 5 9-10"></path>');
+import { pixelIcon } from '../lib/pixel-icons.ts';
+const plate = (name: 'copy' | 'copyDone') => `<span class="code-copy-plate">${pixelIcon(name)}</span>`;
+const COPY_ICON = plate('copy');
+const DONE_ICON = plate('copyDone');
 const HIDDEN_STATUS = 'code-copy-status visually-hidden';
 
 const initialized = new WeakSet<HTMLElement>();
