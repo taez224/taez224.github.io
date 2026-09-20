@@ -592,8 +592,16 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 ### 바닥글과 구분선
 
-- **바닥글:** 모든 페이지 끝에 구분선 아래 한 줄을 두고, 왼쪽에 사이트 이름을, 오른쪽에 RSS와 사이트 소개 링크를 둔다. 화면 높이에 맞춰 그리는 지도 페이지에는 두지 않는다.
+- **바닥글:** 모든 페이지 끝에 구분선 아래 한 줄을 두고, 왼쪽에 인장과 사이트 이름을, 오른쪽에 RSS와 사이트 소개 링크를 둔다. 화면 높이에 맞춰 그리는 지도 페이지에는 두지 않는다.
 - **구분선:** 정보 덩어리 사이에는 1px 구분선을 쓴다. 목록의 항목 사이와 절 사이를 구분해, 마지막 항목 뒤에는 선을 두지 않는다.
+
+### 개인 표식
+
+- **인장:** 21칸 격자를 채운 네모에 이름을 비워 새긴 도장이다. 크기는 격자의 정수배만 쓴다. 정수배가 아닌 크기에서는 칸마다 굵기가 달라져 글자가 뭉개진다.
+- **두는 자리:** 바닥글에 21px으로 한 번만 둔다. 한 화면에 같은 표식을 두 번 두지 않고, 글 끝과 본문 안에도 두지 않는다. 읽는 흐름 한가운데에 덩어리가 생기기 때문이다.
+- **색:** 인장은 먹색이고 옆의 이름 문구는 바닥글의 보조색을 그대로 쓴다. 비워 새긴 획이 21px에서 2px 굵기라 보조색으로 찍으면 어두운 화면에서 획이 바탕에 묻힌다.
+- **읽어 주는 이름:** 인장이 사이트 이름의 첫 어절을 대신하므로 그 어절을 접근 가능한 이름으로 준다. 이름을 대신하지 않는 자리에 두면 화면 낭독기에서 뺀다.
+- **파비콘:** 탭과 북마크에서는 인장의 네 글자가 뭉치므로 16칸 격자에 `TZ`만 남긴 도안을 따로 쓰고, 종이색 바탕에 주홍(`#b8432f`)으로 찍는다. 주홍은 팔레트 밖의 색이며 페이지 안에서는 쓰지 않는다. 먹색 한 가지로는 탭 줄에서 다른 아이콘과 구분되지 않기 때문이다. iOS 터치 아이콘은 180px 안에 같은 도안을 10배로 찍고 사방 10px을 여백으로 둔다.
 
 ## Do's and Don'ts
 
@@ -601,7 +609,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 - **Do** 장식보다 제목·본문·참조 관계의 읽기 순서를 우선한다.
 - **Do** 색·선·링을 함께 써서 주제와 상태를 표현한다.
-- **Don't** 의미 없는 장식 요소, 글로우, 장식용 그라디언트를 더하지 않는다.
+- **Don't** 의미 없는 장식 요소, 글로우, 장식용 그라디언트를 더하지 않는다. 개인 표식만 예외로 두되 바닥글과 파비콘에만 정지한 그림으로 둔다.
 - **Don't** 주제색을 본문 문장이나 메타데이터 장식으로 넓히지 않는다.
 - **Don't** 긴 제목·표·연결 목록을 고정 폭으로 두어 화면 밖으로 밀어내지 않는다. 제목은 줄바꿈하고, 표·코드는 안에서 가로로 스크롤하며, 긴 연결 목록은 사이드바 안에서 읽게 한다.
 - **Don't** 상태 변화나 사용자 조작을 설명하지 않는 장식용 움직임을 더하지 않는다.
@@ -649,6 +657,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 본문 모양(콜아웃, 표, 도표 상자) | `src/styles/body.css` | 없음 |
 | 코드 블록 머리 줄과 복사 버튼 | `src/lib/markdown.ts`, `src/scripts/code-copy.ts`, `src/styles/body.css` | `tests/code-block.test.ts` |
 | 각주 번호·목록·판 | `src/lib/markdown.ts`, `src/scripts/footnotes.ts`, `src/styles/body.css` | `tests/markdown-footnotes.test.ts`, `tests/footnotes.test.ts` |
+| 개인 표식의 도안·파비콘·터치 아이콘 | `src/lib/mark.ts`, `src/lib/palette.ts`의 `MARK`, `scripts/make-mark.ts`가 만든 `public/favicon.svg`·`apple-touch-icon.png` | `tests/mark.test.ts` |
 | 공유 안내의 위치·폭·표시 시간 | `src/components/ShareLink.astro` | 없음 |
 | 사이드바 작은 그래프의 제목과 목록의 함께 강조 | `src/components/local-graph-layout.ts`, `src/components/LocalGraph.astro`, `src/scripts/local-graph.ts`, `src/components/NoteSidebar.astro` | `tests/local-graph.test.ts`, `tests/local-graph-links.test.ts`, `tests/browser/reader.spec.ts` |
 | 폭에 따른 리더·지도 배치 | `src/components/NotePage.astro`, `src/pages/map/index.astro` | 없음 |

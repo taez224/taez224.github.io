@@ -33,3 +33,9 @@ export const DARK_PALETTE = {
   highlight: '#574d24',
   edge: '#616c64'
 } as const satisfies Record<keyof typeof PALETTE, string>;
+
+// 탭과 북마크의 표식에만 쓰는 주홍이다. 종이색 위의 먹색 한 가지로는 탭 줄에서 다른 아이콘과 구분되지 않아 표식에만 색을 하나 둔다.
+// 페이지 안에서는 쓰지 않으므로 팔레트에 넣지 않는다. 넣으면 site.css의 :root에 쓰지 않는 변수를 선언해야 하고 design:lint가 그 토큰에 경고한다.
+// 표식은 종이색 바탕 위에 찍으므로 밝은 탭 줄과 어두운 탭 줄에서 같은 그림이고, 화면 설정에 따라 색을 바꾸지 않는다.
+// public/favicon.svg와 public/apple-touch-icon.png가 이 두 값을 쓰고 tests/mark.test.ts가 세 곳을 대조한다.
+export const MARK = { red: '#b8432f', paper: PALETTE.paper } as const;

@@ -145,7 +145,11 @@ h1, h2, h3, p { margin-top: 0; }
 main { min-height: 60vh; }
 /* 사이트 바닥글: 페이지가 마지막 항목 뒤에서 그냥 끝나지 않게 구분선 아래 한 줄을 둔다. 링크는 홀로 선 링크와 같은 밑줄이다. */
 .site-footer { border-top: 1px solid var(--line); color: var(--muted); font-size: var(--t-meta); }
-.site-footer .wrap { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; padding: 20px 0 32px; }
+.site-footer .wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 20px 0 32px; }
+/* 인장이 이름의 첫 어절을 대신한다. 글자보다 높은 도장이 끼므로 줄 기준선 대신 가운데로 맞춘다.
+   인장만 먹색이다. 비워 새긴 글자가 21px에서 2px 굵기라 보조색으로는 획이 바탕에 묻힌다. */
+.site-footer .site-name { display: flex; align-items: center; gap: 8px; }
+.site-footer .site-name .seal { color: var(--ink); }
 .site-footer nav { display: flex; flex-wrap: wrap; gap: 4px 20px; }
 .site-footer a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--link-underline); text-underline-offset: 4px; }
 @media (hover: hover) { .site-footer a:hover { text-decoration-color: var(--ink); } }

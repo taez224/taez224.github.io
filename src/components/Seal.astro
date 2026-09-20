@@ -1,0 +1,17 @@
+---
+// 개인 표식이다. 도안은 src/lib/mark.ts에 있고 색은 놓인 자리의 글자색을 따른다.
+// 크기를 px이 아니라 격자의 배수로 받는 이유는 정수배가 아닌 크기에서 칸마다 굵기가 달라져 글자가 뭉개지기 때문이다.
+// 이름을 대신하는 자리에서는 label을 준다. 주지 않으면 그림으로만 두고 화면 낭독기에서 뺀다.
+import { SEAL_GRID, markPath } from '../lib/mark.ts';
+interface Props { scale?: number; label?: string }
+const { scale = 1, label } = Astro.props;
+const grid = SEAL_GRID.length;
+---
+<svg
+  class="seal" width={grid * scale} height={grid * scale} viewBox={`0 0 ${grid} ${grid}`}
+  shape-rendering="crispEdges" fill="currentColor"
+  role={label ? 'img' : undefined} aria-label={label} aria-hidden={label ? undefined : 'true'}
+><path d={markPath(SEAL_GRID)} /></svg>
+<style>
+  .seal { display: block; flex: none; }
+</style>
