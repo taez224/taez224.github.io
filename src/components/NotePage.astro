@@ -55,7 +55,7 @@ const endLink = note.kind === 'slipbox' ? null : parent.listLabel;
       </details>}
       {series?.isHub && series.first && <nav class="series-start" aria-label="연재 시작">
         <div><span class="meta">공개된 글 {series.total}편</span><p>{series.first.title}</p></div>
-        <a class="btn" href={series.first.url}>1편부터 읽기 <span aria-hidden="true">→</span></a>
+        <a class="btn" href={series.first.url}>1편부터 읽기</a>
       </nav>}
       <div class="body">{note.articleCards?.length
         ? <ArticleBody html={byPath.get(note.path)!.bodyHtml} cards={note.articleCards} notes={garden.notes} />

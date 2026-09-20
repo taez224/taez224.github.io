@@ -16,7 +16,6 @@ import { layoutGraph, ATLAS_LAYOUT } from '../graph/layout.ts';
 import { renderSnapshotSvg } from '../graph/snapshot.ts';
 const garden = await getGarden();
 const byPath = new Map(garden.notes.map((n) => [n.path, n]));
-const entry = byPath.get(garden.config.entry ?? '');
 const featured = byPath.get(garden.home.featured[0]);
 const featuredEntry = featured ? await getEntry('notes', `${kindPrefix(featured.kind)}/${featured.slug}`) : null;
 const thumbnail = featuredEntry?.data.thumbnail;
@@ -41,11 +40,10 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
 ---
 <Shell title="TaeZ" description={garden.home.about} path="/">
   <section class="hero" aria-label="소개와 생각 지도">
-    <div class="hero-about"><About about={garden.home.about} contacts={garden.home.contacts} entryUrl={entry?.url ?? withBase('/map/')} aboutUrl={withBase('/about/')} /></div>
+    <div class="hero-about"><About about={garden.home.about} contacts={garden.home.contacts} mapUrl={withBase('/map/')} aboutUrl={withBase('/about/')} /></div>
     {/* 살아 있는 지도가 첫 화면 전에 올라오도록 데이터와 좌표를 페이지에 둔다. hero-graph.ts는 fetch 없이 이걸 읽는다. */}
     <div class="hero-graph" data-graph><script type="application/json" data-hero-data is:inline set:html={inlineJson(inlineGraph(garden.nodes, garden.edges, { positions }))}></script><a class="hero-snapshot" href={withBase('/map/')} aria-label="생각 지도 보기"><Fragment set:html={snapshotDesktop} /><Fragment set:html={snapshot} /></a></div>
     <div class="hero-fade" aria-hidden="true"></div>
-    <a class="hero-map-link" href={withBase('/map/')}>생각 지도 보기 <span aria-hidden="true">→</span></a>
   </section>
   {/* 대표 글 썸네일은 데스크톱 첫 화면 안에 있다. lazy로 두면 LCP 후보가 늦게 시작한다. */}
   {featured && <section class="wrap home-section featured" aria-labelledby="featured-heading">
@@ -90,8 +88,6 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
 </Shell>
 <style>
   .hero { position: relative; height: clamp(400px, calc(100svh - 280px), 500px); overflow: hidden; }
-  .hero-map-link { position: absolute; z-index: 1; right: max(var(--s-page-gutter), calc(50% - var(--s-content-max) / 2)); bottom: 16px; padding: 10px 0; font-size: var(--t-side); text-decoration: underline; text-decoration-color: var(--link-underline); text-underline-offset: 4px; }
-  @media (hover: hover) { .hero-map-link:hover { text-decoration-color: var(--ink); } }
   /* 그래프 상자는 뷰포트 안에 다 들어온다. 1600px 미만에서는 오른쪽 끝까지, 그 이상은 940px. 맞춤 배율이 상자에 맞춘다. */
   .hero-graph { position: absolute; top: 0; left: calc(50% - 160px); width: min(940px, 50% + 160px); height: 100%; }
   .hero-graph :global(svg), .hero-snapshot { display: block; width: 100%; height: 100%; }
@@ -167,7 +163,6 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
     /* 휴대폰 폭에서는 허브 제목이 읽을 수 없을 만큼 작아서 제목 층을 숨기고 영역 이름만 크게 놓은 층으로 바꾼다. */
     .hero-snapshot :global(.snap-regions), .hero-snapshot :global(.snap-titles) { display: none; }
     .hero-snapshot :global(.snap-regions-compact) { display: inline; }
-    .hero-map-link { position: static; display: block; width: fit-content; margin: -12px 20px 8px auto; }
     /* 그림(1000×640)을 폭에 맞추고, 영역 이름 층이 그림 위로 넘어가는 여백(COMPACT_TOP_MARGIN)만큼 위아래를 더 준다. 그림은 상자 가운데에 놓인다. */
     .hero-graph { height: clamp(230px, 78vw, 350px); margin: 0 0 8px; }
     .hero-about { margin: 20px auto 0; }
