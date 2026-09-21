@@ -74,3 +74,15 @@ test('highlightParts splits the line into matched and unmatched pieces', () => {
   assert.deepEqual(highlightParts('없다', ['zip']), [{ text: '없다', hit: false }]);
   assert.deepEqual(highlightParts('abab', ['ab']), [{ text: 'abab', hit: true }], '이어 붙은 자리는 한 조각으로 묶는다');
 });
+
+// 두 줄에 들어가는 글자 수는 화면 폭과 글자 크기에 따라 다르다. 320px에서 글자를 키우면 한 줄이 열 자 남짓이라
+// 찾은 말 앞에 긴 문맥을 두면 두 줄 아래로 밀려 숨는다. 앞 문맥은 앞 단어 하나까지만 두고 단어 가운데에서 시작하지 않는다.
+test('matchRecord keeps the lead before the word short and starts it at a word', () => {
+  const summary = '생각을 정리하는 방법은 여러 가지가 있지만 결국 중요한 것은 스스로 판단하는 힘을 기르는 일이다.';
+  const hit = matchRecord({ ...record, summary, text: '' }, normalizeQuery('판단'));
+  assert.ok(hit);
+  const lead = hit.snippet.indexOf('판단');
+  assert.ok(lead >= 0 && lead <= 9, `찾은 말 앞 문맥이 짧다: ${lead}자`);
+  assert.ok(hit.snippet.startsWith('…'), '앞을 잘랐다고 알린다');
+  assert.ok(summary.includes(` ${hit.snippet.slice(1, 6)}`), '공백 바로 뒤, 단어 첫머리에서 시작한다');
+});

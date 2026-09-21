@@ -1,20 +1,24 @@
-import { test, expect } from './fixtures.ts';
+import { test, expect, gotoWithDefaultFontSize } from './fixtures.ts';
 
-// 결과 줄은 왜 이 결과가 걸렸는지 말해야 한다. 요약을 앞에서부터 한 줄만 보이면 375px에서 서른 자 남짓이라,
-// 요약 가운데에서 걸린 말은 글자가 있어도 상자 밖에 남아 읽을 수 없었다.
-test('a search result shows the word it matched on a phone screen', async ({ page }) => {
-  await page.setViewportSize({ width: 375, height: 667 });
-  await page.goto('/');
-  await page.locator('[data-search-open]').first().click();
-  await page.locator('#search-input').fill('적재적소');
-  const line = page.locator('.search-item').first().locator('small');
-  await expect(line.locator('mark')).toHaveCount(1);
-  const fits = await line.evaluate((small) => {
-    const box = small.getBoundingClientRect();
-    const hit = small.querySelector('mark')!.getBoundingClientRect();
-    return hit.top >= box.top - 1 && hit.bottom <= box.bottom + 1;
-  });
-  expect(fits, '찾은 말이 잘린 상자 안에 있다').toBe(true);
+// 결과 줄은 왜 이 결과가 걸렸는지 말해야 한다. 두 줄에 들어가는 글자 수는 화면 폭과 글자 크기에 따라 달라,
+// 찾은 말 앞에 문맥을 길게 두면 좁은 화면에서 두 줄 아래로 밀려 글자가 있어도 읽을 수 없다.
+test('a search result shows the word it matched on narrow screens and enlarged text', async ({ page }) => {
+  for (const width of [375, 320]) {
+    for (const font of [16, 32]) {
+      await page.setViewportSize({ width, height: 700 });
+      await gotoWithDefaultFontSize(page, '/', font);
+      await page.locator('[data-search-open]').first().click();
+      await page.locator('#search-input').fill('적재적소');
+      const line = page.locator('.search-item').first().locator('small');
+      await expect(line.locator('mark')).toHaveCount(1);
+      const fits = await line.evaluate((small) => {
+        const box = small.getBoundingClientRect();
+        const hit = small.querySelector('mark')!.getBoundingClientRect();
+        return hit.top >= box.top - 1 && hit.bottom <= box.bottom + 1;
+      });
+      expect(fits, `${width}px, 기본 글자 ${font}px에서 찾은 말이 잘린 상자 안에 있다`).toBe(true);
+    }
+  }
 });
 
 // dialog는 배경까지 자기 영역이라 배경을 눌러도 저절로 닫히지 않는다. 도표 크게 보기와 같은 약속을 준다.

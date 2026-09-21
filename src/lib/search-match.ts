@@ -62,12 +62,20 @@ export function matchRecord(record: SearchRecord, terms: readonly string[]): { s
   return { score, snippet: cut ? excerpt(cut.source, cut.at, cut.length) : '' };
 }
 
-// 찾은 말을 가운데 두고 앞뒤로 잘라 낸다. 앞 40자는 375px에서 두 줄 가운데 첫 줄에 담기는 분량이라,
-// 찾은 말이 둘째 줄 앞머리에 온다. 앞에서부터 자르면 그 말이 화면 밖에 남는다.
-const SNIPPET_PAD = 40;
+// 결과 줄은 두 줄까지 보이는데, 한 줄에 드는 글자 수는 화면 폭과 글자 크기에 따라 다르다.
+// 320px에서 글자를 두 배로 키우면 한 줄이 일곱 자 남짓이고, 한국어는 단어째 줄을 바꾸므로 앞 문맥을 글자 수로
+// 정하면 찾은 말이 셋째 줄로 밀려 숨는다. 그래서 앞 문맥은 찾은 말 앞 단어 하나까지만 두고, 그 단어가
+// SNIPPET_LEAD보다 길면 찾은 말이 든 단어부터 보인다. 줄은 뒤 문맥으로 채운다.
+const SNIPPET_LEAD = 8;
+const SNIPPET_TRAIL = 80;
 function excerpt(source: string, at: number, length: number): string {
-  const start = Math.max(0, at - SNIPPET_PAD);
-  const end = Math.min(source.length, at + length + SNIPPET_PAD);
+  const wordStart = (index: number) => { let i = index; while (i > 0 && !/\s/.test(source[i - 1]!)) i -= 1; return i; };
+  const own = wordStart(at);
+  const previous = own > 0 ? wordStart(own - 1) : own;
+  let start = at - previous <= SNIPPET_LEAD ? previous : own;
+  // 찾은 말이 긴 단어 한가운데에 있으면 단어 첫머리를 포기하고 그 자리에서 시작한다.
+  if (at - start > SNIPPET_LEAD) start = at;
+  const end = Math.min(source.length, at + length + SNIPPET_TRAIL);
   return `${start > 0 ? '…' : ''}${source.slice(start, end).trim()}${end < source.length ? '…' : ''}`;
 }
 
