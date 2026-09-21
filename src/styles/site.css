@@ -85,7 +85,8 @@ h1, h2, h3, p { margin-top: 0; }
 /* 목록 페이지 머리: 제목과 거르개·안내가 기준선에 나란히. */
 .page-head { display: flex; align-items: baseline; gap: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
 .page-head h1 { margin: 0; font-size: var(--t-page); line-height: 1.4; }
-/* 장부(ledger): 왼쪽 여백에 큰 라벨(연도·분류)과 개수, 오른쪽에 행. 책장의 등급 표시와 같은 장치. */
+/* 장부(ledger): 왼쪽 여백에 큰 라벨(연도·분류)과 개수, 오른쪽에 행. 책장의 등급 표시와 같은 장치.
+   격자 간격(24px·36px)은 페이지 틀 토큰과 값이 같아도 장부 모양에 맞춘 값이라 토큰으로 묶지 않는다. */
 .ledger-group { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 24px; margin-top: 28px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
 .ledger-group.is-year { grid-template-columns: 130px minmax(0, 1fr); }
 .ledger-group.is-word { grid-template-columns: 104px minmax(0, 1fr); }
@@ -126,7 +127,8 @@ h1, h2, h3, p { margin-top: 0; }
 @media (hover: hover) { .wordmark:hover { text-decoration: none; } }
 .site-nav { --nav-gap: 28px; align-self: stretch; margin-left: auto; display: flex; align-items: center; gap: var(--nav-gap); font-size: var(--t-ui); }
 /* 메뉴 링크는 글자는 그대로 두고 누르는 영역만 헤더 높이와 메뉴 간격의 절반까지 넓힌다.
-   같은 양의 음수 여백으로 되돌려 배치가 바뀌지 않고, 옆 링크의 영역과도 겹치지 않는다. "글"처럼 짧은 메뉴도 손가락으로 맞힐 수 있다. */
+   같은 양의 음수 여백으로 되돌려 배치가 바뀌지 않고, 옆 링크의 영역과도 겹치지 않는다. "글"처럼 짧은 메뉴도 손가락으로 맞힐 수 있다.
+   짧은 메뉴는 옆 메뉴와의 간격 때문에 폭을 44px로 넓힐 수 없어, 간격을 포함한 WCAG 2.5.8 최소 기준(24px)을 따른다. */
 .site-nav a { position: relative; display: flex; align-items: center; align-self: stretch; margin: 0 calc(var(--nav-gap) / -2); padding: 0 calc(var(--nav-gap) / 2); color: var(--muted); }
 /* 마지막 메뉴는 바로 옆 공유·검색 버튼의 영역과 겹치지 않도록 오른쪽으로는 넓히지 않는다. */
 .site-nav a:last-child { margin-right: 0; padding-right: 0; }
@@ -180,7 +182,8 @@ main { min-height: 60vh; }
    검색·공유 버튼과 간격 약 124px은 글자를 따라 커지지 않아 글자가 클수록 em 대비 비율이 줄어든다.
    그래서 100%의 비율을 경계로 두면 어느 글자 크기에서든 넘치기 전에 두 줄로 나뉜다. 19.5em은 100%에서 312px이라
    320px 휴대폰은 한 줄을 지킨다. 사이트가 html의 글자 크기를 정하지 않아 rem과 이 em이 모두 브라우저 기본값을 따른다.
-   두 줄이 된 머리글은 109px을 넘는다. 화면 위에 붙여 두면 제목으로 건너뛴 자리(scroll-padding 100px)가 그 아래에 가리므로 고정을 푼다. */
+   두 줄이 된 머리글은 109px을 넘는다. 화면 위에 붙여 두면 제목으로 건너뛴 자리(scroll-padding 100px)가 그 아래에 가리고,
+   큰 글자로 읽는 좁은 화면을 늘 차지하므로 고정을 푼다. */
 @media (max-width: 19.5em) {
   .site-header { position: static; }
   .site-header .wrap { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: "mark share search" "nav nav nav"; grid-template-rows: var(--s-header-height) auto; height: auto; }

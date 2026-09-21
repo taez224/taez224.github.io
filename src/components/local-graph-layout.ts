@@ -11,7 +11,8 @@ import { estimateTextWidth } from '../graph/label.ts';
 const FONT = 11, LINE = 13, LABEL_WIDTH = 100, NODE_RADIUS = 6;
 const fits = (text: string) => estimateTextWidth(text, FONT) <= LABEL_WIDTH;
 
-// 제목을 단어 경계에서 최대 두 줄로 나눈다. 글자 수로 자르면 "Human Agenc…"처럼 단어 가운데가 끊긴다.
+// 제목을 단어 경계에서 최대 두 줄로 나눈다. 글자 수로 자르면 "Human Agenc…"처럼 단어 가운데가 끊기고,
+// 한 줄로는 어떤 생각이 연결됐는지 알기 어렵다.
 // 남는 글이 있으면 마지막 줄을 줄임표로 맺고, 한 단어가 한 줄보다 길면 그 단어만 글자 단위로 나눈다.
 export function localGraphLabelLines(title: string, maxLines = 2): string[] {
   const words = title.trim().split(/\s+/).filter(Boolean);

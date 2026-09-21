@@ -127,7 +127,9 @@
 .body .callout { --callout-color: var(--muted); --callout-rule: var(--ink); margin: 26px 0; padding: 12px 18px 16px; border-top: 2px solid var(--callout-rule); border-bottom: 1px solid var(--line); background: var(--paper-strong); }
 .body .callout + .callout { margin-top: 16px; }
 .body .callout > :is(.callout-title, summary) { display: block; color: var(--callout-color); font-size: var(--t-meta); font-weight: 600; letter-spacing: .04em; line-height: 1.5; }
-/* 아이콘은 마스크로 찍어 머리표 색을 그대로 따른다. 렌더러가 SVG를 출력하지 않아도 되고, 종류마다 --callout-icon만 바꾸면 된다.
+/* 머리표 아이콘은 조작 아이콘처럼 픽셀 격자로 그리지 않고 선으로 그린다. 테두리가 기호를 감싸는 도형은 14칸 격자에서
+   테두리와 안쪽 간격을 빼면 8칸이 남아 점과 획을 넣을 여유가 없다.
+   아이콘은 마스크로 찍어 머리표 색을 그대로 따른다. 렌더러가 SVG를 출력하지 않아도 되고, 종류마다 --callout-icon만 바꾸면 된다.
    중첩된 콜아웃은 .callout 규칙이 변수를 다시 정하므로 바깥 종류의 아이콘·색을 물려받지 않는다. */
 .body .callout > :is(.callout-title, summary)::before { display: inline-block; width: 14px; height: 14px; margin-right: 6px; vertical-align: -2px; background: currentColor; -webkit-mask: var(--callout-icon) center / 14px no-repeat; mask: var(--callout-icon) center / 14px no-repeat; content: ""; }
 /* 접히는 콜아웃: 머리표 줄 오른쪽 꺾쇠가 펼칠 수 있음을 알린다. 꺾쇠는 누른 순간부터 움직여야 반응이 빠르게 느껴지므로
@@ -196,7 +198,8 @@
 .body .footnote-ref a.is-open { anchor-name: --footnote; text-decoration: underline; text-decoration-color: var(--ink); }
 @media (hover: hover) { .body .footnote-ref a:hover { text-decoration: underline; text-decoration-color: var(--ink); } }
 /* 번호는 앞 글자에 붙여 두고, 누르는 영역은 위아래로만 넓혀 본문 한 줄(약 30px)을 덮는다. 윗첨자는 줄 가운데보다 높아 아래를 더 넓힌다.
-   가로로 넓히면 붙어 있는 다른 각주([^a][^b])와 본문 링크를 덮어 다른 각주가 열린다. */
+   가로로 넓히면 붙어 있는 다른 각주([^a][^b])와 본문 링크를 덮어 다른 각주가 열린다.
+   번호와 글 끝의 ↩는 문장 속 대상이라 WCAG 2.5.8의 예외에 해당해 24px을 채우지 않아도 된다. */
 .body .footnote-ref a::before { position: absolute; inset: -6px 0 -9px; content: ""; }
 .body .footnotes { margin-top: 48px; font-size: var(--t-summary); line-height: 1.7; }
 /* "각주"는 본문 제목이 아니라 사이드바의 참조·역참조와 같은 작은 영역 제목이다. 아래 선이 본문과 목록을 나눈다. */

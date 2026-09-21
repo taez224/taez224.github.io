@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CDN = 'https://cdn.jsdelivr.net/npm';
 // fontsource의 400.css·700.css는 번호 조각을 가리킨다. korean-400.css는 한글 전체가 든 한 파일을 가리키므로 쓰지 않는다.
+// 명조에 새 굵기를 쓰려면 css 목록에 그 굵기를 더한다. 한 굵기만 받아 두면 브라우저가 다른 굵기 요청을 그 파일로 대신 그린다.
 const FAMILIES = [
   { dir: 'pretendard', pkg: 'pretendard@1.3.9', css: ['dist/web/variable/pretendardvariable-dynamic-subset.css'], license: 'dist/LICENSE.txt' },
   { dir: 'gowun-batang', pkg: '@fontsource/gowun-batang@5.3.0', css: ['400.css', '700.css'], license: 'LICENSE' }
