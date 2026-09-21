@@ -80,7 +80,7 @@ test('home switches both ways across the live graph breakpoint without duplicate
   if (isMobile) await expect(snapshot).toBeVisible(); else await expect(engine).toBeVisible();
   for (const width of [720, 721, 1000, 1440, 390, 1440]) {
     await page.setViewportSize({ width, height: 900 });
-    if (width <= 720) {
+    if (isMobile || width <= 720) {
       await expect(snapshot).toBeVisible();
       await expect(engine).not.toBeVisible();
     } else {
@@ -93,6 +93,20 @@ test('home switches both ways across the live graph breakpoint without duplicate
       })).toBe(0);
     }
   }
+});
+
+test('the back link below an external article does not overlap its related notes', async ({ page }) => {
+  await page.goto('/posts/browser-external/');
+  const back = page.getByRole('link', { name: '글 목록', exact: true });
+  await back.scrollIntoViewIfNeeded();
+  const measured = await back.evaluate((link) => {
+    const box = link.getBoundingClientRect();
+    const previous = document.querySelector('.external-related li:last-child')!.getBoundingClientRect();
+    const upperEdge = document.elementFromPoint(box.left + 10, box.top + 2)?.closest('a');
+    return { gap: box.top - previous.bottom, hit: upperEdge?.getAttribute('href'), href: link.getAttribute('href') };
+  });
+  expect(measured.gap).toBeGreaterThanOrEqual(0);
+  expect(measured.hit).toBe(measured.href);
 });
 
 test('local graph shows up to six neighbors with two-line titles that never overlap', async ({ page }) => {

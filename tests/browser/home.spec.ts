@@ -62,14 +62,19 @@ test.describe('손가락으로 쓰는 태블릿', () => {
 // 글자를 키우면 내용이 상자를 넘어가는데 넘친 부분은 잘려서 스크롤로도 되찾을 수 없었다.
 test('the hero keeps its intro whole when the reader enlarges the text', async ({ page, isMobile }) => {
   test.skip(isMobile, '이 배치는 1000px을 넘는 폭에서만 쓴다');
+  await page.setViewportSize({ width: 1440, height: 700 });
   await page.goto('/');
-  await page.addStyleTag({ content: 'html { font-size: 32px }' });
-  const overflow = await page.evaluate(() => {
-    const hero = document.querySelector('.hero')!.getBoundingClientRect();
-    const about = document.querySelector('.hero-about')!.getBoundingClientRect();
-    return Number((about.bottom - hero.bottom).toFixed(1));
-  });
-  expect(overflow).toBeLessThanOrEqual(0);
+  await expect(page.locator('.hero-about .contacts a')).toHaveCount(1);
+  for (const size of [24, 32]) {
+    await page.addStyleTag({ content: `html { font-size: ${size}px }` });
+    await page.evaluate(() => document.fonts.ready);
+    const overflow = await page.evaluate(() => {
+      const hero = document.querySelector('.hero')!.getBoundingClientRect();
+      const boxes = [...document.querySelectorAll('.hero-about, .hero-about a')].map((el) => el.getBoundingClientRect());
+      return Math.max(...boxes.map((box) => box.bottom - hero.bottom));
+    });
+    expect(overflow).toBeLessThanOrEqual(0);
+  }
 });
 
 // 첫 화면의 소개 블록은 1180px 본문 열이 화면 가운데 있다고 보고 자리를 잡는다.

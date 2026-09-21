@@ -57,8 +57,8 @@ const related = [...new Set([...note.outgoing, ...note.incoming])].filter((path)
   li a::after { position: absolute; inset: 0; content: ""; }
   li .meta { flex-shrink: 0; }
   .back-to-posts { display: inline-flex; gap: 8px; margin-top: 34px; font-size: var(--t-side); }
-  /* 되돌아가기 링크는 리더의 페이지 끝 줄과 같은 자리다. 위는 34px 여백, 아래는 페이지 아래 여백이라 넓혀도 닿을 것이 없다. */
-  @media (pointer: coarse) { .back-to-posts { padding-block: 12px; margin-block: -12px; } }
+  /* 위쪽 여백 34px 중 12px만 누르는 영역으로 옮긴다. 위 여백까지 -12px로 덮으면 앞 목록과 겹친다. */
+  @media (pointer: coarse) { .back-to-posts { padding-block: 12px; margin-top: 22px; margin-bottom: -12px; } }
   @media (max-width: 720px) {
     .external-thumbnail :global(img) { max-height: 220px; }
     .external-related { margin-top: 40px; }

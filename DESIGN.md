@@ -682,10 +682,11 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 조작 아이콘의 도안과 표시 크기 | `src/lib/pixel-icons.ts`, `site.css`의 `.search-trigger svg`, `ShareLink.astro`의 `.share-icon`, `body.css`의 `.code-copy-plate svg` | `tests/pixel-icons.test.ts` |
 | 개인 표식의 도안·파비콘·터치 아이콘 | `src/lib/mark.ts`, `src/lib/palette.ts`의 `MARK`, `scripts/make-mark.ts`가 만든 `public/favicon.svg`·`apple-touch-icon.png` | `tests/mark.test.ts` |
 | 공유 안내의 위치와 폭 | `src/components/ShareLink.astro` | 없음 |
-| 공유 안내가 5초 뒤 사라지는 동작 | `src/components/ShareLink.astro` | `tests/share.test.ts` |
+| 공유 안내가 5초 뒤 사라지는 동작 | `src/scripts/share.ts` | `tests/share.test.ts` |
 | 사이드바 작은 그래프의 제목과 목록의 함께 강조 | `src/components/local-graph-layout.ts`, `src/components/LocalGraph.astro`, `src/scripts/local-graph.ts`, `src/components/NoteSidebar.astro` | `tests/local-graph.test.ts`, `tests/local-graph-links.test.ts`, `tests/browser/reader.spec.ts` |
 | 폭에 따른 리더·지도 배치 | `src/components/NotePage.astro`, `src/pages/map/index.astro` | 없음 |
-| 홈 지도의 폭 전환(살아 있는 지도와 정적 그림) | `src/scripts/hero-graph.ts`, `src/pages/index.astro` | `tests/hero-graph.test.ts` |
+| 홈 지도의 폭·입력 방식에 따른 전환(살아 있는 지도와 정적 그림) | `src/scripts/hero-graph.ts`, `src/pages/index.astro` | `tests/hero-graph.test.ts`, `tests/browser/reader.spec.ts` |
+| 외부 발행 글의 목록 복귀 링크와 앞 목록의 클릭 영역 | `src/components/ExternalArticle.astro` | `tests/browser/reader.spec.ts` |
 | 홈 첫 화면과 최근 기록의 누르는 영역 | `src/components/About.astro`, `src/pages/index.astro` | `tests/browser/home.spec.ts` |
 
 ### 검사
@@ -694,6 +695,6 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 npm run design:lint
 ```
 
-lint는 문서 구조, 토큰 참조, 컴포넌트에 선언한 바탕·글자 색의 대비를 검사하고, 쓰이지 않는 색 토큰에 경고한다. 문서와 구현 코드의 값이 같은지는 위 표의 테스트가 맡는다. 포커스 표시·아이콘·선의 비텍스트 대비와 키보드 동작은 lint도 테스트도 보지 않으므로 화면에서 확인한다. 토큰 변경이 클 때는 같은 버전의 `designmd diff <이전 파일> DESIGN.md`를 함께 쓴다.
+lint는 문서 구조, 토큰 참조, 컴포넌트에 선언한 바탕·글자 색의 대비를 검사하고, 쓰이지 않는 색 토큰에 경고한다. 문서와 구현 코드의 값이 같은지는 위 표의 테스트가 맡는다. 브라우저 검사는 지도 탭 순서, 키보드로 각주를 오가는 동작, 복사 뒤 상태 등 정해 둔 흐름을 확인한다. 실제 화면 낭독, 포커스의 식별성과 아이콘·선의 비텍스트 대비는 별도로 확인한다. 토큰 변경이 클 때는 같은 버전의 `designmd diff <이전 파일> DESIGN.md`를 함께 쓴다.
 
 화면 변경은 홈·긴 노트·목록·지도·검색을 320px, 390px, 1440px와 전환 폭 720px·1000px 전후에서, 밝은 화면과 어두운 화면 모두 확인한다. 긴 제목, 썸네일 유무, 검색·공유 실패, 키보드 탐색을 포함한다. 문서 검사와 화면 검증의 결과는 나눠 기록한다. 프로젝트 명령은 [AGENTS.md](AGENTS.md), 콘텐츠 표시 규칙은 [AUTHORING.md](AUTHORING.md)가 관리한다.
