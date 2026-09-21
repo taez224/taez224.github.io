@@ -123,3 +123,18 @@ test('local graph shows up to six neighbors with two-line titles that never over
     for (const circle of circles.filter((c) => c.right - c.left <= 20)) expect(overlap(box, circle)).toBe(false);
   }
 });
+
+// 외부 발행 글 머리의 원문 링크가 터치에서 21px이었다. 노트 머리의 메타 줄은 넓혔는데 같은 역할의 이 줄은 빠졌다.
+// 줄에 링크가 하나뿐이고 위는 페이지 여백이라, 아래 제목만 덮지 않으면 44px을 채울 수 있다.
+test('the original link above an external article reaches 44px on touch without covering the title', async ({ page, isMobile }) => {
+  test.skip(!isMobile, '누르는 영역은 터치 기기에서만 넓힌다');
+  await page.goto('/posts/browser-external/');
+  const measured = await page.evaluate(() => {
+    const meta = document.querySelector('.external-meta')!;
+    const link = meta.querySelector('a')!.getBoundingClientRect();
+    const title = meta.nextElementSibling!.getBoundingClientRect();
+    return { height: link.height, gap: title.top - link.bottom };
+  });
+  expect(measured.height).toBeGreaterThanOrEqual(44);
+  expect(measured.gap, '넓힌 영역이 제목에 닿지 않는다').toBeGreaterThanOrEqual(0);
+});

@@ -37,6 +37,8 @@ const related = [...new Set([...note.outgoing, ...note.incoming])].filter((path)
 <style>
   .external-article { width: min(var(--s-reader-column), 100% - 2 * var(--s-page-gutter)); margin: 0 auto; padding: var(--s-page-top-reading) 0 var(--s-page-bottom); }
   .external-meta { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-bottom: 22px; }
+  /* 노트 머리의 메타 줄과 같은 역할이다. 이 줄은 링크가 하나뿐이고 위는 페이지 여백, 아래는 제목까지 22px이라 12px씩 넓혀 44px을 채운다. */
+  @media (pointer: coarse) { .external-meta a { padding-block: 12px; margin-block: -12px; } }
   h1 { margin: 0 0 26px; font-size: var(--t-title); line-height: 1.3; }
   .external-summary { margin: 0 0 28px; color: var(--muted); font-size: var(--t-lead); line-height: 1.8; }
   .read-original { gap: 14px; }

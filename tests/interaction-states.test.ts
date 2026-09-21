@@ -42,6 +42,19 @@ test('hover styles apply only on devices that can hover', () => {
 const blocks = (css: string) => [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)]
   .map(([, selector, body]) => ({ parts: selector.split(',').map((part) => part.trim()), body }));
 const blockFor = (css: string, selector: string) => blocks(css).find((rule) => rule.parts.includes(selector))?.body ?? '';
+// 터치 규칙만 모은다. 파일 안 첫 번째 @media (pointer: coarse)부터 잘라 읽으면, 다른 터치 규칙이 앞에 끼어들 때
+// 그 뒤의 기본 규칙을 먼저 집는다.
+function coarseOnly(css: string): string {
+  const source = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const bodies: string[] = [];
+  for (let at = source.indexOf('@media (pointer: coarse)'); at >= 0; at = source.indexOf('@media (pointer: coarse)', at + 1)) {
+    const open = source.indexOf('{', at);
+    let depth = 0, end = open;
+    for (; end < source.length; end += 1) { if (source[end] === '{') depth += 1; else if (source[end] === '}' && --depth === 0) break; }
+    bodies.push(source.slice(open + 1, end));
+  }
+  return bodies.join('\n');
+}
 
 test('dimming a graph node leaves its focus ring readable', () => {
   // 흐리게 만드는 일을 노드 묶음에 걸면 자식인 포커스 링까지 곱해져 종이색 위에서 1.5:1이 된다.
@@ -108,8 +121,9 @@ test('the external article page reaches its links like the reader does', () => {
   const css = styleText('src/components/ExternalArticle.astro');
   assert.match(blockFor(css, 'li'), /position:\s*relative/, '줄 전체가 링크의 영역이 된다');
   assert.match(blockFor(css, 'li a::after'), /inset:\s*0/);
-  const coarse = css.slice(css.indexOf('@media (pointer: coarse)'));
+  const coarse = coarseOnly(css);
   assert.match(blockFor(coarse, '.back-to-posts'), /padding-block:\s*\d+px/, '되돌아가기 링크는 위아래로 넓힌다');
+  assert.match(blockFor(coarse, '.external-meta a'), /padding-block:\s*\d+px/, '머리의 원문 링크도 위아래로 넓힌다');
 });
 
 test('a pressed filter is marked the way the current menu is', () => {

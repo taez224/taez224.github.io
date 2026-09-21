@@ -66,6 +66,8 @@ const topics = [...topicCounts].map(([name, count]) => ({ name, color: topicColo
   /* 선택은 책장 거르개와 같이 글자 폭만큼 얹은 2px 먹색 막대다. 글자도 먹색으로 올려 접힌 주제 이름까지 함께 따라온다. */
   .legend button.legend-item[aria-pressed="true"] { position: relative; color: var(--accent); }
   .legend button.legend-item[aria-pressed="true"]::after { position: absolute; right: 4px; bottom: 0; left: 4px; height: 2px; background: var(--accent); content: ""; }
+  /* 책장 거르개와 같이, 터치에서 44px로 키운 버튼의 바닥이 아니라 글자 줄 바로 아래에 막대를 둔다. */
+  .legend button.legend-item[aria-pressed="true"]::after { bottom: calc(50% - .5lh - 4px); }
   .legend button.legend-item[aria-pressed="true"] .legend-fold { color: inherit; }
   @media (hover: hover) { .legend button.legend-item:hover { background: var(--accent-soft); color: var(--accent); } }
   .legend-fold { margin-left: 2px; color: var(--muted); font-weight: 400; }

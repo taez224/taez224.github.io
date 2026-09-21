@@ -31,6 +31,9 @@ const filters = statusFilters(books);
      한 단계 짙은 구분선 색으로도 종이색과 1.28:1이라 무엇이 눌렸는지 보이지 않는다. 막대는 먹색이라 13:1이다. */
   .status-filter button[aria-pressed="true"] { color: var(--accent); }
   .status-filter button[aria-pressed="true"]::after { position: absolute; right: 7px; bottom: 0; left: 7px; height: 2px; background: var(--accent); content: ""; }
+  /* 터치에서 버튼을 44px로 키우면 바닥에 붙은 막대가 글자와 13px 떨어져 얹힐 선 없이 뜬다. 글자 줄 바로 아래에 둔다.
+     마우스에서는 버튼이 글자 줄보다 위아래 4px씩만 높아 이 값이 0이 되므로 모양이 같다. lh를 모르면 위의 bottom: 0이 남는다. */
+  .status-filter button[aria-pressed="true"]::after { bottom: calc(50% - .5lh - 4px); }
   @media (hover: hover) { .status-filter button:hover { background: var(--accent-soft); color: var(--accent); } }
   .status-filter .count { color: var(--muted); font-variant-numeric: tabular-nums; }
   .status-filter button[aria-pressed="true"] .count { color: inherit; }
@@ -47,6 +50,7 @@ const filters = statusFilters(books);
   .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px 40px; }
   @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
   @media (max-width: 480px) { .page-head { gap: 12px; } .book-source { font-size: var(--t-micro); } }
-  @media (pointer: coarse) { .status-filter button { min-height: 44px; } }
+  /* 출처 링크는 페이지 끝에 홀로 있어 아래로 넓힐 자리가 있다. 인라인 링크라 위아래 안쪽 여백은 줄 높이를 바꾸지 않고 누르는 영역만 넓힌다. */
+  @media (pointer: coarse) { .status-filter button { min-height: 44px; } .book-source a { padding-block: 15px; } }
 </style>
 <script src="../../scripts/books.ts"></script>

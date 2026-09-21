@@ -20,3 +20,22 @@ export async function gotoWithDefaultFontSize(page: Page, url: string, px: numbe
   await page.evaluate(() => document.fonts.ready);
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).fontSize), '브라우저 기본 글자 설정이 먹었다').toBe(`${px}px`);
 }
+
+// 선택 막대(::after)의 위쪽과 버튼 글자의 아래쪽 사이 간격을, 터치용으로 키운 높이와 글자 높이 그대로에서 한 번씩 잰다.
+// 둘이 같으면 막대가 버튼 바닥이 아니라 글자를 따라간다. 가상 요소는 좌표를 직접 읽을 수 없어 계산된 bottom과 높이로 구한다.
+export function pressedBarGaps(button: HTMLElement): { height: number; stretched: number; natural: number } {
+  const gap = () => {
+    const bar = getComputedStyle(button, '::after');
+    const barTop = button.getBoundingClientRect().bottom - parseFloat(bar.bottom) - parseFloat(bar.height);
+    const range = button.ownerDocument.createRange();
+    range.selectNodeContents(button);
+    return barTop - range.getBoundingClientRect().bottom;
+  };
+  const height = button.getBoundingClientRect().height;
+  const stretched = gap();
+  const saved = button.style.minHeight;
+  button.style.minHeight = '0';
+  const natural = gap();
+  button.style.minHeight = saved;
+  return { height, stretched, natural };
+}

@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures.ts';
+import { test, expect, pressedBarGaps } from './fixtures.ts';
 
 // 흐려진 노드는 화면에서 22%로 남고 포커스 링도 함께 흐려진다. 탭 순서에 두면 보이지 않는 대상을 수십 번 지나가게 된다.
 test('selecting a node takes the dimmed nodes out of the tab order', async ({ page, isMobile }) => {
@@ -167,4 +167,16 @@ test('the key hint stays clear of the zoom controls on a phone', async ({ page }
     return a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top;
   });
   expect(apart, '키 안내와 확대 버튼이 겹치지 않는다').toBe(true);
+});
+
+// 책장 거르개와 같은 막대다. 한쪽만 고치면 같은 장치가 두 모양이 된다.
+test('the pressed legend bar sits right under its text on touch', async ({ page, isMobile }) => {
+  test.skip(!isMobile, '버튼이 글자보다 높아지는 것은 터치 기기에서다');
+  await page.goto('/map/');
+  const topic = page.locator('.legend button[data-topic]').first();
+  await topic.tap();
+  await expect(topic).toHaveAttribute('aria-pressed', 'true');
+  const bar = await topic.evaluate(pressedBarGaps);
+  expect(bar.height, '터치에서 버튼을 44px로 키웠다').toBeGreaterThanOrEqual(44);
+  expect(Math.abs(bar.stretched - bar.natural), '막대가 버튼 높이와 상관없이 글자 아래 같은 자리에 있다').toBeLessThanOrEqual(0.5);
 });
