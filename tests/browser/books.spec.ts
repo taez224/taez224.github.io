@@ -35,3 +35,35 @@ test('the pressed filter bar sits right under its text on touch', async ({ page,
   expect(bar.height, '터치에서 버튼을 44px로 키웠다').toBeGreaterThanOrEqual(44);
   expect(Math.abs(bar.stretched - bar.natural), '막대가 버튼 높이와 상관없이 글자 아래 같은 자리에 있다').toBeLessThanOrEqual(0.5);
 });
+
+// 거르개는 책을 숨길 뿐 주소와 무관해서, 숨긴 책으로 이동하면 주소만 바뀌고 책은 보이지 않았다.
+// 검색 결과를 누른 경우와 뒤로·앞으로 가기로 주소만 바뀐 경우를 모두 본다.
+test('moving to a book the status filter hid reveals it', async ({ page }) => {
+  await page.goto('/books/');
+  const book = page.locator('article[data-status]', { hasText: '짧은 책이름' });
+  const pressed = page.locator('.status-filter button[aria-pressed="true"]');
+  const reading = page.locator('.status-filter button[data-book-status="읽는 중"]');
+  const chooseFromSearch = async () => {
+    await page.locator('[data-search-open]').first().click();
+    await page.locator('#search-input').fill('짧은 책이름');
+    await page.locator('.search-item a', { hasText: '짧은 책이름' }).click();
+  };
+  await reading.click();
+  await expect(book).toBeHidden();
+  await chooseFromSearch();
+  await expect(book).toBeInViewport();
+  await expect(pressed).toHaveAttribute('data-book-status', 'all');
+
+  // 이미 그 책의 주소에 있으면 같은 결과를 다시 눌러도 주소가 바뀌지 않는다.
+  await reading.click();
+  await expect(book).toBeHidden();
+  await chooseFromSearch();
+  await expect(book).toBeInViewport();
+
+  await reading.click();
+  await expect(book).toBeHidden();
+  await page.goBack();
+  await page.goForward();
+  await expect(book).toBeInViewport();
+  await expect(pressed).toHaveAttribute('data-book-status', 'all');
+});

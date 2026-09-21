@@ -603,6 +603,8 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 **배경 닫기 규칙.** Escape와 닫기 버튼에 더해 배경을 눌러도 닫는다. 도표 크게 보기와 같은 판정을 쓴다. `dialog`는 배경까지 자기 영역이라 저절로 닫히지 않으므로, 누른 자리가 상자 밖인지 좌표로 가린다. 상자 안에서 눌러 배경에서 손을 뗀 경우는 글자를 고르거나 도표를 끌던 중이므로 닫지 않는다.
 
+**책 결과 규칙.** 책 결과는 책장 안의 앵커라 책장에서 고르면 페이지를 다시 열지 않는다. 그래서 이동하기 전에 검색창을 닫는다. 책장 필터가 그 책을 숨겼으면 필터를 전체로 되돌리고 묶음의 권수도 다시 센다. 필터는 주소에 남지 않으므로, 고른 책을 보이는 것이 필터를 유지하는 것보다 먼저다.
+
 ### 바닥글과 구분선
 
 - **바닥글:** 모든 페이지 끝에 구분선 아래 한 줄을 두고, 왼쪽에 인장과 사이트 이름을, 오른쪽에 RSS와 사이트 소개 링크를 둔다. 화면 높이에 맞춰 그리는 지도 페이지에는 두지 않는다.
@@ -697,6 +699,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 지도 시트로 바뀌는 폭과 그 폭의 대화상자 처리 | `src/components/MapPanel.astro`, `src/scripts/map.ts`, `src/pages/map/index.astro` | `tests/interaction-states.test.ts`, `tests/browser/map.spec.ts` |
 | 검색 결과 줄의 형광과 두 줄 요약 | `src/lib/search-match.ts`, `src/scripts/search.ts`, `src/styles/site.css` | `tests/search-match.test.ts`, `tests/browser/search.spec.ts` |
 | 검색·도표 크게 보기의 배경 닫기와 끌기 보호 | `src/scripts/dialog-backdrop.ts` | `tests/dialog-backdrop.test.ts`, `tests/browser/search.spec.ts` |
+| 책장에서 책 결과를 고를 때 검색창 닫기와 필터 되돌리기 | `src/scripts/search.ts`, `src/scripts/books.ts` | `tests/browser/search.spec.ts`, `tests/browser/books.spec.ts` |
 | 글자를 키웠을 때 책장 라벨 칸이 넓어지는 조건 | `src/pages/books/index.astro` | `tests/browser/books.spec.ts` |
 | 글자를 키웠을 때 헤더가 두 줄로 나뉘는 경계와 고정 해제 | `src/styles/site.css` | `tests/browser/header.spec.ts` |
 | 홈 첫 화면과 최근 기록의 누르는 영역 | `src/components/About.astro`, `src/pages/index.astro` | `tests/browser/home.spec.ts` |
