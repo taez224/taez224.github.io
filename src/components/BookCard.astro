@@ -1,9 +1,10 @@
 ---
 import { formatDate } from '../lib/format.ts';
 import type { Book } from '../lib/content-model.ts';
+import { bookDisplayTitle } from '../lib/books.ts';
 interface Props { book: Book }
 const { book } = Astro.props;
-const title = book.fileTitle || book.title;
+const title = bookDisplayTitle(book);
 const review = String(book.note ?? '').trim();
 const hasReview = review && !/^한줄평\s*[.…]*$/.test(review);
 const credits = [book.author, book.publisher].filter(Boolean).join(' · ');

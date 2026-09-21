@@ -42,3 +42,15 @@ test('the search dialog closes on a backdrop click but survives a drag that ends
   await page.mouse.click(backdrop.x, backdrop.y);
   await expect(dialog).toHaveJSProperty('open', false);
 });
+
+// 책 노트의 title은 띠지 원제라 백 자를 넘기도 해서 결과 한 줄이 대화상자를 가득 채웠다.
+// 책장은 파일 이름을 보이므로 검색도 같은 이름을 보인다. 원제로 찾는 길은 별칭으로 남긴다.
+test('a book result shows the shelf name and still answers to its published title', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('[data-search-open]').first().click();
+  // 띠지문구는 원제에만 있고 파일 이름에는 없다.
+  await page.locator('#search-input').fill('띠지문구');
+  const item = page.locator('.search-item').first();
+  await expect(item.locator('.search-kind')).toHaveText('책');
+  await expect(item.locator('a')).toHaveText('짧은 책이름');
+});

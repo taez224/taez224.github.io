@@ -223,7 +223,7 @@ thumbnail: "[[thumbnail-ai-harness-loop.jpg]]"
 - 글별 OG 카드 `og/<종류>/<slug>.png`와 사이트 카드 `og/site.png`.
 - 사람이 아닌 독자를 위한 `llms.txt`와 `sitemap-index.xml`.
 
-노트에서 나오지 않는 페이지도 셋 있다. 책장(`/books/`)은 책 노트에서, 소개(`/about/`)는 `src/content/about.md`에서, 찾을 수 없는 페이지(`404`)는 노트 없이 만든다.
+노트에서 나오지 않는 페이지도 셋 있다. 책장(`/books/`)은 책 노트에서, 소개(`/about/`)는 `src/content/about.md`에서, 찾을 수 없는 페이지(`404`)는 노트 없이 만든다. 책은 **파일 이름이 화면에 보이는 이름**이다. 책장과 검색 결과가 모두 파일 이름을 쓰고, frontmatter `title`에 적은 띠지 원제는 검색에서 찾는 말로만 남는다. 원제는 백 자를 넘기도 해서 결과 한 줄이 대화상자를 가득 채우기 때문이다.
 
 ## 규칙 변경
 
