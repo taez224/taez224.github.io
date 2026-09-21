@@ -19,28 +19,32 @@ test('the hero links stay out of the map image below them', async ({ page, isMob
 });
 
 // 행 전체가 제목 링크인데 그 위에 올린 분류 링크가 열을 가득 채우면, 빈 곳을 눌러도 노트가 열리지 않는다.
-test('the kind link in a recent row covers its own text only', async ({ page }) => {
+// 다만 "글"처럼 한 글자짜리는 11px이라 맞히기 어려워, WCAG 2.5.8의 최소 24px까지만 넓힌다.
+test('the kind link in a recent row is at least 24px and no wider than it needs', async ({ page }) => {
   await page.goto('/');
-  const row = page.locator('.recent li').filter({ has: page.locator('.recent-kind') }).first();
-  await row.scrollIntoViewIfNeeded();
-  const measured = await row.evaluate((item) => {
-    const kind = item.querySelector('.recent-kind')!;
-    const range = item.ownerDocument.createRange();
-    range.selectNodeContents(kind);
-    const box = kind.getBoundingClientRect();
-    const title = item.querySelector('.recent-title')!;
-    const at = (x: number, y: number) => item.ownerDocument.elementFromPoint(x, y)?.closest('a')?.getAttribute('href') ?? null;
-    const text = range.getBoundingClientRect();
-    return {
-      width: box.width,
-      textWidth: text.width,
-      titleHref: title.getAttribute('href'),
-      // 글자 오른쪽의 빈 자리다. 분류 링크가 열을 채우면 이 자리도 그 링크가 가져간다.
-      besideTheText: at(text.right + 8, box.top + box.height / 2)
-    };
-  });
-  expect(measured.width).toBeLessThan(measured.textWidth + 8);
-  expect(measured.besideTheText).toBe(measured.titleHref);
+  const rows = page.locator('.recent li').filter({ has: page.locator('.recent-kind') });
+  await expect(rows.first()).toBeAttached();
+  for (const row of await rows.all()) {
+    await row.scrollIntoViewIfNeeded();
+    const measured = await row.evaluate((item) => {
+      const kind = item.querySelector('.recent-kind')!;
+      const range = item.ownerDocument.createRange();
+      range.selectNodeContents(kind);
+      const box = kind.getBoundingClientRect();
+      const at = (x: number, y: number) => item.ownerDocument.elementFromPoint(x, y)?.closest('a')?.getAttribute('href') ?? null;
+      return {
+        label: kind.textContent,
+        width: box.width,
+        textWidth: range.getBoundingClientRect().width,
+        titleHref: item.querySelector('.recent-title')!.getAttribute('href'),
+        // 분류 링크 바로 오른쪽의 빈 자리다. 여기는 노트로 가야 한다.
+        beside: at(box.right + 4, box.top + box.height / 2)
+      };
+    });
+    expect(measured.width, `${measured.label}: 최소 24px`).toBeGreaterThanOrEqual(24);
+    expect(measured.width, `${measured.label}: 글자와 최소 폭보다 넓지 않다`).toBeLessThanOrEqual(Math.max(measured.textWidth, 24) + 1);
+    expect(measured.beside, `${measured.label}: 옆 빈 자리는 노트로 간다`).toBe(measured.titleHref);
+  }
 });
 
 // 태블릿 세로 폭도 살아 있는 지도의 경계 안이었다. 그 SVG가 세로 스와이프를 가져가 페이지가 내려가지 않았다.

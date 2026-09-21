@@ -140,8 +140,9 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
   .recent li { position: relative; display: grid; grid-template-columns: 100px 80px minmax(0, 1fr) 90px; gap: 20px; align-items: baseline; padding: 18px 0; border-bottom: 1px solid var(--line); }
   /* 최근 기록은 행 어디를 눌러도 글로 간다. 분류 링크는 위에 올려 따로 누른다. */
   .recent-title::after { position: absolute; inset: 0; content: ""; }
-  /* 행 전체가 제목 링크이고 분류 링크는 그 위에 올라간다. 열을 가득 채우면 글자 옆 빈 곳을 눌러도 노트가 아니라 목록으로 가므로 글자 폭만 차지하게 한다. */
-  .recent-kind { position: relative; z-index: 1; justify-self: start; }
+  /* 행 전체가 제목 링크이고 분류 링크는 그 위에 올라간다. 열을 가득 채우면 글자 옆 빈 곳을 눌러도 노트가 아니라 목록으로 가므로 글자 폭만 차지하게 한다.
+     "글"처럼 한 글자짜리는 11px이라 맞히기 어려워 WCAG 2.5.8의 최소 24px까지만 넓힌다. 행을 눌러 노트를 여는 일이 훨씬 잦아 그 이상은 가져가지 않는다. */
+  .recent-kind { position: relative; z-index: 1; justify-self: start; min-width: 24px; }
   .recent li:first-child { padding-top: 0; }
   .recent li:last-child { border-bottom: 0; padding-bottom: 0; }
   .recent-title { color: var(--ink); font-size: var(--t-list); font-weight: 600; line-height: 1.45; }
