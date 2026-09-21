@@ -53,3 +53,13 @@ test('a book result shows the shelf name and still answers to its published titl
   await expect(item.locator('.search-kind')).toHaveText('책');
   await expect(item.locator('a')).toHaveText('짧은 책이름');
 });
+
+// 책 결과는 책장 안의 앵커라 책장에서 누르면 페이지를 다시 열지 않는다. 검색창이 그대로 남아 도착한 책을 가렸다.
+test('a book result chosen on the shelf closes the search', async ({ page }) => {
+  await page.goto('/books/');
+  await page.locator('[data-search-open]').first().click();
+  await page.locator('#search-input').fill('평점 없는');
+  await page.locator('.search-item a', { hasText: '평점 없는 책' }).click();
+  await expect(page).toHaveURL(/#book-/);
+  await expect(page.locator('#search')).toHaveJSProperty('open', false);
+});

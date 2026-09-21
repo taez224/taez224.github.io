@@ -74,6 +74,13 @@ async function render() {
   }
 }
 dialog.addEventListener('close', () => { queryVersion++; });
+// 책 결과는 책장 안의 앵커라, 책장에서 누르면 페이지를 다시 열지 않고 스크롤만 한다. 검색창이 남아 도착한 책을 가리므로
+// 같은 페이지로 가는 결과는 이동하기 전에 닫는다. 새 탭으로 여는 누름은 이 페이지에 남으므로 건드리지 않는다.
+results.addEventListener('click', (event) => {
+  const link = (event.target as Element).closest<HTMLAnchorElement>('.search-item a');
+  if (!link || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  if (link.hash && link.pathname === location.pathname && link.search === location.search) dialog.close();
+});
 closeOnBackdrop(dialog);
 form?.addEventListener('submit', (event) => { event.preventDefault(); render(); });
 closeButton?.addEventListener('click', () => dialog.close());
