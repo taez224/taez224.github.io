@@ -601,7 +601,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 **찾은 말 표시 규칙.** 제목과 요약에서 찾은 말에 본문의 `==강조==`와 같은 형광을 얹는다. 결과 줄 안에는 본문 강조가 없어 두 표시가 헷갈릴 일이 없다. 형광 위 글자는 `text-highlight`가 선언한 먹색으로 둔다. 요약의 보조색을 그대로 물려받으면 어두운 화면에서 2.68:1이 된다. 요약은 찾은 말을 가운데 두고 앞뒤 40자씩 잘라 두 줄까지 보인다. 한 줄로 묶어 앞에서부터 자르면 375px에서 서른 자 남짓만 남아, 요약 가운데에서 걸린 말은 글자가 있어도 상자 밖에 있다. 잘라 올 자리는 요약과 본문에서만 찾는다. 제목·별칭·태그는 결과 줄에 이미 보이거나 짧아서 자를 것이 없다.
 
-**배경 닫기 규칙.** Escape와 닫기 버튼에 더해 배경을 눌러도 닫는다. `dialog`는 배경까지 자기 영역이라 저절로 닫히지 않으므로, 누른 자리가 상자 밖인지 좌표로 가린다. 도표 크게 보기와 같은 약속이다. 상자 안에서 눌러 배경에서 손을 뗀 경우는 글자를 끌어 고르던 중이므로 닫지 않는다.
+**배경 닫기 규칙.** Escape와 닫기 버튼에 더해 배경을 눌러도 닫는다. 도표 크게 보기와 같은 판정을 쓴다. `dialog`는 배경까지 자기 영역이라 저절로 닫히지 않으므로, 누른 자리가 상자 밖인지 좌표로 가린다. 상자 안에서 눌러 배경에서 손을 뗀 경우는 글자를 고르거나 도표를 끌던 중이므로 닫지 않는다.
 
 ### 바닥글과 구분선
 
@@ -696,7 +696,8 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 지도와 홈 지도가 나누는 호버 예고편·누름 상태 | `src/graph/engine.ts` | `tests/browser/map.spec.ts`, `tests/browser/home.spec.ts` |
 | 지도 시트로 바뀌는 폭과 그 폭의 대화상자 처리 | `src/components/MapPanel.astro`, `src/scripts/map.ts`, `src/pages/map/index.astro` | `tests/interaction-states.test.ts`, `tests/browser/map.spec.ts` |
 | 지도 키 안내가 눈에 드러나는 조건 | `src/pages/map/index.astro` | `tests/browser/map.spec.ts` |
-| 검색 결과 줄의 형광·두 줄 요약과 배경 닫기 | `src/lib/search-match.ts`, `src/scripts/search.ts`, `src/styles/site.css` | `tests/search-match.test.ts`, `tests/browser/search.spec.ts` |
+| 검색 결과 줄의 형광과 두 줄 요약 | `src/lib/search-match.ts`, `src/scripts/search.ts`, `src/styles/site.css` | `tests/search-match.test.ts`, `tests/browser/search.spec.ts` |
+| 검색·도표 크게 보기의 배경 닫기와 끌기 보호 | `src/scripts/dialog-backdrop.ts` | `tests/dialog-backdrop.test.ts`, `tests/browser/search.spec.ts` |
 | 글자를 키웠을 때 책장 라벨 칸이 넓어지는 조건 | `src/pages/books/index.astro` | `tests/browser/books.spec.ts` |
 | 글자를 키웠을 때 헤더가 두 줄로 나뉘는 경계와 고정 해제 | `src/styles/site.css` | `tests/browser/header.spec.ts` |
 | 홈 첫 화면과 최근 기록의 누르는 영역 | `src/components/About.astro`, `src/pages/index.astro` | `tests/browser/home.spec.ts` |

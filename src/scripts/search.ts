@@ -1,6 +1,7 @@
 import { highlightParts, matchRecord, normalizeQuery, resultCountLabel, SEARCH_PAGE, type SearchRecord } from '../lib/search-match.ts';
 import { escapeHtml } from '../lib/format.ts';
 import { searchShortcut } from '../lib/shortcuts.ts';
+import { closeOnBackdrop } from './dialog-backdrop.ts';
 
 interface Hit { r: SearchRecord; m: NonNullable<ReturnType<typeof matchRecord>> }
 
@@ -73,15 +74,7 @@ async function render() {
   }
 }
 dialog.addEventListener('close', () => { queryVersion++; });
-// dialog는 배경까지 자기 영역이라 누른 자리가 상자 밖인지 좌표로 가린다.
-// 상자 안에서 눌러 배경에서 뗀 경우(글자를 끌어 고르다 벗어난 경우)는 닫지 않는다.
-const onBackdrop = (event: MouseEvent) => {
-  const box = dialog.getBoundingClientRect();
-  return event.target === dialog && (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom);
-};
-let pressedOnBackdrop = false;
-dialog.addEventListener('pointerdown', (event) => { pressedOnBackdrop = onBackdrop(event); });
-dialog.addEventListener('click', (event) => { if (pressedOnBackdrop && onBackdrop(event)) dialog.close(); });
+closeOnBackdrop(dialog);
 form?.addEventListener('submit', (event) => { event.preventDefault(); render(); });
 closeButton?.addEventListener('click', () => dialog.close());
 for (const t of triggers) t.addEventListener('click', open);
