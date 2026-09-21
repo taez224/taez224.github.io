@@ -47,3 +47,13 @@ test('the kind link in a recent row covers its own text only', async ({ page }) 
   expect(measured.width).toBeLessThan(measured.textWidth + 8);
   expect(measured.besideTheText).toBe(measured.titleHref);
 });
+
+// 태블릿 세로 폭도 살아 있는 지도의 경계 안이었다. 그 SVG가 세로 스와이프를 가져가 페이지가 내려가지 않았다.
+test.describe('손가락으로 쓰는 태블릿', () => {
+  test.use({ viewport: { width: 834, height: 1000 }, hasTouch: true, isMobile: true });
+  test('a touch tablet gets the static map instead of the one that takes the swipe', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('.hero-snapshot')).toBeVisible();
+    await expect(page.locator('.hero-graph > .graph')).toHaveCount(0);
+  });
+});

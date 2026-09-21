@@ -3,6 +3,14 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { LIVE_HERO_QUERY, mountHeroGraph, type HeroGraph } from '../src/scripts/hero-graph.ts';
 
+test('the live hero map is limited to devices that can hover with a fine pointer', () => {
+  // 지도 SVG는 touch-action: none이라 손가락 스와이프를 가져간다. 태블릿 세로 폭에서 올라오면 페이지가 내려가지 않는다.
+  // 살아 있는 지도가 주는 것은 호버로 제목을 미리 보는 일이라 호버가 없는 기기에서는 얻는 것도 없다.
+  assert.match(LIVE_HERO_QUERY, /\(min-width: 721px\)/);
+  assert.match(LIVE_HERO_QUERY, /\(hover: hover\)/);
+  assert.match(LIVE_HERO_QUERY, /\(pointer: fine\)/);
+});
+
 // 홈 지도 상자, 폭 미디어 쿼리, 창의 resize 이벤트만 갖춘 대역이다. 엔진 대신 맞춤 횟수만 세는 그래프를 그린다.
 function fixture({ wide, width = 880, height = 500, fail = false }: { wide: boolean; width?: number; height?: number; fail?: boolean }) {
   const media = { matches: wide, listeners: [] as (() => void)[], addEventListener(_type: string, listener: () => void) { this.listeners.push(listener); } };

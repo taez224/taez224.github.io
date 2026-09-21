@@ -6,7 +6,7 @@ export interface HeroGraph { fit(): void }
 
 // 살아 있는 지도를 쓰는 폭이다. index.astro에서 엔진을 보이고 정적 그림을 가리는 미디어 쿼리와 같아야 한다.
 // 휴대폰 폭에서는 허브 제목이 읽을 수 없을 만큼 작아져, 영역 이름을 크게 놓은 정적 그림을 쓴다.
-export const LIVE_HERO_QUERY = '(min-width: 721px)';
+export const LIVE_HERO_QUERY = '(min-width: 721px) and (hover: hover) and (pointer: fine)';
 
 // 데이터와 좌표는 페이지에 인라인돼 있다(index.astro의 data-hero-data). fetch와 배치 계산이 없어 첫 화면 전에 그래프가 올라간다.
 export function drawHeroGraph(box: HTMLElement): HeroGraph {
