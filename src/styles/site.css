@@ -170,10 +170,25 @@ main { min-height: 60vh; }
     --t-base: 1rem; --t-summary: .9375rem; --t-list: 1.125rem; /* 16 15 18 */
     --s-page-gutter: 20px; --s-header-height: 56px; --s-page-top-index: 24px; --s-page-top-reading: 32px; --s-page-bottom: 64px; --s-title-gap: 28px;
   }
-  /* 헤더는 한 줄. 워드마크·내비·검색이 320px 폭에서도 줄바꿈 없이 들어간다. */
+  /* 헤더는 한 줄. 글자 100%에서는 워드마크·내비·검색이 320px 폭에서도 줄바꿈 없이 들어간다. */
   .site-nav { --nav-gap: 14px; font-size: var(--t-side); }
   .site-nav a { white-space: nowrap; }
   .search-trigger { margin-left: 6px; margin-right: -12px; }
+}
+/* 머리글의 한 줄 약속은 글자 100%에서만 성립한다. 한 줄에 필요한 폭은 100%에서 307px(19.19em)이고,
+   검색·공유 버튼과 간격 약 124px은 글자를 따라 커지지 않아 글자가 클수록 em 대비 비율이 줄어든다.
+   그래서 100%의 비율을 경계로 두면 어느 글자 크기에서든 넘치기 전에 두 줄로 나뉜다. 19.5em은 100%에서 312px이라
+   320px 휴대폰은 한 줄을 지킨다. 사이트가 html의 글자 크기를 정하지 않아 rem과 이 em이 모두 브라우저 기본값을 따른다.
+   두 줄이 된 머리글은 109px을 넘는다. 화면 위에 붙여 두면 제목으로 건너뛴 자리(scroll-padding 100px)가 그 아래에 가리므로 고정을 푼다. */
+@media (max-width: 19.5em) {
+  .site-header { position: static; }
+  .site-header .wrap { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: "mark share search" "nav nav nav"; grid-template-rows: var(--s-header-height) auto; height: auto; }
+  .wordmark { grid-area: mark; justify-self: start; }
+  .share-control { grid-area: share; }
+  .search-trigger { grid-area: search; }
+  /* 둘째 줄에서도 넘치면 메뉴끼리 줄을 바꾼다. 누르는 영역은 줄마다 44px이다. */
+  .site-nav { grid-area: nav; margin-left: 0; flex-wrap: wrap; row-gap: 0; }
+  .site-nav a { min-height: 44px; }
 }
 /* 손가락으로 누르는 기기에서는 세로로 쌓인 목록의 줄을 44px 높이로 넓힌다. 마우스 환경은 지금의 촘촘한 간격을 유지한다. */
 @media (pointer: coarse) {
