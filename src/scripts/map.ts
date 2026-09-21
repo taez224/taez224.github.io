@@ -57,7 +57,8 @@ let graph: ReturnType<typeof createGraph>;
 const backdrop = document.querySelector<HTMLElement>('[data-sheet-backdrop]');
 const stage = document.querySelector('.map-stage');
 const header = document.querySelector('.site-header');
-const narrow = window.matchMedia('(max-width: 720px)');
+// MapPanel.astro의 시트 미디어 쿼리와 같아야 한다. 어긋나면 시트가 아닌데 대화상자로 가두거나 그 반대가 된다.
+const narrow = window.matchMedia('(max-width: 1000px)');
 let lastFocus: HTMLElement | SVGElement | null = null;
 function syncSheet() {
   const open = narrow.matches && 'open' in panel.dataset;

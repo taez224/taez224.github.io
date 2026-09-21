@@ -85,13 +85,34 @@ test('selecting a node outside the filter leaves the count alone', async ({ page
   await expect(count).toHaveText(filtered!);
 });
 
-// 한 열로 바뀌는 폭에서는 패널이 화면 아래 밖에 있다. 노드를 골라도 무엇이 바뀌었는지 보이지 않으므로 어디서 열리는지 알려 준다.
-test('one-column widths say where the panel opens', async ({ page }) => {
+// 한 열로 바뀌는 폭에서 패널을 흐름에 두면 무대 아래로 내려간다. 900×600에서는 화면 밖으로 완전히 나가 노드를 골라도 바뀌는 것이 없었다.
+// 이 폭부터 시트로 올리고, 고르기 전에는 시트가 화면 밖에 있으므로 시작점·허브 목록을 무대 아래에 따로 둔다.
+test('one-column widths keep the start lists and hold the sheet out of the way', async ({ page }) => {
   await page.setViewportSize({ width: 900, height: 900 });
   await page.goto('/map/');
   await expect(page.locator('.map-start-hint')).toBeVisible();
-  // 이 폭에서는 패널이 이미 아래에 있으므로 시작점·허브 목록을 한 번 더 두지 않는다.
-  await expect(page.locator('.map-start .list-block').first()).toBeHidden();
+  await expect(page.locator('.map-start .list-block').first()).toBeVisible();
+  await expect(page.locator('.map-panel')).toHaveAttribute('inert', '');
+});
+
+// 시트는 화면 아래에 붙고 내용이 위에서부터 쌓인다. 화면이 짧아지면 맨 아래 참조 목록부터 잘려야지
+// 제목이나 노트 읽기가 잘리면 안 된다. 흐름 안 패널은 반대로 제목부터 사라졌다.
+test('the sheet keeps its close button, title and read link whole on a short landscape screen', async ({ page }) => {
+  await page.setViewportSize({ width: 900, height: 420 });
+  await page.goto('/map/');
+  await page.locator('.graph .node').first().click({ force: true });
+  const panel = page.locator('.map-panel');
+  await expect(panel).toHaveAttribute('role', 'dialog');
+  // 시트는 제 높이만큼 아래에 있다가 200ms 동안 올라온다. 올라오는 도중에 재면 아직 화면 아래에 걸쳐 있다.
+  await expect(panel).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
+  const measured = await page.evaluate(() => {
+    const at = (selector: string) => { const box = document.querySelector(selector)!.getBoundingClientRect(); return { top: box.top, bottom: box.bottom }; };
+    return { height: window.innerHeight, parts: { close: at('.panel-close'), title: at('.panel-head h2'), read: at('.panel-head .btn') } };
+  });
+  for (const [name, box] of Object.entries(measured.parts)) {
+    expect(box.top, `${name} 위쪽`).toBeGreaterThanOrEqual(0);
+    expect(box.bottom, `${name} 아래쪽`).toBeLessThanOrEqual(measured.height);
+  }
 });
 
 // 홈과 지도가 같은 엔진을 쓴다. 홈에서 호버 처리를 끌 때 조건을 잘못 걸면 지도의 예고편까지 함께 꺼진다.

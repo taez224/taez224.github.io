@@ -25,7 +25,8 @@ const { startpoints, hubs = [] } = Astro.props;
   .panel-lists { display: flex; flex-direction: column; min-height: 0; }
   .panel-lists .list-block { display: flex; flex-direction: column; min-height: 0; flex: 0 1 auto; }
   .sheet-backdrop { display: none; }
-  @media (max-width: 720px) {
+  /* 한 열로 바뀌는 폭부터 시트다. 흐름 안에 두면 무대 아래로 내려가 노드를 골라도 화면에서 바뀌는 것이 없다. */
+  @media (max-width: 1000px) {
     .sheet-backdrop { display: block; position: fixed; inset: 0; z-index: 30; background: color-mix(in srgb, var(--ink) 25%, transparent); }
     @media (prefers-color-scheme: dark) { .sheet-backdrop { background: rgb(0 0 0 / .45); } }
     .sheet-backdrop[hidden] { display: none; }

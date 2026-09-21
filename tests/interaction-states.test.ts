@@ -136,3 +136,15 @@ test('search results are clickable across the whole row', () => {
   assert.match(stretch, /position:\s*absolute/);
   assert.match(stretch, /inset:\s*0/);
 });
+
+test('the map sheet uses the same boundary in CSS and in script', () => {
+  // 시트의 모양은 MapPanel.astro의 미디어 쿼리가, 대화상자 처리(inert·포커스 가두기·Escape·배경 누르기)는
+  // map.ts의 matchMedia가 맡는다. 두 경계가 어긋나면 그 사이 폭에서 시트가 아닌데 갇히거나, 시트인데 배경이 살아 있다.
+  const boundary = styleText('src/components/MapPanel.astro').match(/@media \((max-width: \d+px)\) \{\s*\.sheet-backdrop \{ display: block;/)?.[1];
+  assert.ok(boundary, '시트를 여는 미디어 쿼리를 찾지 못했다');
+  assert.match(read('src/scripts/map.ts'), new RegExp(`matchMedia\\('\\(${boundary}\\)'\\)`), '스크립트의 경계가 시트 CSS와 다르다');
+  // 시트가 가져가는 시작점·허브 목록은 같은 경계에서 무대 아래에 다시 나와야 한다. 어긋나면 그 사이 폭에 목록이 없다.
+  const mapCss = styleText('src/pages/map/index.astro');
+  const oneColumn = mapCss.slice(mapCss.indexOf(`@media (${boundary})`));
+  assert.match(oneColumn.slice(0, oneColumn.indexOf('\n  }')), /\.map-start \{ display: block;/, '한 열 폭에서 시작 목록을 보이지 않는다');
+});
