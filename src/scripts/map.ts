@@ -57,7 +57,8 @@ let graph: ReturnType<typeof createGraph>;
 const backdrop = document.querySelector<HTMLElement>('[data-sheet-backdrop]');
 const stage = document.querySelector('.map-stage');
 const header = document.querySelector('.site-header');
-const narrow = window.matchMedia('(max-width: 720px)');
+// MapPanel.astro의 시트 미디어 쿼리와 같아야 한다. 어긋나면 시트가 아닌데 대화상자로 가두거나 그 반대가 된다.
+const narrow = window.matchMedia('(max-width: 1000px)');
 let lastFocus: HTMLElement | SVGElement | null = null;
 function syncSheet() {
   const open = narrow.matches && 'open' in panel.dataset;
@@ -129,13 +130,13 @@ function closeSheet() { delete panel.dataset.open; syncSheet(); }
 const pressedTopics = () => new Set([...document.querySelectorAll<HTMLElement>('[data-topic][aria-pressed="true"]')].map((b) => b.dataset.topic!));
 const hubFilter = document.querySelector('[data-hub-filter]');
 const currentFilter = () => { const set = pressedTopics(); return { topics: set.size ? set : null, hubsOnly: hubFilter?.getAttribute('aria-pressed') === 'true' }; };
-// 필터가 켜지면 제목 옆 집계가 걸러진 수로 바뀐다. 선택된 노드는 엔진과 같이 흐려지지 않으므로 센다.
+// 필터가 켜지면 제목 옆 집계가 걸러진 수로 바뀐다. 이 줄은 필터가 남긴 범위만 말한다.
+// 선택은 세지 않는다. 필터 밖의 노드를 고를 때마다 숫자가 하나씩 움직이면 무엇을 세는 줄인지 알 수 없다.
 function updateCount() {
   if (!countEl) return;
   const filter = currentFilter();
   if (!filter.topics && !filter.hubsOnly) { countEl.textContent = totalCount; return; }
-  const selected = graph.selected();
-  const shown = new Set(nodes.filter((n) => n.id === selected || !isFilteredOut(n, filter)).map((n) => n.id));
+  const shown = new Set(nodes.filter((n) => !isFilteredOut(n, filter)).map((n) => n.id));
   const links = edges.filter((e) => shown.has(e.source) && shown.has(e.target)).length;
   countEl.textContent = `노트 ${shown.size} · 연결 ${links}`;
 }

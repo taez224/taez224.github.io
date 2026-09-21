@@ -96,8 +96,9 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
   svg.classList.add('graph', mode);
   svg.replaceChildren();
   const scene = el('g');
-  const regionLayer = el('g', { 'data-regions': '' }), regionLabelLayer = el('g', { 'data-region-labels': '' });
-  const edgeLayer = el('g'), nodeLayer = el('g'), labelLayer = el('g', { 'data-labels': '' });
+  // 색면과 글자 층은 노드 위에 겹쳐 그리는 그림이다. 이름은 노드마다 aria-label로 이미 있으므로 층은 접근성 트리에서 뺀다.
+  const regionLayer = el('g', { 'data-regions': '', 'aria-hidden': 'true' }), regionLabelLayer = el('g', { 'data-region-labels': '', 'aria-hidden': 'true' });
+  const edgeLayer = el('g'), nodeLayer = el('g'), labelLayer = el('g', { 'data-labels': '', 'aria-hidden': 'true' });
   scene.append(regionLayer, regionLabelLayer, edgeLayer, nodeLayer, labelLayer);
   // 주제 영역은 배치가 정해지면 고정이다. 색면은 장면 좌표(확대하면 같이 커짐), 이름은 제목처럼 화면 크기 고정.
   const regionList = topicRegions(nodes, positions);
@@ -186,7 +187,7 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
       const p = positions.get(node.id);
       if (!p) continue;
       const r = radius(node);
-      const g = el('g', { class: `node${node.isEntry ? ' is-entry' : ''}`, 'data-id': node.id, tabindex: focusable ? '0' : '-1', role: 'button', 'aria-pressed': 'false', 'aria-label': cleanTitle(node.displayTitle ?? node.title) });
+      const g = el('g', { class: `node${node.isEntry ? ' is-entry' : ''}`, 'data-id': node.id, tabindex: focusable ? '0' : '-1', role: 'button', ...(mode === 'map' ? { 'aria-pressed': 'false' } : {}), 'aria-label': node.type === 'hub' ? `${cleanTitle(node.displayTitle ?? node.title)}. 허브` : cleanTitle(node.displayTitle ?? node.title) });
       if (node.isEntry) g.append(el('circle', { class: 'entry-halo', cx: p.x, cy: p.y, r: (r + 11).toFixed(1) }));
       if (node.type === 'hub') g.append(el('circle', { class: 'hub-ring', cx: p.x, cy: p.y, r: (r + 7).toFixed(1) }));
       g.append(el('circle', { class: 'hit', cx: p.x, cy: p.y, r: Math.max(22, r), fill: 'transparent' }));
@@ -265,9 +266,12 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
       const dim = topicOut || (state.selected && id !== state.selected && !neighbors.has(id));
       g.classList.toggle('is-faint', Boolean(previewId && !previewNear.has(id)));
       g.classList.toggle('is-dim', Boolean(dim));
+      // 흐려진 노드는 탭 순서에서 뺀다. 남겨 두면 필터를 걸어도 보이지 않는 노드를 수십 번 지나가야 한다.
+      g.setAttribute('tabindex', focusable && !dim ? '0' : '-1');
       g.classList.toggle('is-selected', id === state.selected);
       g.classList.toggle('is-neighbor', neighbors.has(id));
-      g.setAttribute('aria-pressed', String(id === state.selected));
+      // 눌린 채로 남는 것은 지도의 선택뿐이다. 홈은 누르면 그 노트로 이동하므로 누름 상태를 말할 것이 없다.
+      if (mode === 'map') g.setAttribute('aria-pressed', String(id === state.selected));
     }
   };
   const render = () => { drawEdges(); refreshNodeStates(); drawLabels(); };
@@ -291,7 +295,8 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
     if (event.key === 'Enter') { event.preventDefault(); onOpen(g.dataset.id!); }
     if (event.key === ' ') { event.preventDefault(); onSelect(g.dataset.id!); }
   });
-  const hoverChanged = () => { if (!state.selected) { drawEdges(); refreshNodeStates(); } drawLabels(); };
+  // 호버 예고편은 지도에만 있다. 홈에서 다시 그리면 같은 간선과 같은 상태를 만들려고 간선 전체를 버렸다가 새로 만든다.
+  const hoverChanged = () => { if (mode === 'map' && !state.selected) { drawEdges(); refreshNodeStates(); } drawLabels(); };
   listen('pointerover', (event) => { const g = (event.target as Element).closest<SVGGElement>('.node'); const id = g ? g.dataset.id! : null; if (id !== state.hovered) { state.hovered = id; hoverChanged(); } });
   listen('pointerleave', () => { if (state.hovered) { state.hovered = null; hoverChanged(); } });
   if (mode === 'map') listen('wheel', (event) => { event.preventDefault(); api.zoom(event.deltaY < 0 ? 1.12 : 1 / 1.12, point(event)); }, { passive: false });

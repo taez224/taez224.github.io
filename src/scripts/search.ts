@@ -1,6 +1,8 @@
-import { matchRecord, normalizeQuery, resultCountLabel, SEARCH_PAGE, type SearchRecord } from '../lib/search-match.ts';
+import { highlightParts, matchRecord, normalizeQuery, resultCountLabel, SEARCH_PAGE, type SearchRecord } from '../lib/search-match.ts';
 import { escapeHtml } from '../lib/format.ts';
 import { searchShortcut } from '../lib/shortcuts.ts';
+import { closeOnBackdrop } from './dialog-backdrop.ts';
+import { inPageLink } from './in-page-link.ts';
 
 interface Hit { r: SearchRecord; m: NonNullable<ReturnType<typeof matchRecord>> }
 
@@ -16,6 +18,7 @@ const EMPTY_HINT = status.textContent ?? '';
 let index: Promise<SearchRecord[]> | null = null;
 let queryVersion = 0;
 let hits: Hit[] = [];
+let queryTerms: string[] = [];
 let shown = 0;
 
 const shortcut = searchShortcut(navigator.platform, navigator.userAgent, navigator.maxTouchPoints);
@@ -29,8 +32,11 @@ function loadIndex(): Promise<SearchRecord[]> {
   return index;
 }
 function open() { if (!dialog.open) dialog.showModal(); input.focus(); input.select(); render(); }
+// 조각마다 이스케이프하고 표시만 여기서 붙인다. 원문을 통째로 넣으면 노트의 글이 태그가 된다.
+const marked = (text: string) => highlightParts(text, queryTerms)
+  .map((part) => (part.hit ? `<mark>${escapeHtml(part.text)}</mark>` : escapeHtml(part.text))).join('');
 function itemHtml({ r, m }: Hit): string {
-  return `<div class="search-item"><span class="search-kind">${escapeHtml(r.label)}</span><div><a href="${escapeHtml(r.url)}">${escapeHtml(r.title)}</a><small>${escapeHtml(m.snippet || r.summary || '')}</small></div></div>`;
+  return `<div class="search-item"><span class="search-kind">${escapeHtml(r.label)}</span><div><a href="${escapeHtml(r.url)}">${marked(r.title)}</a><small>${marked(m.snippet || r.summary || '')}</small></div></div>`;
 }
 // 결과를 다시 그리면 눌렀던 더 보기 버튼이 사라지므로, 새로 붙인 첫 결과로 초점을 옮겨 키보드 사용자가 자리를 잃지 않게 한다.
 function paint(focusFrom = -1) {
@@ -48,6 +54,7 @@ function paint(focusFrom = -1) {
 async function render() {
   const version = ++queryVersion;
   const terms = normalizeQuery(input.value);
+  queryTerms = terms;
   hits = [];
   shown = 0;
   if (!terms.length) { status.textContent = EMPTY_HINT; results.replaceChildren(); return; }
@@ -68,6 +75,10 @@ async function render() {
   }
 }
 dialog.addEventListener('close', () => { queryVersion++; });
+// 책 결과는 책장 안의 앵커라, 책장에서 누르면 페이지를 다시 열지 않고 스크롤만 한다. 검색창이 남아 도착한 책을 가리므로
+// 같은 페이지로 가는 결과는 이동하기 전에 닫는다.
+results.addEventListener('click', (event) => { if (inPageLink(event)) dialog.close(); });
+closeOnBackdrop(dialog);
 form?.addEventListener('submit', (event) => { event.preventDefault(); render(); });
 closeButton?.addEventListener('click', () => dialog.close());
 for (const t of triggers) t.addEventListener('click', open);

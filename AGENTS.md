@@ -41,14 +41,14 @@ npm run mark:build           # 표식 도안을 고쳤을 때만. public/favicon
 
 ## 아키텍처
 
-`src/lib/garden.ts`의 `assembleGarden()`이 vault를 한 번 조립하고, 나머지는 모두 그 결과를 읽는다. 페이지(`src/pages/**`)는 `getCollection('notes'|'books')`로 읽고, 엔드포인트(`data/*.json.ts`, `og/*.png.ts`, `rss.xml.ts`, `llms.txt.ts`)는 `getGarden()`으로 읽는다. `get-garden.ts`가 결과를 메모이즈하고, dev에서는 2초가 지나면 다시 조립한다.
+`src/lib/garden.ts`의 `assembleGarden()`이 vault를 한 번 조립하고, 나머지는 모두 그 결과를 읽는다. 노트 상세 페이지 셋(`posts/[slug]`, `notes/[slug]`, `dev/[slug]`)은 `getCollection('notes')`로 읽고, 나머지 페이지와 엔드포인트(`data/*.json.ts`, `og/*.png.ts`, `rss.xml.ts`, `feeds/[kind].xml.ts`, `llms.txt.ts`)는 `getGarden()`으로 읽는다. `get-garden.ts`가 결과를 메모이즈하고, dev에서는 2초가 지나면 다시 조립한다.
 
 - 조립 코드의 규칙(모듈 책임과 의존 방향, 빌드를 멈추는 조건, OG 카드 캐시)은 `src/lib/AGENTS.md`에 있다. `src/lib/`을 고치기 전에 읽는다.
 - 조립이 읽는 입력을 새로 더하면 `src/loaders/vault.ts`의 `watchPathsFor`에도 더한다. 빠뜨리면 dev에서 그 파일을 고쳐도 다시 조립되지 않는다.
 - 홈과 지도는 페이지에 인라인한 JSON(`data-hero-data`, `data-map-data`)으로 그래프를 그리므로 fetch하지 않는다. fetch는 검색이 `search.json`을 열 때만 한다. `data/site.json`은 페이지가 쓰지 않지만 공개 데이터 엔드포인트이자 check-dist의 기준 자료라 남긴다.
 - 그래프는 프레임워크 없는 SVG 엔진 `src/graph/engine.ts`가 그린다. `src/graph`의 나머지 모듈은 DOM을 쓰지 않는 순수 함수이고 모듈마다 단위 테스트가 있다.
 - 홈은 빌드 때 그린 SVG 스냅샷(`src/graph/snapshot.ts`)을 먼저 보여 주고, 넓은 화면에서는 엔진이 올라오면 스냅샷을 가린다. 두 쪽이 같은 제목 배치 규칙(`label.ts`의 `placeLabels`)과 맞춤을 써야 교체가 눈에 띄지 않으므로, 배치 규칙을 바꾸면 두 쪽이 함께 바뀌는지 확인한다.
-- 휴대폰 폭(720px 이하)에서는 엔진을 숨기고 스냅샷을 보인다. 창을 줄이거나 기기를 돌려도 스냅샷이 돌아와야 하므로, 스냅샷은 DOM에서 지우지 않고 CSS로만 가린다. 이 폭 경계는 `src/scripts/hero-graph.ts`의 `LIVE_HERO_QUERY`와 `src/pages/index.astro`의 미디어 쿼리 두 곳에 있고, `tests/hero-graph.test.ts`가 둘이 같은지 검사한다.
+- 휴대폰 폭(720px 이하)과 손가락으로 쓰는 기기에서는 엔진을 숨기고 스냅샷을 보인다. 지도 SVG가 `touch-action: none`이라 엔진이 올라오면 세로 스와이프를 가져가고, 살아 있는 지도가 주는 호버 미리보기는 손가락으로 얻을 수 없다. 창을 줄이거나 기기를 돌려도 스냅샷이 돌아와야 하므로, 스냅샷은 DOM에서 지우지 않고 CSS로만 가린다. 이 경계는 `src/scripts/hero-graph.ts`의 `LIVE_HERO_QUERY`와 `src/pages/index.astro`의 미디어 쿼리 두 곳에 있고, `tests/hero-graph.test.ts`가 둘이 같은지 검사한다.
 - 지도는 무대 크기가 화면마다 달라 스냅샷을 둘 수 없다. 대신 `src/integrations/module-preload.ts`가 지도 스크립트를 `<head>`로 옮기고 `blocking="render"`를 달아, 그래프가 올라간 뒤에 첫 화면을 그린다.
 
 ### 공개 범위 규칙 (바꿀 때 주의)
@@ -110,7 +110,8 @@ Codex는 이 절만 읽고, Claude Code는 여기에 더해 위의 output-style 
 ## 테스트
 
 - `node:test`와 `node:assert/strict`를 쓰고 파일 이름은 `*.test.ts`다. 테스트 이름은 관찰 가능한 동작을 서술한다.
-- 브라우저 회귀 검사는 `npm run test:browser`로 실행한다. 처음에는 `npx playwright install chromium`으로 브라우저를 설치한다. 밝은·어두운 화면과 데스크톱·터치 모바일에서 각주, 복사, 연결 강조, 홈 지도 전환을 검사한다. `tests/browser/server.ts`가 임시 vault·빌드·캐시를 만들고 종료할 때 지우므로 실제 vault와 평소 `dist/`는 쓰지 않는다. 결과가 코드에만 달려 있어 CI는 PR에서만 돌린다. 가짜 DOM 단위 테스트로 재현할 수 없는 동작(누른 좌표의 판정, 복제한 요소의 이벤트, 창 크기 변화)만 여기에 둔다.
+- 브라우저 회귀 검사는 `npm run test:browser`로 실행한다. 처음에는 `npx playwright install chromium`으로 브라우저를 설치한다. 밝은·어두운 화면과 데스크톱·터치 모바일에서 검사한다. `tests/browser/server.ts`가 임시 vault·빌드·캐시를 만들고 종료할 때 지우므로 실제 vault와 평소 `dist/`는 쓰지 않는다. 결과가 코드에만 달려 있어 CI는 PR에서만 실행한다. 실제 배치와 입력이 있어야 알 수 있는 것(누른 좌표의 판정, 요소가 겹치는지, 복제한 요소의 이벤트, 창 크기 변화, 상태에 따른 탭 순서, 글자를 키웠을 때의 배치)만 여기에 둔다.
+- 브라우저 검사 파일은 `test`와 `expect`를 `tests/browser/fixtures.ts`에서 가져온다. 이 픽스처가 외부 요청을 막으며, `@playwright/test`에서 바로 가져오면 `tests/browser-setup.test.ts`가 실패한다. 글자를 키운 화면은 `gotoWithDefaultFontSize`로 브라우저 기본 글자 설정을 바꿔 연다. `html`에 글자 크기를 직접 넣으면 `rem`만 바뀌고 미디어 쿼리의 `em`은 그대로라 실제 설정과 다르게 움직인다.
 - **테스트는 임시 vault로 실행한다.** `tests/garden.test.ts`의 `makeVault()`처럼 `os.tmpdir()`에 최소 파일을 만들어 검증하고, 실제 `../obsidian`은 테스트에서 읽지 않는다.
 - 동작을 바꾸면 회귀 테스트를 더한다. Markdown 렌더링, 링크 해석, 공개 판정을 바꿀 때는 빠짐없이 더한다.
 - 코드를 넘기기 전에 `npm run check`, `npm run check:astro`, `npm test`, `npm run build`를 모두 실행한다. `DESIGN.md`를 고쳤으면 `npm run design:lint`도, 브라우저 스크립트나 CSS의 동작을 바꿨으면 `npm run test:browser`도 실행한다.
@@ -146,7 +147,7 @@ type(scope): 명사형 제목
 
 코드 수정은 주 에이전트가 직접 한다. 하위 에이전트에게는 조사와 검증만 나눈다. 도구별 수단은 다르지만 규칙은 같다.
 
-- 수단: Codex는 `luna_worker`, Claude Code는 Agent 도구(하위 에이전트).
+- 수단: Codex는 `luna_worker`, Claude Code는 Agent 도구다. 어떤 하위 에이전트를 고를지는 각 도구의 전용 지침이 정한다.
 - 위임하는 일: 코드 경로 추적, 기존 테스트 커버리지 확인, 문서·스펙 대조, 테스트·빌드 실행 결과 확인처럼 소스를 바꾸지 않는 조사·검증. 서로 파일 범위가 겹치지 않는 독립 작업이 2개 이상일 때만 병렬로 실행한다.
 - 위임하지 않는 일: 설계, 구현, 리팩터링, 테스트 작성, 공개 범위(`config.json`, `publication.ts`) 판단. 구현 작업을 통째로 넘기지 않는다.
 - 각 위임에는 읽을 파일 범위, 기대 결과, 검증 방법을 명시한다. 소스와 vault(`../obsidian`)는 읽기 전용이다.

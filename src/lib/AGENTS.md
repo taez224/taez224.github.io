@@ -16,15 +16,16 @@ vault를 사이트 데이터로 조립하는 코드에 적용하는 규칙이다
 
 ## 조립이 빌드를 멈추는 조건
 
-공개 범위와 외부 발행 글의 조건은 루트 `AGENTS.md`에 있다. `src/lib`에서 더 검사하는 것은 다음 세 가지다.
+공개 범위와 외부 발행 글의 조건은 루트 `AGENTS.md`에 있다. `src/lib`에서 더 검사하는 것은 다음과 같다.
 
 - 공개 대상인 Concepts·Troubleshooting 노트에 `summary`가 없을 때(`garden.ts`).
 - 썸네일을 공개 자산으로 해석하지 못하거나, `thumbnail_style`이 `plain`·`soft`가 아닐 때(`garden.ts`).
 - frontmatter `slug`에 글자·숫자·하이픈 밖의 문자가 있거나, 같은 kind에서 슬러그가 겹칠 때(`slug.ts`).
+- 공개 노트에 `created`가 없거나, `created`·`published`·`updated`에 유효하지 않은 날짜 또는 미래 날짜를 적었을 때(`dates.ts`). 날짜 작성 규칙은 루트 `AUTHORING.md`의 날짜 절을 따른다.
 
 ## 공개 본문과 링크
 
-표시 규칙(무엇을 빼고 무엇을 남기는지, 독자가 보는 결과)은 `AUTHORING.md`가 관리한다. 여기서는 어느 파일이 그 일을 하는지만 적는다.
+무엇을 빼고 무엇을 남기는지는 `AUTHORING.md`에 있다. 여기서는 어느 파일이 그 일을 하는지만 적는다.
 
 - 공개 본문 사본과 자동 요약: `note-body.ts`의 `publicBody`. vault 원문은 바꾸지 않는다.
 - 참조·역참조: `links.ts`가 본문과 `related`에서 대상을 뽑고, `garden.ts`가 공개 색인으로 해석해 공개 대상만 남긴다.

@@ -9,6 +9,12 @@ import { isMarkdown, normalize, numberValue, parseFrontmatter, walkIfPresent } f
 // 책 노트가 있는 vault 폴더. 조립 단계와 개발 서버 감시가 같은 경로를 쓴다.
 export const BOOKS_PATH = '30_Resources/References/Books';
 
+// 책장과 검색이 함께 쓰는 책 이름. 노트의 title은 띠지에 적힌 원제라 백 자를 넘기도 하므로
+// 파일 이름을 앞세운다. 원제는 검색에서 별칭으로 남겨 그 이름으로 찾는 길을 막지 않는다.
+export function bookDisplayTitle(book: Pick<Book, 'fileTitle' | 'title'>): string {
+  return book.fileTitle || book.title;
+}
+
 // 책장에 올릴 책. 평점 높은 순, 같으면 최근에 기록한 순이다. 파일 이름에서 만든 slug가 겹치면 빌드를 멈춘다.
 // base는 사이트 주소의 앞부분(basePath)이다.
 export async function readBooks({ vaultRoot, base }: { vaultRoot: string; base: string }): Promise<Book[]> {

@@ -12,7 +12,7 @@ const filters = statusFilters(books);
     <div class="page-head"><h1 class="display">책장</h1>
       <nav class="status-filter meta" aria-label="읽기 상태">{filters.map((f) => <button type="button" data-book-status={f.value} aria-pressed={f.value === 'all'}>{f.label} <span class="count">{f.count}</span></button>)}</nav>
     </div>
-    {tiers.map((t) => <section class="ledger-group" data-tier>
+    {tiers.map((t) => <section class:list={['ledger-group', { unrated: t.tier === '미분류' }]} data-tier>
       <div class="ledger-head"><h2 class:list={['display', { 'unrated': t.tier === '미분류' }]}>{t.tier}</h2><span class="meta" data-tier-count>{t.books.length}권</span></div>
       <div class="grid">{t.books.map((book) => <BookCard book={book} />)}</div>
     </section>)}
@@ -26,18 +26,31 @@ const filters = statusFilters(books);
   .book-source a { color: inherit; }
   /* 거르개는 지도 범례와 같은 방식이다. 누른 것 하나만 aria-pressed로 남는다. */
   .status-filter { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 4px; margin-left: auto; }
-  .status-filter button { padding: 4px 7px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font: inherit; cursor: pointer; transition: background-color .15s ease, color .15s ease; }
-  /* 선택은 호버(accent-soft)보다 한 단계 짙은 판이다. 호버와 같은 판이면 종이색과 1.10:1이라 무엇이 눌렸는지 보이지 않는다. */
-  .status-filter button[aria-pressed="true"] { background: var(--line); color: var(--accent); }
+  .status-filter button { position: relative; padding: 4px 7px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font: inherit; cursor: pointer; transition: background-color .15s ease, color .15s ease; }
+  /* 선택은 헤더의 현재 메뉴와 같이 글자 폭만큼 얹은 2px 먹색 막대로 표시한다. 판으로 표시하면 호버 판과 1.10:1,
+     한 단계 짙은 구분선 색으로도 종이색과 1.28:1이라 무엇이 눌렸는지 보이지 않는다. 막대는 먹색이라 13:1이다. */
+  .status-filter button[aria-pressed="true"] { color: var(--accent); }
+  .status-filter button[aria-pressed="true"]::after { position: absolute; right: 7px; bottom: 0; left: 7px; height: 2px; background: var(--accent); content: ""; }
+  /* 터치에서 버튼을 44px로 키우면 바닥에 붙은 막대가 글자와 13px 떨어져 얹힐 선 없이 뜬다. 글자 줄 바로 아래에 둔다.
+     마우스에서는 버튼이 글자 줄보다 위아래 4px씩만 높아 이 값이 0이 되므로 모양이 같다. lh를 모르면 위의 bottom: 0이 남는다. */
+  .status-filter button[aria-pressed="true"]::after { bottom: calc(50% - .5lh - 4px); }
   @media (hover: hover) { .status-filter button:hover { background: var(--accent-soft); color: var(--accent); } }
   .status-filter .count { color: var(--muted); font-variant-numeric: tabular-nums; }
   .status-filter button[aria-pressed="true"] .count { color: inherit; }
   /* 등급 묶음은 공용 장부(.ledger-group)를 쓰고 여백과 굵기만 다르다. */
   .books-page .ledger-group { padding-bottom: 28px; }
+  /* 등급은 한 글자라 62px 칸에 들어가지만 미분류는 세 글자다. 글자를 200%로 키우면 글자 폭이 98px이 되어
+     칸을 넘어 책 격자를 12px 덮는다. 요소 상자는 62px 그대로라 겹침이 상자 계산에 잡히지 않는다.
+     이 묶음만 칸이 글자를 따라 넓어지게 둔다. 보통 크기에서는 49px이라 62px 그대로여서 다른 묶음과 나란히 선다.
+     한 열로 바뀌는 720px 이하는 칸이 하나뿐이라 걸지 않는다. */
+  @media (min-width: 721px) {
+    .books-page .ledger-group.unrated { grid-template-columns: minmax(62px, max-content) minmax(0, 1fr); }
+  }
   .books-page .ledger-head h2.unrated { font-size: var(--t-ledger-word); line-height: 1.4; white-space: nowrap; }
   .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px 40px; }
   @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
   @media (max-width: 480px) { .page-head { gap: 12px; } .book-source { font-size: var(--t-micro); } }
-  @media (pointer: coarse) { .status-filter button { min-height: 44px; } }
+  /* 출처 링크는 페이지 끝에 홀로 있어 아래로 넓힐 자리가 있다. 인라인 링크라 위아래 안쪽 여백은 줄 높이를 바꾸지 않고 누르는 영역만 넓힌다. */
+  @media (pointer: coarse) { .status-filter button { min-height: 44px; } .book-source a { padding-block: 15px; } }
 </style>
 <script src="../../scripts/books.ts"></script>

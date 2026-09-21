@@ -1,6 +1,6 @@
 import type { PublicNote, GraphEdge, GraphNode, Point, PanelData } from '../src/lib/content-model.ts';
 import type { SearchRecord } from '../src/lib/search-match.ts';
-type SiteData = { notes: Pick<PublicNote, 'path' | 'url' | 'summary' | 'contentMode' | 'headings' | 'kind' | 'slug'>[]; nodes: { id: string }[]; edges: GraphEdge[]; noteEdges: GraphEdge[] };
+type SiteData = { notes: Pick<PublicNote, 'path' | 'url' | 'summary' | 'contentMode' | 'headings' | 'kind' | 'slug'>[]; nodes: { id: string; tags?: string[] }[]; edges: GraphEdge[]; noteEdges: GraphEdge[] };
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -92,6 +92,9 @@ checks.push(async () => {
 checks.push(async () => {
   check(!/"(?:bodyHtml|publicContent|linkTargets)":/.test(JSON.stringify(site)), 'site.json에 본문 또는 처리 중인 링크 정보가 들어 있다');
   check(site.nodes.length > 0 && site.edges.length > 0, 'site.json 그래프가 비어 있다');
+  // 노드의 태그는 공개 데이터로 그대로 나간다. 화면에서 감추는 값이 파일에만 남는 일을 막는다.
+  const leaked = [...new Set(site.nodes.flatMap((node) => (node.tags ?? []).filter((tag) => /^(?:slipbox|blog|inbox|clippings)$/.test(tag) || tag.startsWith('프로젝트/'))))];
+  check(leaked.length === 0, `site.json 노드 태그에 내부 값이 있다: ${leaked.join(', ')}`);
   // 본문과 related에서 모은 연결은 공개 대상만 포함하고, 같은 방향의 연결은 한 번만 낸다.
   for (const [name, edges, ids] of [
     ['참조', site.noteEdges, new Set(site.notes.map((note) => note.path))],

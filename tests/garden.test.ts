@@ -156,6 +156,16 @@ test('graphRule linked keeps only development notes connected to the thought map
   assert.ok(garden.edges.some((edge) => edge.source === devNode.id && edge.target === '01_Slipbox/생각 A.md'));
 });
 
+test('graph nodes carry only public tags so the shared data file keeps internal ones out', async () => {
+  // 노드의 태그는 공개 데이터 파일(data/site.json)로 그대로 나간다. 원본 태그를 실으면 `프로젝트/*`처럼
+  // 화면에서 감추는 값이 파일에는 남는다.
+  const vaultRoot = await makeVault(files);
+  const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
+  const node = garden.nodes.find((item) => item.id === '01_Slipbox/생각 A.md');
+  assert.ok(node, '생각 A는 지도에 있다');
+  assert.deepEqual(node.tags, ['AI'], 'slipbox와 프로젝트/* 태그는 빠진다');
+});
+
 test('slug collisions fail the build with both paths named', async () => {
   const vaultRoot = await makeVault({ ...files, '01_Slipbox/다른 생각.md': '---\ncreated: 2026-09-07\nslug: 생각-a\n---\n# 다른 생각\n중복 슬러그.' });
   await assert.rejects(() => assembleGarden({ vaultRoot, config, basePath: '/obsidian' }), /생각 A\.md[\s\S]*다른 생각\.md|다른 생각\.md[\s\S]*생각 A\.md/);

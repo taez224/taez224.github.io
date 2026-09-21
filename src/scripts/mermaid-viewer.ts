@@ -1,6 +1,7 @@
 // 도표를 크게 보는 다이얼로그다. 본문의 도표는 스크롤과 글자 선택을 그대로 두고, 전체 구조를 한눈에
 // 보는 일만 여기로 옮긴다. 도표 전체를 누르게 하면 스크롤·선택과 부딪히므로 여는 수단은 버튼으로 둔다.
 import { NARROW_SCREEN_QUERY } from './mermaid-config.ts';
+import { closeOnBackdrop } from './dialog-backdrop.ts';
 
 const OPEN_CLASS = 'diagram-open';
 
@@ -87,11 +88,8 @@ function openViewer(container: Element, opener: HTMLElement, onRestore?: () => v
 
   scale.addEventListener('click', () => { fitted = !fitted; applyScale(); stage.scrollLeft = 0; stage.scrollTop = 0; });
   close.addEventListener('click', () => dialog.close());
-  // 다이얼로그 안의 빈 공간은 닫지 않고 실제 바깥을 누른 경우만 닫는다.
-  dialog.addEventListener('click', (event) => {
-    const rect = dialog.getBoundingClientRect();
-    if (event.target === dialog && (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom)) dialog.close();
-  });
+  // 도표를 끌어 옮기다 배경에서 손을 떼도 닫히지 않는다.
+  closeOnBackdrop(dialog);
   const observer = doc.defaultView?.ResizeObserver ? new doc.defaultView.ResizeObserver(applyScale) : null;
   // Escape로 닫아도 이 처리를 지나므로 원상 복구가 한곳에 모인다.
   dialog.addEventListener('close', () => {
