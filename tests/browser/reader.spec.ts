@@ -160,3 +160,27 @@ test('the table of contents follows scrolls that jump past headings', async ({ p
   await place('둘째 절', 600);
   await expect(current, '둘째 절 제목이 읽는 선 아래로 내려가도록 올라감').toHaveText('첫째 절');
 });
+
+// 페이지 끝의 짧은 절은 끝까지 내려도 제목이 읽는 선에 닿지 못한다. 선 규칙만 따르면 목차에서 누른 항목 대신
+// 앞 절이 강조되어 피드백이 틀린다. 누르거나 주소로 가리킨 절은 독자가 다시 스크롤할 때까지 그대로 가리킨다.
+test('a table of contents entry chosen at the end stays marked until the reader scrolls again', async ({ page, isMobile }) => {
+  test.skip(isMobile, '720px 이하에서는 현재 절을 표시하지 않는 접힌 목차를 쓴다');
+  await page.goto('/notes/browser-sections/');
+  const current = page.locator('.rail a[aria-current="location"]');
+  await page.locator('.rail a', { hasText: '짧은 끝 절' }).click();
+  await expect.poll(() => page.evaluate(() => Math.ceil(scrollY + innerHeight) >= document.documentElement.scrollHeight), '끝까지 내려감').toBe(true);
+  const place = await page.evaluate(() => {
+    const link = [...document.querySelectorAll<HTMLAnchorElement>('.rail a[data-heading]')].find((a) => a.textContent === '짧은 끝 절')!;
+    return document.getElementById(link.dataset.heading!)!.getBoundingClientRect().top / innerHeight;
+  });
+  expect(place, '전제: 끝까지 내려도 제목이 읽는 선(30%) 아래에 있다').toBeGreaterThan(0.3);
+  await expect(current, '누른 항목').toHaveText('짧은 끝 절');
+  await page.mouse.wheel(0, -120);
+  await expect(current, '다시 스크롤하면 선 규칙으로 돌아감').toHaveText('넷째 절');
+
+  // 주소로 가리킨 경우도 같다. 스크롤 막대를 끌 때처럼 휠·키 입력 없이 스크롤해도 고른 절이 화면을 벗어나면 돌아간다.
+  await page.reload();
+  await expect(current, '주소로 가리킨 항목').toHaveText('짧은 끝 절');
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+  await expect(current, '입력 없이 맨 위로').toHaveText('첫째 절');
+});
