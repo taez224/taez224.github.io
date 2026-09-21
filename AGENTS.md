@@ -13,7 +13,7 @@ TaeZ's Thinking Garden(https://taez224.github.io/)을 만드는 Astro 7 정적 �
 
 ## 명령
 
-Node 26.8.2(`.nvmrc`, `package.json`의 `engines`)와 커밋된 `package-lock.json`을 쓴다. CI도 같은 버전을 쓴다.
+Node 26.8.2(`.nvmrc`)와 커밋된 `package-lock.json`을 쓴다. CI도 `.nvmrc`의 버전을 쓰고, `package.json`의 `engines`는 최소 버전만 정한다.
 
 ```bash
 nvm use                      # .nvmrc에 고정한 Node 버전 선택
@@ -32,28 +32,29 @@ npm run fonts:vendor         # 글꼴 버전을 올릴 때만. public/fonts와 s
 npm run mark:build           # 표식 도안을 고쳤을 때만. public/favicon.svg와 apple-touch-icon.png를 다시 만든다
 ```
 
-- `npm run build`는 `scripts/check-dist.ts`까지 통과해야 성공이다. 이 검사는 메타데이터, OG PNG, 공개 범위, 페이지와 데이터의 연결, 그래프 초기화에 필요한 산출물, 사이트 안 링크를 확인한다. 문구·글꼴·아이콘·배치·콘텐츠 개수는 고정하지 않는다.
+- `npm run build`는 `scripts/check-dist.ts`까지 통과해야 성공이다. 이 검사는 메타데이터, OG PNG, 공개 범위, 페이지와 데이터의 연결, 그래프 초기화에 필요한 산출물, 사이트 안 링크, 피드·favicon·404 같은 필수 파일, 글꼴이 자체 호스팅 파일을 가리키는지를 확인한다. 문구·아이콘·배치·콘텐츠 개수는 고정하지 않는다.
 - `snapshot:markdown`은 Markdown 렌더러, 본문 정리, 목차, 검색 텍스트, 링크 해석을 고치거나 markdown-it·sanitize-html을 올릴 때 쓰는 회귀 검사다. 고치기 전에 `write`, 고친 뒤에 `verify`를 실행한다. 실제 vault를 읽기 전용으로 읽고, 산출물이 다르면 종료 코드 1, config.json이나 스냅샷 형식이 다르면 종료 코드 2로 끝난다. 원문이 바뀐 노트가 있으면 전체 동일로 판정하지 않는다. 자동 테스트가 아니므로 Markdown 문법은 임시 입력을 쓰는 단위 테스트로 검증한다.
 - 글꼴(Pretendard, Gowun Batang)은 자체 호스팅한다. `scripts/vendor-fonts.ts`가 고정 버전 npm 패키지에서 woff2 조각을 받아 `public/fonts/`에 커밋해 두므로 빌드와 dev에 네트워크가 필요 없다. 글꼴 버전은 스크립트의 패키지 버전으로 올리고, 생성된 `fonts.css`는 직접 고치지 않는다.
 - `sharp`는 Astro가 선택 의존성으로만 가져오지만 썸네일 최적화와 OG 카드가 쓰므로 직접 의존성으로 선언한다.
 - `overrides`의 `lodash-es`는 Mermaid 12가 쓰는 chevrotain이 취약한 4.17.23을 고정하기 때문에 둔 것이다. chevrotain 계열 세 패키지가 4.18 이상을 선언하면 override를 빼고 `npm audit --omit=dev`와 도표 렌더링을 다시 확인한다.
-- 환경 변수: `GARDEN_VAULT_ROOT`(vault 경로), `GARDEN_PROJECT_ROOT`(기본 cwd), `GARDEN_OG_CACHE_DIR`, `GARDEN_DIST_DIR`(check-dist 대상).
+- 환경 변수: `GARDEN_VAULT_ROOT`(vault 경로), `GARDEN_PROJECT_ROOT`(기본 cwd), `GARDEN_OG_CACHE_DIR`, `GARDEN_DIST_DIR`(check-dist 대상), `CI`(있으면 OG 글꼴을 받지 못했을 때 시스템 글꼴로 대신 그리지 않고 빌드를 멈추며, 브라우저 검사를 한 번 재시도한다).
 
 ## 아키텍처
 
-`src/lib/garden.ts`의 `assembleGarden()`이 vault를 한 번 조립하고, 나머지는 모두 그 결과를 읽는다. 노트 상세 페이지 셋(`posts/[slug]`, `notes/[slug]`, `dev/[slug]`)은 `getCollection('notes')`로 읽고, 나머지 페이지와 엔드포인트(`data/*.json.ts`, `og/*.png.ts`, `rss.xml.ts`, `feeds/[kind].xml.ts`, `llms.txt.ts`)는 `getGarden()`으로 읽는다. `get-garden.ts`가 결과를 메모이즈하고, dev에서는 2초가 지나면 다시 조립한다.
+`src/lib/garden.ts`의 `assembleGarden()`이 vault를 한 번 조립하고, 나머지는 모두 그 결과를 읽는다. 노트 상세 페이지 셋(`posts/[slug]`, `notes/[slug]`, `dev/[slug]`)은 `getCollection('notes')`로 경로와 본문을 만들고, 참조·그래프처럼 조립 결과가 필요한 부분은 `NotePage.astro`가 `getGarden()`으로 읽는다. 나머지 페이지와 엔드포인트(`data/*.json.ts`, `og/*.png.ts`, `rss.xml.ts`, `feeds/[kind].xml.ts`, `llms.txt.ts`)는 `getGarden()`으로 읽는다. 최적화한 썸네일은 컬렉션에만 있으므로 홈과 글 카드(`ArticleBody.astro`)는 썸네일을 `getEntry('notes')`로 가져온다. `get-garden.ts`가 결과를 메모이즈하고, dev에서는 2초가 지나면 다시 조립한다.
 
 - 조립 코드의 규칙(모듈 책임과 의존 방향, 빌드를 멈추는 조건, OG 카드 캐시)은 `src/lib/AGENTS.md`에 있다. `src/lib/`을 고치기 전에 읽는다.
 - 조립이 읽는 입력을 새로 더하면 `src/loaders/vault.ts`의 `watchPathsFor`에도 더한다. 빠뜨리면 dev에서 그 파일을 고쳐도 다시 조립되지 않는다.
 - 홈과 지도는 페이지에 인라인한 JSON(`data-hero-data`, `data-map-data`)으로 그래프를 그리므로 fetch하지 않는다. fetch는 검색이 `search.json`을 열 때만 한다. `data/site.json`은 페이지가 쓰지 않지만 공개 데이터 엔드포인트이자 check-dist의 기준 자료라 남긴다.
-- 그래프는 프레임워크 없는 SVG 엔진 `src/graph/engine.ts`가 그린다. `src/graph`의 나머지 모듈은 DOM을 쓰지 않는 순수 함수이고 모듈마다 단위 테스트가 있다.
+- 홈과 지도의 그래프는 프레임워크 없는 SVG 엔진 `src/graph/engine.ts`가 그린다. `src/graph`의 나머지 모듈은 DOM을 쓰지 않는 순수 함수이고, 함수가 든 모듈마다 단위 테스트가 있다. 노트 사이드바의 작은 그래프와 OG 카드의 그래프는 엔진 없이 `src/components/local-graph-layout.ts`의 순수 함수로 빌드 때 그린다.
 - 홈은 빌드 때 그린 SVG 스냅샷(`src/graph/snapshot.ts`)을 먼저 보여 주고, 넓은 화면에서는 엔진이 올라오면 스냅샷을 가린다. 두 쪽이 같은 제목 배치 규칙(`label.ts`의 `placeLabels`)과 맞춤을 써야 교체가 눈에 띄지 않으므로, 배치 규칙을 바꾸면 두 쪽이 함께 바뀌는지 확인한다.
 - 휴대폰 폭(720px 이하)과 손가락으로 쓰는 기기에서는 엔진을 숨기고 스냅샷을 보인다. 지도 SVG가 `touch-action: none`이라 엔진이 올라오면 세로 스와이프를 가져가고, 살아 있는 지도가 주는 호버 미리보기는 손가락으로 얻을 수 없다. 창을 줄이거나 기기를 돌려도 스냅샷이 돌아와야 하므로, 스냅샷은 DOM에서 지우지 않고 CSS로만 가린다. 이 경계는 `src/scripts/hero-graph.ts`의 `LIVE_HERO_QUERY`와 `src/pages/index.astro`의 미디어 쿼리 두 곳에 있고, `tests/hero-graph.test.ts`가 둘이 같은지 검사한다.
 - 지도는 무대 크기가 화면마다 달라 스냅샷을 둘 수 없다. 대신 `src/integrations/module-preload.ts`가 지도 스크립트를 `<head>`로 옮기고 `blocking="render"`를 달아, 그래프가 올라간 뒤에 첫 화면을 그린다.
 
 ### 공개 범위 규칙 (바꿀 때 주의)
 
-- `config.json`의 `include`/`exclude`가 폴더 단위 규칙이고, `src/lib/publication.ts`의 `privateRoots`는 config와 무관하게 항상 비공개다. Development 폴더는 `_`나 `.`로 시작하는 경로 조각이 있으면 뺀다. `include`에 적은 폴더가 vault에 없으면 빌드가 멈추므로, vault에서 공개 폴더의 이름을 바꾸면 `config.json`도 함께 고친다.
+- `config.json`의 `include`/`exclude`가 폴더 단위 규칙이고, `src/lib/publication.ts`의 `privateRoots`는 config와 무관하게 항상 비공개다. Development 폴더는 `_`나 `.`로 시작하는 경로 조각이 있으면 뺀다. 공개할 수 있는 Development 하위 폴더는 `publication.ts`의 `developmentFolders`(Concepts, Troubleshooting, Tools)로 정해져 있어, `config.json`에 다른 폴더를 적거나 `mode: all`·`files` 밖의 형식을 쓰면 빌드가 멈춘다. 새 폴더를 열려면 이 목록과 `development.ts`의 `DevelopmentCategory`를 함께 고친다. `include`에 적은 폴더가 vault에 없으면 빌드가 멈추므로, vault에서 공개 폴더의 이름을 바꾸면 `config.json`도 함께 고친다.
+- 책 노트는 `include`/`exclude`를 거치지 않는다. `src/lib/books.ts`가 `30_Resources/References/Books`를 고정 경로로 읽어 `_`로 시작하는 파일만 빼고 모두 책장에 싣는다.
 - 블로그(`20_Projects/blog`)는 `status: published`이거나 `type: series`인 글만 들어온다. 발행된 편이 없는 연재 허브는 조립 단계에서 뺀다.
 - `externalPublications` 규칙에 걸리는 글은 `contentMode: 'external'`이 되어 본문·목차·검색 텍스트 없이 소개 페이지만 만든다. 이때 `source`가 그 호스트의 유효한 https URL이 아니면 빌드가 실패한다.
 - 비공개 노트는 존재 여부만 기록하고 제목·요약·본문을 절대 출력하지 않는다. HTML, 검색 데이터, 그래프 데이터 어디에도 비공개 메타데이터와 외부 발행 글의 본문을 내보내지 않는다.
@@ -72,7 +73,7 @@ npm run mark:build           # 표식 도안을 고쳤을 때만. public/favicon
 
 - 2칸 들여쓰기, ES 모듈, 단따옴표 문자열, 세미콜론.
 - Astro 컴포넌트는 PascalCase, 헬퍼 파일은 kebab-case, 함수와 변수는 camelCase.
-- 공용 로직은 `src/lib/`, 브라우저 동작은 `src/scripts/`, 그래프 순수 함수는 `src/graph/`에 둔다.
+- 공용 로직은 `src/lib/`, 브라우저 동작은 `src/scripts/`, 그래프 순수 함수는 `src/graph/`에 둔다. 작은 그래프의 배치(`src/components/local-graph-layout.ts`)는 그 컴포넌트 옆에 둔 예외다.
 - 주석과 문서는 한국어로 쓴다. 코드 주석은 "왜"를 적는다.
 
 ## 디자인
@@ -80,7 +81,7 @@ npm run mark:build           # 표식 도안을 고쳤을 때만. public/favicon
 화면 작업 전에 `DESIGN.md`의 Overview와 관련 절을 읽는다. 이 문서는 Google Labs의 DESIGN.md 형식으로 현재 디자인의 규칙과 의도를 기록한다.
 
 - 디자인은 기존 컴포넌트에서 출발해 고친다. `DESIGN.md` 본문에는 규칙과 그 이유, 절의 성격을 정하는 대표 값만 적는다. 한 컴포넌트 안에서만 쓰이는 값은 토큰과 CSS에, 동작의 세부는 코드 주석과 테스트에, 결정의 경위는 커밋 메시지에 둔다. 어느 값이 어느 파일에서 오고 어떤 테스트가 문서와 구현의 일치를 검사하는지는 `DESIGN.md`의 「문서와 구현의 대응」 표에 있다. 문서와 구현이 어긋나면 의도한 변경인지 확인하고, 문서가 낡았으면 현재 구현에 맞춘다.
-- 사이트 색의 단일 출처는 `src/lib/palette.ts`의 `PALETTE`(밝은 화면)와 `DARK_PALETTE`(어두운 화면)다. CSS는 `var(--이름)`으로 읽고, CSS 변수를 읽지 못하는 OG 카드·Mermaid 설정·`theme-color` 메타만 이 상수를 가져다 쓴다. 다른 파일에 색 값을 복제하면 `tests/palette.test.ts`가 실패한다.
+- 사이트 색의 단일 출처는 `src/lib/palette.ts`의 `PALETTE`(밝은 화면)와 `DARK_PALETTE`(어두운 화면)다. 같은 값이 `site.css`의 `:root`(어두운 화면은 미디어 쿼리)와 `DESIGN.md` 앞머리 색 토큰에도 있으므로 색을 바꾸면 세 곳을 함께 고친다. `tests/palette.test.ts`가 세 곳이 같은지, 다른 파일에 hex 값이 없는지 검사한다. 컴포넌트 CSS는 `var(--이름)`으로 읽고, CSS 변수를 읽지 못하는 OG 카드·Mermaid 설정·`theme-color` 메타만 이 상수를 가져다 쓴다.
 - 픽셀 도안의 단일 출처는 `src/lib/mark.ts`(개인 표식)와 `src/lib/pixel-icons.ts`(조작 아이콘)의 격자다. 한 칸이 1px이므로 격자 칸 수와 표시 크기가 어긋나면 도안이 흐려지고, `tests/mark.test.ts`와 `tests/pixel-icons.test.ts`가 실패한다. 파비콘과 터치 아이콘은 `npm run mark:build`가 만드는 생성물이라 직접 고치지 않는다.
 - `npm run design:lint`(`@google/design.md@0.4.0`)는 문서 형식과 선언한 색 조합의 대비만 검사한다. 오류가 0이어도 실제 화면은 따로 확인한다.
 
