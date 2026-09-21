@@ -96,6 +96,9 @@ h1, h2, h3, p { margin-top: 0; }
 /* 행 어디를 눌러도 제목 링크로 간다. 제목 글자 한 줄만 누를 수 있으면 손가락으로 맞히기 어렵다. 행 안의 다른 링크(발행처, 1편부터 읽기)는 위에 올려 따로 누른다. */
 .ledger-row h3 a::after { position: absolute; inset: 0; content: ""; }
 .ledger-row .meta a { position: relative; z-index: 1; }
+/* 행 전체가 제목 링크라 메타 줄의 링크는 색만으로 구분되지 않는다. 밖으로 나가는 링크는 ↗가 그 일을 하므로,
+   표시가 없는 사이트 안 링크(1편부터 읽기)에만 홀로 선 링크의 밑줄을 준다. 모두에 그으면 목록에 밑줄이 줄줄이 남는다. */
+.ledger-row .meta a:not([target]) { text-decoration: underline; text-decoration-color: var(--link-underline); text-underline-offset: 4px; }
 .ledger-row:first-child { padding-top: 4px; border-top: 0; }
 .ledger-row h3 { margin: 0 0 6px; font-size: var(--t-list); font-weight: 600; line-height: 1.45; }
 .ledger-row h3 a { color: var(--ink); }
@@ -154,6 +157,9 @@ main { min-height: 60vh; }
 .site-footer a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--link-underline); text-underline-offset: 4px; }
 @media (hover: hover) { .site-footer a:hover { text-decoration-color: var(--ink); } }
 @media (pointer: coarse) { .site-footer a { padding-block: 12px; margin-block: -12px; } }
+/* 장부 행 위에 올린 링크는 제목 아래 여백(6px)까지만 넓힌다. 더 넓히면 제목 글자를 눌러도 이 링크로 간다.
+   압축 행(개발 노트)은 제목 아래가 3px이지만 메타 줄에 링크를 두지 않아 해당하지 않는다. */
+@media (pointer: coarse) { .ledger-row:not(.is-compact) .meta a { padding-block: 6px; margin-block: -6px; } }
 
 @media (max-width: 720px) {
   /* 모바일에서는 제목 단계를 함께 줄여 글 제목과 h2, 페이지 제목과 장부 라벨, 절 제목과 대표 글 제목이 같은 크기로 겹치지 않게 한다.

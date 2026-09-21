@@ -139,6 +139,12 @@
 .body details.callout[open] > summary::after { transform: translateY(4px) rotate(-135deg); }
 @media (hover: hover) { .body details.callout > summary:hover { color: var(--ink); } }
 .body details.callout:not([open]) { padding-bottom: 12px; }
+/* 머리표는 콜아웃을 여닫는 유일한 조작이라 손가락 기기에서 44px로 넓힌다. 위는 콜아웃의 12px 안쪽 여백이 받아 주고,
+   아래는 펼쳤을 때 본문이 바로 붙으므로 본문을 그만큼 물러서게 한다. 닿은 채로 두면 본문 첫 줄을 눌러도 콜아웃이 접힌다. */
+@media (pointer: coarse) {
+  .body details.callout > summary { padding-block: 12px; margin-block: -12px; }
+  .body details.callout[open] > .callout-body { margin-top: 12px; }
+}
 @media (prefers-reduced-motion: reduce) { .body details.callout > summary::after { transition: none; } }
 .body .callout-body { margin-top: 6px; font-size: var(--t-summary); line-height: 1.75; }
 .body .callout-body > :first-child { margin-top: 0; }

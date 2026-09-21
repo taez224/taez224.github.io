@@ -51,10 +51,14 @@ const related = [...new Set([...note.outgoing, ...note.incoming])].filter((path)
   .external-related { margin-top: 52px; padding-top: 22px; border-top: 1px solid var(--line); }
   h2 { margin: 0 0 14px; font-size: var(--t-h3); }
   ul { list-style: none; padding: 0; margin: 0; }
-  li { display: flex; align-items: baseline; gap: 20px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  /* 리더의 목록과 같은 규칙이다. 줄 전체를 제목 링크의 영역으로 덮어 글자 한 줄만 누를 수 있는 상태를 없앤다. */
+  li { position: relative; display: flex; align-items: baseline; gap: 20px; padding: 12px 0; border-bottom: 1px solid var(--line); }
   li a { flex: 1; line-height: 1.6; }
+  li a::after { position: absolute; inset: 0; content: ""; }
   li .meta { flex-shrink: 0; }
   .back-to-posts { display: inline-flex; gap: 8px; margin-top: 34px; font-size: var(--t-side); }
+  /* 되돌아가기 링크는 리더의 페이지 끝 줄과 같은 자리다. 위는 34px 여백, 아래는 페이지 아래 여백이라 넓혀도 닿을 것이 없다. */
+  @media (pointer: coarse) { .back-to-posts { padding-block: 12px; margin-block: -12px; } }
   @media (max-width: 720px) {
     .external-thumbnail :global(img) { max-height: 220px; }
     .external-related { margin-top: 40px; }

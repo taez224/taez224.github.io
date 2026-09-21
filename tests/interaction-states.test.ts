@@ -76,6 +76,42 @@ test('hit areas widened for touch do not overlap the line above', () => {
   assert.ok(gap >= pad * 2, `메타 줄의 줄 간격 ${gap}px이 위아래로 넓힌 ${pad}px의 두 배 이상이다`);
 });
 
+test('widened touch targets stay inside the room their neighbour leaves', () => {
+  // 넓힌 영역이 이웃에 닿으면 겹친 자리에서 뒤에 그려지는 쪽이 이겨 엉뚱한 곳으로 간다.
+  // 이웃이 물러서 줄 수 있으면 그만큼 물러서게 하고, 그럴 수 없으면 이웃이 남긴 여백까지만 넓힌다.
+  const body = read('src/styles/body.css');
+  const coarseBody = body.slice(body.indexOf('@media (pointer: coarse)'));
+  const summaryPad = Number(blockFor(coarseBody, '.body details.callout > summary').match(/padding-block:\s*(\d+)px/)?.[1] ?? 0);
+  const calloutGap = Number(blockFor(coarseBody, '.body details.callout[open] > .callout-body').match(/margin-top:\s*(\d+)px/)?.[1] ?? 0);
+  assert.ok(summaryPad > 0, '콜아웃 머리표는 터치에서 누르는 영역을 넓힌다');
+  assert.ok(calloutGap >= summaryPad, `머리표를 ${summaryPad}px 넓히므로 펼친 본문도 그만큼 물러선다`);
+
+  const site = read('src/styles/site.css');
+  const coarseSite = site.slice(site.indexOf('@media (pointer: coarse)'));
+  const metaPad = Number(blockFor(coarseSite, '.ledger-row:not(.is-compact) .meta a').match(/padding-block:\s*(\d+)px/)?.[1] ?? 0);
+  // 장부 행의 발행처 링크 위에는 제목이 있고, 제목 아래 여백만큼만 넓힐 수 있다. 더 넓히면 제목을 눌러도 발행처로 간다.
+  const titleGap = Number(blockFor(site, '.ledger-row h3').match(/margin:\s*0 0 (\d+)px/)?.[1] ?? 0);
+  assert.ok(metaPad > 0, '장부 행의 링크도 누르는 영역을 넓힌다');
+  assert.ok(metaPad <= titleGap, `발행처 링크를 ${metaPad}px 넓혀도 제목 아래 ${titleGap}px 안에 머문다`);
+});
+
+test('links that stand alone in a line are marked with the shared underline', () => {
+  // 행 전체가 이미 제목 링크인 자리에서는 색만으로 무엇이 따로 눌리는지 알 수 없다. 주변 글과 2.59:1뿐이다.
+  // 밖으로 나가는 링크는 ↗가 그 일을 하므로, 표시가 없는 사이트 안 링크에만 밑줄을 준다.
+  const site = read('src/styles/site.css');
+  assert.match(blockFor(site, '.ledger-row .meta a:not([target])'), /text-decoration-color:\s*var\(--link-underline\)/, '사이트 안으로 가는 링크');
+  assert.doesNotMatch(blockFor(site, '.ledger-row .meta a'), /text-decoration/, '↗를 단 링크에는 밑줄을 겹치지 않는다');
+});
+
+test('the external article page reaches its links like the reader does', () => {
+  // 소개 페이지의 연결 목록과 되돌아가기 링크는 리더의 같은 자리와 성격이 같다. 누르는 영역도 같아야 한다.
+  const css = styleText('src/components/ExternalArticle.astro');
+  assert.match(blockFor(css, 'li'), /position:\s*relative/, '줄 전체가 링크의 영역이 된다');
+  assert.match(blockFor(css, 'li a::after'), /inset:\s*0/);
+  const coarse = css.slice(css.indexOf('@media (pointer: coarse)'));
+  assert.match(blockFor(coarse, '.back-to-posts'), /padding-block:\s*\d+px/, '되돌아가기 링크는 위아래로 넓힌다');
+});
+
 test('search results are clickable across the whole row', () => {
   // 한 줄짜리 결과의 제목 링크는 27.75px이라 44px 목표에 못 미친다. 링크의 ::after로 줄 전체를 덮어 누르는 영역만 넓힌다.
   const css = read('src/styles/site.css');
