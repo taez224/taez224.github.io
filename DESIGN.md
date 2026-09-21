@@ -587,6 +587,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 - **연결 탐색:** 참조는 실선, 역참조는 점선이고, 전체 연결은 목록으로도 읽는다. 노드 선택과 키보드 포커스는 링으로, 목차의 현재 위치는 주제색 선과 굵은 글자로 표시한다.
   - 지도 노드는 버튼으로 읽히지만 Enter는 노트를 열고 Space는 지도에 머문 채 고른다. 버튼의 약속과 다르므로 무대에 숨긴 한 줄로 설명한다. 숨긴 줄은 낭독기에만 닿으므로 같은 말을 키보드가 지도에 닿았을 때만(`:focus-visible`) 무대 왼쪽 아래에 드러낸다. 720px 이하에서는 확대 버튼과 겹치지 않게 왼쪽 위에 둔다. 늘 띄우면 마우스로 오는 대다수에게 쓰지 않는 글이 남는다. 허브는 화면에서 링으로만 구분되므로 노드의 접근 가능한 이름 끝에 "허브"를 붙인다. 눌린 상태와 호버 예고편(간선 방향과 나머지 흐림)은 지도에만 둔다. 홈 지도는 누르면 곧바로 노트로 이동해 머무는 선택이 없다.
   - 색면과 영역 이름, 노드 제목 층은 접근성 트리에서 뺀다. 이름은 노드마다 이미 있어서 층까지 읽히면 같은 제목이 두 번 나온다.
+  - 목차의 현재 위치는 화면 위에서 30% 선을 지난 제목 가운데 마지막 것이고, 첫 제목이 선에 닿기 전에는 첫 제목이다. 맨 위나 맨 아래로 한 번에 건너뛰어도 같은 규칙을 따른다. 페이지 끝의 짧은 절은 끝까지 내려도 제목이 선에 닿지 못해 가리키지 못한다.
   - 노트 사이드바의 블록은 목차를 빼고 모두 위 선으로 시작한다. 목차가 없는 글에서도 첫 블록이 제목 옆에 떠 보이지 않고, 모바일에서는 이 선이 본문과의 경계가 된다.
   - 사이드바의 작은 그래프는 참조·역참조와 같은 블록이라 작은 제목 "연결"과 이웃 수를 단다. 이웃 노드에는 제목을 약 100px 폭 안에서 단어 경계로 두 줄까지 적고, 넘치면 줄임표로 맺는다. 글자 수로 자르면 단어 가운데가 끊기고, 한 줄로는 어떤 생각이 연결됐는지 알기 어렵다. 위쪽 이웃은 제목을 노드 위에, 나머지는 아래에 두어 가운데 노드와 관계선에서 떨어뜨린다. 제목이 읽히도록 이웃은 6개까지만 그리고, 더 있으면 글자를 줄이지 않고 아래 목록으로 안내한다. 전체 제목은 마우스 툴팁과 목록의 같은 줄이 보여 준다. 노드와 목록의 같은 노트 줄은 마우스를 올리거나 포커스하면 함께 강조된다. 노드는 누르는 원에 호버 판을 깔고, 줄은 링크 호버와 같은 밑줄을 긋는다. 강조는 마우스와 키보드 포커스가 모두 그 짝을 벗어났을 때 풀린다.
 - **페이지 끝:** 노트 페이지 끝 줄에는 목록으로 돌아가는 링크만 둔다. 사이트 소개 링크는 바닥글에 있다.
@@ -695,6 +696,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 폭에 따른 리더·지도 배치 | `src/components/NotePage.astro`, `src/pages/map/index.astro` | 없음 |
 | 홈 지도의 폭·입력 방식에 따른 전환(살아 있는 지도와 정적 그림) | `src/scripts/hero-graph.ts`, `src/pages/index.astro` | `tests/hero-graph.test.ts`, `tests/browser/reader.spec.ts` |
 | 외부 발행 글의 목록 복귀 링크와 앞 목록의 클릭 영역 | `src/components/ExternalArticle.astro` | `tests/browser/reader.spec.ts` |
+| 목차의 현재 위치 | `src/scripts/toc.ts` | `tests/browser/reader.spec.ts` |
 | 지도와 홈 지도가 나누는 호버 예고편·누름 상태 | `src/graph/engine.ts` | `tests/browser/map.spec.ts`, `tests/browser/home.spec.ts` |
 | 지도 시트로 바뀌는 폭과 그 폭의 대화상자 처리 | `src/components/MapPanel.astro`, `src/scripts/map.ts`, `src/pages/map/index.astro` | `tests/interaction-states.test.ts`, `tests/browser/map.spec.ts` |
 | 검색 결과 줄의 형광과 두 줄 요약 | `src/lib/search-match.ts`, `src/scripts/search.ts`, `src/styles/site.css` | `tests/search-match.test.ts`, `tests/browser/search.spec.ts` |

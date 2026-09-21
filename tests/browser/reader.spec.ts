@@ -138,3 +138,25 @@ test('the original link above an external article reaches 44px on touch without 
   expect(measured.height).toBeGreaterThanOrEqual(44);
   expect(measured.gap, '넓힌 영역이 제목에 닿지 않는다').toBeGreaterThanOrEqual(0);
 });
+
+// 목차는 읽는 선을 지난 마지막 제목을 가리킨다. 선 근처의 좁은 띠만 지켜보면, 한 번의 스크롤로 띠를 건너뛴 제목은
+// 띠에 들어온 적이 없어 알림이 오지 않았고 이전 절이 그대로 남았다. 맨 위로 가기가 가장 흔한 경우다.
+test('the table of contents follows scrolls that jump past headings', async ({ page }) => {
+  await page.goto('/notes/browser-sections/');
+  const current = page.locator('.rail a[aria-current="location"]');
+  // 그 절 제목을 화면 맨 위에서 offset만큼 아래(음수면 위)에 두도록 한 번에 이동한다.
+  const place = (title: string, offset: number) => page.evaluate(([name, by]) => {
+    const link = [...document.querySelectorAll<HTMLAnchorElement>('.rail a[data-heading]')].find((a) => a.textContent === name)!;
+    const heading = document.getElementById(link.dataset.heading!)!;
+    window.scrollTo({ top: window.scrollY + heading.getBoundingClientRect().top - by, behavior: 'instant' });
+  }, [title, offset] as const);
+  await expect(current).toHaveText('첫째 절');
+  await place('셋째 절', -600);
+  await expect(current, '제목이 화면 위로 지나간 절 한가운데').toHaveText('셋째 절');
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+  await expect(current, '맨 위로').toHaveText('첫째 절');
+  await place('둘째 절', -300);
+  await expect(current, '둘째 절 제목을 건너뛰어 내려감').toHaveText('둘째 절');
+  await place('둘째 절', 600);
+  await expect(current, '둘째 절 제목이 읽는 선 아래로 내려가도록 올라감').toHaveText('첫째 절');
+});

@@ -31,10 +31,20 @@ if (links.length) {
       if (key === id) { link.setAttribute('aria-current', 'location'); reveal(link); } else link.removeAttribute('aria-current');
     }
   };
+  // 현재 절은 읽는 선(화면 위에서 30%)을 지난 제목 가운데 마지막 것이고, 아무 제목도 지나지 않았으면 첫 제목이다.
+  // 감시 구역을 선 근처의 좁은 띠로 두면, 스크롤 한 번에 띠를 건너뛴 제목은 교차 상태가 그대로라 알림이 오지 않아
+  // 맨 위로 가도 이전 절이 남았다. 구역을 선 위로 문서보다 길게 늘려 두면 제목이 선을 넘을 때마다 상태가 바뀐다.
+  // 알림이 온 제목의 상태만 고치므로 스크롤마다 모든 제목의 위치를 다시 잴 필요가 없다.
+  // 페이지 끝의 짧은 절은 끝까지 내려도 제목이 선에 닿지 못하므로 가리키지 못한다.
+  const ABOVE_LINE = 1_000_000;
+  const passed = new Set<Element>();
   const observer = new IntersectionObserver((entries) => {
-    const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-    if (visible.length) mark(visible[0].target.id);
-  }, { rootMargin: '-96px 0px -70% 0px', threshold: 0 });
+    for (const entry of entries) {
+      if (entry.isIntersecting) passed.add(entry.target);
+      else passed.delete(entry.target);
+    }
+    mark((headings.findLast((heading) => passed.has(heading)) ?? headings[0])?.id);
+  }, { rootMargin: `${ABOVE_LINE}px 0px -70% 0px` });
   headings.forEach((heading) => observer.observe(heading));
   mark(headings[0]?.id);
 }
