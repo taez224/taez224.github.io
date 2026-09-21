@@ -560,7 +560,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 ### 목록
 
-- **장부:** 격자를 두 단계로 나눈다. 왼쪽 열에는 연도·분류·등급 라벨을 명조로 크게 두고, 오른쪽의 각 행이 다시 제목·메타와 요약을 좌우로 나눈다. 요약은 세 줄까지 보이고, 720px 이하에서는 두 단계가 모두 세로로 쌓인다. 장부 행의 메타 줄은 구분점 없이 간격으로만 항목을 띄운다.
+- **장부:** 격자를 두 단계로 나눈다. 왼쪽 열에는 연도·분류·등급 라벨을 명조로 크게 두고, 오른쪽의 각 행이 다시 제목·메타와 요약을 좌우로 나눈다. 요약은 세 줄까지 보이고, 720px 이하에서는 두 단계가 모두 세로로 쌓인다. 장부 행의 메타 줄은 구분점 없이 간격으로만 항목을 띄운다. 라벨 칸 62px은 한 글자 등급에 맞춘 값이라, 책장의 세 글자 미분류는 글자를 200%로 키우면 글자 폭이 98px이 되어 칸을 넘어 책 격자를 12px 덮는다. 그 묶음만 칸이 글자를 따라 넓어지게 두고, 보통 크기에서는 49px이라 62px을 지켜 다른 묶음과 나란히 선다.
 - **개발 노트:** 분류를 절 제목으로 두고, 행의 메타 줄에는 첫 공개 태그와 날짜를 적는다. 태그 순서는 vault 속성 스키마가 정하며 사이트는 고쳐 쓰지 않는다. 첫 태그가 절 제목과 같은 말이면 빌드 로그가 알려 준다.
 - **책 표지:** 표지를 불러오지 못하면 표지 크기의 밝은 종이 상자에 구분선 색 테두리를 두고 책 제목을 적는다.
 
@@ -695,6 +695,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 지도 시트로 바뀌는 폭과 그 폭의 대화상자 처리 | `src/components/MapPanel.astro`, `src/scripts/map.ts`, `src/pages/map/index.astro` | `tests/interaction-states.test.ts`, `tests/browser/map.spec.ts` |
 | 지도 키 안내가 눈에 드러나는 조건 | `src/pages/map/index.astro` | `tests/browser/map.spec.ts` |
 | 검색 결과 줄의 형광·두 줄 요약과 배경 닫기 | `src/lib/search-match.ts`, `src/scripts/search.ts`, `src/styles/site.css` | `tests/search-match.test.ts`, `tests/browser/search.spec.ts` |
+| 글자를 키웠을 때 책장 라벨 칸이 넓어지는 조건 | `src/pages/books/index.astro` | `tests/browser/books.spec.ts` |
 | 홈 첫 화면과 최근 기록의 누르는 영역 | `src/components/About.astro`, `src/pages/index.astro` | `tests/browser/home.spec.ts` |
 
 ### 검사

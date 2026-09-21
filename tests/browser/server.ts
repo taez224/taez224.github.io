@@ -104,6 +104,14 @@ book_note: 한 줄 평이다.
 ---
 # 짧은 책이름
 `);
+// 평점이 없는 책은 미분류 묶음에 들어간다. 세 글자 라벨이 한 글자용 칸을 넘는지 볼 자리다.
+await fs.writeFile(path.join(vault, '30_Resources/References/Books/평점 없는 책.md'), `---
+title: 평점 없는 책
+created: 2026-09-05
+status: 읽는 중
+---
+# 평점 없는 책
+`);
 // 이웃이 일곱인 노트. 로컬 그래프가 여섯만 그리고 두 줄 제목이 실제 글꼴에서도 겹치지 않는지 본다.
 const manyTitles = ['AI 시대의 판단력은 맥락을 실행 기준으로 바꾸는 능력이다', 'Taste는 지금 필요한 것에 무게를 두는 감각이다',
   '노트는 작성할 때 다시 찾을 상황까지 고려해야 한다', 'AI Agent 시대의 Human Agency', '생성은 AI에게, 검증은 나에게',
