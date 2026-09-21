@@ -135,3 +135,25 @@ test('selecting a map node marks it as pressed', async ({ page, isMobile }) => {
   await expect(target).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('.graph .node[aria-pressed="true"]')).toHaveCount(1);
 });
+
+// 무대에 숨긴 설명(#map-keys)은 낭독기에만 닿는다. 눈으로 보는 키보드 사용자는 Space와 Enter가 다른 일을 한다는 것을 알 수 없다.
+// 늘 띄우면 마우스로 오는 대다수에게 쓰지 않는 글이 한 줄 남으므로, 키보드가 지도에 닿았을 때만 드러낸다.
+test('the map reveals its key hint to the keyboard and keeps it from the mouse', async ({ page, isMobile }) => {
+  test.skip(isMobile, '키로 오갈 수 있는 기기에서 볼 안내다');
+  await page.goto('/map/');
+  const hint = page.locator('.key-hint');
+  const held = page.locator('.graph .node:focus-visible');
+  await expect(hint).toHaveCSS('opacity', '0');
+  // 마우스로 누른 노드도 포커스를 받지만 :focus-visible은 아니다.
+  await page.locator('.graph .node').first().click({ force: true });
+  await expect(page.locator('.graph .node:focus')).toHaveCount(1);
+  await expect(hint).toHaveCSS('opacity', '0');
+  // 고른 노드를 풀어야 흐려진 노드가 탭 순서로 돌아온다.
+  await page.keyboard.press('Escape');
+  await page.locator('.legend button').last().focus();
+  for (let step = 0; step < 6 && (await held.count()) === 0; step += 1) await page.keyboard.press('Tab');
+  await expect(held).toHaveCount(1);
+  await expect(hint).toHaveCSS('opacity', '1');
+  // 숨긴 설명은 그대로 남는다. 보이는 안내는 그 말을 눈으로도 볼 수 있게 할 뿐이다.
+  await expect(page.locator('#map-keys')).toHaveCount(1);
+});
