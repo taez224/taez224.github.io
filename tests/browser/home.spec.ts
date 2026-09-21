@@ -86,3 +86,31 @@ test('the hero intro stays inside the viewport on screens narrower than the cont
   const left = await page.locator('.hero-about').evaluate((el) => el.getBoundingClientRect().left);
   expect(left).toBeGreaterThanOrEqual(0);
 });
+
+// 홈 노드는 누르면 그 노트로 이동할 뿐 눌린 채로 남지 않는다.
+// 그런데도 aria-pressed를 달면 낭독기에 눌리지 않는 토글 버튼 수십 개로 읽힌다.
+test('home map nodes do not claim a pressed state', async ({ page, isMobile }) => {
+  test.skip(isMobile, '살아 있는 지도는 마우스가 있는 기기에만 올라온다');
+  await page.goto('/');
+  const graph = page.locator('.hero-graph > .graph');
+  await expect(graph).toBeVisible();
+  await expect(graph.locator('.node').first()).toBeAttached();
+  await expect(graph.locator('.node[aria-pressed]')).toHaveCount(0);
+});
+
+// 호버 예고편은 지도에서만 쓴다. 홈은 호버해도 간선과 노드 상태가 그대로이므로,
+// 다시 그리면 같은 결과를 만들려고 간선 전체를 버렸다가 새로 만든다.
+test('hovering a node on the home map only moves the titles', async ({ page, isMobile }) => {
+  test.skip(isMobile, '살아 있는 지도는 마우스가 있는 기기에만 올라온다');
+  await page.goto('/');
+  const graph = page.locator('.hero-graph > .graph');
+  await expect(graph).toBeVisible();
+  await graph.locator('line.edge').first().evaluate((line) => line.setAttribute('data-kept', ''));
+  const node = graph.locator('.node').first();
+  const id = await node.getAttribute('data-id');
+  await node.hover();
+  const hovered = await graph.locator('[data-labels] text.is-hovered').evaluateAll((texts) => texts.map((text) => text.getAttribute('data-for')));
+  expect(hovered).toEqual([id]);
+  // 간선을 다시 만들었다면 표시해 둔 선이 사라진다.
+  await expect(graph.locator('line[data-kept]')).toHaveCount(1);
+});

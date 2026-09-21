@@ -93,3 +93,24 @@ test('one-column widths say where the panel opens', async ({ page }) => {
   // 이 폭에서는 패널이 이미 아래에 있으므로 시작점·허브 목록을 한 번 더 두지 않는다.
   await expect(page.locator('.map-start .list-block').first()).toBeHidden();
 });
+
+// 홈과 지도가 같은 엔진을 쓴다. 홈에서 호버 처리를 끌 때 조건을 잘못 걸면 지도의 예고편까지 함께 꺼진다.
+test('hovering a map node still previews its edges and dims the rest', async ({ page, isMobile }) => {
+  test.skip(isMobile, '호버 예고편은 마우스가 있는 기기에서만 쓴다');
+  await page.goto('/map/');
+  const graph = page.locator('.graph');
+  await expect(graph.locator('.node.is-faint')).toHaveCount(0);
+  await graph.locator('.node').first().hover();
+  await expect(graph.locator('.node.is-faint').first()).toBeAttached();
+  await expect(graph.locator('line.edge.is-faint').first()).toBeAttached();
+});
+
+// 지도 노드는 눌린 채로 남는 토글이다. 홈에서 누름 상태를 뺄 때 지도까지 빠지면 선택을 말할 수단이 없어진다.
+test('selecting a map node marks it as pressed', async ({ page, isMobile }) => {
+  await page.goto('/map/');
+  const target = page.getByRole('button', { name: '이웃 많은 노트', exact: true });
+  await expect(target).toHaveAttribute('aria-pressed', 'false');
+  if (isMobile) await target.tap(); else await target.click();
+  await expect(target).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.graph .node[aria-pressed="true"]')).toHaveCount(1);
+});
