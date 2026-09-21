@@ -26,9 +26,10 @@ const filters = statusFilters(books);
   .book-source a { color: inherit; }
   /* 거르개는 지도 범례와 같은 방식이다. 누른 것 하나만 aria-pressed로 남는다. */
   .status-filter { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 4px; margin-left: auto; }
-  .status-filter button { padding: 4px 7px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font: inherit; cursor: pointer; transition: background-color .15s ease, color .15s ease; }
-  /* 선택은 호버(accent-soft)보다 한 단계 짙은 판이다. 호버와 같은 판이면 종이색과 1.10:1이라 무엇이 눌렸는지 보이지 않는다. */
-  .status-filter button[aria-pressed="true"] { background: var(--line); color: var(--accent); }
+  .status-filter button { padding: 3px 6px; border: 1px solid transparent; border-radius: 4px; background: transparent; color: var(--muted); font: inherit; cursor: pointer; transition: background-color .15s ease, color .15s ease; }
+  /* 선택은 호버(accent-soft)보다 한 단계 짙은 판이다. 호버와 같은 판이면 종이색과 1.10:1이라 무엇이 눌렸는지 보이지 않는다.
+     그 한 단계도 1.28:1에 그치므로 먹색 테두리를 얹어 색이 아닌 단서를 준다. */
+  .status-filter button[aria-pressed="true"] { border-color: var(--accent); background: var(--line); color: var(--accent); }
   @media (hover: hover) { .status-filter button:hover { background: var(--accent-soft); color: var(--accent); } }
   .status-filter .count { color: var(--muted); font-variant-numeric: tabular-nums; }
   .status-filter button[aria-pressed="true"] .count { color: inherit; }

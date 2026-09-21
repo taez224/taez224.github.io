@@ -112,6 +112,19 @@ test('the external article page reaches its links like the reader does', () => {
   assert.match(blockFor(coarse, '.back-to-posts'), /padding-block:\s*\d+px/, '되돌아가기 링크는 위아래로 넓힌다');
 });
 
+test('a pressed filter shows more than a plate the reader can barely see', () => {
+  // 선택 판(--line)은 종이색과 1.28:1, 어두운 화면에서 1.56:1이라 무엇이 눌렸는지 판만으로는 보이지 않는다.
+  // 먹색 테두리를 얹어 색이 아닌 단서를 하나 준다. 자리를 미리 비워 두어야 눌릴 때 크기가 튀지 않는다.
+  for (const [path, base, pressed] of [
+    ['src/pages/books/index.astro', '.status-filter button', '.status-filter button[aria-pressed="true"]'],
+    ['src/pages/map/index.astro', '.legend-item', '.legend button.legend-item[aria-pressed="true"]']
+  ] as const) {
+    const css = styleText(path);
+    assert.match(blockFor(css, pressed), /border-color:\s*var\(--accent\)/, `${pressed}에 먹색 테두리가 있다`);
+    assert.match(blockFor(css, base), /border:\s*1px solid transparent/, `${base}가 테두리 자리를 미리 비운다`);
+  }
+});
+
 test('search results are clickable across the whole row', () => {
   // 한 줄짜리 결과의 제목 링크는 27.75px이라 44px 목표에 못 미친다. 링크의 ::after로 줄 전체를 덮어 누르는 영역만 넓힌다.
   const css = read('src/styles/site.css');
