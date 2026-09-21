@@ -184,3 +184,23 @@ test('a table of contents entry chosen at the end stays marked until the reader 
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
   await expect(current, '입력 없이 맨 위로').toHaveText('첫째 절');
 });
+
+// 앵커 이동을 부드럽게 움직이면 애니메이션이 출발할 때 계산한 자리로 가서, 그사이 위쪽 도표가 그려져 길어진 만큼
+// 제목이 밀려났다. 도표가 많은 글에서는 한 절 앞에 떨어졌다. 즉시 이동하면 브라우저의 스크롤 고정이 자리를 지킨다.
+test('a heading reached by its address stays in place when content above grows afterwards', async ({ page }) => {
+  await page.goto('/notes/browser-sections/');
+  const top = await page.evaluate(async () => {
+    const link = [...document.querySelectorAll<HTMLAnchorElement>('.rail a[data-heading]')].find((a) => a.textContent === '셋째 절')!;
+    const heading = document.getElementById(link.dataset.heading!)!;
+    location.hash = link.hash;
+    // 이동이 시작된 뒤에 도표 하나가 그려진 것처럼 본문 맨 앞에 높은 블록을 끼운다.
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    const late = document.createElement('div');
+    late.style.height = '1000px';
+    heading.closest('.body')!.prepend(late);
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    return heading.getBoundingClientRect().top;
+  });
+  expect(top, '제목이 머리글 아래 도착한 자리에 남는다').toBeLessThan(300);
+  expect(top).toBeGreaterThan(0);
+});

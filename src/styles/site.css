@@ -41,7 +41,8 @@
 @media (min-width: 721px) and (max-width: 1000px) { :root { --t-featured: 1.75rem; } } /* 28 */
 * { box-sizing: border-box; }
 :where([hidden]) { display: none !important; }
-html { scroll-behavior: smooth; scroll-padding-top: 100px; }
+/* 앵커 이동은 즉시 한다. 부드럽게 움직이면 출발할 때 계산한 자리로 가서, 그사이 도표가 그려져 길어진 만큼 제목이 밀려난다. */
+html { scroll-padding-top: 100px; }
 body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: var(--t-base); line-height: 1.85; -webkit-font-smoothing: antialiased; word-break: keep-all; overflow-wrap: anywhere; }
 a { color: var(--accent); text-decoration: none; }
 /* 호버는 마우스처럼 올려 둘 수 있는 기기에서만 준다. 터치 기기는 탭한 요소에 호버가 남아, 대화상자를 닫은 뒤에도 버튼 판이 깔려 있다. */
@@ -196,7 +197,6 @@ main { min-height: 60vh; }
   .side-list a { padding-block: calc((44px - 1.5em) / 2); }
 }
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
   *, *::before, *::after { transition-duration: 0s !important; animation-duration: 0s !important; }
 }
 

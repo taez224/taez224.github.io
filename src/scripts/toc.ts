@@ -73,7 +73,7 @@ if (links.length) {
   addEventListener('touchmove', byReader, { passive: true });
   addEventListener('keydown', (event) => { if (SCROLL_KEYS.has(event.key)) byReader(); });
   // 스크롤 막대를 끌거나 찾기로 옮긴 것처럼 위 입력 없이 스크롤해도, 고른 절이 화면에 들어왔다가 벗어나면 돌아간다.
-  // 누른 직후 그 절로 가는 동안에는 아직 화면에 들어온 적이 없으므로 풀리지 않는다.
+  // 누른 순간에는 그 절이 아직 화면 밖일 수 있으므로, 한 번 화면에 들어온 뒤에만 이 규칙으로 푼다.
   addEventListener('scroll', () => {
     if (!chosen) return;
     if (readerInput) release();

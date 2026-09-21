@@ -662,7 +662,9 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 - 지도 시트의 열림과 닫힘: 200ms.
 - 그래프의 선택 이동: 320ms.
 
-그래프의 끌기와 확대는 장식용 자동 움직임이 아니라 사용자 입력에 따른 조작이다. 움직임 줄이기 설정에서는 전환과 부드러운 스크롤을 끈다.
+그래프의 끌기와 확대는 장식용 자동 움직임이 아니라 사용자 입력에 따른 조작이다. 움직임 줄이기 설정에서는 전환과 긴 목차 목록의 부드러운 스크롤을 끈다.
+
+목차·각주·검색 결과로 가는 앵커 이동은 움직임 없이 즉시 한다. 부드럽게 움직이면 애니메이션이 출발할 때 계산한 자리로 가서, 그사이 위쪽 도표가 그려져 길어진 만큼 제목이 밀려난다. 즉시 이동하면 브라우저의 스크롤 고정이 늦게 그려지는 도표와 이미지에도 제목 자리를 지킨다.
 
 ## Maintenance & Validation
 
@@ -697,6 +699,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 홈 지도의 폭·입력 방식에 따른 전환(살아 있는 지도와 정적 그림) | `src/scripts/hero-graph.ts`, `src/pages/index.astro` | `tests/hero-graph.test.ts`, `tests/browser/reader.spec.ts` |
 | 외부 발행 글의 목록 복귀 링크와 앞 목록의 클릭 영역 | `src/components/ExternalArticle.astro` | `tests/browser/reader.spec.ts` |
 | 목차의 현재 위치 | `src/scripts/toc.ts` | `tests/browser/reader.spec.ts` |
+| 앵커 이동의 즉시 이동 | `src/styles/site.css` | `tests/browser/reader.spec.ts` |
 | 지도와 홈 지도가 나누는 호버 예고편·누름 상태 | `src/graph/engine.ts` | `tests/browser/map.spec.ts`, `tests/browser/home.spec.ts` |
 | 지도 시트로 바뀌는 폭과 그 폭의 대화상자 처리 | `src/components/MapPanel.astro`, `src/scripts/map.ts`, `src/pages/map/index.astro` | `tests/interaction-states.test.ts`, `tests/browser/map.spec.ts` |
 | 검색 결과 줄의 형광과 두 줄 요약 | `src/lib/search-match.ts`, `src/scripts/search.ts`, `src/styles/site.css` | `tests/search-match.test.ts`, `tests/browser/search.spec.ts` |
