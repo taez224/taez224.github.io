@@ -22,7 +22,8 @@ title: 시작 노트
 created: 2026-09-01
 slug: browser-start
 type: hub
-tags: [AI]
+tags:
+  - AI
 ---
 # 시작 노트
 
@@ -44,9 +45,22 @@ await fs.writeFile(path.join(vault, '01_Slipbox/neighbor.md'), `---
 title: 이웃 노트
 created: 2026-09-01
 slug: browser-neighbor
-tags: [AI]
+tags:
+  - AI
 ---
 # 이웃 노트
+
+[[start]]
+`);
+// 지도 범례에 주제가 둘 있어야 필터가 실제로 노드를 걸러 낸다. 노드가 셋 미만인 주제는 기타로 접힌다.
+await fs.writeFile(path.join(vault, '01_Slipbox/다른 주제.md'), `---
+title: 다른 주제 노트
+created: 2026-09-02
+slug: browser-other-topic
+tags:
+  - 지식관리
+---
+# 다른 주제 노트
 
 [[start]]
 `);
@@ -58,7 +72,8 @@ await fs.writeFile(path.join(vault, '01_Slipbox/many.md'), `---
 title: 이웃 많은 노트
 created: 2026-09-01
 slug: browser-many
-tags: [AI]
+tags:
+  - AI
 ---
 # 이웃 많은 노트
 
@@ -69,7 +84,8 @@ for (const [index, title] of manyTitles.entries()) {
 title: ${JSON.stringify(title)}
 created: 2026-09-01
 slug: browser-many-${index}
-tags: [AI]
+tags:
+  - AI
 ---
 # ${title}
 `);

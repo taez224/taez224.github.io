@@ -20,7 +20,7 @@ const topics = [...topicCounts].map(([name, count]) => ({ name, color: topicColo
   {/* 그래프와 패널이 쓰는 데이터를 전부 페이지에 인라인한다. 스크립트가 실행되는 즉시(첫 화면 전에) 그래프와 선택된 노트 패널까지 한 번에 그린다. */}
   <div class="wrap map-page">
     <script type="application/json" data-map-data is:inline set:html={inlineJson({ ...inlineGraph(nodes, edges, { extra: ['path', 'mapKey'] }), ...inlinePanelNotes(notes, noteEdges, topicFold) })}></script>
-    <div class="page-head"><h1 class="display">생각 지도</h1><span class="meta" data-map-count>노트 {stats.nodes} · 연결 {stats.edges}</span></div>
+    <div class="page-head"><h1 class="display">생각 지도</h1><span class="meta" role="status" data-map-count>노트 {stats.nodes} · 연결 {stats.edges}</span></div>
     <div class="map-layout">
       <div class="map-stage">
         <div class="map-toolbar">
@@ -31,7 +31,9 @@ const topics = [...topicCounts].map(([name, count]) => ({ name, color: topicColo
           </div>
         </div>
         <div class="graph-box">
-          <svg data-map role="group" aria-label="생각 지도. 노드를 고르면 선택한 노트의 정보가 나타납니다."></svg>
+          {/* 노드는 버튼으로 읽히는데 Space와 Enter가 다른 일을 한다. 버튼의 약속과 다르므로 설명을 붙인다. */}
+          <p id="map-keys" class="visually-hidden">노드에서 Enter를 누르면 그 노트를 열고, Space를 누르면 지도에 머문 채 노트 정보를 봅니다.</p>
+          <svg data-map role="group" aria-describedby="map-keys" aria-label="생각 지도. 노드를 고르면 선택한 노트의 정보가 나타납니다."></svg>
           <div class="graph-controls" aria-label="확대·축소">
             <button type="button" data-graph-zoom="out" aria-label="축소">−</button>
             <button type="button" data-graph-zoom="fit">맞춤</button>
@@ -78,7 +80,14 @@ const topics = [...topicCounts].map(([name, count]) => ({ name, color: topicColo
     .map-panel .scroll-list.is-long .side-list { max-height: none; }
     .map-panel .scroll-list.is-long::after { display: none; }
   }
-  @media (min-width: 721px) and (max-width: 1000px) { .map-panel { max-height: none; } }
+  /* 한 열로 바뀌면 패널이 무대 아래로 내려가 노드를 골라도 화면 밖에서 바뀐다. 어디서 열리는지 한 줄로 알린다.
+     시작점·허브 목록은 그 패널이 이미 보여 주므로 여기서는 감춘다. */
+  @media (min-width: 721px) and (max-width: 1000px) {
+    .map-panel { max-height: none; }
+    .map-start { display: block; padding-top: 14px; }
+    .map-start .list-block { display: none; }
+    .map-start-hint { margin: 0; }
+  }
   @media (max-width: 720px) {
     .graph-box { width: 100vw; margin-left: calc(50% - 50vw); height: 60vh; }
     .graph-controls button { min-width: 40px; min-height: 40px; }

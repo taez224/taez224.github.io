@@ -96,8 +96,9 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
   svg.classList.add('graph', mode);
   svg.replaceChildren();
   const scene = el('g');
-  const regionLayer = el('g', { 'data-regions': '' }), regionLabelLayer = el('g', { 'data-region-labels': '' });
-  const edgeLayer = el('g'), nodeLayer = el('g'), labelLayer = el('g', { 'data-labels': '' });
+  // 색면과 글자 층은 노드 위에 겹쳐 그리는 그림이다. 이름은 노드마다 aria-label로 이미 있으므로 층은 접근성 트리에서 뺀다.
+  const regionLayer = el('g', { 'data-regions': '', 'aria-hidden': 'true' }), regionLabelLayer = el('g', { 'data-region-labels': '', 'aria-hidden': 'true' });
+  const edgeLayer = el('g'), nodeLayer = el('g'), labelLayer = el('g', { 'data-labels': '', 'aria-hidden': 'true' });
   scene.append(regionLayer, regionLabelLayer, edgeLayer, nodeLayer, labelLayer);
   // 주제 영역은 배치가 정해지면 고정이다. 색면은 장면 좌표(확대하면 같이 커짐), 이름은 제목처럼 화면 크기 고정.
   const regionList = topicRegions(nodes, positions);
@@ -186,7 +187,7 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
       const p = positions.get(node.id);
       if (!p) continue;
       const r = radius(node);
-      const g = el('g', { class: `node${node.isEntry ? ' is-entry' : ''}`, 'data-id': node.id, tabindex: focusable ? '0' : '-1', role: 'button', 'aria-pressed': 'false', 'aria-label': cleanTitle(node.displayTitle ?? node.title) });
+      const g = el('g', { class: `node${node.isEntry ? ' is-entry' : ''}`, 'data-id': node.id, tabindex: focusable ? '0' : '-1', role: 'button', 'aria-pressed': 'false', 'aria-label': node.type === 'hub' ? `${cleanTitle(node.displayTitle ?? node.title)}. 허브` : cleanTitle(node.displayTitle ?? node.title) });
       if (node.isEntry) g.append(el('circle', { class: 'entry-halo', cx: p.x, cy: p.y, r: (r + 11).toFixed(1) }));
       if (node.type === 'hub') g.append(el('circle', { class: 'hub-ring', cx: p.x, cy: p.y, r: (r + 7).toFixed(1) }));
       g.append(el('circle', { class: 'hit', cx: p.x, cy: p.y, r: Math.max(22, r), fill: 'transparent' }));
