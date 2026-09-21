@@ -1,9 +1,4 @@
-import { test, expect } from '@playwright/test';
-
-test.beforeEach(async ({ context, baseURL }) => {
-  // 테스트 내용은 로컬 임시 vault뿐이다. 분석 도구 등 외부 요청은 필요 없다.
-  await context.route('**/*', (route) => new URL(route.request().url()).origin === baseURL ? route.continue() : route.abort());
-});
+import { test, expect } from './fixtures.ts';
 
 test('adjacent footnotes have their own space and open the intended note', async ({ page, isMobile }) => {
   await page.goto('/notes/browser-start/');

@@ -110,7 +110,8 @@ Codex는 이 절만 읽고, Claude Code는 여기에 더해 위의 output-style 
 ## 테스트
 
 - `node:test`와 `node:assert/strict`를 쓰고 파일 이름은 `*.test.ts`다. 테스트 이름은 관찰 가능한 동작을 서술한다.
-- 브라우저 회귀 검사는 `npm run test:browser`로 실행한다. 처음에는 `npx playwright install chromium`으로 브라우저를 설치한다. 밝은·어두운 화면과 데스크톱·터치 모바일에서 검사하며, 지금 있는 검사는 `tests/browser/reader.spec.ts`(각주, 복사, 연결 강조, 홈 지도 전환, 로컬 그래프), `tests/browser/map.spec.ts`(흐려진 노드의 탭 순서), `tests/browser/home.spec.ts`(첫 화면과 최근 기록의 누르는 영역)다. `tests/browser/server.ts`가 임시 vault·빌드·캐시를 만들고 종료할 때 지우므로 실제 vault와 평소 `dist/`는 쓰지 않는다. 결과가 코드에만 달려 있어 CI는 PR에서만 돌린다. 실제 배치와 입력이 있어야 알 수 있는 것(누른 좌표의 판정, 요소가 겹치는지, 복제한 요소의 이벤트, 창 크기 변화, 상태에 따른 탭 순서)만 여기에 둔다.
+- 브라우저 회귀 검사는 `npm run test:browser`로 실행한다. 처음에는 `npx playwright install chromium`으로 브라우저를 설치한다. 밝은·어두운 화면과 데스크톱·터치 모바일에서 검사한다. `tests/browser/server.ts`가 임시 vault·빌드·캐시를 만들고 종료할 때 지우므로 실제 vault와 평소 `dist/`는 쓰지 않는다. 결과가 코드에만 달려 있어 CI는 PR에서만 실행한다. 실제 배치와 입력이 있어야 알 수 있는 것(누른 좌표의 판정, 요소가 겹치는지, 복제한 요소의 이벤트, 창 크기 변화, 상태에 따른 탭 순서, 글자를 키웠을 때의 배치)만 여기에 둔다.
+- 브라우저 검사 파일은 `test`와 `expect`를 `tests/browser/fixtures.ts`에서 가져온다. 이 픽스처가 외부 요청을 막으며, `@playwright/test`에서 바로 가져오면 `tests/browser-setup.test.ts`가 실패한다. 글자를 키운 화면은 `gotoWithDefaultFontSize`로 브라우저 기본 글자 설정을 바꿔 연다. `html`에 글자 크기를 직접 넣으면 `rem`만 바뀌고 미디어 쿼리의 `em`은 그대로라 실제 설정과 다르게 움직인다.
 - **테스트는 임시 vault로 실행한다.** `tests/garden.test.ts`의 `makeVault()`처럼 `os.tmpdir()`에 최소 파일을 만들어 검증하고, 실제 `../obsidian`은 테스트에서 읽지 않는다.
 - 동작을 바꾸면 회귀 테스트를 더한다. Markdown 렌더링, 링크 해석, 공개 판정을 바꿀 때는 빠짐없이 더한다.
 - 코드를 넘기기 전에 `npm run check`, `npm run check:astro`, `npm test`, `npm run build`를 모두 실행한다. `DESIGN.md`를 고쳤으면 `npm run design:lint`도, 브라우저 스크립트나 CSS의 동작을 바꿨으면 `npm run test:browser`도 실행한다.

@@ -1,9 +1,4 @@
-import { test, expect } from '@playwright/test';
-
-test.beforeEach(async ({ context, baseURL }) => {
-  // 테스트 내용은 로컬 임시 vault뿐이다. 분석 도구 등 외부 요청은 필요 없다.
-  await context.route('**/*', (route) => new URL(route.request().url()).origin === baseURL ? route.continue() : route.abort());
-});
+import { test, expect } from './fixtures.ts';
 
 // 결과 줄은 왜 이 결과가 걸렸는지 말해야 한다. 요약을 앞에서부터 한 줄만 보이면 375px에서 서른 자 남짓이라,
 // 요약 가운데에서 걸린 말은 글자가 있어도 상자 밖에 남아 읽을 수 없었다.

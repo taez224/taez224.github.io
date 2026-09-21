@@ -1,25 +1,12 @@
-import { test, expect, type Page } from '@playwright/test';
-
-test.beforeEach(async ({ context, baseURL }) => {
-  // 테스트 내용은 로컬 임시 vault뿐이다. 분석 도구 등 외부 요청은 필요 없다.
-  await context.route('**/*', (route) => new URL(route.request().url()).origin === baseURL ? route.continue() : route.abort());
-});
-
-// 브라우저 설정에서 기본 글자 크기를 키운 독자를 흉내 낸다. html에 글자 크기를 직접 넣으면 rem만 바뀌고
-// 미디어 쿼리의 em은 브라우저 기본값을 따르므로 그대로 남아, 실제 설정과 다르게 움직인다.
-async function setDefaultFontSize(page: Page, px: number) {
-  const cdp = await page.context().newCDPSession(page);
-  await cdp.send('Page.setFontSizes', { fontSizes: { standard: px, fixed: Math.round((px * 13) / 16) } });
-}
+import { test, expect, gotoWithDefaultFontSize } from './fixtures.ts';
 
 // 머리글은 한 줄로 설계했고 글자 100%에서는 307px이면 들어간다. 기본 글자를 두 배로 키우면 489px이 필요해
 // 390px에서 넘쳤다. 워드마크가 한 글자 폭으로 짓눌려 세로로 쌓이고, 공유·검색은 화면 밖으로 밀려 페이지 전체가 가로로 흔들렸다.
 test('the header fits the screen when the reader doubles the default text size', async ({ page }) => {
-  await setDefaultFontSize(page, 32);
   // 320px에서는 메뉴가 둘째 줄에서도 넘쳐 메뉴끼리 줄을 한 번 더 바꾼다.
   for (const width of [390, 320]) {
     await page.setViewportSize({ width, height: 844 });
-    await page.goto('/books/');
+    await gotoWithDefaultFontSize(page, '/books/', 32);
     const measured = await page.evaluate(() => {
       const right = (selector: string) => document.querySelector(selector)!.getBoundingClientRect().right;
       const wordmark = document.querySelector('.wordmark')!;

@@ -1,9 +1,4 @@
-import { test, expect } from '@playwright/test';
-
-test.beforeEach(async ({ context, baseURL }) => {
-  // 테스트 내용은 로컬 임시 vault뿐이다. 분석 도구 등 외부 요청은 필요 없다.
-  await context.route('**/*', (route) => new URL(route.request().url()).origin === baseURL ? route.continue() : route.abort());
-});
+import { test, expect, gotoWithDefaultFontSize } from './fixtures.ts';
 
 // 위아래로 넓힌 누르는 영역이 아래 그림까지 내려오면, 그림을 눌렀는데 소개 페이지가 열린다.
 test('the hero links stay out of the map image below them', async ({ page, isMobile }) => {
@@ -63,17 +58,15 @@ test.describe('손가락으로 쓰는 태블릿', () => {
 test('the hero keeps its intro whole when the reader enlarges the text', async ({ page, isMobile }) => {
   test.skip(isMobile, '이 배치는 1000px을 넘는 폭에서만 쓴다');
   await page.setViewportSize({ width: 1440, height: 700 });
-  await page.goto('/');
-  await expect(page.locator('.hero-about .contacts a')).toHaveCount(1);
   for (const size of [24, 32]) {
-    await page.addStyleTag({ content: `html { font-size: ${size}px }` });
-    await page.evaluate(() => document.fonts.ready);
+    await gotoWithDefaultFontSize(page, '/', size);
+    await expect(page.locator('.hero-about .contacts a')).toHaveCount(1);
     const overflow = await page.evaluate(() => {
       const hero = document.querySelector('.hero')!.getBoundingClientRect();
       const boxes = [...document.querySelectorAll('.hero-about, .hero-about a')].map((el) => el.getBoundingClientRect());
       return Math.max(...boxes.map((box) => box.bottom - hero.bottom));
     });
-    expect(overflow).toBeLessThanOrEqual(0);
+    expect(overflow, `기본 글자 ${size}px`).toBeLessThanOrEqual(0);
   }
 });
 

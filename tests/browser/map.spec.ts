@@ -1,9 +1,4 @@
-import { test, expect } from '@playwright/test';
-
-test.beforeEach(async ({ context, baseURL }) => {
-  // 테스트 내용은 로컬 임시 vault뿐이다. 분석 도구 등 외부 요청은 필요 없다.
-  await context.route('**/*', (route) => new URL(route.request().url()).origin === baseURL ? route.continue() : route.abort());
-});
+import { test, expect } from './fixtures.ts';
 
 // 흐려진 노드는 화면에서 22%로 남고 포커스 링도 함께 흐려진다. 탭 순서에 두면 보이지 않는 대상을 수십 번 지나가게 된다.
 test('selecting a node takes the dimmed nodes out of the tab order', async ({ page, isMobile }) => {
