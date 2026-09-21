@@ -1,4 +1,4 @@
-import { matchRecord, normalizeQuery, resultCountLabel, SEARCH_PAGE, type SearchRecord } from '../lib/search-match.ts';
+import { highlightParts, matchRecord, normalizeQuery, resultCountLabel, SEARCH_PAGE, type SearchRecord } from '../lib/search-match.ts';
 import { escapeHtml } from '../lib/format.ts';
 import { searchShortcut } from '../lib/shortcuts.ts';
 
@@ -16,6 +16,7 @@ const EMPTY_HINT = status.textContent ?? '';
 let index: Promise<SearchRecord[]> | null = null;
 let queryVersion = 0;
 let hits: Hit[] = [];
+let queryTerms: string[] = [];
 let shown = 0;
 
 const shortcut = searchShortcut(navigator.platform, navigator.userAgent, navigator.maxTouchPoints);
@@ -29,8 +30,11 @@ function loadIndex(): Promise<SearchRecord[]> {
   return index;
 }
 function open() { if (!dialog.open) dialog.showModal(); input.focus(); input.select(); render(); }
+// 조각마다 이스케이프하고 표시만 여기서 붙인다. 원문을 통째로 넣으면 노트의 글이 태그가 된다.
+const marked = (text: string) => highlightParts(text, queryTerms)
+  .map((part) => (part.hit ? `<mark>${escapeHtml(part.text)}</mark>` : escapeHtml(part.text))).join('');
 function itemHtml({ r, m }: Hit): string {
-  return `<div class="search-item"><span class="search-kind">${escapeHtml(r.label)}</span><div><a href="${escapeHtml(r.url)}">${escapeHtml(r.title)}</a><small>${escapeHtml(m.snippet || r.summary || '')}</small></div></div>`;
+  return `<div class="search-item"><span class="search-kind">${escapeHtml(r.label)}</span><div><a href="${escapeHtml(r.url)}">${marked(r.title)}</a><small>${marked(m.snippet || r.summary || '')}</small></div></div>`;
 }
 // 결과를 다시 그리면 눌렀던 더 보기 버튼이 사라지므로, 새로 붙인 첫 결과로 초점을 옮겨 키보드 사용자가 자리를 잃지 않게 한다.
 function paint(focusFrom = -1) {
@@ -48,6 +52,7 @@ function paint(focusFrom = -1) {
 async function render() {
   const version = ++queryVersion;
   const terms = normalizeQuery(input.value);
+  queryTerms = terms;
   hits = [];
   shown = 0;
   if (!terms.length) { status.textContent = EMPTY_HINT; results.replaceChildren(); return; }
@@ -68,6 +73,15 @@ async function render() {
   }
 }
 dialog.addEventListener('close', () => { queryVersion++; });
+// dialog는 배경까지 자기 영역이라 누른 자리가 상자 밖인지 좌표로 가린다.
+// 상자 안에서 눌러 배경에서 뗀 경우(글자를 끌어 고르다 벗어난 경우)는 닫지 않는다.
+const onBackdrop = (event: MouseEvent) => {
+  const box = dialog.getBoundingClientRect();
+  return event.target === dialog && (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom);
+};
+let pressedOnBackdrop = false;
+dialog.addEventListener('pointerdown', (event) => { pressedOnBackdrop = onBackdrop(event); });
+dialog.addEventListener('click', (event) => { if (pressedOnBackdrop && onBackdrop(event)) dialog.close(); });
 form?.addEventListener('submit', (event) => { event.preventDefault(); render(); });
 closeButton?.addEventListener('click', () => dialog.close());
 for (const t of triggers) t.addEventListener('click', open);

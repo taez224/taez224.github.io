@@ -80,6 +80,19 @@ tags:
 
 [[start]]
 `);
+// 요약 가운데에서 걸린 말은 앞에서부터 자르면 375px 화면 밖에 남는다. 그 자리를 재려고 긴 요약을 둔다.
+await fs.writeFile(path.join(vault, '01_Slipbox/long-summary.md'), `---
+title: 요약이 긴 노트
+created: 2026-09-03
+slug: browser-long-summary
+summary: ${'앞말이 길게 이어진다. '.repeat(6)}여기부터 적재적소라는 말이 나온다. ${'뒷말도 길게 이어진다. '.repeat(6)}
+tags:
+  - 지식관리
+---
+# 요약이 긴 노트
+
+[[start]]
+`);
 // 이웃이 일곱인 노트. 로컬 그래프가 여섯만 그리고 두 줄 제목이 실제 글꼴에서도 겹치지 않는지 본다.
 const manyTitles = ['AI 시대의 판단력은 맥락을 실행 기준으로 바꾸는 능력이다', 'Taste는 지금 필요한 것에 무게를 두는 감각이다',
   '노트는 작성할 때 다시 찾을 상황까지 고려해야 한다', 'AI Agent 시대의 Human Agency', '생성은 AI에게, 검증은 나에게',

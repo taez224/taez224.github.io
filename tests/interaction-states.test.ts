@@ -148,3 +148,11 @@ test('the map sheet uses the same boundary in CSS and in script', () => {
   const oneColumn = mapCss.slice(mapCss.indexOf(`@media (${boundary})`));
   assert.match(oneColumn.slice(0, oneColumn.indexOf('\n  }')), /\.map-start \{ display: block;/, '한 열 폭에서 시작 목록을 보이지 않는다');
 });
+
+test('a highlighted search word keeps the declared text color', () => {
+  // 형광 위 글자를 물려받게 두면 요약의 보조색이 그대로 와서 어두운 화면에서 2.68:1이 된다.
+  // DESIGN.md의 text-highlight는 형광 바탕에 먹색 글자를 선언하고, design:lint가 그 짝의 대비를 검사한다.
+  const mark = blockFor(read('src/styles/site.css'), '.search-item mark');
+  assert.match(mark, /background:\s*var\(--highlight\)/);
+  assert.match(mark, /color:\s*var\(--ink\)/, '형광 위 글자는 물려받지 않고 먹색으로 둔다');
+});

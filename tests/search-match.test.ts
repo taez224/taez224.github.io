@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { matchRecord, normalizeQuery, resultCountLabel, SEARCH_PAGE } from '../src/lib/search-match.ts';
+import { highlightParts, matchRecord, normalizeQuery, resultCountLabel, SEARCH_PAGE } from '../src/lib/search-match.ts';
 
 const record = { kind: 'development', label: '문제 해결', url: '/x/', title: 'ZIP 엔트리 크기', aliases: ['스트리밍 압축'], summary: '스트림 ZIP', tags: ['Java'], headings: ['원인'], text: '앞부분 문장. ZipInputStream은 엔트리 크기를 미리 알 수 없다. 뒷부분 문장이 길게 이어진다.' };
 
@@ -17,7 +17,7 @@ test('matchRecord requires every term and scores title matches higher', () => {
   const hit = matchRecord(record, normalizeQuery('zip java'));
   assert.ok(hit, '제목과 태그가 모두 걸리는 질의는 결과가 있다');
   assert.equal(hit.score, 11);
-  assert.equal(hit.snippet, '');
+  assert.equal(hit.snippet, '스트림 ZIP', '요약이 짧으면 잘라 낼 것이 없어 요약 그대로다');
 });
 
 test('matchRecord scores aliases above summary and body matches', () => {
@@ -43,4 +43,34 @@ test('resultCountLabel tells readers when results are cut and how many matched',
   assert.equal(resultCountLabel(78, 60), '검색 결과 78개 중 60개 표시');
   assert.equal(resultCountLabel(8, 8), '검색 결과 8개');
   assert.equal(resultCountLabel(78, 78), '검색 결과 78개');
+});
+
+// 결과 줄은 왜 이 결과가 걸렸는지 말해야 한다. 요약을 앞에서부터 자르면 찾은 말이 잘려 나가고,
+// 375px에서 한 줄에 들어가는 것은 서른 자 남짓이라 요약 가운데 걸린 말은 보이지 않았다.
+test('matchRecord cuts a long summary around the word instead of showing its start', () => {
+  const long = { ...record, summary: `${'앞'.repeat(120)}적재적소${'뒤'.repeat(120)}`, text: '본문에는 없다.' };
+  const hit = matchRecord(long, normalizeQuery('적재적소'));
+  assert.ok(hit);
+  assert.ok(hit.snippet.includes('적재적소'), '찾은 말이 잘린 줄 안에 있다');
+  assert.ok(hit.snippet.length < long.summary.length, '요약 전체를 그대로 두지 않는다');
+  assert.ok(hit.snippet.startsWith('…') && hit.snippet.endsWith('…'), '앞뒤를 잘랐다고 알린다');
+});
+
+// 본문에서 걸린 말은 본문에서 잘라 온다. 요약에도 있으면 독자가 쓴 요약을 먼저 보인다.
+test('matchRecord prefers the summary over the body when both hold the word', () => {
+  const both = { ...record, summary: '요약에도 엔트리라는 말이 있다.', text: '본문에도 엔트리가 있다.' };
+  const hit = matchRecord(both, normalizeQuery('엔트리'));
+  assert.ok(hit);
+  assert.match(hit.snippet, /요약에도 엔트리/);
+});
+
+// 찾은 말에 표시를 남겨야 눈이 먼저 그 자리를 잡는다. 조각을 그대로 HTML로 쓰지 않도록 문자열이 아니라 조각 목록을 돌려준다.
+test('highlightParts splits the line into matched and unmatched pieces', () => {
+  assert.deepEqual(highlightParts('스트림 ZIP 압축', ['zip']), [
+    { text: '스트림 ', hit: false },
+    { text: 'ZIP', hit: true },
+    { text: ' 압축', hit: false }
+  ]);
+  assert.deepEqual(highlightParts('없다', ['zip']), [{ text: '없다', hit: false }]);
+  assert.deepEqual(highlightParts('abab', ['ab']), [{ text: 'abab', hit: true }], '이어 붙은 자리는 한 조각으로 묶는다');
 });
