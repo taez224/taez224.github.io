@@ -20,7 +20,7 @@ const featured = byPath.get(garden.home.featured[0]);
 const featuredEntry = featured ? await getEntry('notes', `${kindPrefix(featured.kind)}/${featured.slug}`) : null;
 const thumbnail = featuredEntry?.data.thumbnail;
 const softThumbnail = featured?.thumbnailStyle === 'soft';
-// 최근 기록은 종류마다 최신 한 편이다. 고르는 규칙은 recentByKind에 있고, 대표 글은 위에 따로 보이므로 뺀다.
+// 최근 기록은 종류마다 최신 한 편이고 건수는 적지 않는다. 고르는 규칙은 recentByKind에 있고, 대표 글은 위에 따로 보이므로 뺀다.
 const recent = recentByKind(garden.notes, { kinds: ['slipbox', 'development', 'blog'], series: garden.blog.series, exclude: [featured?.path] })
   .map((note) => ({ note, label: KINDS[note.kind].label, listUrl: withBase(parentLink(note).path) }));
 // 공개된 마지막 편이 가장 최근인 연재 하나. 없으면 이 영역을 그리지 않는다.
@@ -42,6 +42,7 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
   <section class="hero" aria-label="소개와 생각 지도">
     <div class="hero-about"><About about={garden.home.about} contacts={garden.home.contacts} mapUrl={withBase('/map/')} aboutUrl={withBase('/about/')} /></div>
     {/* 살아 있는 지도가 첫 화면 전에 올라오도록 데이터와 좌표를 페이지에 둔다. hero-graph.ts는 fetch 없이 이걸 읽는다. */}
+    {/* 휴대폰 폭의 그림은 노드를 하나씩 누를 수 없으므로 그림 전체를 지도 링크로 두고, 그림 아래에는 링크를 따로 두지 않는다. */}
     <div class="hero-graph" data-graph><script type="application/json" data-hero-data is:inline set:html={inlineJson(inlineGraph(garden.nodes, garden.edges, { positions }))}></script><a class="hero-snapshot" href={withBase('/map/')} aria-label="생각 지도 보기"><Fragment set:html={snapshotDesktop} /><Fragment set:html={snapshot} /></a></div>
     <div class="hero-fade" aria-hidden="true"></div>
   </section>
@@ -149,6 +150,7 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
   .recent-kind { color: var(--muted); }
   .recent-topic { display: inline-flex; align-items: center; gap: 6px; }
   .recent-topic i { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; }
+  /* 최근 연재 제목은 목록 제목 크기로 두어 대표 글보다 낮은 위계에 둔다. */
   .latest-series h3 { margin: 0; font-size: var(--t-list); font-weight: 600; line-height: 1.45; }
   .latest-series p { margin: 10px 0 0; color: var(--muted); line-height: 1.7; }
   .home-section:last-child { padding-bottom: 96px; }
