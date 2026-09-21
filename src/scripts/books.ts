@@ -1,4 +1,5 @@
-export {};
+import { hashTarget, inPageLink } from './in-page-link.ts';
+
 const buttons = [...document.querySelectorAll<HTMLButtonElement>('[data-book-status]')];
 const cards = [...document.querySelectorAll<HTMLElement>('article[data-status]')];
 
@@ -20,8 +21,7 @@ for (const button of buttons) button.addEventListener('click', () => select(butt
 
 // 거르개는 책을 숨길 뿐 주소와 무관하다. 숨긴 책으로 이동하면(검색 결과) 주소만 바뀌고 책은 보이지 않으므로
 // 전체로 되돌린다. 거르개가 가리킨 상태를 조용히 어기는 대신 눌린 버튼과 권수까지 함께 맞춘다.
-function reveal(hash: string): boolean {
-  const card = hash ? document.getElementById(decodeURIComponent(hash.slice(1))) : null;
+function reveal(card: HTMLElement | null): boolean {
   const all = buttons.find((button) => button.dataset.bookStatus === 'all');
   if (!card || !cards.includes(card) || !card.hidden || !all) return false;
   select(all);
@@ -29,8 +29,11 @@ function reveal(hash: string): boolean {
 }
 // 누른 링크는 이동하기 전에 드러내야 브라우저가 그 자리로 스크롤한다. 같은 주소를 다시 누르면 hashchange가 오지 않는 것도 이 길로 막는다.
 document.addEventListener('click', (event) => {
-  const link = (event.target as Element).closest('a');
-  if (link?.hash && link.pathname === location.pathname) reveal(link.hash);
+  const link = inPageLink(event);
+  if (link) reveal(hashTarget(link.hash));
 });
 // 뒤로·앞으로 가기처럼 누르지 않고 주소만 바뀐 경우는 브라우저가 스크롤을 이미 마쳤으므로 드러낸 뒤 다시 이동한다.
-window.addEventListener('hashchange', () => { if (reveal(location.hash)) document.getElementById(decodeURIComponent(location.hash.slice(1)))?.scrollIntoView(); });
+window.addEventListener('hashchange', () => {
+  const card = hashTarget(location.hash);
+  if (reveal(card)) card?.scrollIntoView();
+});

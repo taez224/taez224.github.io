@@ -67,3 +67,29 @@ test('moving to a book the status filter hid reveals it', async ({ page }) => {
   await expect(book).toBeInViewport();
   await expect(pressed).toHaveAttribute('data-book-status', 'all');
 });
+
+// 새 탭으로 여는 누름은 이 책장에 남는다. 원래 화면의 필터까지 바꾸면 돌아왔을 때 보던 목록이 달라져 있다.
+test('opening a hidden book result in a new tab leaves the shelf as it was', async ({ page, context, isMobile }) => {
+  test.skip(isMobile, '수정키로 새 탭을 여는 것은 키보드가 있는 기기다');
+  await page.goto('/books/');
+  const book = page.locator('article[data-status]', { hasText: '짧은 책이름' });
+  await page.locator('.status-filter button[data-book-status="읽는 중"]').click();
+  await page.locator('[data-search-open]').first().click();
+  await page.locator('#search-input').fill('짧은 책이름');
+  const opened = context.waitForEvent('page');
+  await page.locator('.search-item a', { hasText: '짧은 책이름' }).click({ modifiers: ['ControlOrMeta'] });
+  await (await opened).close();
+  await expect(page.locator('#search')).toHaveJSProperty('open', true);
+  await expect(page.locator('.status-filter button[aria-pressed="true"]')).toHaveAttribute('data-book-status', '읽는 중');
+  await expect(book).toBeHidden();
+});
+
+// 주소의 해시는 독자가 손으로 고칠 수 있다. 풀 수 없는 퍼센트 표기를 만나도 책장 스크립트가 예외를 던지지 않는다.
+test('a malformed address fragment on the shelf raises no error', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.goto('/books/');
+  await page.evaluate(() => { location.hash = '%'; });
+  await page.evaluate(() => new Promise(requestAnimationFrame));
+  expect(errors).toEqual([]);
+});
