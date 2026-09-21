@@ -152,3 +152,19 @@ test('the map reveals its key hint to the keyboard and keeps it from the mouse',
   // 숨긴 설명은 그대로 남는다. 보이는 안내는 그 말을 눈으로도 볼 수 있게 할 뿐이다.
   await expect(page.locator('#map-keys')).toHaveCount(1);
 });
+
+// 키 안내와 확대 버튼이 모두 무대 아래쪽 12px에 놓여, 좁은 화면에서는 안내 끝을 버튼이 가렸다.
+test('the key hint stays clear of the zoom controls on a phone', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto('/map/');
+  const held = page.locator('.graph .node:focus-visible');
+  await page.locator('.legend button').last().focus();
+  for (let step = 0; step < 6 && (await held.count()) === 0; step += 1) await page.keyboard.press('Tab');
+  await expect(page.locator('.key-hint')).toHaveCSS('opacity', '1');
+  const apart = await page.evaluate(() => {
+    const a = document.querySelector('.key-hint')!.getBoundingClientRect();
+    const b = document.querySelector('.graph-controls')!.getBoundingClientRect();
+    return a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top;
+  });
+  expect(apart, '키 안내와 확대 버튼이 겹치지 않는다').toBe(true);
+});
