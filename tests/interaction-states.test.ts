@@ -112,16 +112,18 @@ test('the external article page reaches its links like the reader does', () => {
   assert.match(blockFor(coarse, '.back-to-posts'), /padding-block:\s*\d+px/, '되돌아가기 링크는 위아래로 넓힌다');
 });
 
-test('a pressed filter shows more than a plate the reader can barely see', () => {
+test('a pressed filter is marked the way the current menu is', () => {
   // 선택 판(--line)은 종이색과 1.28:1, 어두운 화면에서 1.56:1이라 무엇이 눌렸는지 판만으로는 보이지 않는다.
-  // 먹색 테두리를 얹어 색이 아닌 단서를 하나 준다. 자리를 미리 비워 두어야 눌릴 때 크기가 튀지 않는다.
-  for (const [path, base, pressed] of [
-    ['src/pages/books/index.astro', '.status-filter button', '.status-filter button[aria-pressed="true"]'],
-    ['src/pages/map/index.astro', '.legend-item', '.legend button.legend-item[aria-pressed="true"]']
+  // 헤더의 현재 메뉴와 같이 2px 먹색 막대를 얹는다. 사이트에 이미 있는 장치를 쓰면 독자가 배울 문법이 늘지 않는다.
+  for (const [path, pressed] of [
+    ['src/pages/books/index.astro', '.status-filter button[aria-pressed="true"]'],
+    ['src/pages/map/index.astro', '.legend button.legend-item[aria-pressed="true"]']
   ] as const) {
     const css = styleText(path);
-    assert.match(blockFor(css, pressed), /border-color:\s*var\(--accent\)/, `${pressed}에 먹색 테두리가 있다`);
-    assert.match(blockFor(css, base), /border:\s*1px solid transparent/, `${base}가 테두리 자리를 미리 비운다`);
+    const bar = blockFor(css, `${pressed}::after`);
+    assert.match(bar, /height:\s*2px/, `${pressed}의 막대 두께`);
+    assert.match(bar, /background:\s*var\(--accent\)/, `${pressed}의 막대 색`);
+    assert.doesNotMatch(blockFor(css, pressed), /background:\s*var\(--line\)/, '판으로는 표시하지 않는다');
   }
 });
 
