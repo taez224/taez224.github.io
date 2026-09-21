@@ -57,3 +57,27 @@ test.describe('손가락으로 쓰는 태블릿', () => {
     await expect(page.locator('.hero-graph > .graph')).toHaveCount(0);
   });
 });
+
+// 1000px을 넘는 폭에서 첫 화면은 높이가 고정된 상자이고 소개 블록이 절대 배치였다.
+// 글자를 키우면 내용이 상자를 넘어가는데 넘친 부분은 잘려서 스크롤로도 되찾을 수 없었다.
+test('the hero keeps its intro whole when the reader enlarges the text', async ({ page, isMobile }) => {
+  test.skip(isMobile, '이 배치는 1000px을 넘는 폭에서만 쓴다');
+  await page.goto('/');
+  await page.addStyleTag({ content: 'html { font-size: 32px }' });
+  const overflow = await page.evaluate(() => {
+    const hero = document.querySelector('.hero')!.getBoundingClientRect();
+    const about = document.querySelector('.hero-about')!.getBoundingClientRect();
+    return Number((about.bottom - hero.bottom).toFixed(1));
+  });
+  expect(overflow).toBeLessThanOrEqual(0);
+});
+
+// 첫 화면의 소개 블록은 1180px 본문 열이 화면 가운데 있다고 보고 자리를 잡는다.
+// 화면이 그보다 좁으면 왼쪽으로 밀려나 제목과 소개문의 앞부분이 잘린다.
+test('the hero intro stays inside the viewport on screens narrower than the content column', async ({ page, isMobile }) => {
+  test.skip(isMobile, '이 배치는 1000px을 넘는 폭에서만 쓴다');
+  await page.setViewportSize({ width: 1100, height: 900 });
+  await page.goto('/');
+  const left = await page.locator('.hero-about').evaluate((el) => el.getBoundingClientRect().left);
+  expect(left).toBeGreaterThanOrEqual(0);
+});

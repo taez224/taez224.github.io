@@ -15,7 +15,7 @@ await fs.mkdir(path.join(vault, '01_Slipbox'), { recursive: true });
 await fs.writeFile(path.join(temporary, 'config.json'), JSON.stringify({
   basePath: '', entry: '01_Slipbox/start.md',
   include: [{ path: '01_Slipbox', mode: 'all', graph: true }], exclude: [], assets: [],
-  home: { about: '브라우저 회귀 검사', featured: [], contacts: [] }
+  home: { about: '어느 소프트웨어 엔지니어의 개인 위키입니다. 개발자로 살아가며 배운 개념과 기술, 그 과정에서 든 생각, 발행한 글과 읽은 책을 모아둡니다.', featured: [], contacts: [] }
 }));
 await fs.writeFile(path.join(vault, '01_Slipbox/start.md'), `---
 title: 시작 노트

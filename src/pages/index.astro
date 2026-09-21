@@ -87,7 +87,9 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
 
 </Shell>
 <style>
-  .hero { position: relative; height: clamp(400px, calc(100svh - 280px), 500px); overflow: hidden; }
+  /* 첫 화면의 높이는 기준이지 한계가 아니다. 소개 블록이 흐름 안에 있어서 글자를 키우면 상자가 함께 커진다.
+     height로 못 박고 넘치는 부분을 잘라 내면 글자 크기를 키워 쓰는 독자가 링크와 연락처를 잃는다. */
+  .hero { position: relative; min-height: clamp(400px, calc(100svh - 280px), 500px); overflow: hidden; }
   /* 그래프 상자는 뷰포트 안에 다 들어온다. 1600px 미만에서는 오른쪽 끝까지, 그 이상은 940px. 맞춤 배율이 상자에 맞춘다. */
   .hero-graph { position: absolute; top: 0; left: calc(50% - 160px); width: min(940px, 50% + 160px); height: 100%; }
   .hero-graph :global(svg), .hero-snapshot { display: block; width: 100%; height: 100%; }
@@ -109,7 +111,10 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
   .hero-graph .graph { cursor: pointer; }
   /* 종이색은 소개 블록(오른쪽 끝 50% - 160px)보다 조금 더 가서 끝난다. 퍼센트로 두면 1280px에서 소개문 옆에 반투명 점이 걸친다. */
   .hero-fade { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, var(--paper) 0, var(--paper) calc(50% - 140px), transparent calc(50% + 140px)); }
-  .hero-about { position: absolute; z-index: 1; left: calc(50% - 590px); top: 52px; width: 430px; }
+  /* 지도와 종이색 그라데이션은 절대 배치라 안쪽 여백의 영향을 받지 않는다. 소개 블록만 흐름에 두어 높이를 밀어낸다.
+     왼쪽 자리는 본문 열(1180px)의 왼쪽 끝이다. 화면이 그보다 좁으면 음수가 되어 제목과 소개문 앞이 잘리므로,
+     .wrap과 같이 좌우 여백 아래로는 내려가지 않게 막는다. */
+  .hero-about { position: relative; z-index: 1; width: 430px; margin: 52px 0 0 max(var(--s-page-gutter), 50% - 590px); }
   .home-section { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: var(--s-column-gap); padding: 36px 0; border-top: 1px solid var(--line); }
   .section-title { margin: 0; font-size: var(--t-section); line-height: 1.4; letter-spacing: -.02em; }
   .featured { padding-top: 44px; padding-bottom: 40px; border-top-color: var(--ink); }
@@ -152,10 +157,10 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
     .recent li { grid-template-columns: 90px 70px minmax(0, 1fr); gap: 12px; }
     .recent-topic { grid-column: 3; }
   }
-  @media (max-width: 1240px) { .hero-graph { left: 460px; width: calc(100% - 460px); } .hero-about { left: 24px; } }
+  @media (max-width: 1240px) { .hero-graph { left: 460px; width: calc(100% - 460px); } }
   /* 좁은 화면은 소개를 먼저 읽고 지도를 탐색한다. */
   @media (max-width: 1000px) {
-    .hero { height: auto; overflow: visible; }
+    .hero { min-height: 0; height: auto; overflow: visible; }
     .hero-graph { position: static; width: 100%; height: 280px; -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 3%, #000 97%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0, #000 3%, #000 97%, transparent 100%); }
     .hero-fade { display: none; }
     .hero-graph .hero-snapshot :global(.is-desktop) { display: none; }
