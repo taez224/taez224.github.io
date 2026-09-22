@@ -129,6 +129,7 @@ function closeSheet() { delete panel.dataset.open; syncSheet(); }
 
 const pressedTopics = () => new Set([...document.querySelectorAll<HTMLElement>('[data-topic][aria-pressed="true"]')].map((b) => b.dataset.topic!));
 const hubFilter = document.querySelector('[data-hub-filter]');
+const filterReset = document.querySelector<HTMLButtonElement>('[data-filter-reset]');
 const currentFilter = () => { const set = pressedTopics(); return { topics: set.size ? set : null, hubsOnly: hubFilter?.getAttribute('aria-pressed') === 'true' }; };
 // 필터가 켜지면 제목 옆 집계가 걸러진 수로 바뀐다. 이 줄은 필터가 남긴 범위만 말한다.
 // 선택은 세지 않는다. 필터 밖의 노드를 고를 때마다 숫자가 하나씩 움직이면 무엇을 세는 줄인지 알 수 없다.
@@ -140,10 +141,22 @@ function updateCount() {
   const links = edges.filter((e) => shown.has(e.source) && shown.has(e.target)).length;
   countEl.textContent = `노트 ${shown.size} · 연결 ${links}`;
 }
-function applyFilter() { graph.setFilter(currentFilter()); updateCount(); }
+function applyFilter() {
+  const filter = currentFilter();
+  graph.setFilter(filter);
+  if (filterReset) filterReset.disabled = !filter.topics && !filter.hubsOnly;
+  updateCount();
+}
 const toggle = (button: Element) => { button.setAttribute('aria-pressed', String(button.getAttribute('aria-pressed') !== 'true')); applyFilter(); };
 for (const button of document.querySelectorAll('[data-topic]')) button.addEventListener('click', () => toggle(button));
 hubFilter?.addEventListener('click', () => toggle(hubFilter));
+filterReset?.addEventListener('click', () => {
+  const restoreFocus = document.activeElement === filterReset;
+  for (const button of document.querySelectorAll('[data-topic], [data-hub-filter]')) button.setAttribute('aria-pressed', 'false');
+  applyFilter();
+  // 해제 버튼은 사라지므로 포커스를 첫 필터로 돌린다. 노드 선택과 지도 시점은 그대로 둔다.
+  if (restoreFocus) document.querySelector<HTMLButtonElement>('[data-topic]')?.focus({ preventScroll: true });
+});
 // 패널의 시작점·참조·역참조 링크와 휴대폰 폭 그래프 아래의 시작점 목록은 페이지로 가지 않고 지도에서 그 노드를 고른다.
 for (const list of [panel, document.querySelector('[data-map-start]')]) list?.addEventListener('click', (event) => {
   const link = (event.target as Element).closest<HTMLAnchorElement>('a[data-node]');

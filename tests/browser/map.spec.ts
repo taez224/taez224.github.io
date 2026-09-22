@@ -180,3 +180,74 @@ test('the pressed legend bar sits right under its text on touch', async ({ page,
   expect(bar.height, '터치에서 버튼을 44px로 키웠다').toBeGreaterThanOrEqual(44);
   expect(Math.abs(bar.stretched - bar.natural), '막대가 버튼 높이와 상관없이 글자 아래 같은 자리에 있다').toBeLessThanOrEqual(0.5);
 });
+
+// 필터는 복수 선택이므로 범례가 가로로 밀려도 한 번에 돌아갈 수 있어야 한다.
+test('clearing filters restores counts without losing the selected node or keyboard focus', async ({ page }) => {
+  await page.goto('/map/');
+  const reset = page.getByRole('button', { name: '필터 해제', exact: true });
+  await expect(reset).toBeHidden();
+  const count = page.locator('[data-map-count]');
+  const total = await count.textContent();
+  await page.locator('.graph .node').first().click({ force: true });
+  const selected = await page.locator('.graph .node.is-selected').getAttribute('data-id');
+  if (await page.locator('.map-panel').getAttribute('aria-modal') === 'true') await page.keyboard.press('Escape');
+  const topics = page.locator('[data-topic]');
+  await topics.first().click();
+  await page.locator('[data-hub-filter]').click();
+  await expect(reset).toBeVisible();
+  await reset.focus();
+  await page.keyboard.press('Enter');
+  await expect(reset).toBeHidden();
+  await expect(page.locator('[data-topic][aria-pressed="true"], [data-hub-filter][aria-pressed="true"]')).toHaveCount(0);
+  await expect(count).toHaveText(total!);
+  await expect(page.locator('.graph .node.is-selected')).toHaveAttribute('data-id', selected!);
+  await expect(topics.first()).toBeFocused();
+});
+
+// 해제 버튼의 출현이 범례를 줄바꿈시키거나 지도 전체를 밀지 않아야 한다.
+test('toggling filters keeps the toolbar and graph in place', async ({ page, isMobile }) => {
+  for (const width of [1017, 721, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/map/');
+    const measure = () => page.evaluate(() => ({
+      toolbar: document.querySelector('.map-toolbar')!.getBoundingClientRect().height,
+      graph: document.querySelector('.graph-box')!.getBoundingClientRect().top,
+      legend: document.querySelector('.legend')!.getBoundingClientRect().width
+    }));
+    const before = await measure();
+    if (width === 1017) {
+      if (isMobile) expect(before.toolbar).toBeGreaterThanOrEqual(44);
+      else expect(before.toolbar).toBeLessThan(36);
+    }
+    await page.locator('[data-topic]').first().click();
+    await expect(page.locator('[data-filter-reset]')).toBeVisible();
+    expect(await measure()).toEqual(before);
+    await page.locator('[data-filter-reset]').click();
+    await expect(page.locator('[data-filter-reset]')).toBeHidden();
+    await expect(page.locator('[data-filter-reset]')).toBeDisabled();
+    expect(await measure()).toEqual(before);
+  }
+});
+
+// 전체 보기는 전체 화면 전환이 아니라 확대·이동한 지도를 원래 맞춤으로 되돌린다.
+test('the icon control fits the map after zooming and keeps separate button targets', async ({ page, isMobile }) => {
+  await page.goto('/map/');
+  const fit = page.getByRole('button', { name: '지도 전체 보기', exact: true });
+  const zoom = page.getByRole('button', { name: '확대', exact: true });
+  await expect(fit).toHaveAttribute('title', '지도 전체 보기');
+  await expect(fit.locator('svg')).toHaveAttribute('aria-hidden', 'true');
+  const transform = () => page.locator('[data-map] > g').getAttribute('transform');
+  const initial = await transform();
+  await zoom.click();
+  await expect.poll(transform).not.toBe(initial);
+  await fit.click();
+  await expect.poll(transform).toBe(initial);
+  const boxes = await page.locator('.graph-controls button').evaluateAll(bs => bs.map(b => {
+    const r = b.getBoundingClientRect(); return { x: r.x, right: r.right, width: r.width, height: r.height };
+  }));
+  for (let i = 0; i < boxes.length; i++) {
+    expect(boxes[i].width).toBeGreaterThanOrEqual(isMobile ? 44 : 36);
+    expect(boxes[i].height).toBeGreaterThanOrEqual(isMobile ? 44 : 36);
+    if (i > 0) expect(boxes[i].x).toBeGreaterThanOrEqual(boxes[i - 1].right);
+  }
+});
