@@ -9,6 +9,9 @@ export const PALETTE = {
   // 더 낮은 위계는 색을 옅게 하지 않고 글자 크기로 나눈다(옛 faint #687267은 muted와의 대비가 1.08이었다).
   muted: '#626d64',
   line: '#d8ddd3',
+  // 첫 화면 위쪽에 깔리는 옅은 띠. 위에서 아래로 tint-top → tint-mid → paper 순서로 옅어진다. 헤더와 본문이 같은 바탕 위에 이어져 보이게 한다.
+  'tint-top': '#eeeee3',
+  'tint-mid': '#f3f3eb',
   // 호버 배경. 그 위에 muted 보조 글자(개수, 연재 방향 표시)가 올라가므로 muted가 4.5:1을 넘는 값으로 둔다(4.61:1).
   // 종이색과 대비가 낮아 선택 표시로는 쓰지 않는다. 선택은 먹색 글자와 막대로 알린다.
   'accent-soft': '#eceee6',
@@ -29,6 +32,8 @@ export const DARK_PALETTE = {
   ink: '#e1e8e3',
   muted: '#9ca99f',
   line: '#36433b',
+  'tint-top': '#242f28',
+  'tint-mid': '#1d2721',
   'accent-soft': '#28362d',
   // 경고·버그 제목은 올라온 판 위에 놓인다. 판이 밝아진 만큼 함께 밝혀 4.5:1을 지킨다(각각 4.77:1, 4.79:1).
   warning: '#bd8455',

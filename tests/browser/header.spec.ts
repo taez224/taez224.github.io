@@ -70,3 +70,37 @@ test('a phone too narrow for both buttons gets a two-row header that does not st
   expect(measured.wordmarkLines, 'TaeZ가 한 줄로 남는다').toBe(1);
   expect(measured.theme, '테마 버튼이 화면 안에 있다').toBeLessThanOrEqual(320);
 });
+
+// 헤더는 첫 화면에서 띠 위에 글자만 얹히고, 본문이 밑으로 들어오기 시작하면 종이색 판이 짙어진다.
+// 판이 옅으면 본문 글자가 메뉴 뒤로 비친다.
+test('the header plate turns on only after the page scrolls', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/notes/browser-sections/');
+  const plate = () => page.evaluate(() => {
+    const style = getComputedStyle(document.querySelector('.site-header')!, '::before');
+    const alpha = Number(style.backgroundColor.match(/[\d.]+\)$/)?.[0].replace(')', '') ?? (style.backgroundColor === 'rgba(0, 0, 0, 0)' ? 0 : 1));
+    return { alpha, blur: style.backdropFilter, presence: Number(getComputedStyle(document.querySelector('.site-header')!).getPropertyValue('--header-presence')) };
+  });
+  const top = await plate();
+  expect(top.presence, '첫 화면에서는 판을 켜지 않는다').toBeLessThan(0.05);
+  expect(top.alpha).toBeLessThan(0.1);
+
+  await page.evaluate(() => window.scrollTo(0, 400));
+  await page.waitForFunction(() => Number(getComputedStyle(document.querySelector('.site-header')!).getPropertyValue('--header-presence')) > 0.9);
+  const scrolled = await plate();
+  expect(scrolled.alpha, '스크롤하면 본문이 비치지 않을 만큼 짙어진다').toBeGreaterThanOrEqual(0.85);
+  expect(scrolled.blur, '뒤 글자는 흐려 놓는다').toContain('blur');
+});
+
+// 헤더 아래 판은 24px 더 이어지다 사라진다. 제목으로 건너뛴 자리가 그 아래에 들어와야 가려지지 않는다.
+test('a heading reached from the contents clears the header and its fading plate', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/notes/browser-sections/');
+  const entries = page.locator('.note-side a[href^="#"]');
+  await entries.nth(2).click();
+  const measured = await page.evaluate(() => {
+    const heading = document.querySelector<HTMLElement>(`#${CSS.escape(decodeURIComponent(location.hash.slice(1)))}`)!;
+    return { heading: heading.getBoundingClientRect().top, headerBottom: document.querySelector('.site-header')!.getBoundingClientRect().bottom };
+  });
+  expect(measured.heading, '제목이 헤더와 그 아래 판을 지나 보인다').toBeGreaterThanOrEqual(measured.headerBottom + 24);
+});

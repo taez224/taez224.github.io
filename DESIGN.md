@@ -9,6 +9,8 @@ colors:
   muted: '#626d64'
   line: '#d8ddd3'
   accent-soft: '#eceee6'
+  tint-top: '#eeeee3'
+  tint-mid: '#f3f3eb'
   warning: '#985d2f'
   bug: '#8e5d5d'
   highlight: '#e7d99b'
@@ -18,6 +20,8 @@ colors:
   muted-dark: '#9ca99f'
   line-dark: '#36433b'
   accent-soft-dark: '#28362d'
+  tint-top-dark: '#242f28'
+  tint-mid-dark: '#1d2721'
   warning-dark: '#bd8455'
   bug-dark: '#b68483'
   highlight-dark: '#574d24'
@@ -321,6 +325,14 @@ components:
     backgroundColor: '{colors.accent-soft}'
     textColor: '{colors.muted}'
     typography: '{typography.meta}'
+  page-tint:
+    backgroundColor: '{colors.tint-top}'
+    textColor: '{colors.primary}'
+    typography: '{typography.body}'
+  page-tint-mid:
+    backgroundColor: '{colors.tint-mid}'
+    textColor: '{colors.muted}'
+    typography: '{typography.meta}'
   callout:
     backgroundColor: '{colors.paper-strong}'
     textColor: '{colors.primary}'
@@ -379,6 +391,14 @@ components:
     typography: '{typography.meta}'
   footer-dark:
     backgroundColor: '{colors.accent-soft-dark}'
+    textColor: '{colors.muted-dark}'
+    typography: '{typography.meta}'
+  page-tint-dark:
+    backgroundColor: '{colors.tint-top-dark}'
+    textColor: '{colors.primary-dark}'
+    typography: '{typography.body}'
+  page-tint-mid-dark:
+    backgroundColor: '{colors.tint-mid-dark}'
     textColor: '{colors.muted-dark}'
     typography: '{typography.meta}'
   selected-control-dark:
@@ -449,6 +469,10 @@ Thinking Garden은 한 소프트웨어 엔지니어가 글과 개발 노트, 읽
 - **형광**(`highlight`): 본문의 형광 표시와 검색에서 찾은 말에만 쓴다.
 - **간선:** 지도 연결선에만 쓰여 앞머리 `colors`에 넣지 않는다. 넣으면 참조하는 컴포넌트가 없어 lint가 경고한다.
 
+### 첫 화면의 띠
+
+첫 화면 위쪽에는 옅은 띠(`tint-top` → `tint-mid` → `paper`)를 깔아 헤더와 본문이 같은 바탕 위에 이어지게 한다. 띠는 본문 쪽으로 내려오며 종이색으로 풀리므로 어디서 끝나는지 보이지 않는다. 이 바탕 위에 놓이는 것들은 종이색을 따로 칠하지 않는다. 지도 무대가 종이색을 칠하면 띠 위에 사각형이 얹혀 경계가 드러난다.
+
 ### 링크와 선택
 
 링크는 먹색을 옅게 섞은 밑줄로 구분하고 호버에서 밑줄을 먹색으로 채운다. 행 전체가 이미 링크인 자리의 링크도 밑줄을 긋는다. 색 대비만으로는 무엇이 따로 눌리는지 알 수 없다. 밖으로 나가는 링크는 ↗가 그 일을 하므로 밑줄을 겹치지 않는다. 선택은 먹색 글자와 막대로 알린다. 글자 선택은 먹색 판으로 칠한다. 형광으로 칠하면 본문 강조와 구분되지 않는다. 먹색의 반투명 변형(밑줄, 선택 판, 인라인 코드 바탕)은 먹색에서 섞어 만들고 값을 따로 두지 않는다.
@@ -512,6 +536,8 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 **그림자 없음 규칙.** 판과 조작 요소에는 그림자를 쓰지 않는다. 층은 구분선, 판의 밝기, 여백, 겹치는 판의 테두리와 뒤 배경으로 나눈다. 뒤 배경이 이미 층을 가르므로 그림자는 같은 단서를 되풀이하고, 가는 테두리와 넓은 그림자를 함께 쓰면 경계가 흐려진다.
 
+헤더는 선 대신 판의 농도로 층을 만든다. 첫 화면에서는 판을 켜지 않아 띠 위에 글자만 얹히고, 본문이 헤더 밑으로 들어오기 시작하면 종이색 판이 짙어진다. 판은 헤더 아래 24px까지 이어지다 사라져 경계가 드러나지 않고, 뒤 글자는 흐려 놓는다. 판 전체를 반투명하게 하지 않고 색에만 투명도를 주는 것은, 그렇게 하면 흐린 그림 아래로 원래 글자가 비치기 때문이다. 흐림을 지원하지 않는 환경과 투명도를 줄이는 설정에서는 불투명한 종이색을 쓴다.
+
 떠 있는 판(검색 대화상자, 각주 판)은 경계가 보여야 하므로 먹색 테두리를 둔다. 화면을 덮는 판(도표 크게 보기, 지도 시트)은 판의 경계가 곧 화면 끝이라 구분선 색 테두리만 둔다. 예외는 도표 도구가 노드에 그리는 옅은 그림자 하나다.
 
 ## Shapes
@@ -535,9 +561,11 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 ### 헤더
 
+헤더 아래에는 선을 긋지 않는다. 배경이 이어지는 자리에 선을 그으면 그 선에서 끊긴다. 층은 위의 판이 맡는다.
+
 오른쪽 끝에는 검색과 화면 모드 버튼을 44px 상자로 나란히 둔다. 테마 버튼의 기호는 다음에 일어날 일을 보인다. 밝은 화면에서는 달이다. 스크립트가 없으면 동작하지 않으므로 아예 보이지 않는다.
 
-현재 메뉴는 헤더 아래 선 위에 얹은 막대로 표시한다. 글자색 차이만으로는 흐리고, 밑줄은 호버와 헷갈린다. 글자를 키워 한 줄에 들어가지 않으면 메뉴를 둘째 줄로 내리고 고정을 푼다. 메뉴만 가로로 밀면 지금 있는 절이 가려지고, 두 줄 헤더를 붙여 두면 제목으로 건너뛴 자리를 가린다.
+현재 메뉴는 글자 아래 6px에 얹은 막대로 표시한다. 글자색 차이만으로는 흐리고, 밑줄은 호버와 헷갈린다. 글자를 키워 한 줄에 들어가지 않으면 메뉴를 둘째 줄로 내리고 고정을 푼다. 메뉴만 가로로 밀면 지금 있는 절이 가려지고, 두 줄 헤더를 붙여 두면 제목으로 건너뛴 자리를 가린다.
 
 ### 바닥글
 
@@ -660,6 +688,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 책장에서 책 결과를 고를 때 검색창 닫기와 필터 되돌리기 | `src/scripts/in-page-link.ts`, `src/scripts/search.ts`, `src/scripts/books.ts` | `tests/in-page-link.test.ts`, `tests/browser/search.spec.ts`, `tests/browser/books.spec.ts` |
 | 글자를 키웠을 때 책장 라벨 칸이 넓어지는 조건 | `src/pages/books/index.astro` | `tests/browser/books.spec.ts` |
 | 헤더가 두 줄로 나뉘는 경계와 고정 해제 | `src/styles/site.css` | `tests/browser/header.spec.ts` |
+| 첫 화면의 띠와 스크롤에 따라 짙어지는 헤더 판 | `src/styles/site.css`, `src/scripts/header.ts` | `tests/browser/header.spec.ts` |
 | 화면 모드의 선택·기억과 첫 페인트 | `src/lib/theme.ts`, `src/scripts/theme.ts`, `src/layouts/Shell.astro` | `tests/theme.test.ts`, `tests/browser/theme.spec.ts` |
 | 바닥글의 구성(프로필·사이트 소개·RSS)과 손가락 영역 | `src/layouts/Shell.astro`, `src/components/Contacts.astro`, `src/styles/site.css` | `tests/browser/footer.spec.ts` |
 | 홈 첫 화면과 최근 기록의 누르는 영역 | `src/components/About.astro`, `src/pages/index.astro` | `tests/browser/home.spec.ts` |
