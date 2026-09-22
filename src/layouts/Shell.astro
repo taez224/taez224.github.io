@@ -5,12 +5,14 @@ import '../styles/site.css';
 import Header from '../components/Header.astro';
 import SearchDialog from '../components/SearchDialog.astro';
 import Seal from '../components/Seal.astro';
+import Contacts from '../components/Contacts.astro';
 import { inlineJson, withBase, topicColorCss } from '../lib/format.ts';
 import { SITE_TITLE } from '../lib/site-meta.ts';
 import { FEED_LINKS } from '../lib/feeds.ts';
 import { structuredData } from '../lib/seo.ts';
 import siteConfig from '../../config.json';
 import { PALETTE, DARK_PALETTE } from '../lib/palette.ts';
+import { getGarden } from '../lib/get-garden.ts';
 interface Props { title: string; description: string; path: string; active?: string; ogType?: string; ogImage?: string | null; kind?: string | null; pageType?: string | null; published?: string | null; updated?: string | null; footer?: boolean }
 const umami = siteConfig.analytics?.umami?.websiteId ? siteConfig.analytics.umami : null;
 // Search Console 소유권 확인 토큰. 공개되는 값이고, 지우면 소유권이 풀리므로 확인 뒤에도 남긴다.
@@ -21,6 +23,8 @@ const siteName = 'TaeZ';
 const fullTitle = path === '/' ? SITE_TITLE : `${title} · ${siteName}`;
 // 푸터에서는 인장이 이름의 첫 어절을 대신한다. 상수를 쪼개서 쓰므로 제목을 바꿔도 인장이 읽는 말과 남은 문구가 어긋나지 않는다.
 const [sealLabel, ...restOfTitle] = SITE_TITLE.split(' ');
+// 바닥글의 프로필 아이콘은 홈 소개와 같은 줄(Contacts)이다. 같은 설정을 조립 결과에서 읽는다.
+const contacts = footer ? (await getGarden()).home.contacts : [];
 const canonical = new URL(withBase(path), Astro.site).href;
 const ogImage = new URL(ogImagePath ?? withBase('/og/site.png'), Astro.site).href;
 // 구조화 데이터는 페이지가 이미 가진 값만 쓴다. 홈은 WebSite, 노트는 글 종류별 Article, 나머지는 WebPage다. 페이지별 하위 타입은 호출부가 지정한다.
@@ -64,12 +68,13 @@ const jsonLd = inlineJson(structuredData({ ogType, kind, pageType, title: path =
     <Header active={active} />
     <SearchDialog />
     <main id="app" tabindex="-1"><slot /></main>
-    {/* 페이지 끝의 한 줄. <head>에만 있던 RSS와 사이트 소개로 가는 길을 사람에게도 보인다. 노트 끝 줄에는 소개 링크를 두지 않는다.
-       화면 높이에 맞춰 그리는 지도 페이지는 바닥글이 붙으면 페이지 스크롤이 생기므로 footer={false}로 뺀다. */}
+    {/* 모든 페이지 끝의 같은 한 줄. 다른 곳의 프로필, 사이트 소개, <head>에만 있던 RSS로 가는 길을 사람에게도 보인다.
+       노트 끝 줄에는 소개 링크를 두지 않는다. 화면 높이에 맞춰 그리는 지도 페이지는 바닥글이 붙으면 페이지 스크롤이 생기므로 footer={false}로 뺀다. */}
     {footer && <footer class="site-footer">
       <div class="wrap">
         <span class="site-name"><Seal label={sealLabel} />{restOfTitle.join(' ')}</span>
-        <nav aria-label="사이트 정보"><a href={withBase('/rss.xml')}>RSS</a><a href={withBase('/about/')}>이 위키에 대해</a></nav>
+        <Contacts contacts={contacts} />
+        <nav aria-label="사이트 정보"><a href={withBase('/about/')}>이 위키에 대해</a><a href={withBase('/rss.xml')}>RSS</a></nav>
       </div>
     </footer>}
   </body>

@@ -317,6 +317,10 @@ components:
     backgroundColor: '{colors.accent-soft}'
     textColor: '{colors.muted}'
     typography: '{typography.meta}'
+  footer:
+    backgroundColor: '{colors.accent-soft}'
+    textColor: '{colors.muted}'
+    typography: '{typography.meta}'
   callout:
     backgroundColor: '{colors.paper-strong}'
     textColor: '{colors.primary}'
@@ -370,6 +374,10 @@ components:
     textColor: '{colors.muted-dark}'
     typography: '{typography.meta}'
   hover-meta-dark:
+    backgroundColor: '{colors.accent-soft-dark}'
+    textColor: '{colors.muted-dark}'
+    typography: '{typography.meta}'
+  footer-dark:
     backgroundColor: '{colors.accent-soft-dark}'
     textColor: '{colors.muted-dark}'
     typography: '{typography.meta}'
@@ -527,6 +535,10 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 현재 메뉴는 헤더 아래 선 위에 얹은 막대로 표시한다. 글자색 차이만으로는 흐리고, 밑줄은 호버와 헷갈린다. 글자를 키워 한 줄에 들어가지 않으면 메뉴를 둘째 줄로 내리고 고정을 푼다. 메뉴만 가로로 밀면 지금 있는 절이 가려지고, 두 줄 헤더를 붙여 두면 제목으로 건너뛴 자리를 가린다.
 
+### 바닥글
+
+지도를 뺀 모든 페이지 끝에 같은 바닥글을 둔다. 인장과 이름, 다른 곳의 프로필, 사이트 소개, RSS 순서다. 본문과는 옅은 판의 바탕색으로 나누고 구분선은 긋지 않는다. 프로필은 홈 소개와 같은 회색조 아이콘 줄이다. 소개 페이지 본문에는 두지 않는다. 바로 아래 바닥글과 같은 줄이 연달아 보인다. 글자 링크로 늘어놓으면 이름마다 ↗ 표시가 붙어 줄이 길고 어수선하다. 지도는 화면 높이에 맞춰 그리므로 바닥글을 붙이면 페이지 스크롤이 생긴다.
+
 ### 목록
 
 장부는 왼쪽 열에 연도·분류·등급 라벨을 명조로 크게 두고, 오른쪽 행이 다시 제목·메타와 요약을 나눈다. 라벨 칸은 한 글자 등급에 맞춘 폭이고, 세 글자 미분류 묶음만 글자를 키웠을 때 칸이 글자를 따라 넓어진다.
@@ -644,6 +656,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 책장에서 책 결과를 고를 때 검색창 닫기와 필터 되돌리기 | `src/scripts/in-page-link.ts`, `src/scripts/search.ts`, `src/scripts/books.ts` | `tests/in-page-link.test.ts`, `tests/browser/search.spec.ts`, `tests/browser/books.spec.ts` |
 | 글자를 키웠을 때 책장 라벨 칸이 넓어지는 조건 | `src/pages/books/index.astro` | `tests/browser/books.spec.ts` |
 | 글자를 키웠을 때 헤더가 두 줄로 나뉘는 경계와 고정 해제 | `src/styles/site.css` | `tests/browser/header.spec.ts` |
+| 바닥글의 구성(프로필·사이트 소개·RSS)과 손가락 영역 | `src/layouts/Shell.astro`, `src/components/Contacts.astro`, `src/styles/site.css` | `tests/browser/footer.spec.ts` |
 | 홈 첫 화면과 최근 기록의 누르는 영역 | `src/components/About.astro`, `src/pages/index.astro` | `tests/browser/home.spec.ts` |
 
 ### 검사

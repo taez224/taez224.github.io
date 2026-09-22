@@ -1,13 +1,15 @@
 ---
 // 브랜드 로고를 회색조로 눕혀 종이색 톤에 맞춘다. 색을 지워도 실루엣이 남아 어느 서비스인지 알아볼 수 있다.
-// 상자는 40px(모바일 44px)이라 20px 아이콘보다 크다. 손가락으로 누를 자리를 확보한다.
+// 로고를 모르는 독자를 위해 이름을 숨긴 이름(aria-label)과 툴팁(title)에 함께 둔다. 헤더 검색 버튼과 같은 방식이다.
+// 상자는 40px(휴대폰 폭과 손가락으로 누르는 기기 44px)이라 20px 아이콘보다 크다. 손가락으로 누를 자리를 확보한다.
 import { withBase } from '../lib/format.ts';
 interface Props { contacts?: { name: string; url: string; icon?: string }[] }
 const { contacts = [] } = Astro.props;
+// 홈 소개와 바닥글이 모두 이 줄을 쓰므로 보일 목록은 여기서 한 번 정한다. 구조화 데이터(Shell의 sameAs)는 Velog까지 모두 싣는다.
 const shown = contacts.filter((contact) => contact.name !== 'Velog' && contact.icon);
 ---
 {shown.length > 0 && <div class="contacts">
-  {shown.map((contact) => <a href={contact.url} target="_blank" rel="noreferrer" aria-label={contact.name}>
+  {shown.map((contact) => <a href={contact.url} target="_blank" rel="noreferrer" aria-label={contact.name} title={contact.name}>
     <img src={withBase(`/social/${contact.icon}`)} alt="" width="20" height="20" />
   </a>)}
 </div>}
@@ -20,5 +22,6 @@ const shown = contacts.filter((contact) => contact.name !== 'Velog' && contact.i
   /* GitHub·Brunch 로고는 검은 글리프라 어두운 바탕에서 사라진다. 뒤집어 밝은 글리프로 둔다. LinkedIn은 사각형 안의 흰 글자라 그대로 읽힌다. */
   @media (prefers-color-scheme: dark) { .contacts img:is([src$="/github.svg"], [src$="/brunch.png"]) { filter: grayscale(1) invert(1); } }
   @media (hover: hover) { .contacts a:hover { background: var(--accent-soft); } .contacts a:hover img { opacity: 1; } }
-  @media (max-width: 720px) { .contacts a { width: 44px; height: 44px; } }
+  /* 폭만 보면 태블릿 같은 넓은 터치 화면에서 40px에 머문다. 입력 방식도 함께 본다. */
+  @media (max-width: 720px), (pointer: coarse) { .contacts a { width: 44px; height: 44px; } }
 </style>

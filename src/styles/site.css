@@ -145,17 +145,20 @@ h1, h2, h3, p { margin-top: 0; }
 @media (hover: hover) { .search-trigger:hover { background: var(--accent-soft); color: var(--accent); } }
 .search-trigger svg { width: 18px; height: 18px; fill: currentColor; }
 main { min-height: 60vh; }
-/* 사이트 바닥글: 페이지가 마지막 항목 뒤에서 그냥 끝나지 않게 구분선 아래 한 줄을 둔다. 링크는 홀로 선 링크와 같은 밑줄이다. */
-.site-footer { border-top: 1px solid var(--line); color: var(--muted); font-size: var(--t-meta); }
-.site-footer .wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 20px 0 32px; }
+/* 사이트 바닥글: 페이지가 마지막 항목 뒤에서 그냥 끝나지 않게 옅은 판 위에 한 줄을 둔다. 판과 바탕의 색 차이가 경계라 구분선은 긋지 않는다.
+   이름은 왼쪽 끝에, 프로필 아이콘 줄과 사이트 정보 링크는 오른쪽에 둔다. 글자 링크는 홀로 선 링크와 같은 밑줄이다. */
+.site-footer { background: var(--accent-soft); color: var(--muted); font-size: var(--t-meta); }
+.site-footer .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 32px; padding: 24px 0; }
 /* 인장이 이름의 첫 어절을 대신한다. 글자보다 높은 도장이 끼므로 줄 기준선 대신 가운데로 맞춘다.
    인장만 먹색이다. 비워 새긴 글자가 21px에서 2px 굵기라 보조색으로는 획이 바탕에 묻힌다. */
-.site-footer .site-name { display: flex; align-items: center; gap: 8px; }
+.site-footer .site-name { display: flex; align-items: center; gap: 8px; margin-right: auto; }
 .site-footer .site-name .seal { color: var(--ink); }
 .site-footer nav { display: flex; flex-wrap: wrap; gap: 4px 20px; }
-.site-footer a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--link-underline); text-underline-offset: 4px; }
-@media (hover: hover) { .site-footer a:hover { text-decoration-color: var(--ink); } }
-@media (pointer: coarse) { .site-footer a { padding-block: 12px; margin-block: -12px; } }
+.site-footer nav a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--link-underline); text-underline-offset: 4px; }
+@media (hover: hover) { .site-footer nav a:hover { text-decoration-color: var(--ink); } }
+/* 손가락으로 누르는 기기에서는 글자 링크를 아이콘 상자처럼 44px 높이로 세운다. 글자 줄에 위아래 여백만 붙이면 상자가 글자 높이에 여백을 더한 만큼만 남아
+   44px에 못 미친다. 줄바꿈된 묶음 사이 간격(4px)이 있어 위아래 링크의 영역이 겹치지 않는다. */
+@media (pointer: coarse) { .site-footer nav a { display: inline-flex; align-items: center; min-height: 44px; } }
 /* 장부 행 위에 올린 링크는 제목 아래 여백(6px)까지만 넓힌다. 더 넓히면 제목 글자를 눌러도 이 링크로 간다.
    압축 행(개발 노트)은 제목 아래가 3px이지만 메타 줄에 링크를 두지 않아 해당하지 않는다. */
 @media (pointer: coarse) { .ledger-row:not(.is-compact) .meta a { padding-block: 6px; margin-block: -6px; } }
@@ -173,6 +176,9 @@ main { min-height: 60vh; }
   .site-nav { --nav-gap: 14px; font-size: var(--t-side); }
   .site-nav a { white-space: nowrap; }
   .search-trigger { margin-left: 6px; margin-right: -12px; }
+  /* 좁은 폭에서는 이름을 한 줄에 두고 링크 묶음을 그 아래로 내린다. 이름 옆에 링크 일부만 걸리면 어디서 줄이 바뀌는지 읽히지 않는다. */
+  .site-footer .wrap { gap: 8px 24px; padding: 20px 0; }
+  .site-footer .site-name { flex-basis: 100%; }
 }
 /* 머리글의 한 줄 약속은 글자 100%에서만 성립한다. 한 줄에 필요한 폭은 100%에서 307px(19.19em)이고,
    검색 버튼과 좌우 여백 약 80px은 글자를 따라 커지지 않아 글자가 클수록 em 대비 비율이 줄어든다.
