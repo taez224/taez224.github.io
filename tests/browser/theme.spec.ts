@@ -72,3 +72,39 @@ test('a theme change that arrives before the diagram script still reaches the di
   await expect.poll(() => raced.evaluate(fills), { message: '도표가 고른 화면의 색으로 다시 그려진다' }).toEqual(expected);
   await raced.close();
 });
+
+// 전환은 버튼을 누를 때만이다. 지원하지 않는 브라우저와 움직임을 줄인 독자에게는 기다림 없이 바로 바뀌어야 한다.
+const countTransitions = async (page: import('@playwright/test').Page) => {
+  await page.addInitScript(() => {
+    (window as unknown as { transitions: number }).transitions = 0;
+    const start = document.startViewTransition?.bind(document);
+    if (start) {
+      document.startViewTransition = ((update: () => void) => {
+        (window as unknown as { transitions: number }).transitions += 1;
+        return start(update);
+      }) as typeof document.startViewTransition;
+    }
+  });
+};
+
+test('pressing the button animates the switch once', async ({ page }) => {
+  await countTransitions(page);
+  await page.goto('/books/');
+  test.skip(!(await page.evaluate(() => typeof document.startViewTransition === 'function')), '이 브라우저는 화면 전환을 지원하지 않는다');
+  const before = await page.locator('html').getAttribute('data-theme');
+  await page.locator('[data-theme-toggle]').click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', before === 'dark' ? 'light' : 'dark');
+  expect(await page.evaluate(() => (window as unknown as { transitions: number }).transitions), '누를 때 한 번만 전환한다').toBe(1);
+});
+
+test.describe('with reduced motion', () => {
+  test.use({ reducedMotion: 'reduce' });
+  test('the switch happens without an animation', async ({ page }) => {
+    await countTransitions(page);
+    await page.goto('/books/');
+    const before = await page.locator('html').getAttribute('data-theme');
+    await page.locator('[data-theme-toggle]').click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', before === 'dark' ? 'light' : 'dark');
+    expect(await page.evaluate(() => (window as unknown as { transitions: number }).transitions), '전환 없이 바로 바꾼다').toBe(0);
+  });
+});
