@@ -204,3 +204,30 @@ test('a heading reached by its address stays in place when content above grows a
   expect(top, '제목이 머리글 아래 도착한 자리에 남는다').toBeLessThan(300);
   expect(top).toBeGreaterThan(0);
 });
+
+test('series hubs omit the repeated graph and leave space after the mobile contents', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/posts/browser-series/');
+  await expect(page.locator('.series-block')).toBeVisible();
+  await expect(page.locator('.local-graph')).toHaveCount(0);
+  const gap = await page.evaluate(() => document.querySelector('.series-start')!.getBoundingClientRect().top - document.querySelector('.mobile-toc')!.getBoundingClientRect().bottom);
+  expect(gap).toBeGreaterThanOrEqual(16);
+  await page.goto('/posts/browser-series-part/');
+  await expect(page.locator('.local-graph')).toBeVisible();
+});
+
+test('table identifiers stay on one line while long values scroll inside the table', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/posts/browser-series-part/');
+  const measured = await page.locator('.body table').evaluate(table => {
+    const codes = [...table.querySelectorAll('code')];
+    return {
+      lines: codes.map(code => { const range = document.createRange(); range.selectNodeContents(code); return new Set([...range.getClientRects()].map(r => r.top)).size; }),
+      scrolls: table.scrollWidth > table.clientWidth,
+      overflow: document.documentElement.scrollWidth - innerWidth
+    };
+  });
+  expect(measured.lines).toEqual([1, 1]);
+  expect(measured.scrolls).toBe(true);
+  expect(measured.overflow).toBe(0);
+});

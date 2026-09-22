@@ -15,7 +15,7 @@ await fs.mkdir(path.join(vault, '01_Slipbox'), { recursive: true });
 await fs.mkdir(path.join(vault, '20_Projects/blog'), { recursive: true });
 await fs.writeFile(path.join(temporary, 'config.json'), JSON.stringify({
   basePath: '', entry: '01_Slipbox/start.md',
-  include: [{ path: '01_Slipbox', mode: 'all', graph: true }, { path: '20_Projects/blog', statuses: ['published'], graph: false }], exclude: [], assets: [],
+  include: [{ path: '01_Slipbox', mode: 'all', graph: true }, { path: '20_Projects/blog', statuses: ['published'], types: ['series'], graph: false }], exclude: [], assets: [],
   externalPublications: [{ name: '테스트 발행처', hosts: ['example.com'], publications: ['테스트 발행처'] }],
   home: { about: '어느 소프트웨어 엔지니어의 개인 위키입니다. 개발자로 살아가며 배운 개념과 기술, 그 과정에서 든 생각, 발행한 글과 읽은 책을 모아둡니다.', featured: [],
     contacts: [{ name: 'GitHub', url: 'https://example.com/profile', icon: 'github.svg' }] }
@@ -153,6 +153,40 @@ tags:
 # ${title}
 `);
 }
+// 연재 허브와 개별 편의 연결 표시, 목차 뒤 시작 카드 간격을 함께 확인한다.
+await fs.writeFile(path.join(vault, '20_Projects/blog/visual-series.md'), `---
+title: 화면 검사 연재
+type: series
+created: 2026-09-01
+slug: browser-series
+---
+# 화면 검사 연재
+
+## 소개
+
+연재 소개다.
+
+## 순서
+
+[[visual-part]]
+`);
+await fs.writeFile(path.join(vault, '20_Projects/blog/visual-part.md'), `---
+title: 화면 검사 첫 편
+status: published
+created: 2026-09-01
+slug: browser-series-part
+series: 화면 검사 연재
+series_order: 1
+---
+# 화면 검사 첫 편
+
+[[visual-series]]
+
+| 문법 | 설명 |
+| --- | --- |
+| \`sequenceDiagram\` | 참여자 사이의 시간순 호출과 응답 |
+| \`${'veryLongIdentifier'.repeat(10)}\` | 길어도 페이지 밖으로 밀지 않는다 |
+`);
 process.env.GARDEN_PROJECT_ROOT = temporary;
 process.env.GARDEN_VAULT_ROOT = vault;
 process.env.GARDEN_OG_CACHE_DIR = path.join(temporary, 'og');

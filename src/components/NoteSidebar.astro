@@ -26,7 +26,8 @@ const hasNeighbors = outgoing.length + incoming.length > 0;
     {!series.isHub && (series.url ? <a class="series-hub" href={series.url}>{series.title}</a> : <span class="series-hub">{series.title}</span>)}
     <ol class="side-list series-list">{series.posts.map((post) => <li><a href={post.url} aria-current={post.path === note.path ? 'page' : undefined}>{post.title}</a></li>)}</ol>
   </section>}
-  {hasNeighbors ? <LocalGraph note={note} outgoing={outgoing} incoming={incoming} mapUrl={mapUrl} /> : mapUrl && <div class="map-link"><a href={mapUrl}>생각 지도에서 보기</a></div>}
+  {/* 연재 허브는 편 목록이 이미 관계를 보여 주므로 같은 편을 그래프로 다시 나열하지 않는다. */}
+  {!series?.isHub && (hasNeighbors ? <LocalGraph note={note} outgoing={outgoing} incoming={incoming} mapUrl={mapUrl} /> : mapUrl && <div class="map-link"><a href={mapUrl}>생각 지도에서 보기</a></div>)}
   {blocks.map((b) => <section class="list-block">
     <div class="meta"><Icon name={b.icon} />{b.label}<span class="count">{b.items.length}</span></div>
     <div class:list={['scroll-list', { 'is-long': b.long }]}>
