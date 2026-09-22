@@ -25,10 +25,10 @@
    완료 표시는 항목 자기 글(label)에만 긋는다. li에 걸면 아래 중첩 목록의 미완료 항목까지 흐려지고 그어진다. */
 .body .task-list-item { list-style: none; }
 .body .task-list-item-checkbox { appearance: none; display: inline-block; box-sizing: border-box; width: 14px; height: 14px; margin: 0 8px 0 -22px; vertical-align: -2px; border: 1.5px solid var(--ink); border-radius: 2px; background: var(--paper-strong); cursor: default; }
-.body .task-list-item-checkbox:checked { background: var(--ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2 5 8.7 9.6 3.5' fill='none' stroke='%23fdfdfa' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 10px no-repeat; }
+.body .task-list-item-checkbox:checked { background: var(--ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2 5 8.7 9.6 3.5' fill='none' stroke='%23fdfcf8' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 10px no-repeat; }
 /* 체크 표시는 채운 먹색 위의 밝은 선이다. 어두운 화면에서는 먹색이 밝아지므로 선을 바탕색으로 바꾼다. */
-@media (prefers-color-scheme: dark) { :root:not([data-theme]) .body .task-list-item-checkbox:checked { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2 5 8.7 9.6 3.5' fill='none' stroke='%23151b17' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); } }
-:root[data-theme="dark"] .body .task-list-item-checkbox:checked { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2 5 8.7 9.6 3.5' fill='none' stroke='%23151b17' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme]) .body .task-list-item-checkbox:checked { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2 5 8.7 9.6 3.5' fill='none' stroke='%23171e1a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); } }
+:root[data-theme="dark"] .body .task-list-item-checkbox:checked { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2 5 8.7 9.6 3.5' fill='none' stroke='%23171e1a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
 .body .task-list-item.is-checked > .task-list-item-label,
 .body .task-list-item.is-checked > p > .task-list-item-label { color: var(--muted); text-decoration: line-through; }
 .body blockquote { margin: 18px 0; padding: 4px 16px; border-left: 3px solid var(--line); color: var(--muted); }
