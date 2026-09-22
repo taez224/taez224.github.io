@@ -63,3 +63,40 @@ test('a book result chosen on the shelf closes the search', async ({ page }) => 
   await expect(page).toHaveURL(/#book-/);
   await expect(page.locator('#search')).toHaveJSProperty('open', false);
 });
+
+// 같은 외곽선 안에서도 입력과 닫기의 포커스는 구분되고, 다시 열면 새 검색어로 바로 바꿀 수 있어야 한다.
+test('the search header groups its controls while preserving focus and reopening behavior', async ({ page }) => {
+  for (const width of [1440, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/');
+    await page.locator('[data-search-open]').first().click();
+    const input = page.locator('#search-input');
+    const close = page.getByRole('button', { name: '검색 닫기', exact: true });
+    await expect(input).toBeFocused();
+    await expect(input).toHaveCSS('outline-style', 'solid');
+    await expect(close).toHaveAttribute('title', '검색 닫기 (Esc)');
+    const inputBox = (await input.boundingBox())!;
+    const closeBox = (await close.boundingBox())!;
+    // 두 포커스 윤곽선은 서로의 버튼 영역과 겹치지 않고, 오른쪽 윤곽선도 창 안에 남는다.
+    expect(closeBox.x - (inputBox.x + inputBox.width)).toBeGreaterThanOrEqual(12);
+    const headBox = (await page.locator('.search-head').boundingBox())!;
+    expect(headBox.x + headBox.width - closeBox.x - closeBox.width).toBeGreaterThanOrEqual(6);
+    const bounds = await close.boundingBox();
+    expect(bounds!.width).toBeGreaterThanOrEqual(44);
+    expect(bounds!.height).toBeGreaterThanOrEqual(44);
+    await input.fill('없는검색어');
+    await page.keyboard.press('Tab');
+    await expect(close).toBeFocused();
+    await expect(close).toHaveCSS('outline-style', 'solid');
+    await expect(input).not.toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#search')).toHaveJSProperty('open', false);
+    await page.locator('[data-search-open]').first().click();
+    expect(await input.evaluate((element: HTMLInputElement) => [element.selectionStart, element.selectionEnd])).toEqual([0, 5]);
+    await input.dispatchEvent('keydown', { key: 'Escape', isComposing: true });
+    await expect(page.locator('#search')).toHaveJSProperty('open', true);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#search')).toHaveJSProperty('open', false);
+    await expect(input).toHaveValue('없는검색어');
+  }
+});

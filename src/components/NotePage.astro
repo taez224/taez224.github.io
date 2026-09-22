@@ -124,6 +124,8 @@ const endLink = note.kind === 'slipbox' ? null : parent.listLabel;
   @media (max-width: 720px) {
     /* 목차를 누르는 영역은 유지하고 제목·본문과의 바깥 여백만 줄인다. */
     .mobile-toc { margin: -12px 0 16px; }
+    /* 목차 아래 선과 시작 카드 위 선이 붙지 않게 제목용 음수 여백을 이 조합에서만 푼다. */
+    .mobile-toc + .series-start { margin-top: 0; }
     /* 이 폭에서는 제목 아래 여백이 28px로 줄어들어 위쪽 당김을 완화한다 */
     .note-lead { margin-top: -4px; }
     .note-end { margin-top: 40px; }
