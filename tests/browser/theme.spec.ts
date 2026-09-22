@@ -108,3 +108,22 @@ test.describe('with reduced motion', () => {
     expect(await page.evaluate(() => (window as unknown as { transitions: number }).transitions), '전환 없이 바로 바꾼다').toBe(0);
   });
 });
+
+// 전환 콜백이 도는 사이에 한 번 더 누르면, 누른 시점에 계산한 값이 둘 다 같아 한 번만 바뀔 수 있다.
+// 느린 기기에서 일어나는 순서를 확정적으로 만들려고 전환 콜백을 늦춘다.
+test('two presses during one transition end where they started', async ({ page }) => {
+  await page.addInitScript(() => {
+    document.startViewTransition = ((update: () => void) => {
+      setTimeout(update, 250);
+      return { finished: Promise.resolve(), ready: Promise.resolve(), updateCallbackDone: Promise.resolve(), skipTransition: () => {} };
+    }) as typeof document.startViewTransition;
+  });
+  await page.goto('/books/');
+  const root = page.locator('html');
+  const before = await root.getAttribute('data-theme');
+  const button = page.locator('[data-theme-toggle]');
+  await button.click();
+  await button.click();
+  await page.waitForTimeout(800);
+  await expect(root, '두 번 누르면 제자리로 돌아온다').toHaveAttribute('data-theme', before!);
+});

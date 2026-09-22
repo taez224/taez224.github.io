@@ -24,8 +24,10 @@ const paint = (theme: Theme) => {
 if (button) {
   button.hidden = false;
   button.addEventListener('click', () => {
-    const next: Theme = current() === 'dark' ? 'light' : 'dark';
+    // 다음 화면은 누른 시점이 아니라 실제로 바꾸는 시점에 정한다. 전환 콜백이 도는 사이에 한 번 더 누르면
+    // 두 번 모두 같은 값을 골라 한 번만 바뀐다.
     const change = () => {
+      const next: Theme = current() === 'dark' ? 'light' : 'dark';
       root.dataset.theme = next;
       try { localStorage.setItem(THEME_KEY, next); } catch { /* 저장이 막혀도 이번 화면은 바뀐다 */ }
       paint(next);

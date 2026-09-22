@@ -1,5 +1,13 @@
 import { test, expect, gotoWithDefaultFontSize } from './fixtures.ts';
 
+// 계산된 배경색은 알파가 없으면 rgb(), 있으면 rgba()나 color(srgb ... / a) 형식으로 나온다.
+const opacity = (color: string) => {
+  const slashed = color.match(/\/\s*([\d.]+)\s*\)$/);
+  if (slashed) return Number(slashed[1]);
+  const rgba = color.match(/^rgba\([^)]*,\s*([\d.]+)\s*\)$/);
+  return rgba ? Number(rgba[1]) : 1;
+};
+
 // 머리글은 한 줄로 설계했고 글자 100%에서는 307px이면 들어간다. 기본 글자를 두 배로 키우면 489px이 필요해
 // 390px에서 넘쳤다. 워드마크가 한 글자 폭으로 짓눌려 세로로 쌓이고, 공유·검색은 화면 밖으로 밀려 페이지 전체가 가로로 흔들렸다.
 test('the header fits the screen when the reader doubles the default text size', async ({ page }) => {
@@ -78,17 +86,16 @@ test('the header plate turns on only after the page scrolls', async ({ page }) =
   await page.goto('/notes/browser-sections/');
   const plate = () => page.evaluate(() => {
     const style = getComputedStyle(document.querySelector('.site-header')!, '::before');
-    const alpha = Number(style.backgroundColor.match(/[\d.]+\)$/)?.[0].replace(')', '') ?? (style.backgroundColor === 'rgba(0, 0, 0, 0)' ? 0 : 1));
-    return { alpha, blur: style.backdropFilter, presence: Number(getComputedStyle(document.querySelector('.site-header')!).getPropertyValue('--header-presence')) };
+    return { background: style.backgroundColor, blur: style.backdropFilter, presence: Number(getComputedStyle(document.querySelector('.site-header')!).getPropertyValue('--header-presence')) };
   });
   const top = await plate();
   expect(top.presence, '첫 화면에서는 판을 켜지 않는다').toBeLessThan(0.05);
-  expect(top.alpha).toBeLessThan(0.1);
+  expect(opacity(top.background)).toBeLessThan(0.1);
 
   await page.evaluate(() => window.scrollTo(0, 400));
   await page.waitForFunction(() => Number(getComputedStyle(document.querySelector('.site-header')!).getPropertyValue('--header-presence')) > 0.9);
   const scrolled = await plate();
-  expect(scrolled.alpha, '스크롤하면 본문이 비치지 않을 만큼 짙어진다').toBeGreaterThanOrEqual(0.85);
+  expect(opacity(scrolled.background), '스크롤하면 본문이 비치지 않을 만큼 짙어진다').toBeGreaterThanOrEqual(0.85);
   expect(scrolled.blur, '뒤 글자는 흐려 놓는다').toContain('blur');
 });
 
@@ -103,4 +110,15 @@ test('a heading reached from the contents clears the header and its fading plate
     return { heading: heading.getBoundingClientRect().top, headerBottom: document.querySelector('.site-header')!.getBoundingClientRect().bottom };
   });
   expect(measured.heading, '제목이 헤더와 그 아래 판을 지나 보인다').toBeGreaterThanOrEqual(measured.headerBottom + 24);
+});
+
+// 판의 농도는 스크립트가 채운다. 스크립트가 없으면 채울 수 없으므로, 그때는 스크롤과 상관없이 종이색으로 가려야 본문이 메뉴 뒤로 비치지 않는다.
+test.describe('without scripts', () => {
+  test.use({ javaScriptEnabled: false });
+  test('the header stays opaque so the text below cannot show through', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/notes/browser-sections/');
+    const background = await page.evaluate(() => getComputedStyle(document.querySelector('.site-header')!, '::before').backgroundColor);
+    expect(opacity(background), '스크롤하지 않아도 불투명하다').toBe(1);
+  });
 });

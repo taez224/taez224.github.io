@@ -143,10 +143,12 @@ h1, h2, h3, p { margin-top: 0; }
    판 전체를 반투명하게 하면 흐린 그림 아래로 원래 글자가 비치므로, 투명도는 색에만 준다. --header-presence는 header.ts가 스크롤에 따라 채운다. */
 .site-header { position: sticky; z-index: 20; top: 0; }
 .site-header::before { content: ""; position: absolute; z-index: -1; inset: 0 0 -24px; pointer-events: none; background: color-mix(in srgb, var(--paper) calc(var(--header-presence, 0) * 88%), transparent); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); -webkit-mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 24px), transparent 100%); mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 24px), transparent 100%); }
-/* 흐림을 지원하지 않으면 종이색만으로 가린다. 투명도를 줄이는 설정에서는 스크롤과 상관없이 불투명한 종이색을 깔고 꼬리도 없앤다. */
+/* 흐림이 없으면 옅은 판으로는 본문을 가리지 못하므로 스크롤과 상관없이 불투명한 종이색을 깐다.
+   스크립트가 없을 때도 마찬가지다. 농도를 채울 수 없어 계속 투명하게 남는다. 첫 화면의 띠 위에 판이 깔리는 것은 그 대가다. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .site-header::before { background: color-mix(in srgb, var(--paper) calc(var(--header-presence, 0) * 100%), transparent); }
+  .site-header::before { background: var(--paper); }
 }
+:root:not([data-js]) .site-header::before { background: var(--paper); }
 @media (prefers-reduced-transparency: reduce) {
   .site-header::before { inset: 0; background: var(--paper); -webkit-backdrop-filter: none; backdrop-filter: none; -webkit-mask-image: none; mask-image: none; }
 }
