@@ -95,9 +95,46 @@ export function pinsOwnTheme(parsed: Exclude<Awaited<ReturnType<Mermaid['parse']
   return pinnedTheme(parsed) !== null;
 }
 
-// 화면 모드에 맞는 사이트 설정이다. 창이 없는 환경(테스트 대역)에서는 밝은 화면으로 그린다.
-export function siteConfigFor(view: Pick<Window, 'matchMedia'> | null | undefined): MermaidConfig {
+// 화면 모드에 맞는 사이트 설정이다. 독자가 고른 화면(html의 data-theme)이 먼저이고, 그 값이 없을 때만 시스템 설정을 본다.
+// 도표는 CSS 변수를 읽지 못해 색을 설정으로 받으므로, 이 판정이 페이지와 어긋나면 밝은 도표가 어두운 본문 위에 남는다.
+// 창이 없는 환경(테스트 대역)에서는 밝은 화면으로 그린다.
+export function siteConfigFor(view: (Pick<Window, 'matchMedia'> & { document?: Document }) | null | undefined): MermaidConfig {
+  const chosen = view?.document?.documentElement?.dataset?.theme;
+  if (chosen === 'dark' || chosen === 'light') return chosen === 'dark' ? MERMAID_DARK_CONFIG : MERMAID_CONFIG;
   return view?.matchMedia?.(DARK_SCHEME_QUERY).matches ? MERMAID_DARK_CONFIG : MERMAID_CONFIG;
+}
+
+// 그리기 요청을 한 줄에 세운다. 초기 렌더도 이 줄의 첫 작업이므로, 모듈을 불러오는 동안 바뀐 테마도 그 뒤에 처리된다.
+// 세우지 않으면 먼저 시작한 그리기가 늦게 끝나 마지막 선택을 덮는다. 하나가 실패해도 다음 요청은 받는다.
+export function queueTasks(): (task: () => Promise<void>) => Promise<void> {
+  let queue = Promise.resolve();
+  return (task) => {
+    queue = queue.then(task).catch(() => {});
+    return queue;
+  };
+}
+
+// 도표를 지금 화면 모드로 유지한다. 모듈을 불러오고 처음 그리는 동안에도 독자는 화면 모드를 바꿀 수 있으므로,
+// 전환을 듣는 일을 불러오기보다 먼저 하고 초기 그리기까지 같은 줄에 세운다. 그리는 동안 들어온 전환은 그 뒤에 처리된다.
+// 이미 그 화면으로 그렸으면 다시 그리지 않는다. 도표는 CSS 변수를 읽지 못해 색을 설정으로 받으므로 이 판정이 페이지와 어긋나면 옛 색으로 남는다.
+export function keepDiagramsInTheme({ themeNow, load, draw, listen }: {
+  themeNow: () => string;
+  load: () => Promise<void>;
+  draw: () => Promise<void>;
+  listen: (handler: () => void) => void;
+}): Promise<void> {
+  const enqueue = queueTasks();
+  let drawn: string | null = null;
+  const drawNow = async () => {
+    if (drawn === themeNow()) return;
+    drawn = themeNow();
+    await draw();
+  };
+  listen(() => { enqueue(drawNow); });
+  return enqueue(async () => {
+    await load();
+    await drawNow();
+  });
 }
 
 // 그린 도표와 되돌릴 원문 코드 블록의 짝을 돌려준다. 화면 모드가 바뀌면 이 짝으로 원문을 되살려 다시 그린다.

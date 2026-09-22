@@ -26,7 +26,9 @@ export function topicLabelColor(topic: string): string { return `var(--topic-lab
 export function topicHex(topic: string): string { return GRAPH_COLORS[topic] ?? GRAPH_COLORS.기타; }
 export function topicColorCss(): string {
   const block = (nodes: Record<string, string>, labels: Record<string, string>) => Object.entries(TOPIC_KEYS).map(([topic, key]) => `--topic-${key}:${nodes[topic]};--topic-label-${key}:${labels[topic]};`).join('');
-  return `:root{${block(GRAPH_COLORS, GRAPH_LABEL_COLORS)}}@media (prefers-color-scheme: dark){:root{${block(DARK_GRAPH_COLORS, DARK_GRAPH_LABEL_COLORS)}}}`;
+  // 주제색도 화면 모드를 따른다. 조건은 site.css와 같다. 스크립트가 없어 data-theme이 없을 때만 시스템 설정을 본다.
+  const dark = block(DARK_GRAPH_COLORS, DARK_GRAPH_LABEL_COLORS);
+  return `:root{${block(GRAPH_COLORS, GRAPH_LABEL_COLORS)}}@media (prefers-color-scheme: dark){:root:not([data-theme]){${dark}}}:root[data-theme="dark"]{${dark}}`;
 }
 export function publicTags(tags: readonly string[] = []): string[] { return tags.filter((tag) => !HIDDEN_TAGS.has(tag) && !tag.startsWith('프로젝트/')); }
 // 노트의 주제는 첫 공개 태그의 앞 조각이다. 공개 태그가 없으면 기타다.

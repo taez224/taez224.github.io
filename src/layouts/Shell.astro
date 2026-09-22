@@ -13,6 +13,7 @@ import { structuredData } from '../lib/seo.ts';
 import siteConfig from '../../config.json';
 import { PALETTE, DARK_PALETTE } from '../lib/palette.ts';
 import { getGarden } from '../lib/get-garden.ts';
+import { THEME_BOOT } from '../lib/theme.ts';
 interface Props { title: string; description: string; path: string; active?: string; ogType?: string; ogImage?: string | null; kind?: string | null; pageType?: string | null; published?: string | null; updated?: string | null; footer?: boolean }
 const umami = siteConfig.analytics?.umami?.websiteId ? siteConfig.analytics.umami : null;
 // Search Console 소유권 확인 토큰. 공개되는 값이고, 지우면 소유권이 풀리므로 확인 뒤에도 남긴다.
@@ -37,6 +38,8 @@ const jsonLd = inlineJson(structuredData({ ogType, kind, pageType, title: path =
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {/* 첫 페인트 전에 화면 모드를 정한다. 뒤로 미루면 저장된 선택과 다른 색으로 한 번 그려졌다가 바뀐다. */}
+    <script is:inline set:html={THEME_BOOT}></script>
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <meta name="author" content="TaeZ" />

@@ -19,7 +19,8 @@ export const PALETTE = {
   edge: '#9aab9d'
 } as const;
 
-// 어두운 화면의 같은 역할 값이다. 시스템 설정(prefers-color-scheme: dark)을 따르고, site.css의 미디어 쿼리와 DESIGN.md의 -dark 토큰이 같은 값을 쓴다.
+// 어두운 화면의 같은 역할 값이다. 독자가 고른 화면(html의 data-theme)이 먼저이고 고른 적이 없으면 시스템 설정을 따른다.
+// site.css의 두 블록(미디어 쿼리와 data-theme)과 DESIGN.md의 -dark 토큰이 같은 값을 쓴다.
 // 라이트를 뒤집지 않고 먹색과 같은 녹회색 색조로 따로 짰다. 바탕보다 올라온 판(paper-strong, accent-soft)일수록 밝아서 그림자 없이 층이 보인다.
 // 글자는 흰색 대신 옅은 먹색이라 본문 대비가 14:1 안팎이고, muted는 가장 밝은 판(accent-soft) 위에서 4.6:1을 넘는 가장 어두운 값이다.
 export const DARK_PALETTE = {

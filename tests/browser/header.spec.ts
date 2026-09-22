@@ -29,14 +29,44 @@ test('the header fits the screen when the reader doubles the default text size',
   }
 });
 
-// 두 줄로 나누는 것은 넘칠 때만이다. 글자 100%에서는 320px 휴대폰에서도 한 줄로 화면 위에 붙어 있어야 한다.
-test('the header keeps one sticky row at the default text size on a narrow phone', async ({ page }) => {
-  await page.setViewportSize({ width: 320, height: 640 });
+// 두 줄로 나누는 것은 넘칠 때만이다. 글자 100%에서 한 줄에 필요한 폭은 354px이므로, 흔한 좁은 휴대폰(360px)은 한 줄로 붙어 있어야 한다.
+test('the header keeps one sticky row at the default text size on a common narrow phone', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 640 });
   await page.goto('/books/');
   await expect(page.locator('.site-header')).toHaveCSS('position', 'sticky');
   const row = await page.evaluate(() => ({
     height: document.querySelector('.site-header .wrap')!.getBoundingClientRect().height,
-    token: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--s-header-height'))
+    token: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--s-header-height')),
+    wordmarkLines: (() => {
+      const wordmark = document.querySelector('.wordmark')!;
+      const range = document.createRange();
+      range.selectNodeContents(wordmark);
+      return Math.round(range.getBoundingClientRect().height / parseFloat(getComputedStyle(wordmark).fontSize));
+    })()
   }));
   expect(row.height).toBe(row.token);
+  expect(row.wordmarkLines, 'TaeZ가 한 줄로 남는다').toBe(1);
+});
+
+// 검색과 테마 두 버튼까지 들어가지 않는 폭에서는 메뉴를 둘째 줄로 내리고 고정을 푼다. 눌러서 줄이는 대신 자리를 내주는 쪽이다.
+test('a phone too narrow for both buttons gets a two-row header that does not stay on top', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await page.goto('/books/');
+  await expect(page.locator('.site-header')).toHaveCSS('position', 'static');
+  const measured = await page.evaluate(() => {
+    const wordmark = document.querySelector('.wordmark')!;
+    const range = document.createRange();
+    range.selectNodeContents(wordmark);
+    return {
+      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      rows: document.querySelector('.site-header .wrap')!.getBoundingClientRect().height,
+      token: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--s-header-height')),
+      wordmarkLines: Math.round(range.getBoundingClientRect().height / parseFloat(getComputedStyle(wordmark).fontSize)),
+      theme: document.querySelector('[data-theme-toggle]')!.getBoundingClientRect().right
+    };
+  });
+  expect(measured.overflow, '페이지가 가로로 넘치지 않는다').toBe(0);
+  expect(measured.rows, '메뉴가 둘째 줄로 내려간다').toBeGreaterThan(measured.token);
+  expect(measured.wordmarkLines, 'TaeZ가 한 줄로 남는다').toBe(1);
+  expect(measured.theme, '테마 버튼이 화면 안에 있다').toBeLessThanOrEqual(320);
 });

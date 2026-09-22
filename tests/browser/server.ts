@@ -112,6 +112,21 @@ status: 읽는 중
 ---
 # 평점 없는 책
 `);
+// 도표가 든 노트. 도표는 CSS 변수를 읽지 못해 색을 설정으로 받으므로, 화면 모드를 바꾸면 다시 그려야 한다.
+await fs.writeFile(path.join(vault, '01_Slipbox/diagram.md'), `---
+title: 도표가 있는 노트
+created: 2026-09-07
+slug: browser-diagram
+tags:
+  - AI
+---
+# 도표가 있는 노트
+
+\`\`\`mermaid
+flowchart LR
+  A[노트] --> B[사이트]
+\`\`\`
+`);
 // 절마다 화면 두 배 넘게 긴 노트. 스크롤 한 번으로 제목을 건너뛰어도 목차가 지금 읽는 절을 가리키는지 본다.
 // 마지막 절은 한 문단뿐이라 끝까지 내려도 제목이 읽는 선에 닿지 못한다.
 await fs.writeFile(path.join(vault, '01_Slipbox/sections.md'), `---

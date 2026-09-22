@@ -459,7 +459,9 @@ Thinking Garden은 한 소프트웨어 엔지니어가 글과 개발 노트, 읽
 
 ### 어두운 화면
 
-**시스템 설정 규칙.** 어두운 화면은 운영체제·브라우저 설정을 따르고, 사이트 안에 전환 버튼은 두지 않는다. 헤더에는 전환 버튼을 둘 자리가 없다. 시스템 설정을 따르면 선택을 기억하는 스크립트가 없어도 첫 화면부터 맞는 색으로 그려진다.
+**선택 우선 규칙.** 화면 모드는 독자가 헤더의 해·달 버튼으로 고르고, 고른 값만 기억한다. 고른 적이 없으면 운영체제·브라우저 설정을 따른다. 읽는 도중 시스템 설정이 바뀌어도 화면을 뒤집지 않는다. 글을 읽는 동안 색이 바뀌면 읽던 자리를 잃는다.
+
+상태는 `<html>`의 `data-theme` 한 곳에 둔다. `<head>`의 짧은 인라인 스크립트가 첫 페인트 전에 정하므로 저장된 선택과 다른 색으로 한 번 그려졌다가 바뀌는 일이 없다. 스크립트가 없으면 속성이 붙지 않고, 그때만 CSS의 미디어 쿼리가 시스템 설정을 따른다. 그래서 어두운 규칙은 `:root:not([data-theme])`와 `:root[data-theme="dark"]` 두 벌로 둔다. 시스템이 어두운데 독자가 밝은 화면을 고른 경우에 옛 규칙이 끼어들지 않게 하려는 것이다. 색을 CSS에서 읽지 못하는 도표와 `theme-color` 메타는 스크립트가 같은 상태를 보고 맞춘다.
 
 어두운 팔레트(`-dark` 토큰)는 밝은 팔레트를 뒤집지 않고 먹색과 같은 녹회색 색조로 따로 짰다. 바탕보다 올라온 판일수록 밝아서 그림자 없이도 층이 보인다. 따로 정한 것은 다음과 같다.
 
@@ -495,7 +497,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 ### 전환 폭
 
-720px(모바일)과 1000px(한 열)이 기본이다. 그 밖에는 홈 소개의 1240px, 책장의 480px, 글자를 키웠을 때 헤더를 두 줄로 나누는 19.5em만 쓴다. 19.5em만 글자 크기를 따라 움직이는 경계다.
+720px(모바일)과 1000px(한 열)이 기본이다. 그 밖에는 홈 소개의 1240px, 책장의 480px, 헤더를 두 줄로 나누는 22.125em만 쓴다. 22.125em만 글자 크기를 따라 움직이는 경계다. 글자 100%에서 354px이고, 그보다 좁으면 메뉴가 둘째 줄로 내려간다.
 
 - **1000px 이하:** 한 열로 바뀌고 참조·역참조가 본문 뒤로 가며, 목차는 접힘으로 바뀐다. 지도 패널은 하단 시트가 된다.
 - **720px 이하:** 좌우 여백과 헤더가 모바일 값이 되고, 목록의 열이 세로로 쌓인다. 긴 표와 코드는 블록 안에서 가로로 스크롤한다.
@@ -532,6 +534,8 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 - **글자 버튼:** 지도 시트 닫기, 필터 해제, 검색 재시도·더 보기에 쓰고 링크와 같은 밑줄을 긋는다.
 
 ### 헤더
+
+오른쪽 끝에는 검색과 화면 모드 버튼을 44px 상자로 나란히 둔다. 테마 버튼의 기호는 다음에 일어날 일을 보인다. 밝은 화면에서는 달이다. 스크립트가 없으면 동작하지 않으므로 아예 보이지 않는다.
 
 현재 메뉴는 헤더 아래 선 위에 얹은 막대로 표시한다. 글자색 차이만으로는 흐리고, 밑줄은 호버와 헷갈린다. 글자를 키워 한 줄에 들어가지 않으면 메뉴를 둘째 줄로 내리고 고정을 푼다. 메뉴만 가로로 밀면 지금 있는 절이 가려지고, 두 줄 헤더를 붙여 두면 제목으로 건너뛴 자리를 가린다.
 
@@ -638,7 +642,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 본문 안 글 카드의 테두리·여백·강조 | `src/styles/article-card.css` | 없음 |
 | 코드 블록 머리 줄과 복사 버튼 | `src/lib/markdown.ts`, `src/scripts/code-copy.ts`, `src/styles/body.css` | `tests/code-block.test.ts` |
 | 각주 번호·목록·판 | `src/lib/markdown.ts`, `src/scripts/footnotes.ts`, `src/styles/body.css` | `tests/markdown-footnotes.test.ts`, `tests/footnotes.test.ts` |
-| 조작 아이콘의 도안과 표시 크기 | `src/lib/pixel-icons.ts`, `site.css`의 `.search-trigger svg`, `body.css`의 `.code-copy-plate svg` | `tests/pixel-icons.test.ts` |
+| 조작 아이콘의 도안과 표시 크기 | `src/lib/pixel-icons.ts`, `site.css`의 `.search-trigger svg`·`.theme-toggle svg`, `body.css`의 `.code-copy-plate svg` | `tests/pixel-icons.test.ts` |
 | 개인 표식의 도안·파비콘·터치 아이콘 | `src/lib/mark.ts`, `src/lib/palette.ts`의 `MARK`, `scripts/make-mark.ts`가 만든 `public/favicon.svg`·`apple-touch-icon.png` | `tests/mark.test.ts` |
 | 사이드바 작은 그래프의 제목과 목록의 함께 강조 | `src/components/local-graph-layout.ts`, `src/components/LocalGraph.astro`, `src/scripts/local-graph.ts`, `src/components/NoteSidebar.astro` | `tests/local-graph.test.ts`, `tests/local-graph-links.test.ts`, `tests/browser/reader.spec.ts` |
 | 폭에 따른 리더·지도 배치 | `src/components/NotePage.astro`, `src/pages/map/index.astro` | 없음 |
@@ -655,7 +659,8 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 표 식별자 줄바꿈과 연재 허브 표시 | `src/styles/body.css`, `src/components/NotePage.astro`, `src/components/NoteSidebar.astro` | `tests/browser/reader.spec.ts` |
 | 책장에서 책 결과를 고를 때 검색창 닫기와 필터 되돌리기 | `src/scripts/in-page-link.ts`, `src/scripts/search.ts`, `src/scripts/books.ts` | `tests/in-page-link.test.ts`, `tests/browser/search.spec.ts`, `tests/browser/books.spec.ts` |
 | 글자를 키웠을 때 책장 라벨 칸이 넓어지는 조건 | `src/pages/books/index.astro` | `tests/browser/books.spec.ts` |
-| 글자를 키웠을 때 헤더가 두 줄로 나뉘는 경계와 고정 해제 | `src/styles/site.css` | `tests/browser/header.spec.ts` |
+| 헤더가 두 줄로 나뉘는 경계와 고정 해제 | `src/styles/site.css` | `tests/browser/header.spec.ts` |
+| 화면 모드의 선택·기억과 첫 페인트 | `src/lib/theme.ts`, `src/scripts/theme.ts`, `src/layouts/Shell.astro` | `tests/theme.test.ts`, `tests/browser/theme.spec.ts` |
 | 바닥글의 구성(프로필·사이트 소개·RSS)과 손가락 영역 | `src/layouts/Shell.astro`, `src/components/Contacts.astro`, `src/styles/site.css` | `tests/browser/footer.spec.ts` |
 | 홈 첫 화면과 최근 기록의 누르는 영역 | `src/components/About.astro`, `src/pages/index.astro` | `tests/browser/home.spec.ts` |
 
