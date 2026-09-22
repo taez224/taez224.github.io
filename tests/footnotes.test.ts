@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import vm from 'node:vm';
 import { stripTypeScriptTypes } from 'node:module';
 
-// 각주 판 스크립트를 Node와 같은 타입 제거 방식으로 읽는다. share.test.ts, code-block.test.ts와 같은 방식이다.
+// 각주 판 스크립트를 Node와 같은 타입 제거 방식으로 읽는다. code-block.test.ts와 같은 방식이다.
 const source = stripTypeScriptTypes(await fs.readFile(new URL('../src/scripts/footnotes.ts', import.meta.url), 'utf8')).replace(/^import .*;\s*/m, '');
 
 // 스크립트가 실제로 쓰는 DOM 기능만 갖춘 가짜 요소.

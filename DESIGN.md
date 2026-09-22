@@ -487,7 +487,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 ### 전환 폭
 
-720px(모바일)과 1000px(한 열)이 기본이다. 그 밖에는 홈 소개의 1240px, 책장의 480px, 좁은 헤더에서 공유 아이콘을 숨기는 359/360px, 글자를 키웠을 때 헤더를 두 줄로 나누는 19.5em만 쓴다. 19.5em만 글자 크기를 따라 움직이는 경계다.
+720px(모바일)과 1000px(한 열)이 기본이다. 그 밖에는 홈 소개의 1240px, 책장의 480px, 글자를 키웠을 때 헤더를 두 줄로 나누는 19.5em만 쓴다. 19.5em만 글자 크기를 따라 움직이는 경계다.
 
 - **1000px 이하:** 한 열로 바뀌고 참조·역참조가 본문 뒤로 가며, 목차는 접힘으로 바뀐다. 지도 패널은 하단 시트가 된다.
 - **720px 이하:** 좌우 여백과 헤더가 모바일 값이 되고, 목록의 열이 세로로 쌓인다. 긴 표와 코드는 블록 안에서 가로로 스크롤한다.
@@ -502,7 +502,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 **그림자 없음 규칙.** 판과 조작 요소에는 그림자를 쓰지 않는다. 층은 구분선, 판의 밝기, 여백, 겹치는 판의 테두리와 뒤 배경으로 나눈다. 뒤 배경이 이미 층을 가르므로 그림자는 같은 단서를 되풀이하고, 가는 테두리와 넓은 그림자를 함께 쓰면 경계가 흐려진다.
 
-떠 있는 판(검색 대화상자, 각주 판, 공유 실패 안내)은 경계가 보여야 하므로 먹색 테두리를 둔다. 화면을 덮는 판(도표 크게 보기, 지도 시트)은 판의 경계가 곧 화면 끝이라 구분선 색 테두리만 둔다. 예외는 도표 도구가 노드에 그리는 옅은 그림자 하나다.
+떠 있는 판(검색 대화상자, 각주 판)은 경계가 보여야 하므로 먹색 테두리를 둔다. 화면을 덮는 판(도표 크게 보기, 지도 시트)은 판의 경계가 곧 화면 끝이라 구분선 색 테두리만 둔다. 예외는 도표 도구가 노드에 그리는 옅은 그림자 하나다.
 
 ## Shapes
 
@@ -626,10 +626,8 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 본문 안 글 카드의 테두리·여백·강조 | `src/styles/article-card.css` | 없음 |
 | 코드 블록 머리 줄과 복사 버튼 | `src/lib/markdown.ts`, `src/scripts/code-copy.ts`, `src/styles/body.css` | `tests/code-block.test.ts` |
 | 각주 번호·목록·판 | `src/lib/markdown.ts`, `src/scripts/footnotes.ts`, `src/styles/body.css` | `tests/markdown-footnotes.test.ts`, `tests/footnotes.test.ts` |
-| 조작 아이콘의 도안과 표시 크기 | `src/lib/pixel-icons.ts`, `site.css`의 `.search-trigger svg`, `ShareLink.astro`의 `.share-icon`, `body.css`의 `.code-copy-plate svg` | `tests/pixel-icons.test.ts` |
+| 조작 아이콘의 도안과 표시 크기 | `src/lib/pixel-icons.ts`, `site.css`의 `.search-trigger svg`, `body.css`의 `.code-copy-plate svg` | `tests/pixel-icons.test.ts` |
 | 개인 표식의 도안·파비콘·터치 아이콘 | `src/lib/mark.ts`, `src/lib/palette.ts`의 `MARK`, `scripts/make-mark.ts`가 만든 `public/favicon.svg`·`apple-touch-icon.png` | `tests/mark.test.ts` |
-| 공유 안내의 위치와 폭 | `src/components/ShareLink.astro` | 없음 |
-| 공유 안내가 5초 뒤 사라지는 동작 | `src/scripts/share.ts` | `tests/share.test.ts` |
 | 사이드바 작은 그래프의 제목과 목록의 함께 강조 | `src/components/local-graph-layout.ts`, `src/components/LocalGraph.astro`, `src/scripts/local-graph.ts`, `src/components/NoteSidebar.astro` | `tests/local-graph.test.ts`, `tests/local-graph-links.test.ts`, `tests/browser/reader.spec.ts` |
 | 폭에 따른 리더·지도 배치 | `src/components/NotePage.astro`, `src/pages/map/index.astro` | 없음 |
 | 홈 지도의 폭·입력 방식에 따른 전환(살아 있는 지도와 정적 그림) | `src/scripts/hero-graph.ts`, `src/pages/index.astro` | `tests/hero-graph.test.ts`, `tests/browser/reader.spec.ts` |
@@ -656,4 +654,4 @@ npm run design:lint
 
 lint는 문서 구조, 토큰 참조, 선언한 색 조합의 대비를 검사하고 쓰이지 않는 색 토큰에 경고한다. 값의 일치는 위 표의 테스트가, 배치와 입력이 있어야 보이는 흐름은 브라우저 검사가 맡는다. 화면 낭독, 포커스의 식별성, 아이콘·선의 비텍스트 대비는 따로 확인한다. 토큰 변경이 클 때는 같은 버전의 `designmd diff <이전 파일> DESIGN.md`를 함께 쓴다.
 
-화면 변경은 홈·긴 노트·목록·지도·검색을 320px, 390px, 1440px와 전환 폭 720px·1000px 전후에서, 밝은 화면과 어두운 화면 모두 확인한다. 글자 200%도 확인한다. 긴 제목, 썸네일 유무, 검색·공유 실패, 키보드 탐색을 포함한다. 문서 검사와 화면 검증의 결과는 나눠 기록한다. 프로젝트 명령은 [AGENTS.md](AGENTS.md), 콘텐츠 표시 규칙은 [AUTHORING.md](AUTHORING.md)가 관리한다.
+화면 변경은 홈·긴 노트·목록·지도·검색을 320px, 390px, 1440px와 전환 폭 720px·1000px 전후에서, 밝은 화면과 어두운 화면 모두 확인한다. 글자 200%도 확인한다. 긴 제목, 썸네일 유무, 검색·복사 실패, 키보드 탐색을 포함한다. 문서 검사와 화면 검증의 결과는 나눠 기록한다. 프로젝트 명령은 [AGENTS.md](AGENTS.md), 콘텐츠 표시 규칙은 [AUTHORING.md](AUTHORING.md)가 관리한다.

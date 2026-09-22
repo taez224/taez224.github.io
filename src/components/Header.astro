@@ -1,7 +1,6 @@
 ---
 import { withBase } from '../lib/format.ts';
 import { pixelIcon } from '../lib/pixel-icons.ts';
-import ShareLink from './ShareLink.astro';
 interface Props { active?: string }
 const { active = '' } = Astro.props;
 const items = [['map', '/map/', '생각 지도'], ['posts', '/posts/', '글'], ['dev', '/dev/', '개발 노트'], ['books', '/books/', '책장']];
@@ -12,7 +11,6 @@ const items = [['map', '/map/', '생각 지도'], ['posts', '/posts/', '글'], [
     <nav class="site-nav" aria-label="공개 기록">
       {items.map(([id, href, label]) => <a href={withBase(href)} aria-current={active === id ? 'page' : undefined}><span>{label}</span></a>)}
     </nav>
-    <ShareLink />
     <button class="search-trigger" type="button" data-search-open aria-label="검색" title="검색">
       <Fragment set:html={pixelIcon('search')} />
     </button>
