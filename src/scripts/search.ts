@@ -10,7 +10,6 @@ const dialog = document.querySelector<HTMLDialogElement>('#search')!;
 const input = document.querySelector<HTMLInputElement>('#search-input')!;
 const results = document.getElementById('search-results')!;
 const status = document.getElementById('search-status')!;
-const hint = document.querySelector<HTMLElement>('[data-search-hint]')!;
 const form = dialog.querySelector('.search-head');
 const closeButton = dialog.querySelector('.search-close');
 const triggers = [...document.querySelectorAll<HTMLButtonElement>('[data-search-open]')];
@@ -22,7 +21,7 @@ let queryTerms: string[] = [];
 let shown = 0;
 
 const shortcut = searchShortcut(navigator.platform, navigator.userAgent, navigator.maxTouchPoints);
-if (shortcut) { hint.textContent = shortcut; hint.hidden = false; for (const t of triggers) t.title = `검색 (${shortcut})`; }
+if (shortcut) for (const t of triggers) t.title = `검색 (${shortcut})`;
 
 function loadIndex(): Promise<SearchRecord[]> {
   index ??= fetch(dialog.dataset.index!).then((response) => {
@@ -75,6 +74,13 @@ async function render() {
   }
 }
 dialog.addEventListener('close', () => { queryVersion++; });
+// search 입력의 기본 Escape는 검색어만 지우므로, 닫기 안내와 맞춰 창을 닫고 검색어를 보존한다. 조합 취소는 IME에 맡긴다.
+dialog.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape' || event.isComposing) return;
+  event.preventDefault();
+  event.stopPropagation();
+  dialog.close();
+});
 // 책 결과는 책장 안의 앵커라, 책장에서 누르면 페이지를 다시 열지 않고 스크롤만 한다. 검색창이 남아 도착한 책을 가리므로
 // 같은 페이지로 가는 결과는 이동하기 전에 닫는다.
 results.addEventListener('click', (event) => { if (inPageLink(event)) dialog.close(); });

@@ -39,6 +39,7 @@ test('the buttons draw the grids instead of keeping their own line icons', () =>
 });
 
 test('each icon is shown at the size of its own grid so one cell stays one pixel', () => {
+  assert.equal(width(read('src/styles/site.css'), '.search-close svg'), ICON_GRIDS.close.length);
   assert.equal(width(read('src/styles/site.css'), '.search-trigger svg'), ICON_GRIDS.search.length);
   assert.equal(width(read('src/components/ShareLink.astro'), '.share-icon'), ICON_GRIDS.share.length);
   assert.equal(width(read('src/styles/body.css'), '.body .code-copy-plate svg'), ICON_GRIDS.copy.length);
