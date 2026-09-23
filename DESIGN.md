@@ -606,6 +606,8 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 **확대 조작 규칙.** 확대·축소와 전체 보기는 같은 16칸 격자와 두 칸 획을 쓴다. 외곽선 하나 안에서 세 칸으로 나누고 가는 구분선으로 경계를 보인다. 전체 보기는 전체 화면 전환과 혼동하지 않게 화살표 없는 네 모서리 아이콘으로 표시한다. 각 버튼은 접근 가능한 이름과 툴팁을 두고, 호버와 포커스는 해당 칸에만 표시한다.
 
+**확대 크기 규칙.** 확대하면 노드 사이는 배율대로 벌어지고, 노드 원은 배율의 제곱근만큼만 커진다(3배 확대에서 약 1.7배). 간선과 원 테두리의 두께, 제목과 영역 이름의 글자 크기는 화면 기준 그대로다. 원과 간선이 배율대로 커지던 때는 3배 확대에서 원과 선이 제목보다 먼저 보였고, 확대로 벌어진 자리를 원이 다시 차지했다. 크기를 아예 고정하면 원이 점처럼 작아져 허브 고리가 눈에 띄지 않는다. 이 규칙은 지도에만 적용한다. 홈 지도는 정적 그림과 같은 크기를 지켜야 한다.
+
 ### 검색
 
 입력칸과 닫기는 검색창의 같은 머리 줄에 두고 각각 포커스 윤곽선을 표시한다. 닫기는 44px 영역의 픽셀 × 버튼으로 입력 윤곽선 밖에 두어 검색어 지우기와 구분한다. 닫기는 머리 줄 오른쪽에 붙이고, 버튼 안쪽 여백에 바깥 여백을 중복해서 더하지 않는다. 접근 가능한 이름은 “검색 닫기”, 툴팁은 “검색 닫기 (Esc)”다. Escape는 검색어를 지우지 않고 창을 닫되 입력기 조합 중에는 가로채지 않는다. 검색을 여는 단축키는 헤더 버튼의 툴팁에 둔다. 닫아도 검색어는 유지하며 다시 열면 전체 선택한다.
@@ -691,6 +693,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 검색창 닫기와 검색어 보존·포커스 | `src/components/SearchDialog.astro`, `src/scripts/search.ts`, `src/styles/site.css` | `tests/browser/search.spec.ts` |
 | 지도 필터 해제·배치 안정성과 확대 조작 | `src/pages/map/index.astro`, `src/scripts/map.ts` | `tests/browser/map.spec.ts` |
 | 지도 제목 겹침 금지와 확대 조작 피하기 | `src/graph/label.ts`, `src/graph/engine.ts`, `src/scripts/map.ts` | `tests/graph-label.test.ts`, `tests/regions.test.ts`, `tests/browser/map.spec.ts` |
+| 확대할 때 노드 원 크기와 선 두께 | `src/graph/engine.ts`, `src/styles/graph.css` | `tests/engine.test.ts`, `tests/browser/map.spec.ts` |
 | 표 식별자 줄바꿈과 연재 허브 표시 | `src/styles/body.css`, `src/components/NotePage.astro`, `src/components/NoteSidebar.astro` | `tests/browser/reader.spec.ts` |
 | 책장에서 책 결과를 고를 때 검색창 닫기와 필터 되돌리기 | `src/scripts/in-page-link.ts`, `src/scripts/search.ts`, `src/scripts/books.ts` | `tests/in-page-link.test.ts`, `tests/browser/search.spec.ts`, `tests/browser/books.spec.ts` |
 | 글자를 키웠을 때 책장 라벨 칸이 넓어지는 조건 | `src/pages/books/index.astro` | `tests/browser/books.spec.ts` |

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyEdges, hoverLabelCandidates, fitTransform, offsetLine, isFilteredOut, screenBoxToScene } from '../src/graph/engine.ts';
+import { classifyEdges, hoverLabelCandidates, fitTransform, offsetLine, isFilteredOut, screenBoxToScene, zoomedNodeScale } from '../src/graph/engine.ts';
 import { labelIds } from '../src/graph/label.ts';
 
 // 제목과 영역 이름은 장면 좌표로 자리를 잡는다. 화면에 떠 있는 조작의 자리를 같은 좌표로 옮겨야 그 아래를 피할 수 있다.
@@ -8,6 +8,15 @@ test('screenBoxToScene maps a screen box through the current pan and zoom', () =
   const transform = { x: 20, y: 10, scale: 2 };
   assert.deepEqual(screenBoxToScene({ left: 120, right: 220, top: 50, bottom: 90 }, transform), { left: 50, right: 100, top: 20, bottom: 40 });
   assert.deepEqual(screenBoxToScene({ left: 0, right: 10, top: 0, bottom: 10 }, { x: 0, y: 0, scale: 1 }), { left: 0, right: 10, top: 0, bottom: 10 });
+});
+
+// 원이 배율대로 커지면 3배 확대에서 원과 고리가 제목보다 먼저 보였다. 화면의 원은 맞춤 대비 확대 배율의 제곱근만큼만 커진다.
+test('zoomedNodeScale grows node dots on screen by the square root of the zoom past the fitted view', () => {
+  const onScreen = (scale: number, fitScale: number) => scale * zoomedNodeScale(scale, fitScale) / fitScale;
+  assert.equal(zoomedNodeScale(1, 1), 1, '맞춤 화면은 지금 크기 그대로다');
+  assert.equal(onScreen(4, 1), 2, '4배 확대하면 원은 2배');
+  assert.equal(onScreen(1.6, 0.4), 2, '맞춤 배율이 1이 아니어도 맞춤 대비 배율로 잰다');
+  assert.equal(zoomedNodeScale(0.65, 1), 1, '맞춤보다 축소하면 배율대로 줄인다');
 });
 
 const edges = [{ source: 'a', target: 'b' }, { source: 'b', target: 'a' }, { source: 'a', target: 'c' }, { source: 'd', target: 'e' }];
