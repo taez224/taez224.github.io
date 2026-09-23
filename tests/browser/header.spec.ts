@@ -1,4 +1,4 @@
-import { test, expect, gotoWithDefaultFontSize } from './fixtures.ts';
+import { test, expect, gotoBeforeModules, gotoWithDefaultFontSize } from './fixtures.ts';
 
 // 계산된 배경색은 알파가 없으면 rgb(), 있으면 rgba()나 color(srgb ... / a) 형식으로 나온다.
 const opacity = (color: string) => {
@@ -76,6 +76,24 @@ test('the search and theme buttons sit side by side without a gap', async ({ pag
     expect(measured.boxes, `${width}px에서 두 상자가 맞닿는다`).toBeCloseTo(0, 0);
     if (width === 1280) expect(measured.glyphs, '두 기호 사이가 메뉴 글자 사이보다 넓지 않다').toBeLessThanOrEqual(measured.menus);
   }
+});
+
+// 테마 버튼은 모듈 스크립트가 hidden을 풀 때 보인다. 그 전에 첫 화면이 그려져도 자리는 잡혀 있어야,
+// 버튼이 나타날 때 메뉴와 검색 버튼이 밀리지 않는다. 모듈 스크립트를 걷어 느린 로딩의 첫 화면을 만든다.
+test('the theme button holds its place before its script runs', async ({ page }) => {
+  const layout = () => page.evaluate(() => ({
+    nav: document.querySelector('.site-nav')!.getBoundingClientRect().left,
+    search: document.querySelector('.search-trigger')!.getBoundingClientRect().left,
+    theme: document.querySelector('.theme-toggle')!.getBoundingClientRect().width
+  }));
+  await page.goto('/books/');
+  await expect(page.locator('[data-theme-toggle]')).toBeVisible();
+  const ready = await layout();
+
+  await gotoBeforeModules(page, '/books/');
+  await expect(page.locator('html')).toHaveAttribute('data-js', '1');
+  await expect(page.locator('[data-theme-toggle]'), '스크립트가 돌기 전에는 보이지 않는다').toBeHidden();
+  expect(await layout(), '메뉴와 검색 버튼이 버튼이 나타난 뒤와 같은 자리에 있다').toEqual(ready);
 });
 
 // 검색과 테마 두 버튼까지 들어가지 않는 폭에서는 메뉴를 둘째 줄로 내리고 고정을 푼다. 눌러서 줄이는 대신 자리를 내주는 쪽이다.

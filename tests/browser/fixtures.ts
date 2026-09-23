@@ -21,6 +21,20 @@ export async function gotoWithDefaultFontSize(page: Page, url: string, px: numbe
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).fontSize), '브라우저 기본 글자 설정이 먹었다').toBe(`${px}px`);
 }
 
+// 모듈 스크립트가 돌기 전의 첫 화면으로 페이지를 연다. 느린 연결에서는 모듈을 받는 동안 첫 페인트가 먼저 일어난다.
+// 스크립트 요청을 막는 방식은 작은 스크립트가 HTML 안에 들어가면 그대로 돌아 재현되지 않으므로, 문서에서 type="module" 스크립트를 걷어 낸다.
+// 첫 페인트 전에 도는 인라인 부트 스크립트는 일반 스크립트라 남는다.
+export async function gotoBeforeModules(page: Page, url: string): Promise<void> {
+  await page.route('**/*', async (route) => {
+    if (route.request().resourceType() !== 'document') return route.fallback();
+    const response = await route.fetch();
+    const body = (await response.text()).replace(/<script type="module"[^>]*>[\s\S]*?<\/script>/g, '');
+    await route.fulfill({ response, body });
+  });
+  await page.goto(url);
+  expect(await page.locator('script[type="module"]').count(), '모듈 스크립트를 모두 걷어 냈다').toBe(0);
+}
+
 // 선택 막대(::after)의 위쪽과 버튼 글자의 아래쪽 사이 간격을, 터치용으로 키운 높이와 글자 높이 그대로에서 한 번씩 잰다.
 // 둘이 같으면 막대가 버튼 바닥이 아니라 글자를 따라간다. 가상 요소는 좌표를 직접 읽을 수 없어 계산된 bottom과 높이로 구한다.
 export function pressedBarGaps(button: HTMLElement): { height: number; stretched: number; natural: number } {

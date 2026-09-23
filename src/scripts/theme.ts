@@ -21,7 +21,8 @@ const paint = (theme: Theme) => {
 };
 
 if (button) {
-  button.hidden = false;
+  // 자리는 CSS가 첫 페인트부터 잡아 두었다. 누름을 받을 수 있게 된 지금 보인다.
+  button.dataset.ready = '';
   button.addEventListener('click', () => {
     // 다음 화면은 누른 시점이 아니라 실제로 바꾸는 시점에 정한다. 전환 콜백이 도는 사이에 한 번 더 누르면
     // 두 번 모두 같은 값을 골라 한 번만 바뀐다.

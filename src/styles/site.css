@@ -187,9 +187,15 @@ h1, h2, h3, p { margin-top: 0; }
 .theme-toggle svg { width: 18px; height: 18px; fill: currentColor; }
 .theme-toggle .is-sun, :root[data-theme="dark"] .theme-toggle .is-moon { display: none; }
 :root[data-theme="dark"] .theme-toggle .is-sun { display: inline-flex; }
-/* 테마 버튼이 오른쪽 끝을 맡으므로 검색 버튼은 제 여백으로 돌아간다. 스크립트가 없으면 테마 버튼은 hidden이어도 DOM의 마지막 자식으로 남으므로,
-   순서(:last-child) 대신 테마 버튼이 보이는지로 판단한다. 순서로 보면 스크립트 없는 화면에서 검색 버튼이 오른쪽 끝선보다 안쪽으로 들어온다. */
-.search-trigger:has(+ .theme-toggle:not([hidden])) { margin-right: 0; }
+/* 테마 버튼은 스크립트가 없으면 동작하지 않으므로 숨긴다. data-js는 부트 스크립트가 첫 페인트 전에 단다. */
+:root:not([data-js]) .theme-toggle { display: none; }
+/* 모듈 스크립트가 붙기 전에 첫 화면이 그려져도 자리는 잡아 둔다. 뒤늦게 44px을 차지하면 메뉴와 검색 버튼이 밀린다.
+   theme.ts가 data-ready를 달 때까지는 보이지 않고, 누를 수도 포커스할 수도 없다. */
+.theme-toggle:not([data-ready]) { visibility: hidden; }
+/* 테마 버튼이 오른쪽 끝을 맡으므로 검색 버튼은 제 여백으로 돌아간다. 판단은 테마 버튼이 자리를 차지하는지, 곧 data-js로 한다.
+   DOM 순서(:last-child)로 보면 스크립트 없는 화면에서 숨은 테마 버튼 때문에 검색 버튼이 오른쪽 끝선보다 안쪽으로 들어오고,
+   버튼이 보이는지로 보면 자리를 먼저 잡아 둔 사이에 검색 버튼이 그 자리에 13px 겹쳤다가 밀린다. */
+:root[data-js] .search-trigger { margin-right: 0; }
 main { flex: 1 0 auto; }
 /* 사이트 바닥글: 페이지가 마지막 항목 뒤에서 그냥 끝나지 않게 옅은 판 위에 한 줄을 둔다. 판과 바탕의 색 차이가 경계라 구분선은 긋지 않는다.
    이름은 왼쪽 끝에, 프로필 아이콘 줄과 사이트 정보 링크는 오른쪽에 둔다. 글자 링크는 홀로 선 링크와 같은 밑줄이다. */
