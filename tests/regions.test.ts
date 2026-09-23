@@ -42,6 +42,17 @@ test('placeRegionLabels moves a name off nodes and other names', () => {
   assert.notDeepEqual(both.get('AI'), both.get('개발'), '두 이름은 같은 자리를 쓰지 않는다');
 });
 
+// 지도는 오른쪽 아래 확대·축소 조작의 자리를 상자 장애물로 넘긴다. 휴대폰 폭에서 그 아래로 영역 이름이 들어가 가려졌다.
+test('placeRegionLabels keeps a name out from under a control drawn over the graph', () => {
+  const hull = [{ x: 100, y: 100 }, { x: 200, y: 100 }, { x: 200, y: 200 }, { x: 100, y: 200 }];
+  const region = { topic: '조직', count: 4, hull, label: { x: 100, y: 100 } };
+  const control = { left: 60, right: 140, top: 50, bottom: 95 };
+  const name = placeRegionLabels([region], [control]).get('조직')!;
+  const box = regionLabelBox(name, '조직');
+  const overlaps = box.left < control.right && control.left < box.right && box.top < control.bottom && control.top < box.bottom;
+  assert.equal(overlaps, false, '조작 아래가 아닌 다른 자리를 고른다');
+});
+
 test('placeRegionLabels keeps screen-sized names apart when the graph is drawn small', () => {
   // 이름은 화면에서 같은 크기로 그린다. 그래프가 작게 그려지면(화면 1px = 장면 3단위) 장면 좌표로는 이름이 세 배 넓다.
   const regions = [

@@ -594,6 +594,8 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 기타 범례에는 이름만 보이고 묶인 주제는 툴팁에 둔다. 주제와 허브 조건은 짧은 세로선으로 구분한다.
 
+**제목 겹침 금지 규칙.** 지도에서 글자끼리는 겹치지 않는다. 허브 제목은 빈자리가 없으면 노드 원 위에는 얹지만 다른 제목·영역 이름 위에는 얹지 않고, 그런 자리도 없으면 고른 뒤 시트에서 읽는다. 억지로 두는 것은 고르거나 미리 보는 노드의 제목뿐이고, 그 아래 깔린 영역 이름은 흐린다. 확대 조작 아래에는 제목도 영역 이름도 두지 않는다. 좁은 무대에서 허브 제목을 모두 억지로 두었더니 글자끼리 겹쳐 어느 쪽도 읽히지 않았다. 홈 지도는 정적 그림과 같은 규칙을 지켜야 하므로 이 규칙에서 뺀다.
+
 **필터 해제 규칙.** 필터가 적용되면 범례의 가로 스크롤 영역 밖에 “필터 해제”를 보인다. 필터만 해제하며 노드 선택과 시점은 유지한다. 해제할 필터가 없으면 버튼을 숨기고 비활성화하되 자리는 남겨 배치가 움직이지 않게 한다. 마우스에서는 범례의 촘촘한 높이를 따르고 터치에서는 44px을 확보한다. 해제 후 포커스는 첫 필터로 돌아간다.
 
 제목 옆 집계는 필터가 남긴 범위를 말하고 선택 때문에 움직이지 않는다. 달라진 수는 낭독기에도 전한다.
@@ -684,6 +686,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 검색·도표 크게 보기의 배경 닫기와 끌기 보호 | `src/scripts/dialog-backdrop.ts` | `tests/dialog-backdrop.test.ts`, `tests/browser/search.spec.ts` |
 | 검색창 닫기와 검색어 보존·포커스 | `src/components/SearchDialog.astro`, `src/scripts/search.ts`, `src/styles/site.css` | `tests/browser/search.spec.ts` |
 | 지도 필터 해제·배치 안정성과 확대 조작 | `src/pages/map/index.astro`, `src/scripts/map.ts` | `tests/browser/map.spec.ts` |
+| 지도 제목 겹침 금지와 확대 조작 피하기 | `src/graph/label.ts`, `src/graph/engine.ts`, `src/scripts/map.ts` | `tests/graph-label.test.ts`, `tests/regions.test.ts`, `tests/browser/map.spec.ts` |
 | 표 식별자 줄바꿈과 연재 허브 표시 | `src/styles/body.css`, `src/components/NotePage.astro`, `src/components/NoteSidebar.astro` | `tests/browser/reader.spec.ts` |
 | 책장에서 책 결과를 고를 때 검색창 닫기와 필터 되돌리기 | `src/scripts/in-page-link.ts`, `src/scripts/search.ts`, `src/scripts/books.ts` | `tests/in-page-link.test.ts`, `tests/browser/search.spec.ts`, `tests/browser/books.spec.ts` |
 | 글자를 키웠을 때 책장 라벨 칸이 넓어지는 조건 | `src/pages/books/index.astro` | `tests/browser/books.spec.ts` |

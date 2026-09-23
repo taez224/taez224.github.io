@@ -1,12 +1,13 @@
 import type { GraphNode, GraphEdge, Point, Size, Box, Transform } from './types.ts';
 export interface GraphFilter { topics?: ReadonlySet<string> | null; hubsOnly?: boolean }
-interface GraphOptions { nodes: readonly GraphNode[]; edges: readonly GraphEdge[]; positions: ReadonlyMap<string, Point>; mode?: 'map' | 'hero'; nodeScale?: number; focusable?: boolean; layoutSize?: Size | null; onSelect?: (id: string | null) => void; onOpen?: (id: string) => void }
+// reserved: 무대 위에 얹힌 조작이 차지한 자리(svg 기준 화면 px). 영역 이름과 노드 제목이 그 아래로 들어가지 않는다.
+interface GraphOptions { nodes: readonly GraphNode[]; edges: readonly GraphEdge[]; positions: ReadonlyMap<string, Point>; mode?: 'map' | 'hero'; nodeScale?: number; focusable?: boolean; layoutSize?: Size | null; reserved?: () => readonly Box[]; onSelect?: (id: string | null) => void; onOpen?: (id: string) => void }
 interface GraphState { selected: string | null; hovered: string | null; topics: ReadonlySet<string> | null; hubsOnly: boolean; transform: Transform }
 
 import { nodeRadius } from './layout.ts';
 import { topicColor, topicLabelColor, cleanTitle } from '../lib/format.ts';
 import { createGraphGesture } from './gestures.ts';
-import { estimateTextWidth, labelIds, placeLabels, nodeBox } from './label.ts';
+import { boxesOverlap, estimateTextWidth, labelIds, mustPlaceLabel, placeLabels, nodeBox } from './label.ts';
 import { topicRegions, regionPath, placeRegionLabels, regionLabelBox } from './regions.ts';
 
 const MIN_SCALE = 0.65;
@@ -57,6 +58,11 @@ export function fitTransform(positions: ReadonlyMap<string, Point>, { width, hei
   return { scale, x: (width - spanX * scale) / 2 - minX * scale, y: (height - spanY * scale) / 2 - minY * scale };
 }
 
+// 화면 px 상자를 장면 좌표로 옮긴다. 제목과 영역 이름은 장면 좌표로 자리를 잡으므로, 무대 위 조작의 자리도 같은 좌표로 비교한다.
+export function screenBoxToScene(box: Box, t: Transform): Box {
+  return { left: (box.left - t.x) / t.scale, right: (box.right - t.x) / t.scale, top: (box.top - t.y) / t.scale, bottom: (box.bottom - t.y) / t.scale };
+}
+
 export function offsetLine(a: Point, b: Point, sign: number, distance = 2.5) {
   const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1;
   const nx = (-dy / d) * distance * sign, ny = (dx / d) * distance * sign;
@@ -80,7 +86,7 @@ const LABEL_REVEAL_SCALE = 1.2;
 const RESTING_LABEL_LIMIT = 6;
 
 // layoutSize: 좌표가 놓인 무대 크기. 홈 히어로처럼 좌표 공간(1000×640)과 상자 픽셀 크기가 다를 때 준다. 지도는 상자 크기로 배치하므로 생략한다.
-export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode = 'map', nodeScale = 1, focusable = true, layoutSize = null, onSelect = () => {}, onOpen = () => {} }: GraphOptions) {
+export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode = 'map', nodeScale = 1, focusable = true, layoutSize = null, reserved = () => [], onSelect = () => {}, onOpen = () => {} }: GraphOptions) {
   // nodeScale: 노드 원 크기 배율. 지도는 무대가 좁아 0.7, 홈 히어로는 0.9로 그려 밀도를 맞춘다.
   const radius = (node: GraphNode) => nodeRadius(node.degree ?? 0, nodeScale);
   const el = <K extends keyof SVGElementTagNameMap>(name: K, attrs: Record<string, string | number> = {}) => { const node = document.createElementNS(SVG_NS, name); for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, String(v)); return node; };
@@ -107,10 +113,13 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
   // 확대·이동 중에는 다시 계산하지 않아 이름이 튀지 않는다. 확대하면 이름이 장면 대비 작아지므로 새로 겹치지 않는다.
   const regionObstacles = nodes.filter((node) => positions.has(node.id)).map((node) => ({ ...positions.get(node.id)!, r: radius(node) + 4 }));
   let regionLabelAt: ReturnType<typeof placeRegionLabels> = new Map(), regionLabelU = 0;
-  const placeRegionNames = (scale: number) => {
-    const u = 1 / (scale || 1);
+  // 무대 위 조작(확대·축소)도 피한다. 맞춤 배율의 자리로 옮겨 재므로 맞춤 상태에서 이름이 조작 아래로 들어가지 않는다.
+  // 전에는 휴대폰 폭에서 오른쪽 아래 영역 이름("조직", "지식관리")이 조작에 가려졌다.
+  const placeRegionNames = (target: Transform) => {
+    const u = 1 / (target.scale || 1);
     if (regionLabelU && Math.abs(u - regionLabelU) / u < 0.01) return false;
-    regionLabelAt = placeRegionLabels(regionList, regionObstacles, { fontSize: 15, scale: u, measure: estimateTextWidth, bounds: layoutSize ?? size() });
+    const obstacles = [...regionObstacles, ...reserved().map((box) => screenBoxToScene(box, target))];
+    regionLabelAt = placeRegionLabels(regionList, obstacles, { fontSize: 15, scale: u, measure: estimateTextWidth, bounds: layoutSize ?? size() });
     regionLabelU = u;
     return true;
   };
@@ -196,7 +205,8 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
       nodeLayer.append(g); nodeEls.set(node.id, g);
     }
   };
-  // 제목 배치 계획. 우선순위(선택 → 호버 → 허브 → 연결 많은 순)로 placeLabels에 넘긴다. 기본 집합(선택·호버·허브)은 자리가 없어도 아래에 둔다.
+  // 제목 배치 계획. 우선순위(선택 → 호버 → 허브 → 연결 많은 순)로 placeLabels에 넘긴다. 자리가 없어도 아래에 두는 제목은 mustPlaceLabel이 정한다.
+  // 지도에서는 고르거나 미리 보는 노드와 호버한 노드뿐이고, 홈 히어로는 스냅샷처럼 기본 집합(허브 등)을 모두 둔다.
   // 나머지는 1.2배 이상 확대했거나 선택 상태일 때, 자리가 날 때만 보인다. 흐려진 노드는 제외.
   const planLabels = (u: number) => {
     // 선택 전 호버는 허브를 남기고 해당 노드의 이웃 제목을 미리 보여준다.
@@ -209,16 +219,18 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
     const neighbors = new Set();
     if (state.selected) for (const e of edges) { if (e.source === state.selected) neighbors.add(e.target); if (e.target === state.selected) neighbors.add(e.source); }
     const dimmed = (id: string) => outOfFilter(id) || Boolean(state.selected && id !== state.selected && !neighbors.has(id));
-    // 흐려지지 않은 노드 원과 영역 이름은 장애물이다. 제목이 그 위에 얹히지 않게.
-    const obstacles = nodes.filter((node) => !dimmed(node.id) && positions.has(node.id)).map((node) => nodeBox(positions.get(node.id)!, radius(node) + 2 * u));
-    obstacles.push(...regionLabelBoxes(u));
+    // 흐려지지 않은 노드 원과 영역 이름, 무대 위 조작은 장애물이다. 제목이 그 위에 얹히지 않게.
+    // 노드 원은 따로 넘긴다. 지도의 기본 제목은 빈자리가 없으면 노드 원 위에는 얹을 수 있지만 다른 글자 위에는 얹지 않는다.
+    const nodeObstacles = nodes.filter((node) => !dimmed(node.id) && positions.has(node.id)).map((node) => nodeBox(positions.get(node.id)!, radius(node) + 2 * u));
+    const obstacles = [...regionLabelBoxes(u), ...reserved().map((box) => screenBoxToScene(box, state.transform))];
     // 화면 밖으로 나가는 자리는 쓰지 않는다(장면 좌표로 환산한 무대 범위).
     const { width: vw, height: vh } = size();
     const view = { left: -state.transform.x * u, top: -state.transform.y * u, right: (vw - state.transform.x) * u, bottom: (vh - state.transform.y) * u };
     const inside = (b: Box) => b.left >= view.left && b.right <= view.right && b.top >= view.top && b.bottom <= view.bottom;
     const priority = (id: string) => (id === (state.selected || preview) ? 0 : 1);
     const baseSet = new Set(base);
-    const order = base.sort((a, b) => priority(a) - priority(b)).map((id) => byId.get(id)).filter((node): node is GraphNode => node !== undefined).map((node) => ({ node, mustPlace: true }));
+    const focus = state.selected || preview;
+    const order: { node: GraphNode; mustPlace: boolean; overNodes?: boolean }[] = base.sort((a, b) => priority(a) - priority(b)).map((id) => byId.get(id)).filter((node): node is GraphNode => node !== undefined).map((node) => ({ node, mustPlace: mustPlaceLabel(node.id, { mode, focus }), overNodes: mode === 'map' }));
     // 홈 히어로(hero 모드)는 허브·호버만 보인다. 자리 채우기는 지도에서만: 평소에는 연결 많은 순으로 몇 개, 확대하거나 선택하면 자리가 나는 만큼 전부.
     if (mode === 'map') {
       const candidates = preview ? hoverLabelCandidates(nodes, edges, preview) : nodes;
@@ -228,7 +240,7 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
     }
     // 호버한 노드는 이미 자리가 있으면 그대로 두고, 숨어 있던 노드면 그때만 빈자리(없으면 아래)에 얹는다. 맨 위에 그려지므로 겹쳐도 읽힌다.
     if (state.hovered) { const node = byId.get(state.hovered); if (node) order.push({ node, mustPlace: true }); }
-    return placeLabels(order, { positions, radius, u, obstacles, inside, labelGap: mode === 'map' && (state.selected || preview) ? 8 : 0 });
+    return placeLabels(order, { positions, radius, u, obstacles, nodeObstacles, inside, labelGap: mode === 'map' && (state.selected || preview) ? 8 : 0 });
   };
   const drawLabels = () => {
     labelLayer.replaceChildren();
@@ -239,7 +251,16 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
     // 영역 이름은 재생성하지 않아 필터 전환 중에도 자리를 지키며 농도만 바뀐다.
     regionLabelLayer.style.fontSize = `${(15 * u).toFixed(2)}px`;
     regionLabelLayer.style.strokeWidth = `${(3.5 * u).toFixed(2)}px`;
-    for (const [id, { lines, g }] of planLabels(u)) {
+    const plan = planLabels(u);
+    // 자리가 없어도 놓는 제목(고른 노드·호버한 노드)은 영역 이름 위에 얹힐 수 있다. 그때는 영역 이름을 흐려 고른 제목을 먼저 읽게 한다.
+    if (mode === 'map') {
+      const labelBoxes = [...plan.values()].map(({ g }) => g.box);
+      const regionBoxes = regionLabelBoxes(u);
+      regionList.forEach((region, index) => {
+        regionEls.get(region.topic)?.[1]?.classList.toggle('is-under-label', labelBoxes.some((box) => boxesOverlap(box, regionBoxes[index])));
+      });
+    }
+    for (const [id, { lines, g }] of plan) {
       const node = byId.get(id)!;
       const topicDim = outOfFilter(id);
       const text = el('text', { class: `label${node.isEntry ? ' is-entry' : ''}${id === state.selected ? ' is-selected' : ''}${id === state.hovered ? ' is-hovered' : ''}${topicDim ? ' is-topic-dim' : ''}`, 'data-for': id, x: g.x.toFixed(1), y: g.y.toFixed(1), 'text-anchor': g.anchor });
@@ -311,7 +332,7 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
     fit(animate = false) {
       const target = fitTransform(positions, size());
       // 상자 크기가 바뀌어 맞춤 배율이 달라졌으면 영역 이름 자리를 새 배율로 다시 정하고, 노드 제목도 새 자리를 피해 다시 그린다.
-      if (placeRegionNames(target.scale)) { drawRegions(); labelScale = -1; }
+      if (placeRegionNames(target)) { drawRegions(); labelScale = -1; }
       if (animate) animateTo(target); else { stopAnimation(); state.transform = target; applyTransform(); }
     },
     zoom(factor: number, center?: Point) {
@@ -325,7 +346,7 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
     },
     selected: () => state.selected
   };
-  placeRegionNames(fitTransform(positions, size()).scale);
+  placeRegionNames(fitTransform(positions, size()));
   drawRegions(); drawNodes(); render(); api.fit();
   return api;
 }

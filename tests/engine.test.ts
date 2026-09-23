@@ -1,7 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyEdges, hoverLabelCandidates, fitTransform, offsetLine, isFilteredOut } from '../src/graph/engine.ts';
+import { classifyEdges, hoverLabelCandidates, fitTransform, offsetLine, isFilteredOut, screenBoxToScene } from '../src/graph/engine.ts';
 import { labelIds } from '../src/graph/label.ts';
+
+// 제목과 영역 이름은 장면 좌표로 자리를 잡는다. 화면에 떠 있는 조작의 자리를 같은 좌표로 옮겨야 그 아래를 피할 수 있다.
+test('screenBoxToScene maps a screen box through the current pan and zoom', () => {
+  const transform = { x: 20, y: 10, scale: 2 };
+  assert.deepEqual(screenBoxToScene({ left: 120, right: 220, top: 50, bottom: 90 }, transform), { left: 50, right: 100, top: 20, bottom: 40 });
+  assert.deepEqual(screenBoxToScene({ left: 0, right: 10, top: 0, bottom: 10 }, { x: 0, y: 0, scale: 1 }), { left: 0, right: 10, top: 0, bottom: 10 });
+});
 
 const edges = [{ source: 'a', target: 'b' }, { source: 'b', target: 'a' }, { source: 'a', target: 'c' }, { source: 'd', target: 'e' }];
 const nodes = [

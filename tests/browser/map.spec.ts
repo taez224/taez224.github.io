@@ -90,6 +90,36 @@ test('one-column widths keep the start lists and hold the sheet out of the way',
   await expect(page.locator('.map-panel')).toHaveAttribute('inert', '');
 });
 
+// 휴대폰 폭 지도에서 허브 제목을 자리가 없어도 아래에 두었더니 제목끼리, 또는 영역 이름과 겹쳤다. 오른쪽 아래 확대 조작은
+// 영역 이름을 가렸다. 첫 화면과 노드를 하나씩 고른 화면에서 보이는 글자끼리 겹치지 않고 조작 아래로 들어가지 않는지 잰다.
+// 고른 제목 아래 깔린 영역 이름은 흐려지므로(is-under-label) 겹침에서 뺀다.
+test('map labels stay apart and clear of the zoom controls on a phone', async ({ page }) => {
+  const clashes = () => page.evaluate(() => {
+    const boxes = [...document.querySelectorAll<SVGTextElement>('.map-stage svg text:not(.is-under-label)')]
+      .filter((text) => text.textContent!.trim() && text.getBoundingClientRect().width > 0)
+      .map((text) => ({ name: text.textContent!.trim(), box: text.getBoundingClientRect() }));
+    const controls = document.querySelector('.graph-controls')!.getBoundingClientRect();
+    const hit = (a: DOMRect, b: DOMRect) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
+    const found: string[] = [];
+    boxes.forEach((a, i) => {
+      if (hit(a.box, controls)) found.push(`${a.name} × 확대 조작`);
+      for (const b of boxes.slice(i + 1)) if (hit(a.box, b.box)) found.push(`${a.name} × ${b.name}`);
+    });
+    return found;
+  });
+  for (const [width, height] of [[320, 568], [375, 667]]) {
+    await page.setViewportSize({ width, height });
+    await page.goto('/map/');
+    const nodes = page.locator('.graph .node');
+    await expect(nodes.first()).toBeAttached();
+    expect(await clashes(), `${width}×${height} 첫 화면`).toEqual([]);
+    for (let i = 0; i < await nodes.count(); i++) {
+      await nodes.nth(i).dispatchEvent('click');
+      expect(await clashes(), `${width}×${height}에서 ${i}번째 노드를 고른 화면`).toEqual([]);
+    }
+  }
+});
+
 // 어두운 화면의 뒤 배경은 검정 반투명이다. 먹색이 밝아지므로 밝은 화면처럼 먹색을 섞으면 지도가 회색으로 뜬다.
 // 전역 스타일 블록에서 :global()로 감싼 선택자는 브라우저가 버려서 이 규칙이 통째로 빠진 적이 있다.
 test('the sheet backdrop darkens the map in the dark theme', async ({ page }) => {

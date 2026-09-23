@@ -15,7 +15,33 @@ test('estimateTextWidth weighs hangul, latin and punctuation differently and sca
   assert.equal(estimateTextWidth('가', 26), 25);
 });
 
-import { placeLabels, labelGeometry } from '../src/graph/label.ts';
+import { placeLabels, labelGeometry, mustPlaceLabel } from '../src/graph/label.ts';
+
+// 지도에서 허브까지 억지로 놓았더니 좁은 무대에서 허브 제목끼리, 또는 영역 이름과 겹쳤다. 홈 히어로는 정적 스냅샷과 규칙이 같아야 한다.
+test('only the focused node forces its label on the map, while the home hero keeps every base label', () => {
+  assert.equal(mustPlaceLabel('hub', { mode: 'map', focus: null }), false, '지도의 허브 제목은 자리가 날 때만 놓는다');
+  assert.equal(mustPlaceLabel('hub', { mode: 'map', focus: 'other' }), false);
+  assert.equal(mustPlaceLabel('picked', { mode: 'map', focus: 'picked' }), true, '고르거나 미리 보는 노드는 자리가 없어도 놓는다');
+  assert.equal(mustPlaceLabel('hub', { mode: 'hero', focus: null }), true, '홈 히어로는 스냅샷처럼 기본 집합을 모두 놓는다');
+});
+
+// 지도의 허브 제목은 빈자리가 없으면 노드 원 위에는 얹되 다른 제목 위에는 얹지 않는다. 억지로 아래에 두었더니 글자끼리 겹쳤고,
+// 노드 원까지 피하게 했더니 휴대폰 폭에서 허브 제목이 거의 모두 사라졌다.
+test('placeLabels lets a label sit over node dots but never over another label', () => {
+  const nodes = [{ id: 'a', title: '가' }, { id: 'b', title: '나' }];
+  const positions = new Map([['a', { x: 100, y: 100 }], ['b', { x: 100, y: 130 }]]);
+  const radius = () => 6;
+  const dots = [{ left: 0, right: 300, top: 0, bottom: 300 }];
+  const overDots = placeLabels([{ node: nodes[0], mustPlace: false, overNodes: true }], { positions, radius, nodeObstacles: dots });
+  assert.equal(overDots.size, 1, '노드 원만 막혔으면 그 위에 놓는다');
+  assert.equal(placeLabels([{ node: nodes[0], mustPlace: false }], { positions, radius, nodeObstacles: dots }).size, 0, 'overNodes가 없으면 놓지 않는다');
+  const text = [{ left: 0, right: 300, top: 0, bottom: 300 }];
+  assert.equal(placeLabels([{ node: nodes[1], mustPlace: false, overNodes: true }], { positions, radius, obstacles: text }).size, 0, '글자 자리는 노드 원이 아니므로 피한다');
+  const both = placeLabels(nodes.map((node) => ({ node, mustPlace: false, overNodes: true })), { positions, radius, nodeObstacles: dots });
+  const boxes = [...both.values()].map(({ g }) => g.box);
+  const overlap = boxes.length === 2 && boxes[0].left < boxes[1].right && boxes[1].left < boxes[0].right && boxes[0].top < boxes[1].bottom && boxes[1].top < boxes[0].bottom;
+  assert.equal(overlap, false, '노드 원 위에 얹은 제목끼리도 겹치지 않는다');
+});
 
 const radius = () => 6;
 const at = (x: number, y: number) => ({ x, y });
