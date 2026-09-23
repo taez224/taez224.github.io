@@ -81,6 +81,18 @@ test('placeLabels skips optional labels with no room, forces required ones below
   assert.equal(planFor(forced, 'a').placement, 'below');
 });
 
+// 억지로 두는 아래 자리가 확대 조작과 겹치면 고른 제목이 조작 아래에 깔려 일부만 보였다.
+test('placeLabels never forces a label under blocked controls: it takes another visible slot or drops the label', () => {
+  const a = { id: 'a', title: '에이' };
+  const positions = new Map([['a', at(100, 100)]]);
+  const everywhere = [{ left: -1e4, right: 1e4, top: -1e4, bottom: 1e4 }];
+  const below = labelGeometry(at(100, 100), 6, ['에이'], 'below', 1).box;
+  assert.equal(planFor(placeLabels([{ node: a, mustPlace: true }], { positions, radius, obstacles: everywhere, blocked: [below] }), 'a').placement, 'above', '다른 글자 위라도 조작 밖으로 옮긴다');
+  const offAbove = (box: { top: number }) => box.top >= 90;
+  assert.equal(planFor(placeLabels([{ node: a, mustPlace: true }], { positions, radius, obstacles: everywhere, blocked: [below], inside: offAbove }), 'a').placement, 'right', '보이지 않는 자리는 건너뛴다');
+  assert.equal(placeLabels([{ node: a, mustPlace: true }], { positions, radius, blocked: everywhere }).size, 0, '둘 자리가 없으면 두지 않는다');
+});
+
 test('placeLabels avoids slots outside the visible area', () => {
   const a = { id: 'a', title: '에이' };
   const positions = new Map([['a', at(100, 630)]]);

@@ -31,6 +31,8 @@
 .graph.map .region-label.is-topic-dim { opacity: .35; }
 /* 고른 노드의 제목이 영역 이름 위에 얹히면 영역 이름을 거의 지워 두 글자가 겹쳐 읽히지 않게 한다. */
 .graph.map .region-label.is-under-label { opacity: .12; }
+/* 지도를 끌어 확대 조작 아래로 들어간 제목과 영역 이름은 숨긴다. 일부만 가려진 글자는 읽히지 않는다. 농도 규칙과 섞이지 않게 visibility로 숨긴다. */
+.graph .is-under-controls { visibility: hidden; }
 .graph .node { cursor: pointer; outline: none; }
 /* 흐리게 만드는 일은 보이는 점에만 건다. 노드 묶음에 걸면 자식인 포커스 링까지 곱해져 종이색 위에서 1.5:1이 되고,
    opacity는 부분 트리를 한 층으로 합성하므로 자식에서 되돌릴 수 없다. */

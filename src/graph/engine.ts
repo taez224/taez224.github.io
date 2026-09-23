@@ -180,7 +180,7 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
     const { width, height } = size();
     svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
     scene.setAttribute('transform', `translate(${state.transform.x.toFixed(1)} ${state.transform.y.toFixed(1)}) scale(${state.transform.scale.toFixed(3)})`);
-    if (Math.abs(state.transform.scale - labelScale) > 0.005) { labelScale = state.transform.scale; drawLabels(); }
+    if (Math.abs(state.transform.scale - labelScale) > 0.005) { labelScale = state.transform.scale; drawLabels(); } else hideUnderControls();
   };
   const drawEdges = () => {
     edgeLayer.replaceChildren();
@@ -228,8 +228,11 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
     const dimmed = (id: string) => outOfFilter(id) || Boolean(state.selected && id !== state.selected && !neighbors.has(id));
     // 흐려지지 않은 노드 원과 영역 이름, 무대 위 조작은 장애물이다. 제목이 그 위에 얹히지 않게.
     // 노드 원은 따로 넘긴다. 지도의 기본 제목은 빈자리가 없으면 노드 원 위에는 얹을 수 있지만 다른 글자 위에는 얹지 않는다.
+    // 조작도 따로 넘긴다. 고른 제목은 영역 이름 위에는 얹을 수 있지만 조작 아래에는 두지 않는다.
     const nodeObstacles = nodes.filter((node) => !dimmed(node.id) && positions.has(node.id)).map((node) => nodeBox(positions.get(node.id)!, radius(node) + 2 * u));
-    const obstacles = [...regionLabelBoxes(u), ...reserved().map((box) => screenBoxToScene(box, state.transform))];
+    const obstacles = regionLabelBoxes(u);
+    reservedBoxes = reserved();
+    const blocked = reservedBoxes.map((box) => screenBoxToScene(box, state.transform));
     // 화면 밖으로 나가는 자리는 쓰지 않는다(장면 좌표로 환산한 무대 범위).
     const { width: vw, height: vh } = size();
     const view = { left: -state.transform.x * u, top: -state.transform.y * u, right: (vw - state.transform.x) * u, bottom: (vh - state.transform.y) * u };
@@ -247,7 +250,19 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
     }
     // 호버한 노드는 이미 자리가 있으면 그대로 두고, 숨어 있던 노드면 그때만 빈자리(없으면 아래)에 얹는다. 맨 위에 그려지므로 겹쳐도 읽힌다.
     if (state.hovered) { const node = byId.get(state.hovered); if (node) order.push({ node, mustPlace: true }); }
-    return placeLabels(order, { positions, radius, u, obstacles, nodeObstacles, inside, labelGap: mode === 'map' && (state.selected || preview) ? 8 : 0 });
+    return placeLabels(order, { positions, radius, u, obstacles, nodeObstacles, blocked, inside, labelGap: mode === 'map' && (state.selected || preview) ? 8 : 0 });
+  };
+  // 제목은 배율이 바뀔 때만, 영역 이름은 맞춤 때만 자리를 다시 정한다. 지도를 끌 때마다 자리를 옮기면 글자가 튄다.
+  // 그래서 끌거나 확대해 조작 아래로 들어간 글자는 자리를 그대로 두고 숨긴다. 일부만 가려진 글자는 읽히지 않는다.
+  // 조작의 자리는 제목을 배치할 때 잰 값을 쓴다. 끄는 동안 매 프레임 레이아웃을 읽지 않으려는 것이다.
+  let reservedBoxes: readonly Box[] = [];
+  let drawnLabels: { text: SVGElement; box: Box }[] = [];
+  const hideUnderControls = () => {
+    const covered = reservedBoxes.map((box) => screenBoxToScene(box, state.transform));
+    const under = (box: Box | null) => box !== null && covered.some((b) => boxesOverlap(b, box));
+    for (const { text, box } of drawnLabels) text.classList.toggle('is-under-controls', under(box));
+    const u = 1 / (state.transform.scale || 1);
+    for (const region of regionList) regionEls.get(region.topic)?.[1]?.classList.toggle('is-under-controls', under(regionLabelBoxFor(region.topic, u)));
   };
   const drawLabels = () => {
     labelLayer.replaceChildren();
@@ -267,13 +282,16 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
         regionEls.get(region.topic)?.[1]?.classList.toggle('is-under-label', box !== null && labelBoxes.some((label) => boxesOverlap(label, box)));
       }
     }
+    drawnLabels = [];
     for (const [id, { lines, g }] of plan) {
       const node = byId.get(id)!;
       const topicDim = outOfFilter(id);
       const text = el('text', { class: `label${node.isEntry ? ' is-entry' : ''}${id === state.selected ? ' is-selected' : ''}${id === state.hovered ? ' is-hovered' : ''}${topicDim ? ' is-topic-dim' : ''}`, 'data-for': id, x: g.x.toFixed(1), y: g.y.toFixed(1), 'text-anchor': g.anchor });
       lines.forEach((line, index) => { const tspan = el('tspan', { x: g.x.toFixed(1), dy: index === 0 ? 0 : (18 * u).toFixed(1) }); tspan.textContent = line; text.append(tspan); });
       labelLayer.append(text);
+      drawnLabels.push({ text, box: g.box });
     }
+    hideUnderControls();
     // 무관한 허브는 위치를 알려주는 제목만 남기고 노드와 같은 농도로 낮춘다.
     for (const text of labelLayer.querySelectorAll<SVGTextElement>('[data-for]')) {
       const id = text.dataset.for!;
