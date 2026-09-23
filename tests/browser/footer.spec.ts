@@ -1,4 +1,7 @@
 import { test, expect } from './fixtures.ts';
+import { PALETTE, DARK_PALETTE } from '../../src/lib/palette.ts';
+
+const rgb = (hex: string) => `rgb(${[1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16)).join(', ')})`;
 
 // 프로필은 아이콘 링크라 글자 대신 접근 가능한 이름으로 읽는다.
 const footerLinks = (page: import('@playwright/test').Page) => page.locator('.site-footer a').evaluateAll((links) =>
@@ -35,6 +38,29 @@ test('footer links reach 44px on touch without covering each other', async ({ pa
       }
     }
   }
+});
+
+// 바닥글은 옅은 판이라 짧은 페이지에서 화면 중간에 뜨면 그 아래 빈 종이가 드러난다.
+// 짧은 페이지든 긴 페이지든 맨 아래까지 내리면 바닥글이 화면 바닥에 닿아야 한다.
+test('the footer reaches the bottom of the screen even on a short page', async ({ page }) => {
+  for (const path of ['/404.html', '/notes/browser-sections/']) {
+    await page.goto(path);
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    const gap = await page.evaluate(() => window.innerHeight - document.querySelector('.site-footer')!.getBoundingClientRect().bottom);
+    expect(gap, `${path}에서 바닥글 아래에 빈 종이가 남지 않는다`).toBeCloseTo(0, 0);
+  }
+});
+
+// 바닥글 바탕은 호버 판과 같은 색이라, 같은 판을 쓰면 아이콘을 가리켜도 판이 보이지 않았다.
+test('a footer profile icon shows its hover plate against the footer', async ({ page, isMobile }, info) => {
+  test.skip(isMobile, '호버는 포인터를 올려 둘 수 있는 기기에서만 준다');
+  const line = info.project.use.colorScheme === 'dark' ? DARK_PALETTE.line : PALETTE.line;
+  await page.goto('/books/');
+  const icon = page.locator('.site-footer .contacts a').first();
+  await icon.hover();
+  await expect(icon, '판은 바닥글보다 한 단계 짙은 구분선 색이다').toHaveCSS('background-color', rgb(line));
+  const footer = await page.locator('.site-footer').evaluate((element) => getComputedStyle(element).backgroundColor);
+  expect(footer).not.toBe(rgb(line));
 });
 
 // 소개 페이지 본문 끝에도 아이콘 줄을 두었더니 바로 아래 바닥글과 같은 줄이 연달아 두 번 보였다.

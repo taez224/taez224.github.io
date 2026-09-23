@@ -569,7 +569,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 ### 바닥글
 
-지도를 뺀 모든 페이지 끝에 같은 바닥글을 둔다. 인장과 이름, 다른 곳의 프로필, 사이트 소개, RSS 순서다. 본문과는 옅은 판의 바탕색으로 나누고 구분선은 긋지 않는다. 프로필은 홈 소개와 같은 회색조 아이콘 줄이다. 소개 페이지 본문에는 두지 않는다. 바로 아래 바닥글과 같은 줄이 연달아 보인다. 글자 링크로 늘어놓으면 이름마다 ↗ 표시가 붙어 줄이 길고 어수선하다. 지도는 화면 높이에 맞춰 그리므로 바닥글을 붙이면 페이지 스크롤이 생긴다.
+지도를 뺀 모든 페이지 끝에 같은 바닥글을 둔다. 인장과 이름, 다른 곳의 프로필, 사이트 소개, RSS 순서다. 본문과는 옅은 판의 바탕색으로 나누고 구분선은 긋지 않는다. 짧은 페이지에서도 바닥글은 화면 바닥에 붙인다. 옅은 판이 화면 중간에 뜨면 그 아래 빈 종이가 드러나 페이지가 덜 끝난 것처럼 읽힌다. 프로필은 홈 소개와 같은 회색조 아이콘 줄이다. 바닥글 바탕이 호버 판과 같은 색이라, 바닥글 안의 아이콘 호버는 한 단계 짙은 구분선 색으로 둔다. 소개 페이지 본문에는 두지 않는다. 바로 아래 바닥글과 같은 줄이 연달아 보인다. 글자 링크로 늘어놓으면 이름마다 ↗ 표시가 붙어 줄이 길고 어수선하다. 지도는 화면 높이에 맞춰 그리므로 바닥글을 붙이면 페이지 스크롤이 생긴다.
 
 ### 목록
 
@@ -690,7 +690,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 헤더가 두 줄로 나뉘는 경계와 고정 해제 | `src/styles/site.css` | `tests/browser/header.spec.ts` |
 | 첫 화면의 띠와 스크롤에 따라 짙어지는 헤더 판 | `src/styles/site.css`, `src/scripts/header.ts` | `tests/browser/header.spec.ts` |
 | 화면 모드의 선택·기억과 첫 페인트 | `src/lib/theme.ts`, `src/scripts/theme.ts`, `src/layouts/Shell.astro` | `tests/theme.test.ts`, `tests/browser/theme.spec.ts` |
-| 바닥글의 구성(프로필·사이트 소개·RSS)과 손가락 영역 | `src/layouts/Shell.astro`, `src/components/Contacts.astro`, `src/styles/site.css` | `tests/browser/footer.spec.ts` |
+| 바닥글의 구성(프로필·사이트 소개·RSS), 손가락 영역, 호버 판, 짧은 페이지에서의 위치 | `src/layouts/Shell.astro`, `src/components/Contacts.astro`, `src/styles/site.css` | `tests/browser/footer.spec.ts` |
 | 홈 첫 화면과 최근 기록의 누르는 영역 | `src/components/About.astro`, `src/pages/index.astro` | `tests/browser/home.spec.ts` |
 
 ### 검사

@@ -60,7 +60,9 @@ html { scroll-padding-top: 100px; }
 /* 첫 화면 위쪽에 옅은 띠를 깔아 헤더와 본문이 같은 바탕 위에 이어지게 한다. 띠는 본문 쪽으로 내려오며 종이색으로 풀린다.
    가장 뒤에 깔고 누름을 가로채지 않는다. */
 body::before { content: ""; position: absolute; z-index: -1; inset: 0 0 auto; height: 430px; pointer-events: none; background: linear-gradient(180deg, var(--tint-top) 0%, var(--tint-mid) 40%, var(--paper) 100%); }
-body { position: relative; isolation: isolate; margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: var(--t-base); line-height: 1.85; -webkit-font-smoothing: antialiased; word-break: keep-all; overflow-wrap: anywhere; }
+/* 바닥글은 옅은 판이라 짧은 페이지에서 화면 중간에 뜨면 그 아래 빈 종이가 드러나 페이지가 덜 끝난 것처럼 읽힌다.
+   본문(main)이 남는 높이를 채워 바닥글을 화면 바닥에 붙인다. 건너뛰기 링크는 절대 배치라 이 흐름에 들지 않는다. */
+body { display: flex; flex-direction: column; min-height: 100dvh; position: relative; isolation: isolate; margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: var(--t-base); line-height: 1.85; -webkit-font-smoothing: antialiased; word-break: keep-all; overflow-wrap: anywhere; }
 a { color: var(--accent); text-decoration: none; }
 /* 호버는 마우스처럼 올려 둘 수 있는 기기에서만 준다. 터치 기기는 탭한 요소에 호버가 남아, 대화상자를 닫은 뒤에도 버튼 판이 깔려 있다. */
 @media (hover: hover) { a:hover { text-decoration: underline; text-underline-offset: 4px; } }
@@ -186,7 +188,7 @@ h1, h2, h3, p { margin-top: 0; }
 /* 테마 버튼이 오른쪽 끝을 맡으므로 검색 버튼은 제 여백으로 돌아간다. 스크립트가 없으면 테마 버튼은 hidden이어도 DOM의 마지막 자식으로 남으므로,
    순서(:last-child) 대신 테마 버튼이 보이는지로 판단한다. 순서로 보면 스크립트 없는 화면에서 검색 버튼이 오른쪽 끝선보다 안쪽으로 들어온다. */
 .search-trigger:has(+ .theme-toggle:not([hidden])) { margin-right: 0; }
-main { min-height: 60vh; }
+main { flex: 1 0 auto; }
 /* 사이트 바닥글: 페이지가 마지막 항목 뒤에서 그냥 끝나지 않게 옅은 판 위에 한 줄을 둔다. 판과 바탕의 색 차이가 경계라 구분선은 긋지 않는다.
    이름은 왼쪽 끝에, 프로필 아이콘 줄과 사이트 정보 링크는 오른쪽에 둔다. 글자 링크는 홀로 선 링크와 같은 밑줄이다. */
 .site-footer { background: var(--accent-soft); color: var(--muted); font-size: var(--t-meta); }

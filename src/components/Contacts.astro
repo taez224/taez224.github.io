@@ -23,6 +23,9 @@ const shown = contacts.filter((contact) => contact.name !== 'Velog' && contact.i
   @media (prefers-color-scheme: dark) { :global(:root:not([data-theme])) .contacts img:is([src$="/github.svg"], [src$="/brunch.png"]) { filter: grayscale(1) invert(1); } }
   :global(:root[data-theme="dark"]) .contacts img:is([src$="/github.svg"], [src$="/brunch.png"]) { filter: grayscale(1) invert(1); }
   @media (hover: hover) { .contacts a:hover { background: var(--accent-soft); } .contacts a:hover img { opacity: 1; } }
+  /* 바닥글 바탕이 호버 판과 같은 색(accent-soft)이라 거기서는 판이 보이지 않는다. 바닥글 안에서는 한 단계 짙은 구분선 색을 쓴다.
+     밝은 화면에서는 더 어둡게, 어두운 화면에서는 더 밝게 올라와 다른 호버와 방향이 같다. 키보드 포커스는 전역 윤곽선 그대로다. */
+  @media (hover: hover) { :global(.site-footer) .contacts a:hover { background: var(--line); } }
   /* 폭만 보면 태블릿 같은 넓은 터치 화면에서 40px에 머문다. 입력 방식도 함께 본다. */
   @media (max-width: 720px), (pointer: coarse) { .contacts a { width: 44px; height: 44px; } }
 </style>
