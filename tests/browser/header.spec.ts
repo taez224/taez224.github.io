@@ -103,12 +103,21 @@ test('the header plate turns on only after the page scrolls', async ({ page }) =
   const top = await plate();
   expect(top.presence, '첫 화면에서는 판을 켜지 않는다').toBeLessThan(0.05);
   expect(opacity(top.background)).toBeLessThan(0.1);
+  // 흐림은 색이 투명해도 걸린다. 맨 위에서 켜 두면 헤더 밑에 걸친 홈 지도의 영역 이름이 흐려졌다.
+  expect(top.blur, '첫 화면에서는 흐림도 끈다').toBe('blur(0px)');
+
+  // 본문은 스크롤 20px 안팎부터 메뉴 뒤로 들어온다. 그 전에 흐림이 다 켜져야 판의 색이 아직 옅어도 글자가 메뉴와 겹쳐 보이지 않는다.
+  await page.evaluate(() => window.scrollTo(0, 20));
+  await page.waitForFunction(() => document.querySelector<HTMLElement>('.site-header')!.style.getPropertyValue('--header-blur') === '1');
+  const early = await plate();
+  expect(early.blur, '흐림이 먼저 다 켜진다').toBe('blur(16px)');
+  expect(early.presence, '판의 색은 더 천천히 짙어진다').toBeLessThan(0.05);
 
   await page.evaluate(() => window.scrollTo(0, 400));
   await page.waitForFunction(() => Number(getComputedStyle(document.querySelector('.site-header')!).getPropertyValue('--header-presence')) > 0.9);
   const scrolled = await plate();
   expect(opacity(scrolled.background), '스크롤하면 본문이 비치지 않을 만큼 짙어진다').toBeGreaterThanOrEqual(0.85);
-  expect(scrolled.blur, '뒤 글자는 흐려 놓는다').toContain('blur');
+  expect(scrolled.blur, '뒤 글자는 흐려 놓는다').toBe('blur(16px)');
 });
 
 // 헤더 아래 판은 24px 더 이어지다 사라진다. 제목으로 건너뛴 자리가 그 아래에 들어와야 가려지지 않는다.

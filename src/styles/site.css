@@ -140,9 +140,10 @@ h1, h2, h3, p { margin-top: 0; }
 
 /* 헤더는 띠 위에 그대로 얹힌다. 아래 선을 그으면 이어진 바탕이 그 선에서 끊긴다.
    스크롤한 만큼 종이색 판이 짙어져 본문 글자가 메뉴 뒤로 비치지 않게 하고, 판은 헤더 아래 24px까지 이어지다 사라져 경계가 드러나지 않는다.
-   판 전체를 반투명하게 하면 흐린 그림 아래로 원래 글자가 비치므로, 투명도는 색에만 준다. --header-presence는 header.ts가 스크롤에 따라 채운다. */
+   판 전체를 반투명하게 하면 흐린 그림 아래로 원래 글자가 비치므로, 투명도는 색에만 준다. --header-presence(색)와 --header-blur(흐림)는 header.ts가 스크롤에 따라 채운다.
+   흐림은 색이 투명해도 걸리므로 따로 끈다. 맨 위에서 켜 두면 헤더 밑에 걸친 홈 지도의 영역 이름이 흐려진다. */
 .site-header { position: sticky; z-index: 20; top: 0; }
-.site-header::before { content: ""; position: absolute; z-index: -1; inset: 0 0 -24px; pointer-events: none; background: color-mix(in srgb, var(--paper) calc(var(--header-presence, 0) * 88%), transparent); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); -webkit-mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 24px), transparent 100%); mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 24px), transparent 100%); }
+.site-header::before { content: ""; position: absolute; z-index: -1; inset: 0 0 -24px; pointer-events: none; background: color-mix(in srgb, var(--paper) calc(var(--header-presence, 0) * 88%), transparent); -webkit-backdrop-filter: blur(calc(var(--header-blur, 0) * 16px)); backdrop-filter: blur(calc(var(--header-blur, 0) * 16px)); -webkit-mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 24px), transparent 100%); mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 24px), transparent 100%); }
 /* 흐림이 없으면 옅은 판으로는 본문을 가리지 못하므로 스크롤과 상관없이 불투명한 종이색을 깐다.
    스크립트가 없을 때도 마찬가지다. 농도를 채울 수 없어 계속 투명하게 남는다. 첫 화면의 띠 위에 판이 깔리는 것은 그 대가다. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
