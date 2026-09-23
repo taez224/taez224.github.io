@@ -172,8 +172,12 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
     /* 휴대폰 폭에서는 허브 제목이 읽을 수 없을 만큼 작아서 제목 층을 숨기고 영역 이름만 크게 놓은 층으로 바꾼다. */
     .hero-snapshot :global(.snap-regions), .hero-snapshot :global(.snap-titles) { display: none; }
     .hero-snapshot :global(.snap-regions-compact) { display: inline; }
-    /* 그림(1000×640)을 폭에 맞추고, 영역 이름 층이 그림 위로 넘어가는 여백(COMPACT_TOP_MARGIN)만큼 위아래를 더 준다. 그림은 상자 가운데에 놓인다. */
-    .hero-graph { height: clamp(230px, 78vw, 350px); margin: 0 0 8px; }
+    /* 그림(1000×640)을 폭에 맞추고, 영역 이름 층이 그림 위로 넘어가는 여백(COMPACT_TOP_MARGIN)만큼 위아래를 더 준다. 그림은 상자 가운데에 놓인다.
+       낮은 화면에서는 화면 높이에서 헤더·소개·대표 글 머리가 차지하는 약 500px을 뺀 만큼으로 줄여 대표 글 제목이 첫 화면에 들어오게 한다.
+       홈이 권하는 일은 한 편을 읽는 것인데, 지도가 첫 화면을 다 차지하면 그 글을 찾으려고 스크롤해야 했다. 화면 높이에 따라 이어서 줄여야
+       경계 1px 차이로 지도가 120px씩 바뀌지 않는다. 150px 아래로는 줄이지 않으므로 320×568에서는 제목이 첫 화면 밖에 남는다.
+       소개문 길이가 크게 바뀌면 500px을 다시 잰다. 첫 선언은 svh를 모르는 브라우저의 대체값이다. */
+    .hero-graph { height: clamp(230px, 78vw, 350px); height: clamp(150px, calc(100svh - 500px), clamp(230px, 78vw, 350px)); margin: 0 0 8px; }
     .hero-about { margin: 20px auto 0; }
     .home-section { grid-template-columns: minmax(0, 1fr); gap: 24px; padding: 28px 0; }
     .featured-meta { flex-direction: row; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; }
