@@ -37,6 +37,28 @@ export async function gotoBeforeModules(page: Page, url: string): Promise<void> 
 
 // 선택 막대(::after)의 위쪽과 버튼 글자의 아래쪽 사이 간격을, 터치용으로 키운 높이와 글자 높이 그대로에서 한 번씩 잰다.
 // 둘이 같으면 막대가 버튼 바닥이 아니라 글자를 따라간다. 가상 요소는 좌표를 직접 읽을 수 없어 계산된 bottom과 높이로 구한다.
+// 그래프 SVG에서 노드 둘레 고리(허브 고리, 입구 후광, 보이는 선택 링)의 선에 걸린 글자를 찾는다. locator.evaluate로 넘겨 브라우저에서 실행한다.
+// 엔진은 고리를 class로, 홈 정적 그림은 채움 값으로 구분한다. 흐린 노드의 고리는 흐린 점처럼 글자가 얹혀도 되므로 뺀다.
+// 글자 상자는 글꼴의 위아래 여백까지 포함하므로 고리 선에서 1px은 겹침으로 세지 않는다.
+export function textsOnRings(svg: SVGSVGElement): string[] {
+  const shown = (e: Element) => { const r = e.getBoundingClientRect(), s = getComputedStyle(e); return r.width > 0 && s.visibility === 'visible' && Number(s.opacity) > 0.05; };
+  const rings = [...svg.querySelectorAll('circle')]
+    .filter((c) => (c.matches('.hub-ring, .entry-halo, .select-ring') || ['none', 'var(--accent-soft)'].includes(c.getAttribute('fill') ?? '')) && !c.closest('.is-dim, .is-faint') && shown(c))
+    .map((c) => { const r = c.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, radius: r.width / 2 }; });
+  const found: string[] = [];
+  for (const text of svg.querySelectorAll('text')) {
+    const name = text.textContent!.trim();
+    if (!name || !shown(text)) continue;
+    const b = text.getBoundingClientRect();
+    for (const c of rings) {
+      const near = Math.hypot(Math.max(b.left - c.x, 0, c.x - b.right), Math.max(b.top - c.y, 0, c.y - b.bottom));
+      const far = Math.max(...[[b.left, b.top], [b.right, b.top], [b.left, b.bottom], [b.right, b.bottom]].map(([x, y]) => Math.hypot(x - c.x, y - c.y)));
+      if (near < c.radius - 1 && far > c.radius + 1) found.push(`${name} × 고리`);
+    }
+  }
+  return found;
+}
+
 export function pressedBarGaps(button: HTMLElement): { height: number; stretched: number; natural: number } {
   const gap = () => {
     const bar = getComputedStyle(button, '::after');

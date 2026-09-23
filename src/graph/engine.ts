@@ -7,7 +7,7 @@ interface GraphState { selected: string | null; hovered: string | null; topics: 
 import { nodeRadius } from './layout.ts';
 import { topicColor, topicLabelColor, cleanTitle } from '../lib/format.ts';
 import { createGraphGesture } from './gestures.ts';
-import { boxesOverlap, estimateTextWidth, labelIds, mustPlaceLabel, placeLabels, nodeBox } from './label.ts';
+import { boxesOverlap, estimateTextWidth, labelIds, mustPlaceLabel, placeLabels, nodeBox, RING_GAP, ringedRadius } from './label.ts';
 import { topicRegions, regionPath, placeRegionLabels, regionLabelBox } from './regions.ts';
 
 const MIN_SCALE = 0.65;
@@ -99,7 +99,6 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
   // baseRadius는 맞춤 배율의 반지름이다. 지도를 맞춤보다 확대하면 원을 nodeZoom(zoomedNodeScale)만큼 줄여 그리고, 제목도 줄인 원을 기준으로 놓는다.
   const baseRadius = (node: GraphNode) => nodeRadius(node.degree ?? 0, nodeScale);
   let nodeZoom = 1, fitScale = 1;
-  const radius = (node: GraphNode) => baseRadius(node) * nodeZoom;
   const el = <K extends keyof SVGElementTagNameMap>(name: K, attrs: Record<string, string | number> = {}) => { const node = document.createElementNS(SVG_NS, name); for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, String(v)); return node; };
   const size = () => ({ width: svg.clientWidth || LAYOUT.width, height: svg.clientHeight || LAYOUT.height });
   const byId = new Map(nodes.map((n) => [n.id, n]));
@@ -225,11 +224,11 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
       const r = baseRadius(node);
       const circle = (base: number, attrs: Record<string, string>) => { const c = el('circle', { cx: p.x, cy: p.y, r: (base * nodeZoom).toFixed(2), ...attrs }); nodeCircles.push([c, base]); return c; };
       const g = el('g', { class: `node${node.isEntry ? ' is-entry' : ''}`, 'data-id': node.id, tabindex: focusable ? '0' : '-1', role: 'button', ...(mode === 'map' ? { 'aria-pressed': 'false' } : {}), 'aria-label': node.type === 'hub' ? `${cleanTitle(node.displayTitle ?? node.title)}. 허브` : cleanTitle(node.displayTitle ?? node.title) });
-      if (node.isEntry) g.append(circle(r + 11, { class: 'entry-halo' }));
-      if (node.type === 'hub') g.append(circle(r + 7, { class: 'hub-ring' }));
+      if (node.isEntry) g.append(circle(r + RING_GAP.entry, { class: 'entry-halo' }));
+      if (node.type === 'hub') g.append(circle(r + RING_GAP.hub, { class: 'hub-ring' }));
       g.append(circle(Math.max(22, r), { class: 'hit', fill: 'transparent' }));
       g.append(circle(r, { class: 'dot', fill: topicColor(node.topic) }));
-      g.append(circle(r + 8, { class: 'select-ring' }));
+      g.append(circle(r + RING_GAP.select, { class: 'select-ring' }));
       nodeLayer.append(g); nodeEls.set(node.id, g);
     }
   };
@@ -250,7 +249,10 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
     // 흐려지지 않은 노드 원과 영역 이름, 무대 위 조작은 장애물이다. 제목이 그 위에 얹히지 않게.
     // 노드 원은 따로 넘긴다. 지도의 기본 제목은 빈자리가 없으면 노드 원 위에는 얹을 수 있지만 다른 글자 위에는 얹지 않는다.
     // 조작도 따로 넘긴다. 고른 제목은 영역 이름 위에는 얹을 수 있지만 조작 아래에는 두지 않는다.
-    const nodeObstacles = nodes.filter((node) => !dimmed(node.id) && positions.has(node.id)).map((node) => nodeBox(positions.get(node.id)!, radius(node) + 2 * u));
+    // 제목은 점이 아니라 노드 둘레 고리 밖에 놓는다. 선택 링은 고른 노드와 키보드로 포커스한 노드에만 보인다.
+    const ringed = (id: string) => id === state.selected || (id === state.hovered && nodeEls.get(id)?.matches(':focus-visible') === true);
+    const labelRadius = (node: GraphNode) => ringedRadius(node, baseRadius(node), { ringed: ringed(node.id) }) * nodeZoom;
+    const nodeObstacles = nodes.filter((node) => !dimmed(node.id) && positions.has(node.id)).map((node) => nodeBox(positions.get(node.id)!, labelRadius(node) + 2 * u));
     const obstacles = regionLabelBoxes(u);
     reservedBoxes = reserved();
     const blocked = reservedBoxes.map((box) => screenBoxToScene(box, state.transform));
@@ -271,7 +273,7 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
     }
     // 호버한 노드는 이미 자리가 있으면 그대로 두고, 숨어 있던 노드면 그때만 빈자리(없으면 아래)에 얹는다. 맨 위에 그려지므로 겹쳐도 읽힌다.
     if (state.hovered) { const node = byId.get(state.hovered); if (node) order.push({ node, mustPlace: true }); }
-    return placeLabels(order, { positions, radius, u, obstacles, nodeObstacles, blocked, inside, labelGap: mode === 'map' && (state.selected || preview) ? 8 : 0 });
+    return placeLabels(order, { positions, radius: labelRadius, u, obstacles, nodeObstacles, blocked, inside, labelGap: mode === 'map' && (state.selected || preview) ? 8 : 0 });
   };
   // 제목은 배율이 바뀔 때만, 영역 이름은 맞춤 때만 자리를 다시 정한다. 지도를 끌 때마다 자리를 옮기면 글자가 튄다.
   // 그래서 끌거나 확대해 조작 아래로 들어간 글자는 자리를 그대로 두고 숨긴다. 일부만 가려진 글자는 읽히지 않는다.

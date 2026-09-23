@@ -15,7 +15,15 @@ test('estimateTextWidth weighs hangul, latin and punctuation differently and sca
   assert.equal(estimateTextWidth('가', 26), 25);
 });
 
-import { placeLabels, labelGeometry, mustPlaceLabel } from '../src/graph/label.ts';
+import { placeLabels, labelGeometry, mustPlaceLabel, ringedRadius, RING_GAP } from '../src/graph/label.ts';
+
+// 제목을 점 반지름으로 놓았더니 허브 고리와 입구 노드 후광, 선택 링이 제목 윗부분에 걸렸다. 제목은 가장 바깥 고리 밖에 놓는다.
+test('ringedRadius measures a node out to its outermost ring', () => {
+  assert.equal(ringedRadius({ type: 'permanent', isEntry: false }, 5), 5, '고리 없는 노드는 점 반지름');
+  assert.equal(ringedRadius({ type: 'hub', isEntry: false }, 5), 5 + RING_GAP.hub, '허브 고리');
+  assert.equal(ringedRadius({ type: 'hub', isEntry: true }, 5), 5 + RING_GAP.entry, '입구 노드는 고리보다 큰 후광');
+  assert.equal(ringedRadius({ type: 'permanent', isEntry: false }, 5, { ringed: true }), 5 + RING_GAP.select, '선택·포커스 링');
+});
 
 // 지도에서 허브까지 억지로 놓았더니 좁은 무대에서 허브 제목끼리, 또는 영역 이름과 겹쳤다. 홈 히어로는 정적 스냅샷과 규칙이 같아야 한다.
 test('only the focused node forces its label on the map, while the home hero keeps every base label', () => {

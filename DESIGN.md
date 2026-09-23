@@ -598,7 +598,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 기타 범례에는 이름만 보이고 묶인 주제는 툴팁에 둔다. 주제와 허브 조건은 짧은 세로선으로 구분한다.
 
-**제목 겹침 금지 규칙.** 지도에서 글자끼리는 겹치지 않는다. 허브 제목은 빈자리가 없으면 노드 원 위에는 얹지만 다른 제목·영역 이름 위에는 얹지 않고, 그런 자리도 없으면 고른 뒤 시트에서 읽는다. 억지로 두는 것은 고르거나 미리 보는 노드의 제목뿐이고, 그 아래 깔린 영역 이름은 흐린다. 확대 조작 아래에는 제목도 영역 이름도 두지 않는다. 지도를 끌어 글자가 조작 아래로 들어가면 자리를 옮기지 않고 숨긴다. 영역 이름도 노드 원 위에는 얹지만, 다른 글자와 겹칠 자리밖에 없으면 두지 않는다. 넓은 창에서 연 지도를 휴대폰 폭으로 줄이면 무대가 빽빽해져 이름 몇 개가 빠지고, 새로 열면 모두 보인다. 좁은 무대에서 허브 제목을 모두 억지로 두었더니 글자끼리 겹쳐 어느 쪽도 읽히지 않았다. 허브 제목 규칙에서 홈 지도는 뺀다. 넓은 화면에서 엔진으로 바뀔 때 티가 나지 않으려면 정적 그림과 같은 규칙을 지켜야 한다. 영역 이름 규칙은 두 쪽이 같은 함수를 써서 함께 따른다.
+**제목 겹침 금지 규칙.** 지도에서 글자끼리는 겹치지 않는다. 제목은 점이 아니라 노드 둘레의 가장 바깥 고리(허브 고리, 입구 노드 후광, 선택·포커스 링) 밖에 놓는다. 점 바로 아래에 두었더니 제목 윗부분이 고리에 걸렸다. 이 간격은 홈 지도와 정적 그림에도 같다. 허브 제목은 빈자리가 없으면 노드 원 위에는 얹지만 다른 제목·영역 이름 위에는 얹지 않고, 그런 자리도 없으면 고른 뒤 시트에서 읽는다. 억지로 두는 것은 고르거나 미리 보는 노드의 제목뿐이고, 그 아래 깔린 영역 이름은 흐린다. 확대 조작 아래에는 제목도 영역 이름도 두지 않는다. 지도를 끌어 글자가 조작 아래로 들어가면 자리를 옮기지 않고 숨긴다. 영역 이름도 노드 원 위에는 얹지만, 다른 글자와 겹칠 자리밖에 없으면 두지 않는다. 넓은 창에서 연 지도를 휴대폰 폭으로 줄이면 무대가 빽빽해져 이름 몇 개가 빠지고, 새로 열면 모두 보인다. 좁은 무대에서 허브 제목을 모두 억지로 두었더니 글자끼리 겹쳐 어느 쪽도 읽히지 않았다. 허브 제목 규칙에서 홈 지도는 뺀다. 넓은 화면에서 엔진으로 바뀔 때 티가 나지 않으려면 정적 그림과 같은 규칙을 지켜야 한다. 영역 이름 규칙은 두 쪽이 같은 함수를 써서 함께 따른다.
 
 **필터 해제 규칙.** 필터가 적용되면 범례의 가로 스크롤 영역 밖에 “필터 해제”를 보인다. 필터만 해제하며 노드 선택과 시점은 유지한다. 해제할 필터가 없으면 버튼을 숨기고 비활성화하되 자리는 남겨 배치가 움직이지 않게 한다. 마우스에서는 범례의 촘촘한 높이를 따르고 터치에서는 44px을 확보한다. 해제 후 포커스는 첫 필터로 돌아간다.
 
@@ -694,6 +694,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 지도 필터 해제·배치 안정성과 확대 조작 | `src/pages/map/index.astro`, `src/scripts/map.ts` | `tests/browser/map.spec.ts` |
 | 지도 제목 겹침 금지와 확대 조작 피하기 | `src/graph/label.ts`, `src/graph/engine.ts`, `src/scripts/map.ts` | `tests/graph-label.test.ts`, `tests/regions.test.ts`, `tests/browser/map.spec.ts` |
 | 확대할 때 노드 원 크기와 선 두께 | `src/graph/engine.ts`, `src/styles/graph.css` | `tests/engine.test.ts`, `tests/browser/map.spec.ts` |
+| 제목과 노드 고리의 간격 | `src/graph/label.ts`, `src/graph/engine.ts`, `src/graph/snapshot.ts` | `tests/graph-label.test.ts`, `tests/layout.test.ts`, `tests/browser/map.spec.ts`, `tests/browser/home.spec.ts` |
 | 표 식별자 줄바꿈과 연재 허브 표시 | `src/styles/body.css`, `src/components/NotePage.astro`, `src/components/NoteSidebar.astro` | `tests/browser/reader.spec.ts` |
 | 책장에서 책 결과를 고를 때 검색창 닫기와 필터 되돌리기 | `src/scripts/in-page-link.ts`, `src/scripts/search.ts`, `src/scripts/books.ts` | `tests/in-page-link.test.ts`, `tests/browser/search.spec.ts`, `tests/browser/books.spec.ts` |
 | 글자를 키웠을 때 책장 라벨 칸이 넓어지는 조건 | `src/pages/books/index.astro` | `tests/browser/books.spec.ts` |

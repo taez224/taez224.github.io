@@ -1,4 +1,4 @@
-import { test, expect, pressedBarGaps } from './fixtures.ts';
+import { test, expect, pressedBarGaps, textsOnRings } from './fixtures.ts';
 
 // 흐려진 노드는 화면에서 22%로 남고 포커스 링도 함께 흐려진다. 탭 순서에 두면 보이지 않는 대상을 수십 번 지나가게 된다.
 test('selecting a node takes the dimmed nodes out of the tab order', async ({ page, isMobile }) => {
@@ -93,8 +93,9 @@ test('one-column widths keep the start lists and hold the sheet out of the way',
 // 휴대폰 폭 지도에서 허브 제목을 자리가 없어도 아래에 두었더니 제목끼리, 또는 영역 이름과 겹쳤다. 오른쪽 아래 확대 조작은
 // 영역 이름을 가렸다. 첫 화면과 노드를 하나씩 고른 화면에서 보이는 글자끼리 겹치지 않고 조작 아래로 들어가지 않는지 잰다.
 // 고른 제목 아래 깔린 영역 이름은 흐려지므로(is-under-label) 겹침에서 뺀다.
+// 제목을 점 아래에 두었더니 허브 고리와 입구 노드 후광, 선택 링이 제목에 걸렸으므로 고리 선도 함께 잰다.
 test('map labels stay apart and clear of the zoom controls on a phone', async ({ page }) => {
-  const clashes = () => page.evaluate(() => {
+  const clashes = async () => [...await page.evaluate(() => {
     const boxes = [...document.querySelectorAll<SVGTextElement>('.map-stage svg text:not(.is-under-label)')]
       .filter((text) => text.textContent!.trim() && text.getBoundingClientRect().width > 0 && getComputedStyle(text).visibility === 'visible')
       .map((text) => ({ name: text.textContent!.trim(), box: text.getBoundingClientRect() }));
@@ -106,7 +107,7 @@ test('map labels stay apart and clear of the zoom controls on a phone', async ({
       for (const b of boxes.slice(i + 1)) if (hit(a.box, b.box)) found.push(`${a.name} × ${b.name}`);
     });
     return found;
-  });
+  }), ...await page.locator('[data-map]').evaluate(textsOnRings)];
   for (const [width, height] of [[320, 568], [375, 667]]) {
     await page.setViewportSize({ width, height });
     await page.goto('/map/');
