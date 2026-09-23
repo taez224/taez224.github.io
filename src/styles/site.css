@@ -184,7 +184,8 @@ h1, h2, h3, p { margin-top: 0; }
 .theme-toggle { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin-left: 0; margin-right: -13px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); transition: background-color .15s ease, color .15s ease, transform .15s cubic-bezier(.23, 1, .32, 1); }
 .theme-toggle:active { transform: scale(.97); }
 @media (hover: hover) { .theme-toggle:hover { background: var(--accent-soft); color: var(--accent); } }
-.theme-toggle svg { width: 18px; height: 18px; fill: currentColor; }
+/* 아이콘은 테마마다 span으로 한 번 더 감싼다. svg가 글자처럼 줄 안에 놓이면 기준선에 앉아 돋보기보다 3px 높아지므로 블록으로 둔다. */
+.theme-toggle svg { display: block; width: 18px; height: 18px; fill: currentColor; }
 .theme-toggle .is-sun, :root[data-theme="dark"] .theme-toggle .is-moon { display: none; }
 :root[data-theme="dark"] .theme-toggle .is-sun { display: inline-flex; }
 /* 테마 버튼은 스크립트가 없으면 동작하지 않으므로 숨긴다. data-js는 부트 스크립트가 첫 페인트 전에 단다. */
