@@ -152,6 +152,26 @@ test('map labels stay apart and clear of the zoom controls on a phone', async ({
   await expect(picked, '조작 한가운데로 옮긴 제목은 숨는다').toHaveCSS('visibility', 'hidden');
 });
 
+// 원과 간선이 배율대로 커지면 3배 확대에서 원과 간선이 제목(화면 13px 고정)보다 먼저 보였다.
+// 원은 맞춤 대비 확대 배율의 제곱근만큼만 커지고, 간선과 원 테두리의 두께는 화면 기준 그대로다. 전체 보기로 돌아오면 첫 화면의 크기로 돌아온다.
+test('zooming the map grows node dots by the square root of the zoom and keeps line widths', async ({ page }) => {
+  await page.goto('/map/');
+  await expect(page.locator('.graph .node').first()).toBeAttached();
+  const measure = () => page.evaluate(() => {
+    const scene = document.querySelector('[data-map] > g')!.getAttribute('transform')!;
+    return { r: document.querySelector('.graph .node .dot')!.getBoundingClientRect().width / 2, scale: Number(/scale\(([\d.]+)\)/.exec(scene)![1]) };
+  });
+  const fitted = await measure();
+  for (let i = 0; i < 5; i++) await page.getByRole('button', { name: '확대', exact: true }).click();
+  const zoomed = await measure();
+  expect(zoomed.scale / fitted.scale).toBeGreaterThan(2.5);
+  expect(zoomed.r / fitted.r).toBeCloseTo(Math.sqrt(zoomed.scale / fitted.scale), 1);
+  await expect(page.locator('.graph .edge').first()).toHaveCSS('vector-effect', 'non-scaling-stroke');
+  await expect(page.locator('.graph .node .hub-ring').first()).toHaveCSS('vector-effect', 'non-scaling-stroke');
+  await page.getByRole('button', { name: '지도 전체 보기' }).click();
+  await expect.poll(async () => (await measure()).r).toBeCloseTo(fitted.r, 1);
+});
+
 // 어두운 화면의 뒤 배경은 검정 반투명이다. 먹색이 밝아지므로 밝은 화면처럼 먹색을 섞으면 지도가 회색으로 뜬다.
 // 전역 스타일 블록에서 :global()로 감싼 선택자는 브라우저가 버려서 이 규칙이 통째로 빠진 적이 있다.
 test('the sheet backdrop darkens the map in the dark theme', async ({ page }) => {

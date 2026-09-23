@@ -63,6 +63,14 @@ export function screenBoxToScene(box: Box, t: Transform): Box {
   return { left: (box.left - t.x) / t.scale, right: (box.right - t.x) / t.scale, top: (box.top - t.y) / t.scale, bottom: (box.bottom - t.y) / t.scale };
 }
 
+// 맞춤보다 확대했을 때 노드 원의 장면 반지름에 곱할 값. 화면에서 원은 확대 배율의 제곱근만큼만 커진다.
+// 원이 배율대로 커지면 3배 확대에서 원과 고리가 제목(화면 13px 고정)보다 먼저 보이고, 확대로 벌어진 자리를 원이 다시 차지한다.
+// 크기를 아예 고정하면 원이 점처럼 작아 허브 고리가 눈에 띄지 않는다. 맞춤보다 축소할 때는 배율대로 줄인다.
+export function zoomedNodeScale(scale: number, fitScale: number): number {
+  const zoom = scale / fitScale;
+  return zoom > 1 ? 1 / Math.sqrt(zoom) : 1;
+}
+
 export function offsetLine(a: Point, b: Point, sign: number, distance = 2.5) {
   const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1;
   const nx = (-dy / d) * distance * sign, ny = (dx / d) * distance * sign;
@@ -88,7 +96,10 @@ const RESTING_LABEL_LIMIT = 6;
 // layoutSize: 좌표가 놓인 무대 크기. 홈 히어로처럼 좌표 공간(1000×640)과 상자 픽셀 크기가 다를 때 준다. 지도는 상자 크기로 배치하므로 생략한다.
 export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode = 'map', nodeScale = 1, focusable = true, layoutSize = null, reserved = () => [], onSelect = () => {}, onOpen = () => {} }: GraphOptions) {
   // nodeScale: 노드 원 크기 배율. 지도는 무대가 좁아 0.7, 홈 히어로는 0.9로 그려 밀도를 맞춘다.
-  const radius = (node: GraphNode) => nodeRadius(node.degree ?? 0, nodeScale);
+  // baseRadius는 맞춤 배율의 반지름이다. 지도를 맞춤보다 확대하면 원을 nodeZoom(zoomedNodeScale)만큼 줄여 그리고, 제목도 줄인 원을 기준으로 놓는다.
+  const baseRadius = (node: GraphNode) => nodeRadius(node.degree ?? 0, nodeScale);
+  let nodeZoom = 1, fitScale = 1;
+  const radius = (node: GraphNode) => baseRadius(node) * nodeZoom;
   const el = <K extends keyof SVGElementTagNameMap>(name: K, attrs: Record<string, string | number> = {}) => { const node = document.createElementNS(SVG_NS, name); for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, String(v)); return node; };
   const size = () => ({ width: svg.clientWidth || LAYOUT.width, height: svg.clientHeight || LAYOUT.height });
   const byId = new Map(nodes.map((n) => [n.id, n]));
@@ -111,7 +122,7 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
   // 영역 이름은 노드 원을 피하고 무대 안에 둔다. 노드 제목은 planLabels가 영역 이름을 장애물로 보고 피한다.
   // 이름은 화면 크기로 그리므로 자리도 화면 배율(u)로 잰다. 배율은 맞춤(fit) 때 정해지므로 그때 자리를 다시 정하고,
   // 확대·이동 중에는 다시 계산하지 않아 이름이 튀지 않는다. 확대하면 이름이 장면 대비 작아지므로 새로 겹치지 않는다.
-  const regionObstacles = nodes.filter((node) => positions.has(node.id)).map((node) => ({ ...positions.get(node.id)!, r: radius(node) + 4 }));
+  const regionObstacles = nodes.filter((node) => positions.has(node.id)).map((node) => ({ ...positions.get(node.id)!, r: baseRadius(node) + 4 }));
   let regionLabelAt: ReturnType<typeof placeRegionLabels> = new Map(), regionLabelU = 0, regionLabelStage = '';
   // 무대 위 조작(확대·축소)도 피한다. 맞춤 배율의 자리로 옮겨 재므로 맞춤 상태에서 이름이 조작 아래로 들어가지 않는다.
   // 전에는 휴대폰 폭에서 오른쪽 아래 영역 이름("조직", "지식관리")이 조작에 가려졌다.
@@ -174,13 +185,20 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
     };
     animation = requestAnimationFrame(step);
   };
-  // 제목은 확대해도 화면에서 같은 크기를 유지한다. 배율이 바뀌면 제목만 다시 그린다.
+  // 제목은 확대해도 화면에서 같은 크기를 유지한다. 배율이 바뀌면 노드 원의 반지름을 고치고 제목을 다시 그린다.
   let labelScale = 1;
   const applyTransform = () => {
     const { width, height } = size();
     svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
     scene.setAttribute('transform', `translate(${state.transform.x.toFixed(1)} ${state.transform.y.toFixed(1)}) scale(${state.transform.scale.toFixed(3)})`);
-    if (Math.abs(state.transform.scale - labelScale) > 0.005) { labelScale = state.transform.scale; drawLabels(); } else hideUnderControls();
+    if (Math.abs(state.transform.scale - labelScale) > 0.005) { labelScale = state.transform.scale; resizeNodes(); drawLabels(); } else hideUnderControls();
+  };
+  // 원 크기 조정은 지도에만 한다. 홈 지도는 넓은 화면에서 정적 그림과 바뀔 때 티가 나지 않도록 같은 크기를 지켜야 한다.
+  const resizeNodes = () => {
+    const next = mode === 'map' ? zoomedNodeScale(state.transform.scale, fitScale) : 1;
+    if (Math.abs(next - nodeZoom) < 1e-3) return;
+    nodeZoom = next;
+    for (const [circle, base] of nodeCircles) circle.setAttribute('r', (base * nodeZoom).toFixed(2));
   };
   const drawEdges = () => {
     edgeLayer.replaceChildren();
@@ -197,18 +215,21 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
       edgeLayer.append(el('line', { class: `edge is-${edge.state}${topicDim ? ' is-topic-dim' : ''}`, x1: line.x1.toFixed(1), y1: line.y1.toFixed(1), x2: line.x2.toFixed(1), y2: line.y2.toFixed(1) }));
     }
   };
+  // 노드 원과 그 원의 맞춤 배율 반지름. 확대하면 원을 다시 만들지 않고 반지름만 고친다(resizeNodes).
+  const nodeCircles: [SVGCircleElement, number][] = [];
   const drawNodes = () => {
-    nodeLayer.replaceChildren(); nodeEls.clear();
+    nodeLayer.replaceChildren(); nodeEls.clear(); nodeCircles.length = 0;
     for (const node of nodes) {
       const p = positions.get(node.id);
       if (!p) continue;
-      const r = radius(node);
+      const r = baseRadius(node);
+      const circle = (base: number, attrs: Record<string, string>) => { const c = el('circle', { cx: p.x, cy: p.y, r: (base * nodeZoom).toFixed(2), ...attrs }); nodeCircles.push([c, base]); return c; };
       const g = el('g', { class: `node${node.isEntry ? ' is-entry' : ''}`, 'data-id': node.id, tabindex: focusable ? '0' : '-1', role: 'button', ...(mode === 'map' ? { 'aria-pressed': 'false' } : {}), 'aria-label': node.type === 'hub' ? `${cleanTitle(node.displayTitle ?? node.title)}. 허브` : cleanTitle(node.displayTitle ?? node.title) });
-      if (node.isEntry) g.append(el('circle', { class: 'entry-halo', cx: p.x, cy: p.y, r: (r + 11).toFixed(1) }));
-      if (node.type === 'hub') g.append(el('circle', { class: 'hub-ring', cx: p.x, cy: p.y, r: (r + 7).toFixed(1) }));
-      g.append(el('circle', { class: 'hit', cx: p.x, cy: p.y, r: Math.max(22, r), fill: 'transparent' }));
-      g.append(el('circle', { class: 'dot', cx: p.x, cy: p.y, r: r.toFixed(1), fill: topicColor(node.topic) }));
-      g.append(el('circle', { class: 'select-ring', cx: p.x, cy: p.y, r: (r + 8).toFixed(1) }));
+      if (node.isEntry) g.append(circle(r + 11, { class: 'entry-halo' }));
+      if (node.type === 'hub') g.append(circle(r + 7, { class: 'hub-ring' }));
+      g.append(circle(Math.max(22, r), { class: 'hit', fill: 'transparent' }));
+      g.append(circle(r, { class: 'dot', fill: topicColor(node.topic) }));
+      g.append(circle(r + 8, { class: 'select-ring' }));
       nodeLayer.append(g); nodeEls.set(node.id, g);
     }
   };
@@ -356,6 +377,7 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
     moveTo(target: Transform) { animateTo(target); },
     fit(animate = false) {
       const target = fitTransform(positions, size());
+      fitScale = target.scale;
       // 상자 크기가 바뀌어 맞춤 배율이 달라졌으면 영역 이름 자리를 새 배율로 다시 정하고, 노드 제목도 새 자리를 피해 다시 그린다.
       if (placeRegionNames(target)) { drawRegions(); labelScale = -1; }
       if (animate) animateTo(target); else { stopAnimation(); state.transform = target; applyTransform(); }
