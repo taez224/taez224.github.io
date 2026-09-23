@@ -1,4 +1,16 @@
 import { test, expect } from './fixtures.ts';
+import { PALETTE, DARK_PALETTE } from '../../src/lib/palette.ts';
+
+const rgb = (hex: string) => `rgb(${[1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16)).join(', ')})`;
+
+// 형광 표시의 글자색을 비워 두면 브라우저 기본값인 검정이 되어, 어두운 화면의 형광 위에서 2.49:1로 읽기 어려웠다.
+test('highlighted text keeps the ink color on the highlight in both themes', async ({ page }, info) => {
+  const dark = info.project.use.colorScheme === 'dark';
+  await page.goto('/notes/browser-neighbor/');
+  const mark = page.locator('.body mark').first();
+  await expect(mark).toHaveText('형광으로 칠한 말');
+  await expect(mark).toHaveCSS('color', rgb(dark ? DARK_PALETTE.ink : PALETTE.ink));
+});
 
 test('adjacent footnotes have their own space and open the intended note', async ({ page, isMobile }) => {
   await page.goto('/notes/browser-start/');
