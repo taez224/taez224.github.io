@@ -53,6 +53,19 @@ test('placeRegionLabels keeps a name out from under a control drawn over the gra
   assert.equal(overlaps, false, '조작 아래가 아닌 다른 자리를 고른다');
 });
 
+// 넓은 창에서 연 지도를 휴대폰 폭으로 줄이면 네 자리가 모두 다른 이름에 막혀, 전에는 겹친 채로 놓였다.
+test('placeRegionLabels leaves out a name that would overlap text, but may sit over nodes', () => {
+  const hull = [{ x: 100, y: 100 }, { x: 200, y: 100 }, { x: 200, y: 200 }, { x: 100, y: 200 }];
+  const region = (topic: string) => ({ topic, count: 4, hull, label: { x: 100, y: 100 } });
+  // 위 자리만 비워 둔다. 첫 이름이 위를 차지하면 둘째 이름에는 글자와 겹치는 자리밖에 없다.
+  const text = [{ left: 180, right: 260, top: 210, bottom: 250 }, { left: 40, right: 85, top: 88, bottom: 115 }, { left: 215, right: 260, top: 85, bottom: 115 }];
+  const both = placeRegionLabels([region('AI'), region('조직')], text);
+  assert.ok(both.has('AI'), '빈 자리가 있으면 놓는다');
+  assert.equal(both.has('조직'), false, '다른 이름·제목과 겹칠 자리밖에 없으면 이름을 뺀다');
+  const overNodes = placeRegionLabels([region('AI')], [{ x: 150, y: 150, r: 300 }]);
+  assert.ok(overNodes.has('AI'), '노드 원만 막혔으면 그 위에 놓는다');
+});
+
 test('placeRegionLabels keeps screen-sized names apart when the graph is drawn small', () => {
   // 이름은 화면에서 같은 크기로 그린다. 그래프가 작게 그려지면(화면 1px = 장면 3단위) 장면 좌표로는 이름이 세 배 넓다.
   const regions = [

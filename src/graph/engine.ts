@@ -112,18 +112,23 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
   // 이름은 화면 크기로 그리므로 자리도 화면 배율(u)로 잰다. 배율은 맞춤(fit) 때 정해지므로 그때 자리를 다시 정하고,
   // 확대·이동 중에는 다시 계산하지 않아 이름이 튀지 않는다. 확대하면 이름이 장면 대비 작아지므로 새로 겹치지 않는다.
   const regionObstacles = nodes.filter((node) => positions.has(node.id)).map((node) => ({ ...positions.get(node.id)!, r: radius(node) + 4 }));
-  let regionLabelAt: ReturnType<typeof placeRegionLabels> = new Map(), regionLabelU = 0;
+  let regionLabelAt: ReturnType<typeof placeRegionLabels> = new Map(), regionLabelU = 0, regionLabelStage = '';
   // 무대 위 조작(확대·축소)도 피한다. 맞춤 배율의 자리로 옮겨 재므로 맞춤 상태에서 이름이 조작 아래로 들어가지 않는다.
   // 전에는 휴대폰 폭에서 오른쪽 아래 영역 이름("조직", "지식관리")이 조작에 가려졌다.
+  // 조작의 장면 좌표는 무대 크기에 따라 달라지므로 배율이 그대로여도 무대 크기가 바뀌면 자리를 다시 정한다.
   const placeRegionNames = (target: Transform) => {
     const u = 1 / (target.scale || 1);
-    if (regionLabelU && Math.abs(u - regionLabelU) / u < 0.01) return false;
+    const { width, height } = size(), stage = `${width}x${height}`;
+    if (regionLabelU && Math.abs(u - regionLabelU) / u < 0.01 && stage === regionLabelStage) return false;
     const obstacles = [...regionObstacles, ...reserved().map((box) => screenBoxToScene(box, target))];
     regionLabelAt = placeRegionLabels(regionList, obstacles, { fontSize: 15, scale: u, measure: estimateTextWidth, bounds: layoutSize ?? size() });
     regionLabelU = u;
+    regionLabelStage = stage;
     return true;
   };
-  const regionLabelBoxes = (u: number) => regionList.map((region) => regionLabelBox(regionLabelAt.get(region.topic)!, region.topic, { fontSize: 15, measure: estimateTextWidth, scale: u }));
+  // 자리를 얻지 못한 영역 이름은 그리지 않으므로 상자도 없다.
+  const regionLabelBoxFor = (topic: string, u: number) => { const at = regionLabelAt.get(topic); return at ? regionLabelBox(at, topic, { fontSize: 15, measure: estimateTextWidth, scale: u }) : null; };
+  const regionLabelBoxes = (u: number) => regionList.flatMap((region) => regionLabelBoxFor(region.topic, u) ?? []);
   const regionEls = new Map<string, SVGElement[]>();
   const refreshRegionStates = () => {
     const filtering = mode === 'map' && Boolean(state.topics?.size);
@@ -142,10 +147,12 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
     regionEls.clear();
     for (const region of regionList) {
       const shape = el('path', { class: 'region', d: regionPath(region.hull), fill: topicColor(region.topic), stroke: topicColor(region.topic) });
-      const at = regionLabelAt.get(region.topic)!;
+      regionLayer.append(shape);
+      const at = regionLabelAt.get(region.topic);
+      if (!at) { regionEls.set(region.topic, [shape]); continue; }
       const label = el('text', { class: 'region-label', x: at.x.toFixed(1), y: at.y.toFixed(1), 'text-anchor': at.anchor, fill: topicLabelColor(region.topic) });
       label.textContent = region.topic;
-      regionLayer.append(shape); regionLabelLayer.append(label);
+      regionLabelLayer.append(label);
       regionEls.set(region.topic, [shape, label]);
     }
     refreshRegionStates();
@@ -255,10 +262,10 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
     // 자리가 없어도 놓는 제목(고른 노드·호버한 노드)은 영역 이름 위에 얹힐 수 있다. 그때는 영역 이름을 흐려 고른 제목을 먼저 읽게 한다.
     if (mode === 'map') {
       const labelBoxes = [...plan.values()].map(({ g }) => g.box);
-      const regionBoxes = regionLabelBoxes(u);
-      regionList.forEach((region, index) => {
-        regionEls.get(region.topic)?.[1]?.classList.toggle('is-under-label', labelBoxes.some((box) => boxesOverlap(box, regionBoxes[index])));
-      });
+      for (const region of regionList) {
+        const box = regionLabelBoxFor(region.topic, u);
+        regionEls.get(region.topic)?.[1]?.classList.toggle('is-under-label', box !== null && labelBoxes.some((label) => boxesOverlap(label, box)));
+      }
     }
     for (const [id, { lines, g }] of plan) {
       const node = byId.get(id)!;

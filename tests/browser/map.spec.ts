@@ -118,6 +118,17 @@ test('map labels stay apart and clear of the zoom controls on a phone', async ({
       expect(await clashes(), `${width}×${height}에서 ${i}번째 노드를 고른 화면`).toEqual([]);
     }
   }
+  // 창 크기를 바꾸면 처음 배치한 좌표를 새 무대에 다시 맞춘다. 넓은 창에서 연 지도를 휴대폰 폭으로 줄이거나 휴대폰을 가로로 돌리면
+  // 새로 연 것보다 무대가 빽빽해져, 전에는 영역 이름끼리 겹쳤다.
+  for (const [[fromWidth, fromHeight], [toWidth, toHeight]] of [[[1440, 900], [320, 667]], [[1440, 900], [375, 667]], [[390, 844], [844, 390]]]) {
+    await page.setViewportSize({ width: fromWidth, height: fromHeight });
+    await page.goto('/map/');
+    await expect(page.locator('.graph .node').first()).toBeAttached();
+    await page.setViewportSize({ width: toWidth, height: toHeight });
+    // resize 처리는 동기지만 이벤트가 오기까지 한 프레임 이상 걸린다. 옛 화면을 재고 통과하지 않도록 잠깐 기다린 뒤 한 번 잰다.
+    await page.waitForTimeout(300);
+    expect(await clashes(), `${fromWidth}×${fromHeight}에서 ${toWidth}×${toHeight}로 바꾼 화면`).toEqual([]);
+  }
 });
 
 // 어두운 화면의 뒤 배경은 검정 반투명이다. 먹색이 밝아지므로 밝은 화면처럼 먹색을 섞으면 지도가 회색으로 뜬다.
