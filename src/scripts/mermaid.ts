@@ -1,4 +1,5 @@
-import { keepDiagramsInTheme } from './mermaid-render.ts';
+// 순서 처리만 정적으로 가져온다. 렌더러와 Mermaid는 도표가 있는 페이지에서만 아래 load가 불러온다.
+import { keepDiagramsInTheme } from './mermaid-queue.ts';
 
 const blocks = [...document.querySelectorAll('.body pre code.language-mermaid')];
 if (blocks.length) {

@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import mermaid from 'mermaid';
 import { MERMAID_CONFIG, MERMAID_DARK_CONFIG, DARK_SCHEME_QUERY } from '../src/scripts/mermaid-config.ts';
-import { fitDiagram, keepDiagramsInTheme, pinsOwnTheme, queueTasks, renderMermaidBlocks, siteConfigFor } from '../src/scripts/mermaid-render.ts';
+import { fitDiagram, pinsOwnTheme, renderMermaidBlocks, siteConfigFor } from '../src/scripts/mermaid-render.ts';
+import { keepDiagramsInTheme, queueTasks } from '../src/scripts/mermaid-queue.ts';
 import { DARK_PALETTE } from '../src/lib/palette.ts';
 
 // 렌더링된 SVG의 대역이다. max-width가 100%가 되면 컨테이너 폭에 맞춰 줄어든 것으로 본다.
@@ -551,4 +552,14 @@ test('a change back to the drawn theme does not redraw', async () => {
 test('the diagram script keeps the queue in one place', () => {
   const source = readFileSync(new URL('../src/scripts/mermaid.ts', import.meta.url), 'utf8');
   assert.match(source, /keepDiagramsInTheme\(/, '순서 처리는 검사한 함수가 맡는다');
+});
+
+// 모든 노트 페이지가 이 스크립트를 싣는다. 렌더러를 정적으로 가져왔더니 도표가 없는 노트도 렌더러와 크게 보기 코드,
+// 도표들이 함께 쓰는 조각까지 처음부터 받았다. 순서 처리만 정적으로 가져오고 나머지는 도표가 있을 때 불러온다.
+test('the diagram script loads the renderer only on pages with diagrams', () => {
+  const source = readFileSync(new URL('../src/scripts/mermaid.ts', import.meta.url), 'utf8');
+  const eager = [...source.matchAll(/^import\s+(?!type\b)[^;]*?from\s+'([^']+)'/gm)].map((match) => match[1]);
+  assert.deepEqual(eager, ['./mermaid-queue.ts']);
+  const queue = readFileSync(new URL('../src/scripts/mermaid-queue.ts', import.meta.url), 'utf8');
+  assert.doesNotMatch(queue, /^import\s/m, '순서 처리 모듈은 다른 모듈을 가져오지 않는다');
 });
