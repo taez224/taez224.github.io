@@ -178,8 +178,10 @@ h1, h2, h3, p { margin-top: 0; }
 .search-trigger { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin-left: 12px; margin-right: -13px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); transition: background-color .15s ease, color .15s ease, transform .15s cubic-bezier(.23, 1, .32, 1); }
 @media (hover: hover) { .search-trigger:hover { background: var(--accent-soft); color: var(--accent); } }
 .search-trigger svg { width: 18px; height: 18px; fill: currentColor; }
-/* 테마 버튼은 검색 버튼과 같은 상자다. 두 기호를 겹쳐 두지 않고 지금 화면에 맞는 하나만 그린다. */
-.theme-toggle { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin-left: 8px; margin-right: -13px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); transition: background-color .15s ease, color .15s ease, transform .15s cubic-bezier(.23, 1, .32, 1); }
+/* 테마 버튼은 검색 버튼과 같은 상자다. 두 기호를 겹쳐 두지 않고 지금 화면에 맞는 하나만 그린다.
+   두 상자는 붙인다. 18px 기호가 44px 상자 안에서 이미 양옆 13px씩 비어 있어, 상자 사이를 더 띄우면 두 기호가
+   메뉴 글자 사이(28px)보다 멀어져 헤더에서 가장 가까워야 할 둘이 가장 떨어져 보인다. 붙이면 기호 사이는 26px이다. */
+.theme-toggle { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin-left: 0; margin-right: -13px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); transition: background-color .15s ease, color .15s ease, transform .15s cubic-bezier(.23, 1, .32, 1); }
 .theme-toggle:active { transform: scale(.97); }
 @media (hover: hover) { .theme-toggle:hover { background: var(--accent-soft); color: var(--accent); } }
 .theme-toggle svg { width: 18px; height: 18px; fill: currentColor; }
@@ -225,8 +227,8 @@ main { flex: 1 0 auto; }
   .site-footer .wrap { gap: 8px 24px; padding: 20px 0; }
   .site-footer .site-name { flex-basis: 100%; }
 }
-/* 머리글의 한 줄 약속은 글자 100%에서만 성립한다. 한 줄에 필요한 폭은 100%에서 354px(22.125em)이고,
-   검색·테마 버튼과 좌우 여백 약 132px은 글자를 따라 커지지 않아 글자가 클수록 em 대비 비율이 줄어든다.
+/* 머리글의 한 줄 약속은 글자 100%에서만 성립한다. 한 줄에 필요한 폭은 100%에서 346px이고, 경계는 글꼴 렌더링 차이를 받아 줄
+   8px을 더한 354px(22.125em)이다. 검색·테마 버튼과 좌우 여백 약 121px은 글자를 따라 커지지 않아 글자가 클수록 em 대비 비율이 줄어든다.
    그래서 100%의 비율을 경계로 두면 어느 글자 크기에서든 넘치기 전에 두 줄로 나뉜다. 22.125em은 100%에서 354px이라
    360px 휴대폰은 한 줄을 지키고, 320px처럼 더 좁은 화면은 메뉴를 둘째 줄로 내린다. 버튼을 숨기는 대신 자리를 내주는 쪽이다.
    사이트가 html의 글자 크기를 정하지 않아 rem과 이 em이 모두 브라우저 기본값을 따른다.

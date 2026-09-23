@@ -37,7 +37,7 @@ test('the header fits the screen when the reader doubles the default text size',
   }
 });
 
-// 두 줄로 나누는 것은 넘칠 때만이다. 글자 100%에서 한 줄에 필요한 폭은 354px이므로, 흔한 좁은 휴대폰(360px)은 한 줄로 붙어 있어야 한다.
+// 두 줄로 나누는 것은 넘칠 때만이다. 글자 100%에서 한 줄에 필요한 폭은 346px이고 경계는 354px이므로, 흔한 좁은 휴대폰(360px)은 한 줄로 붙어 있어야 한다.
 test('the header keeps one sticky row at the default text size on a common narrow phone', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 640 });
   await page.goto('/books/');
@@ -54,6 +54,28 @@ test('the header keeps one sticky row at the default text size on a common narro
   }));
   expect(row.height).toBe(row.token);
   expect(row.wordmarkLines, 'TaeZ가 한 줄로 남는다').toBe(1);
+});
+
+// 18px 기호가 44px 상자 안에서 이미 양옆으로 비어 있다. 상자 사이를 8px 더 띄웠더니 두 기호가 34px 떨어져
+// 메뉴 글자 사이(28px)보다 멀었고, 헤더에서 가장 가까워야 할 둘이 가장 떨어져 보였다.
+test('the search and theme buttons sit side by side without a gap', async ({ page }) => {
+  for (const width of [1280, 360]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto('/books/');
+    const measured = await page.evaluate(() => {
+      const box = (selector: string) => document.querySelector(selector)!.getBoundingClientRect();
+      const glyph = (selector: string) => [...document.querySelectorAll(`${selector} svg`)].map((svg) => svg.getBoundingClientRect()).find((rect) => rect.width > 0)!;
+      const range = document.createRange();
+      const menus = [...document.querySelectorAll('.site-nav a span')].map((span) => { range.selectNodeContents(span); return range.getBoundingClientRect(); });
+      return {
+        boxes: box('.theme-toggle').left - box('.search-trigger').right,
+        glyphs: glyph('.theme-toggle').left - glyph('.search-trigger').right,
+        menus: menus[1].left - menus[0].right
+      };
+    });
+    expect(measured.boxes, `${width}px에서 두 상자가 맞닿는다`).toBeCloseTo(0, 0);
+    if (width === 1280) expect(measured.glyphs, '두 기호 사이가 메뉴 글자 사이보다 넓지 않다').toBeLessThanOrEqual(measured.menus);
+  }
 });
 
 // 검색과 테마 두 버튼까지 들어가지 않는 폭에서는 메뉴를 둘째 줄로 내리고 고정을 푼다. 눌러서 줄이는 대신 자리를 내주는 쪽이다.
