@@ -90,6 +90,18 @@ test('one-column widths keep the start lists and hold the sheet out of the way',
   await expect(page.locator('.map-panel')).toHaveAttribute('inert', '');
 });
 
+// 어두운 화면의 뒤 배경은 검정 반투명이다. 먹색이 밝아지므로 밝은 화면처럼 먹색을 섞으면 지도가 회색으로 뜬다.
+// 전역 스타일 블록에서 :global()로 감싼 선택자는 브라우저가 버려서 이 규칙이 통째로 빠진 적이 있다.
+test('the sheet backdrop darkens the map in the dark theme', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('theme', 'dark'));
+  await page.setViewportSize({ width: 900, height: 900 });
+  await page.goto('/map/');
+  await page.locator('.graph .node').first().click({ force: true });
+  const backdrop = page.locator('.sheet-backdrop');
+  await expect(backdrop).toBeVisible();
+  await expect(backdrop).toHaveCSS('background-color', 'rgba(0, 0, 0, 0.45)');
+});
+
 // 시트는 화면 아래에 붙고 내용이 위에서부터 쌓인다. 화면이 짧아지면 맨 아래 참조 목록부터 잘려야지
 // 제목이나 노트 읽기가 잘리면 안 된다. 흐름 안 패널은 반대로 제목부터 사라졌다.
 test('the sheet keeps its close button, title and read link whole on a short landscape screen', async ({ page }) => {

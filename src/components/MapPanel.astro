@@ -28,8 +28,9 @@ const { startpoints, hubs = [] } = Astro.props;
   /* 한 열로 바뀌는 폭부터 시트다. 흐름 안에 두면 무대 아래로 내려가 노드를 골라도 화면에서 바뀌는 것이 없다. */
   @media (max-width: 1000px) {
     .sheet-backdrop { display: block; position: fixed; inset: 0; z-index: 30; background: color-mix(in srgb, var(--ink) 25%, transparent); }
-    @media (prefers-color-scheme: dark) { :global(:root:not([data-theme])) .sheet-backdrop { background: rgb(0 0 0 / .45); } }
-  :global(:root[data-theme="dark"]) .sheet-backdrop { background: rgb(0 0 0 / .45); }
+    /* 이 블록은 is:global이라 Astro가 :global()을 풀지 않는다. 감싸면 그대로 남아 브라우저가 규칙 전체를 버린다. */
+    @media (prefers-color-scheme: dark) { :root:not([data-theme]) .sheet-backdrop { background: rgb(0 0 0 / .45); } }
+    :root[data-theme="dark"] .sheet-backdrop { background: rgb(0 0 0 / .45); }
     .sheet-backdrop[hidden] { display: none; }
     .map-panel { position: fixed; z-index: 31; right: 0; bottom: 0; left: 0; max-height: 55dvh; padding: 12px 20px 24px; border-top: 1px solid var(--line); border-radius: 0; background: var(--paper-strong); box-shadow: none; transform: translateY(100%); transition: transform .2s ease; overflow-y: auto; }
     .map-panel[data-open] { transform: translateY(0); }
