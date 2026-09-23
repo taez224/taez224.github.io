@@ -62,8 +62,8 @@ const lines = (edge: { x1: number; y1: number; x2: number; y2: number; direction
   a.node { cursor: pointer; outline: none; }
   a.node:focus-visible circle:last-of-type { stroke: var(--accent); }
   @media (hover: hover) { a.node:hover circle:last-of-type { stroke: var(--accent); } }
-  /* 목록의 같은 줄에 마우스를 올리거나 포커스하면 노드도 강조한다. 누르는 원(14px)에 호버 판을 깐다. */
-  a.node.is-linked circle:first-of-type { fill: var(--accent-soft); }
+  /* 목록의 같은 줄에 마우스를 올리거나 포커스하면 노드도 강조한다. 지도처럼 점 테두리만 바꾼다.
+     누르는 원(14px)에 판을 깔았더니 제목 자리가 점 반지름 기준이라 판이 이웃 제목을 4~5px 덮었다. */
   a.node.is-linked circle:last-of-type { stroke: var(--accent); }
   .local-graph-tools { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
   .local-graph-tools a { font-size: var(--t-meta); }

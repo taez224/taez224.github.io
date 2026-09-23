@@ -60,6 +60,25 @@ test('keyboard footnote navigation returns to its reference without heading coll
   await expect(page.getByRole('link', { name: '각주 1', exact: true })).toBeFocused();
 });
 
+// 강조할 때 누르는 원(14px)에 판을 깔았더니 이웃 제목을 4~5px 덮었다. 지도처럼 점 테두리만 바꾸고, 칠한 원은 제목에 닿지 않는다.
+test('a linked neighbor in the small graph changes its dot outline without covering its title', async ({ page }) => {
+  await page.goto('/notes/browser-start/');
+  const node = page.locator('.local-graph a.node').first();
+  const dotStroke = () => node.evaluate((a) => getComputedStyle(a.querySelectorAll('circle')[1]).stroke);
+  const before = await dotStroke();
+  await page.locator('.note-side .side-list a[href="/notes/browser-neighbor/"]').first().focus();
+  await expect(node).toHaveClass(/is-linked/);
+  expect(await dotStroke(), '점 테두리가 강조색으로 바뀐다').not.toBe(before);
+  const covered = await node.evaluate((a) => {
+    const t = a.querySelector('text')!.getBoundingClientRect();
+    return [...a.querySelectorAll('circle')].filter((c) => !['none', 'rgba(0, 0, 0, 0)'].includes(getComputedStyle(c).fill)).some((c) => {
+      const r = c.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+      return Math.hypot(Math.max(t.left - x, 0, x - t.right), Math.max(t.top - y, 0, y - t.bottom)) < r.width / 2;
+    });
+  });
+  expect(covered, '칠한 원이 제목을 덮지 않는다').toBe(false);
+});
+
 test('linked highlighting survives mixed focus and hover', async ({ page, isMobile }) => {
   await page.goto('/notes/browser-start/');
   const graph = page.locator('.local-graph a.node').first();

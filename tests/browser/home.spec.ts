@@ -1,4 +1,4 @@
-import { test, expect, gotoWithDefaultFontSize } from './fixtures.ts';
+import { test, expect, gotoWithDefaultFontSize, gotoBeforeModules, textsOnRings } from './fixtures.ts';
 
 // 위아래로 넓힌 누르는 영역이 아래 그림까지 내려오면, 그림을 눌렀는데 소개 페이지가 열린다.
 test('the hero links stay out of the map image below them', async ({ page, isMobile }) => {
@@ -130,4 +130,20 @@ test('hovering a node on the home map only moves the titles', async ({ page, isM
   expect(hovered).toEqual([id]);
   // 간선을 다시 만들었다면 표시해 둔 선이 사라진다.
   await expect(graph.locator('line[data-kept]')).toHaveCount(1);
+});
+
+// 제목을 점 아래에 두었더니 허브 고리와 입구 노드 후광이 제목 윗부분에 걸렸다. 홈 지도는 정적 그림과 살아 있는 지도가
+// 같은 자리에 제목을 두어야 하므로 둘 다 잰다. 터치 태블릿은 살아 있는 지도 없이 정적 그림만 본다.
+test('home map titles sit clear of the node rings', async ({ page, isMobile }) => {
+  await page.setViewportSize(isMobile ? { width: 768, height: 1024 } : { width: 1440, height: 900 });
+  await gotoBeforeModules(page, '/');
+  const picture = page.locator('.hero-graph svg:visible').first();
+  await expect(picture).toBeVisible();
+  expect(await picture.evaluate(textsOnRings), '정적 그림').toEqual([]);
+  if (isMobile) return;
+  await page.unroute('**/*');
+  await page.goto('/');
+  const live = page.locator('svg.graph.hero');
+  await expect(live).toBeVisible();
+  expect(await live.evaluate(textsOnRings), '살아 있는 지도').toEqual([]);
 });

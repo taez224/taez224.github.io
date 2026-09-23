@@ -40,6 +40,17 @@ test('renderSnapshotSvg labels hubs only and colors by topic', () => {
   assert.equal((svg.match(/<line /g) || []).length, 2);
 });
 
+// 휴대폰·태블릿 폭의 정적 그림은 허브 제목을 점 바로 아래에 두어 제목 윗부분이 허브 고리에 닿았다. 글자 위쪽(기준선 - 글자 크기)이 고리 밖에 있어야 한다.
+test('renderSnapshotSvg puts hub titles below the hub ring, not the dot', () => {
+  const positions = layoutGraph(nodes, edges, { width: 1000, height: 640 });
+  const svg = renderSnapshotSvg(nodes, edges, positions, { width: 1000, height: 640, font: 14 });
+  const ring = svg.match(/<circle cx="([\d.]+)" cy="([\d.]+)" r="([\d.]+)" fill="none"/);
+  const title = svg.match(/<text x="[\d.]+" y="([\d.]+)"[^>]*>A<\/text>/);
+  assert.ok(ring && title, '허브 고리와 허브 제목을 그린다');
+  const ringBottom = Number(ring[2]) + Number(ring[3]);
+  assert.ok(Number(title[1]) - 14 >= ringBottom, `제목 위쪽 ${Number(title[1]) - 14}이 고리 아래 끝 ${ringBottom}보다 아래`);
+});
+
 test('renderSnapshotSvg can add a compact region layer that CSS swaps in on narrow screens', () => {
   const positions = layoutGraph(nodes, edges, { width: 1000, height: 640 });
   const plain = renderSnapshotSvg(nodes, edges, positions, { width: 1000, height: 640, regionFont: 30 });

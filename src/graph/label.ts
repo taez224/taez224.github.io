@@ -60,6 +60,15 @@ export function wrapLabel(title: string, maxChars = 20) {
   return lines;
 }
 
+// 노드 둘레 고리가 점 반지름 바깥으로 나가는 거리(장면 단위). 허브 고리, 입구 노드 후광, 선택·포커스 링.
+// 엔진과 홈 정적 그림이 이 값으로 고리를 그리고, 제목 자리도 이 값으로 잰다.
+export const RING_GAP = { hub: 7, entry: 11, select: 8 } as const;
+// 제목이 비켜야 할 노드의 바깥 반지름. 점 반지름으로 재면 허브 고리와 입구 후광이 제목 윗부분에 걸렸다.
+// ringed는 선택·포커스 링이 보이는 노드다.
+export function ringedRadius(node: Pick<GraphNode, 'type' | 'isEntry'>, r: number, { ringed = false }: { ringed?: boolean } = {}): number {
+  return r + Math.max(node.type === 'hub' ? RING_GAP.hub : 0, node.isEntry ? RING_GAP.entry : 0, ringed ? RING_GAP.select : 0);
+}
+
 export const boxesOverlap = (a: Box, b: Box) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
 export const nodeBox = (p: Point, r: number) => ({ left: p.x - r, right: p.x + r, top: p.y - r, bottom: p.y + r });
 

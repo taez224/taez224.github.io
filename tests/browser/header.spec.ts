@@ -78,6 +78,22 @@ test('the search and theme buttons sit side by side without a gap', async ({ pag
   }
 });
 
+// 테마 버튼은 아이콘을 span으로 한 번 더 감싼다. 달을 감싼 span에는 표시 방식이 없어 아이콘이 글자처럼 기준선에 앉았고,
+// 돋보기보다 3px 높았다(태양을 감싼 span은 inline-flex라 맞았다). 두 테마의 아이콘 모두 돋보기와 세로 중심이 같아야 한다.
+test('the theme icon lines up with the search icon in both themes', async ({ page }) => {
+  await page.goto('/books/');
+  const measure = () => page.evaluate(() => {
+    const center = (svg: Element) => { const r = svg.getBoundingClientRect(); return r.top + r.height / 2; };
+    const icon = [...document.querySelectorAll('.theme-toggle svg')].find((svg) => svg.getBoundingClientRect().height > 0)!;
+    return { theme: document.documentElement.dataset.theme, offset: center(icon) - center(document.querySelector('.search-trigger svg')!) };
+  });
+  for (let turn = 0; turn < 2; turn++) {
+    const { theme, offset } = await measure();
+    expect(Math.abs(offset), `${theme} 화면의 테마 아이콘`).toBeLessThan(0.5);
+    await page.locator('.theme-toggle').click();
+  }
+});
+
 // 테마 버튼은 모듈 스크립트가 hidden을 풀 때 보인다. 그 전에 첫 화면이 그려져도 자리는 잡혀 있어야,
 // 버튼이 나타날 때 메뉴와 검색 버튼이 밀리지 않는다. 모듈 스크립트를 걷어 느린 로딩의 첫 화면을 만든다.
 test('the theme button holds its place before its script runs', async ({ page }) => {
