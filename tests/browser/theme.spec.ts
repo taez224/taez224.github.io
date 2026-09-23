@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures.ts';
+import { test, expect, gotoBeforeModules } from './fixtures.ts';
 import { PALETTE, DARK_PALETTE } from '../../src/lib/palette.ts';
 
 const rgb = (hex: string) => `rgb(${[1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16)).join(', ')})`;
@@ -22,6 +22,17 @@ test('the first visit follows the system setting and the button remembers the re
   // 고른 화면은 다음 페이지에서도 유지되고, 읽는 도중 시스템 설정을 다시 보지 않는다.
   await page.goto('/posts/');
   await expect(root).toHaveAttribute('data-theme', dark ? 'light' : 'dark');
+});
+
+// 브라우저 UI 색 메타는 시스템 설정에 따라 하나가 뽑힌다. 시스템과 다른 화면을 고른 독자는 모듈 스크립트가 돌 때까지
+// 휴대폰 상단 색이 본문과 달랐다. 모듈 스크립트를 걷어 첫 페인트 전의 부트 스크립트만 돈 상태를 본다.
+test('the browser UI color follows the stored choice before the module script runs', async ({ page }, info) => {
+  const dark = systemDark(info);
+  await page.addInitScript((theme) => localStorage.setItem('theme', theme), dark ? 'light' : 'dark');
+  await gotoBeforeModules(page, '/books/');
+  const paper = dark ? PALETTE.paper : DARK_PALETTE.paper;
+  const colors = await page.locator('meta[name="theme-color"]').evaluateAll((metas) => metas.map((meta) => meta.getAttribute('content')));
+  expect(colors, '두 메타가 고른 화면의 종이색이다').toEqual([paper, paper]);
 });
 
 test('a blocked storage falls back to the system setting instead of failing', async ({ page }, info) => {

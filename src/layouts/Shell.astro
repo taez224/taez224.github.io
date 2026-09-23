@@ -38,6 +38,10 @@ const jsonLd = inlineJson(structuredData({ ogType, kind, pageType, title: path =
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {/* 브라우저 UI 색. 스크립트가 없으면 media로 시스템 설정을 따르고, 있으면 바로 아래 부트 스크립트가 고른 화면의 색으로 둘 다 맞춘다.
+       부트 스크립트가 찾을 수 있게 그보다 앞에 둔다. */}
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content={PALETTE.paper} />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content={DARK_PALETTE.paper} />
     {/* 첫 페인트 전에 화면 모드를 정한다. 뒤로 미루면 저장된 선택과 다른 색으로 한 번 그려졌다가 바뀐다. */}
     <script is:inline set:html={THEME_BOOT}></script>
     <title>{fullTitle}</title>
@@ -58,8 +62,6 @@ const jsonLd = inlineJson(structuredData({ ogType, kind, pageType, title: path =
     <meta name="twitter:card" content="summary_large_image" />
     {/* 주제색 변수. 그래프·주제 점이 var(--topic-…)로 읽어 화면 모드에 따라 바뀐다. */}
     <style is:inline set:html={topicColorCss()}></style>
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content={PALETTE.paper} />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content={DARK_PALETTE.paper} />
     <link rel="icon" href={withBase('/favicon.svg')} type="image/svg+xml" />
     <link rel="apple-touch-icon" href={withBase('/apple-touch-icon.png')} />
     <link rel="sitemap" href={withBase('/sitemap-index.xml')} />
