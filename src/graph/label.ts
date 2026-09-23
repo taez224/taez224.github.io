@@ -42,6 +42,14 @@ export function labelIds(nodes: readonly LabelNode[], edges: readonly GraphEdge[
   return ids;
 }
 
+// 자리가 없어도 제목을 놓을 노드인지 정한다. 지도에서는 고르거나 미리 보는 노드 하나만 억지로 놓는다. 허브와 연결 많은 노드까지
+// 억지로 놓았더니 좁은 무대에서 허브 제목끼리, 또는 영역 이름과 겹쳤다. 그 제목들은 노드 원 위라도 다른 글자와 겹치지 않는 자리가
+// 있을 때만 보이고(placeLabels의 overNodes), 자리가 없으면 고른 뒤 시트에서 읽는다.
+// 홈 히어로는 정적 스냅샷과 같은 규칙이어야 넓은 화면에서 엔진으로 바뀔 때 티가 나지 않으므로 기본 집합을 모두 놓는다.
+export function mustPlaceLabel(id: string, { mode, focus }: { mode: 'map' | 'hero'; focus: string | null }): boolean {
+  return mode === 'hero' || id === focus;
+}
+
 // 20자를 넘는 제목은 두 줄로 접는다. 줄 길이를 절반 근처로 잡아 두 줄이 비슷하게 나뉘게 한다.
 export function wrapLabel(title: string, maxChars = 20) {
   const chars = [...title];
@@ -52,7 +60,7 @@ export function wrapLabel(title: string, maxChars = 20) {
   return lines;
 }
 
-const boxesOverlap = (a: Box, b: Box) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+export const boxesOverlap = (a: Box, b: Box) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
 export const nodeBox = (p: Point, r: number) => ({ left: p.x - r, right: p.x + r, top: p.y - r, bottom: p.y + r });
 
 // 제목 자리 후보. 아래·위·오른쪽·왼쪽, 그다음 대각선 넷.
@@ -79,18 +87,26 @@ export function labelGeometry(p: Point, r: number, lines: string[], placement: s
   return { x: p.x, y: p.y + r + 18 * u, anchor: 'middle', box: { left: p.x - w / 2, right: p.x + w / 2, top: p.y + r + 5 * u, bottom: p.y + r + 5 * u + h } };
 }
 
-// 제목 배치. order는 우선순위 순의 [{ node, mustPlace }]. 후보 자리를 차례로 시도해 이미 놓인 제목·장애물과 겹치지 않고
-// 보이는 범위(inside) 안에 드는 첫 자리를 준다. mustPlace는 자리가 없어도 아래에 둔다. 같은 노드는 한 번만 놓는다.
+// 제목 배치. order는 우선순위 순의 [{ node, mustPlace, overNodes }]. 후보 자리를 차례로 시도해 이미 놓인 제목·장애물과 겹치지 않고
+// 보이는 범위(inside) 안에 드는 첫 자리를 준다. 그런 자리가 없을 때 overNodes는 노드 원(nodeObstacles) 위라도 다른 제목·장애물과
+// 겹치지 않는 자리를 찾고, mustPlace는 그래도 없으면 아래에 둔다. 같은 노드는 한 번만 놓는다.
+// blocked는 억지로 두는 제목도 덮지 않는 자리(무대 위 조작)다. 아래 자리가 막히면 보이는 범위 안의 다른 자리를 찾고, 없으면 두지 않는다.
+// 조작 아래로 들어간 제목은 일부만 보여 읽히지 않고, 고른 노드라면 시트가 제목을 보여 준다.
 // 결과는 id → { placement, lines, g }. 엔진(살아 있는 지도)과 스냅샷(정적 SVG)이 같은 규칙으로 그린다.
-export function placeLabels<T extends Pick<GraphNode, 'id'> & Partial<Pick<GraphNode, 'title' | 'displayTitle'>>>(order: readonly { node: T; mustPlace: boolean }[], { positions, radius, u = 1, obstacles = [], inside = () => true, labelGap = 0 }: { positions: ReadonlyMap<string, Point>; radius: (node: T) => number; u?: number; obstacles?: readonly Box[]; inside?: (box: Box) => boolean; labelGap?: number }) {
+export function placeLabels<T extends Pick<GraphNode, 'id'> & Partial<Pick<GraphNode, 'title' | 'displayTitle'>>>(order: readonly { node: T; mustPlace: boolean; overNodes?: boolean }[], { positions, radius, u = 1, obstacles = [], nodeObstacles = [], blocked = [], inside = () => true, labelGap = 0 }: { positions: ReadonlyMap<string, Point>; radius: (node: T) => number; u?: number; obstacles?: readonly Box[]; nodeObstacles?: readonly Box[]; blocked?: readonly Box[]; inside?: (box: Box) => boolean; labelGap?: number }) {
   const placed: Box[] = [], plan = new Map<string, { placement: string; lines: string[]; g: ReturnType<typeof labelGeometry> }>();
-  for (const { node, mustPlace } of order) {
+  const open = (box: Box) => !blocked.some((b) => boxesOverlap(b, box));
+  const clear = (box: Box, avoidNodes: boolean) => inside(box) && open(box) && !placed.some((b) => boxesOverlap(b, box)) && !obstacles.some((b) => boxesOverlap(b, box))
+    && (!avoidNodes || !nodeObstacles.some((b) => boxesOverlap(b, box)));
+  for (const { node, mustPlace, overNodes = false } of order) {
     if (plan.has(node.id)) continue;
     const p = positions.get(node.id); if (!p) continue;
     const lines = wrapLabel(cleanTitle(node.displayTitle ?? node.title ?? '')), r = radius(node);
-    const free = PLACEMENTS.map((placement) => ({ placement, g: labelGeometry(p, r, lines, placement, u) }))
-      .find(({ g }) => inside(g.box) && !placed.some((b) => boxesOverlap(b, g.box)) && !obstacles.some((b) => boxesOverlap(b, g.box)));
-    const chosen = free ?? (mustPlace ? { placement: 'below', g: labelGeometry(p, r, lines, 'below', u) } : null);
+    // 첫 후보가 아래 자리다. 억지로 둘 때도 그 자리가 먼저다.
+    const candidates = PLACEMENTS.map((placement) => ({ placement, g: labelGeometry(p, r, lines, placement, u) }));
+    const free = candidates.find(({ g }) => clear(g.box, true)) ?? (overNodes ? candidates.find(({ g }) => clear(g.box, false)) : undefined);
+    const forced = !mustPlace ? undefined : open(candidates[0].g.box) ? candidates[0] : candidates.find(({ g }) => inside(g.box) && open(g.box));
+    const chosen = free ?? forced;
     if (!chosen) continue;
     // 간격은 화면 픽셀 기준으로 예약해 확대해도 제목 사이의 여유가 일정하게 남는다.
     const gap = labelGap * u;

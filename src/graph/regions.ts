@@ -44,7 +44,8 @@ const overlaps = (a: Box, b: Box) => a.left < b.right && b.left < a.right && a.t
 const hitsCircle = (box: Box, c: Circle) => { const nx = Math.max(box.left, Math.min(c.x, box.right)), ny = Math.max(box.top, Math.min(c.y, box.bottom)); return Math.hypot(c.x - nx, c.y - ny) < c.r; };
 
 // 영역 이름 자리. 껍질의 위·아래·왼쪽·오른쪽 순으로 시도해 장애물(노드 원 {x,y,r} 또는 상자 {left,right,top,bottom})과
-// 먼저 놓인 이름에 겹치지 않는 첫 자리를 준다. 다 막히면 위. 결과는 주제 → { x, y(기준선), anchor }.
+// 먼저 놓인 이름에 겹치지 않는 첫 자리를 준다. 결과는 주제 → { x, y(기준선), anchor }이고, 다른 글자와 겹치지 않는 자리가
+// 하나도 없는 이름은 결과에 넣지 않으므로 쓰는 쪽은 빠진 주제를 건너뛴다.
 // bounds({ width, height })를 주면 무대 밖으로 나가는 자리는 쓰지 않는다.
 // scale은 regionLabelBox와 같은 뜻(화면 1px당 장면 단위)이다. 이름과 껍질과의 간격은 화면 크기로 그리므로 자리도 화면 크기로 잰다.
 // 이 값을 빼면 그래프가 작게 그려지는 폭(홈 721~1000px)에서 실제 이름이 계산보다 몇 배 넓어져 서로 겹친다.
@@ -65,14 +66,18 @@ export function placeRegionLabels(regions: readonly Region[], obstacles: readonl
     const minTop = bounds?.top ?? 0;
     const inBounds = (b: Box) => b.top >= minTop && b.left >= 0 && (!bounds || (b.right <= bounds.width && b.bottom <= bounds.height));
     const free = (c: { box: Box }) => inBounds(c.box) && !placed.some((b) => overlaps(b, c.box)) && !obstacles.some((o) => ('r' in o ? hitsCircle(c.box, o) : overlaps(c.box, o)));
-    // 네 자리가 모두 막히면 노드나 다른 이름과 겹치는 편이 무대 밖으로 잘리는 것보다 낫다. 무대 안의 자리를 먼저 고르고,
-    // 그런 자리도 없으면 첫 자리(위)를 무대 안으로 밀어 넣는다. 전에는 첫 자리를 그대로 써서 맨 위 영역 이름이 그림 밖으로 잘렸다.
+    // 원 장애물은 노드이고, 상자 장애물은 먼저 놓은 제목이나 무대 위 조작이다. 글자와 조작은 노드 원과 달리 겹치면 읽히지 않는다.
+    const clearOfText = (c: { box: Box }) => !placed.some((b) => overlaps(b, c.box)) && !obstacles.some((o) => !('r' in o) && overlaps(c.box, o));
+    // 네 자리가 모두 막히면 노드 원 위에는 얹되 다른 이름·제목과 조작은 피한다. 그런 자리가 없으면 첫 자리(위)를 무대 안으로 밀어 넣어
+    // 보고, 그래도 글자와 겹치면 이름을 두지 않는다. 겹친 두 이름은 어느 쪽도 읽히지 않는다. 전에는 겹치더라도 놓아서, 넓은 창에서
+    // 연 지도를 휴대폰 폭으로 줄이거나 휴대폰을 가로로 돌리면 영역 이름끼리 겹쳤다. 무대 밖으로 잘리는 것도 막는다.
     const intoBounds = (c: typeof candidates[number]) => {
       const dx = Math.max(0, -c.box.left) - Math.max(0, bounds ? c.box.right - bounds.width : 0);
       const dy = Math.max(0, minTop - c.box.top) - Math.max(0, bounds ? c.box.bottom - bounds.height : 0);
       return { ...c, x: c.x + dx, y: c.y + dy, box: { left: c.box.left + dx, right: c.box.right + dx, top: c.box.top + dy, bottom: c.box.bottom + dy } };
     };
-    const pick = candidates.find(free) ?? candidates.find((c) => inBounds(c.box)) ?? intoBounds(candidates[0]);
+    const pick = candidates.find(free) ?? candidates.find((c) => inBounds(c.box) && clearOfText(c)) ?? [intoBounds(candidates[0])].find(clearOfText);
+    if (!pick) continue;
     placed.push(pick.box);
     out.set(region.topic, { x: pick.x, y: pick.y, anchor: pick.anchor });
   }

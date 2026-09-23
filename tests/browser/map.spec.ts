@@ -90,6 +90,68 @@ test('one-column widths keep the start lists and hold the sheet out of the way',
   await expect(page.locator('.map-panel')).toHaveAttribute('inert', '');
 });
 
+// 휴대폰 폭 지도에서 허브 제목을 자리가 없어도 아래에 두었더니 제목끼리, 또는 영역 이름과 겹쳤다. 오른쪽 아래 확대 조작은
+// 영역 이름을 가렸다. 첫 화면과 노드를 하나씩 고른 화면에서 보이는 글자끼리 겹치지 않고 조작 아래로 들어가지 않는지 잰다.
+// 고른 제목 아래 깔린 영역 이름은 흐려지므로(is-under-label) 겹침에서 뺀다.
+test('map labels stay apart and clear of the zoom controls on a phone', async ({ page }) => {
+  const clashes = () => page.evaluate(() => {
+    const boxes = [...document.querySelectorAll<SVGTextElement>('.map-stage svg text:not(.is-under-label)')]
+      .filter((text) => text.textContent!.trim() && text.getBoundingClientRect().width > 0 && getComputedStyle(text).visibility === 'visible')
+      .map((text) => ({ name: text.textContent!.trim(), box: text.getBoundingClientRect() }));
+    const controls = document.querySelector('.graph-controls')!.getBoundingClientRect();
+    const hit = (a: DOMRect, b: DOMRect) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
+    const found: string[] = [];
+    boxes.forEach((a, i) => {
+      if (hit(a.box, controls)) found.push(`${a.name} × 확대 조작`);
+      for (const b of boxes.slice(i + 1)) if (hit(a.box, b.box)) found.push(`${a.name} × ${b.name}`);
+    });
+    return found;
+  });
+  for (const [width, height] of [[320, 568], [375, 667]]) {
+    await page.setViewportSize({ width, height });
+    await page.goto('/map/');
+    const nodes = page.locator('.graph .node');
+    await expect(nodes.first()).toBeAttached();
+    expect(await clashes(), `${width}×${height} 첫 화면`).toEqual([]);
+    for (let i = 0; i < await nodes.count(); i++) {
+      await nodes.nth(i).dispatchEvent('click');
+      expect(await clashes(), `${width}×${height}에서 ${i}번째 노드를 고른 화면`).toEqual([]);
+    }
+  }
+  // 창 크기를 바꾸면 처음 배치한 좌표를 새 무대에 다시 맞춘다. 넓은 창에서 연 지도를 휴대폰 폭으로 줄이거나 휴대폰을 가로로 돌리면
+  // 새로 연 것보다 무대가 빽빽해져, 전에는 영역 이름끼리 겹쳤다.
+  for (const [[fromWidth, fromHeight], [toWidth, toHeight]] of [[[1440, 900], [320, 667]], [[1440, 900], [375, 667]], [[390, 844], [844, 390]]]) {
+    await page.setViewportSize({ width: fromWidth, height: fromHeight });
+    await page.goto('/map/');
+    await expect(page.locator('.graph .node').first()).toBeAttached();
+    await page.setViewportSize({ width: toWidth, height: toHeight });
+    // resize 처리는 동기지만 이벤트가 오기까지 한 프레임 이상 걸린다. 옛 화면을 재고 통과하지 않도록 잠깐 기다린 뒤 한 번 잰다.
+    await page.waitForTimeout(300);
+    expect(await clashes(), `${fromWidth}×${fromHeight}에서 ${toWidth}×${toHeight}로 바꾼 화면`).toEqual([]);
+  }
+  // 제목과 영역 이름은 지도를 끌 때 자리를 다시 정하지 않는다. 노드를 고르고 시트를 닫은 뒤 고른 제목이 확대 조작 위를 지나가게
+  // 끌었더니, 전에는 제목이 조작 아래로 들어가 일부만 보였다. 끄는 도중과 끝난 뒤를 모두 잰다.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/map/');
+  await page.getByRole('button', { name: '이웃 많은 노트', exact: true }).dispatchEvent('click');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.map-panel')).toHaveAttribute('inert', '');
+  const picked = page.locator('.graph .label.is-selected');
+  const [label, controls, stage] = await Promise.all([picked, page.locator('.graph-controls'), page.locator('[data-map]')].map((locator) => locator.boundingBox()));
+  const center = (box: typeof label) => ({ x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 });
+  const from = { x: stage!.x + 16, y: stage!.y + 16 };
+  const to = { x: from.x + center(controls).x - center(label).x, y: from.y + center(controls).y - center(label).y };
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  for (let step = 1; step <= 8; step++) {
+    await page.mouse.move(from.x + ((to.x - from.x) * step) / 8, from.y + ((to.y - from.y) * step) / 8);
+    expect(await clashes(), `고른 제목을 끄는 ${step}/8 지점`).toEqual([]);
+  }
+  await page.mouse.up();
+  expect(await clashes(), '끌기를 마친 화면').toEqual([]);
+  await expect(picked, '조작 한가운데로 옮긴 제목은 숨는다').toHaveCSS('visibility', 'hidden');
+});
+
 // 어두운 화면의 뒤 배경은 검정 반투명이다. 먹색이 밝아지므로 밝은 화면처럼 먹색을 섞으면 지도가 회색으로 뜬다.
 // 전역 스타일 블록에서 :global()로 감싼 선택자는 브라우저가 버려서 이 규칙이 통째로 빠진 적이 있다.
 test('the sheet backdrop darkens the map in the dark theme', async ({ page }) => {

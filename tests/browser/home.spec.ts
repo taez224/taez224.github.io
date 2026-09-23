@@ -84,6 +84,26 @@ test('the hero intro stays inside the viewport on screens narrower than the cont
   expect(left).toBeGreaterThanOrEqual(0);
 });
 
+// 높이가 낮은 휴대폰에서 지도가 첫 화면을 다 차지해, 홈이 권하는 대표 글을 보려면 스크롤해야 했다. 화면 높이에 맞춰 지도를
+// 이어서 줄이고, 키가 큰 휴대폰은 지도를 그대로 둔다. 높이 경계에서 한 번에 줄였더니 1px 차이로 지도가 120px 바뀌었다.
+// 검사 vault에는 대표 글이 없어 지도 다음 절의 제목이 첫 화면에 드는지로 본다.
+test('a short phone shrinks the home map smoothly so the next section starts on the first screen', async ({ page }) => {
+  const measure = async (width: number, height: number) => {
+    await page.setViewportSize({ width, height });
+    await page.goto('/');
+    return page.evaluate(() => ({
+      map: document.querySelector('.hero-graph')!.getBoundingClientRect().height,
+      next: document.querySelector('.home-section .section-title')!.getBoundingClientRect().top
+    }));
+  };
+  const short = await measure(375, 667);
+  expect(short.next, '지도 다음 절의 제목이 첫 화면에 든다').toBeLessThan(667 - 40);
+  const [below, above] = [await measure(375, 760), await measure(375, 761)];
+  expect(Math.abs(above.map - below.map), '화면 높이 1px 차이로 지도 높이가 크게 바뀌지 않는다').toBeLessThanOrEqual(2);
+  expect((await measure(320, 568)).map, '지도는 150px 아래로 줄이지 않는다').toBeCloseTo(150, 0);
+  expect((await measure(390, 844)).map, '키가 큰 휴대폰은 지도를 그대로 둔다').toBeGreaterThan(280);
+});
+
 // 홈 노드는 누르면 그 노트로 이동할 뿐 눌린 채로 남지 않는다.
 // 그런데도 aria-pressed를 달면 낭독기에 눌리지 않는 토글 버튼 수십 개로 읽힌다.
 test('home map nodes do not claim a pressed state', async ({ page, isMobile }) => {

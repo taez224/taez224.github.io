@@ -85,6 +85,13 @@ graph = createGraph(svg, {
   positions,
   mode: 'map',
   nodeScale: 0.7,
+  // 오른쪽 아래 확대·축소 조작은 그래프 위에 떠 있다. 둘레 8px까지 비워 영역 이름과 제목이 그 아래로 들어가거나 테두리에 붙지 않게 한다.
+  reserved: () => {
+    const controls = document.querySelector('.graph-controls');
+    if (!controls) return [];
+    const c = controls.getBoundingClientRect(), s = svg.getBoundingClientRect();
+    return [{ left: c.left - s.left - 8, right: c.right - s.left + 8, top: c.top - s.top - 8, bottom: c.bottom - s.top + 8 }];
+  },
   onSelect: (id) => select(id, true),
   onOpen: (id) => { const node = nodes.find((n) => n.id === id); if (node) window.location.href = node.url; }
 });

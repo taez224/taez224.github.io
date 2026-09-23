@@ -34,7 +34,7 @@ export function renderSnapshotSvg(nodes: readonly GraphNode[], edges: readonly G
   // 영역 이름 층은 CSS가 폭에 따라 고른다(class). compactRegionFont를 주면 허브 제목 없이 영역 이름만 크게 놓은 층을 하나 더 그린다.
   // 휴대폰 폭에서는 그림이 약 1/3로 줄어 허브 제목이 7px 남짓이 되므로 그 층으로 바꾼다. 제목이 없으니 노드만 피해서 다시 놓는다.
   const regionLayer = (fontSize: number, placement: ReturnType<typeof placeRegionLabels>, cls: string) => `<g class="${cls}" font-family="var(--display)" font-weight="700" font-size="${fontSize}" letter-spacing="${(fontSize * 0.16).toFixed(1)}" text-anchor="middle" paint-order="stroke" stroke="var(--paper)" stroke-width="${(fontSize * 0.25).toFixed(1)}" stroke-linejoin="round">`
-    + regions.map((r) => { const a = placement.get(r.topic)!; return `<text x="${a.x.toFixed(1)}" y="${a.y.toFixed(1)}" text-anchor="${a.anchor}" fill="${topicLabelColor(r.topic)}">${escape(r.topic)}</text>`; }).join('') + '</g>';
+    + regions.map((r) => { const a = placement.get(r.topic); if (!a) return ''; return `<text x="${a.x.toFixed(1)}" y="${a.y.toFixed(1)}" text-anchor="${a.anchor}" fill="${topicLabelColor(r.topic)}">${escape(r.topic)}</text>`; }).join('') + '</g>';
   let out = `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" class="snap is-mobile" role="img" aria-label="${escape(label)}">`;
   out += `<g data-regions="" opacity=".06">${regions.map((r) => `<path d="${regionPath(r.hull)}" fill="${topicColor(r.topic)}" stroke="${topicColor(r.topic)}" stroke-width="64" stroke-linejoin="round"></path>`).join('')}</g>`;
   out += regionLayer(regionFont, regionLabelAt, 'snap-regions');
@@ -71,7 +71,7 @@ function renderDesktop(nodes: readonly GraphNode[], edges: readonly GraphEdge[],
   const regionLabelAt = placeRegionLabels(regions, placed.map((node) => ({ ...at(node.id), r: radiusOf(node) + 4 })), { fontSize: 15, scale: u, measure: estimateTextWidth, bounds: { width, height } });
   const obstacles = [
     ...placed.map((node) => nodeBox(at(node.id), radiusOf(node) + 2 * u)),
-    ...regions.map((r) => regionLabelBox(regionLabelAt.get(r.topic)!, r.topic, { fontSize: 15, measure: estimateTextWidth, scale: u }))
+    ...regions.flatMap((r) => { const at = regionLabelAt.get(r.topic); return at ? [regionLabelBox(at, r.topic, { fontSize: 15, measure: estimateTextWidth, scale: u })] : []; })
   ];
   // 보이는 범위: 세로는 맞춤 영역, 가로는 무대(상자가 더 넓어 옆으로 여유가 있다).
   const inside = (b: Box) => b.left >= 0 && b.right <= width && b.top >= minY - pad && b.bottom <= maxY + pad;
@@ -80,7 +80,7 @@ function renderDesktop(nodes: readonly GraphNode[], edges: readonly GraphEdge[],
   let out = `<svg viewBox="${viewBox}" xmlns="http://www.w3.org/2000/svg" class="snap is-desktop" role="img" aria-label="${escape(label)}">`;
   out += `<g data-regions="" opacity=".07">${regions.map((r) => `<path d="${regionPath(r.hull)}" fill="${topicColor(r.topic)}" stroke="${topicColor(r.topic)}" stroke-width="64" stroke-linejoin="round"></path>`).join('')}</g>`;
   out += `<g font-family="var(--display)" font-weight="700" font-size="${n(15 * u)}" letter-spacing=".16em" paint-order="stroke" stroke="var(--paper)" stroke-width="${n(3.5 * u)}" stroke-linejoin="round">`;
-  out += regions.map((r) => { const a = regionLabelAt.get(r.topic)!; return `<text x="${a.x.toFixed(1)}" y="${a.y.toFixed(1)}" text-anchor="${a.anchor}" fill="${topicLabelColor(r.topic)}">${escape(r.topic)}</text>`; }).join('');
+  out += regions.map((r) => { const a = regionLabelAt.get(r.topic); if (!a) return ''; return `<text x="${a.x.toFixed(1)}" y="${a.y.toFixed(1)}" text-anchor="${a.anchor}" fill="${topicLabelColor(r.topic)}">${escape(r.topic)}</text>`; }).join('');
   out += `</g><g stroke="var(--edge)" stroke-width="1.1" stroke-opacity=".28">`;
   for (const edge of edges) { const a = at(edge.source), b = at(edge.target); if (a && b) out += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"></line>`; }
   out += '</g><g>';
