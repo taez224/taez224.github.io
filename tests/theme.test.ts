@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import vm from 'node:vm';
 import { THEME_BOOT, THEME_KEY, applyWithTransition, resolveTheme } from '../src/lib/theme.ts';
 
 const cases: { stored: string | null; systemDark: boolean; expected: 'light' | 'dark' }[] = [
@@ -27,6 +28,21 @@ test('the inline boot script decides the same theme as resolveTheme', () => {
     run({ documentElement: element }, store, () => ({ matches: systemDark }));
     assert.equal(element.dataset.theme, expected, `${stored} · ${systemDark}`);
   }
+});
+
+// 부트 스크립트는 페이지의 일반 스크립트로 돈다. 최상위에 이름을 선언하면 window의 속성이 되어 다른 스크립트와 부딪칠 수 있다.
+// new Function 안에서는 var가 함수 범위라 이 누출이 드러나지 않으므로, 전역 문맥에서 직접 실행해 본다.
+test('the boot script leaves no names on the global object', () => {
+  const element = { dataset: {} as Record<string, string> };
+  const context = vm.createContext({
+    document: { documentElement: element },
+    localStorage: { getItem: () => 'dark' },
+    matchMedia: () => ({ matches: false })
+  });
+  const before = new Set(Object.keys(context));
+  vm.runInContext(THEME_BOOT, context);
+  assert.equal(element.dataset.theme, 'dark');
+  assert.deepEqual(Object.keys(context).filter((key) => !before.has(key)), []);
 });
 
 test('the boot script keeps the system setting when the storage cannot be read', () => {

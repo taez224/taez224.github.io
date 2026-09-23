@@ -18,7 +18,6 @@ const paint = (theme: Theme) => {
   const label = theme === 'dark' ? '밝은 화면으로 바꾸기' : '어두운 화면으로 바꾸기';
   button.setAttribute('aria-label', label);
   button.title = label;
-  button.dataset.themeToggle = theme;
 };
 
 if (button) {
