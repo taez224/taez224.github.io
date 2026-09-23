@@ -44,7 +44,6 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
     {/* 살아 있는 지도가 첫 화면 전에 올라오도록 데이터와 좌표를 페이지에 둔다. hero-graph.ts는 fetch 없이 이걸 읽는다. */}
     {/* 휴대폰 폭의 그림은 노드를 하나씩 누를 수 없으므로 그림 전체를 지도 링크로 두고, 그림 아래에는 링크를 따로 두지 않는다. */}
     <div class="hero-graph" data-graph><script type="application/json" data-hero-data is:inline set:html={inlineJson(inlineGraph(garden.nodes, garden.edges, { positions }))}></script><a class="hero-snapshot" href={withBase('/map/')} aria-label="생각 지도 보기"><Fragment set:html={snapshotDesktop} /><Fragment set:html={snapshot} /></a></div>
-    <div class="hero-fade" aria-hidden="true"></div>
   </section>
   {/* 대표 글 썸네일은 데스크톱 첫 화면 안에 있다. lazy로 두면 LCP 후보가 늦게 시작한다. */}
   {featured && <section class="wrap home-section featured" aria-labelledby="featured-heading">
@@ -106,12 +105,12 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
     .hero-graph.is-live .hero-snapshot { display: none; }
   }
   /* 스냅샷의 색면 불투명도는 SVG 속성이라 어두운 화면에서는 CSS로 엔진과 같은 값까지 올린다. */
-  @media (prefers-color-scheme: dark) { .hero-snapshot :global([data-regions]) { opacity: .11; } }
-  /* 오른쪽·위·아래 가장자리를 옅게. 색면과 간선이 헤더 선·대표 글 선에 닿거나 화면 끝에서 뚝 잘리지 않게 한다. 왼쪽은 종이색 그라데이션이 맡는다. */
-  .hero-graph { -webkit-mask-image: linear-gradient(90deg, #000 0, #000 84%, transparent 100%), linear-gradient(180deg, transparent 0, #000 10%, #000 90%, transparent 100%); mask-image: linear-gradient(90deg, #000 0, #000 84%, transparent 100%), linear-gradient(180deg, transparent 0, #000 10%, #000 90%, transparent 100%); -webkit-mask-composite: source-in; mask-composite: intersect; }
+  @media (prefers-color-scheme: dark) { :global(:root:not([data-theme])) .hero-snapshot :global([data-regions]) { opacity: .11; } }
+  :global(:root[data-theme="dark"]) .hero-snapshot :global([data-regions]) { opacity: .11; }
+  /* 네 가장자리를 모두 옅게. 색면과 간선이 헤더·대표 글 선에 닿거나 화면 끝에서 뚝 잘리지 않게 한다.
+     왼쪽은 소개 글과 만나는 자리라 더 일찍 풀린다. 예전에는 종이색 덮개가 이 일을 했지만, 첫 화면 위쪽에 띠가 깔리면서 덮개의 종이색이 띠와 어긋났다. */
+  .hero-graph { -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14%, #000 84%, transparent 100%), linear-gradient(180deg, transparent 0, #000 10%, #000 90%, transparent 100%); mask-image: linear-gradient(90deg, transparent 0, #000 14%, #000 84%, transparent 100%), linear-gradient(180deg, transparent 0, #000 10%, #000 90%, transparent 100%); -webkit-mask-composite: source-in; mask-composite: intersect; }
   .hero-graph .graph { cursor: pointer; }
-  /* 종이색은 소개 블록(오른쪽 끝 50% - 160px)보다 조금 더 가서 끝난다. 퍼센트로 두면 1280px에서 소개문 옆에 반투명 점이 걸친다. */
-  .hero-fade { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, var(--paper) 0, var(--paper) calc(50% - 140px), transparent calc(50% + 140px)); }
   /* 지도와 종이색 그라데이션은 절대 배치라 안쪽 여백의 영향을 받지 않는다. 소개 블록만 흐름에 두어 높이를 밀어낸다.
      왼쪽 자리는 본문 열(1180px)의 왼쪽 끝이다. 화면이 그보다 좁으면 음수가 되어 제목과 소개문 앞이 잘리므로,
      .wrap과 같이 좌우 여백 아래로는 내려가지 않게 막는다. */
@@ -165,7 +164,6 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
   @media (max-width: 1000px) {
     .hero { min-height: 0; height: auto; overflow: visible; }
     .hero-graph { position: static; width: 100%; height: 280px; -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 3%, #000 97%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0, #000 3%, #000 97%, transparent 100%); }
-    .hero-fade { display: none; }
     .hero-graph .hero-snapshot :global(.is-desktop) { display: none; }
     .hero-graph .hero-snapshot :global(.is-mobile) { display: block; }
     .hero-about { position: relative; top: auto; left: auto; width: calc(100% - 2 * var(--s-page-gutter)); max-width: 640px; margin: 36px auto 12px; }

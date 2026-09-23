@@ -4,26 +4,30 @@ name: TaeZ's Thinking Garden
 description: 한국어 글을 읽고 지도와 참조 관계로 관련 노트를 탐색하는 개인 위키
 colors:
   primary: '#252e29'
-  paper: '#f7f7f2'
-  paper-strong: '#fdfdfa'
+  paper: '#f7f6f0'
+  paper-strong: '#fdfcf8'
   muted: '#626d64'
-  line: '#d8ded4'
-  accent-soft: '#ecede8'
+  line: '#d8ddd3'
+  accent-soft: '#eceee6'
+  tint-top: '#eeeee3'
+  tint-mid: '#f3f3eb'
   warning: '#985d2f'
   bug: '#8e5d5d'
   highlight: '#e7d99b'
   primary-dark: '#e1e8e3'
-  paper-dark: '#151b17'
-  paper-strong-dark: '#1c221e'
-  muted-dark: '#89948c'
-  line-dark: '#353d37'
-  accent-soft-dark: '#242b26'
-  warning-dark: '#b37d51'
-  bug-dark: '#ae7e7d'
+  paper-dark: '#171e1a'
+  paper-strong-dark: '#1e2822'
+  muted-dark: '#9ca99f'
+  line-dark: '#36433b'
+  accent-soft-dark: '#28362d'
+  tint-top-dark: '#242f28'
+  tint-mid-dark: '#1d2721'
+  warning-dark: '#bd8455'
+  bug-dark: '#b68483'
   highlight-dark: '#574d24'
   code-bg: '#ffffff'
   code-text: '#24292f'
-  code-bg-dark: '#1c221e'
+  code-bg-dark: '#1e2822'
   code-text-dark: '#e6edf3'
 typography:
   title:
@@ -317,6 +321,18 @@ components:
     backgroundColor: '{colors.accent-soft}'
     textColor: '{colors.muted}'
     typography: '{typography.meta}'
+  footer:
+    backgroundColor: '{colors.accent-soft}'
+    textColor: '{colors.muted}'
+    typography: '{typography.meta}'
+  page-tint:
+    backgroundColor: '{colors.tint-top}'
+    textColor: '{colors.primary}'
+    typography: '{typography.body}'
+  page-tint-mid:
+    backgroundColor: '{colors.tint-mid}'
+    textColor: '{colors.muted}'
+    typography: '{typography.meta}'
   callout:
     backgroundColor: '{colors.paper-strong}'
     textColor: '{colors.primary}'
@@ -373,6 +389,18 @@ components:
     backgroundColor: '{colors.accent-soft-dark}'
     textColor: '{colors.muted-dark}'
     typography: '{typography.meta}'
+  footer-dark:
+    backgroundColor: '{colors.accent-soft-dark}'
+    textColor: '{colors.muted-dark}'
+    typography: '{typography.meta}'
+  page-tint-dark:
+    backgroundColor: '{colors.tint-top-dark}'
+    textColor: '{colors.primary-dark}'
+    typography: '{typography.body}'
+  page-tint-mid-dark:
+    backgroundColor: '{colors.tint-mid-dark}'
+    textColor: '{colors.muted-dark}'
+    typography: '{typography.meta}'
   selected-control-dark:
     backgroundColor: '{colors.line-dark}'
     textColor: '{colors.primary-dark}'
@@ -421,7 +449,7 @@ Thinking Garden은 한 소프트웨어 엔지니어가 글과 개발 노트, 읽
 - 목록은 왼쪽 여백에 큰 라벨을 둔 장부 격자다.
 - 콜아웃은 인쇄물의 박스 주석처럼 밝은 판과 위 괘선으로 본문에서 떼어 낸다.
 - 그림자 없이 구분선, 판의 밝기, 여백으로 층을 나눈다.
-- 밝은 화면과 어두운 화면을 따로 짜고, 어느 쪽을 보일지는 시스템 설정이 정한다.
+- 밝은 화면과 어두운 화면을 따로 짜고, 어느 쪽을 보일지는 독자가 헤더에서 고른다. 고른 적이 없으면 시스템 설정을 따른다.
 
 ## Colors
 
@@ -441,6 +469,10 @@ Thinking Garden은 한 소프트웨어 엔지니어가 글과 개발 노트, 읽
 - **형광**(`highlight`): 본문의 형광 표시와 검색에서 찾은 말에만 쓴다.
 - **간선:** 지도 연결선에만 쓰여 앞머리 `colors`에 넣지 않는다. 넣으면 참조하는 컴포넌트가 없어 lint가 경고한다.
 
+### 첫 화면의 띠
+
+첫 화면 위쪽에는 옅은 띠(`tint-top` → `tint-mid` → `paper`)를 깔아 헤더와 본문이 같은 바탕 위에 이어지게 한다. 띠는 본문 쪽으로 내려오며 종이색으로 풀리므로 어디서 끝나는지 보이지 않는다. 이 바탕 위에 놓이는 것들은 종이색을 따로 칠하지 않는다. 지도 무대가 종이색을 칠하면 띠 위에 사각형이 얹혀 경계가 드러난다.
+
 ### 링크와 선택
 
 링크는 먹색을 옅게 섞은 밑줄로 구분하고 호버에서 밑줄을 먹색으로 채운다. 행 전체가 이미 링크인 자리의 링크도 밑줄을 긋는다. 색 대비만으로는 무엇이 따로 눌리는지 알 수 없다. 밖으로 나가는 링크는 ↗가 그 일을 하므로 밑줄을 겹치지 않는다. 선택은 먹색 글자와 막대로 알린다. 글자 선택은 먹색 판으로 칠한다. 형광으로 칠하면 본문 강조와 구분되지 않는다. 먹색의 반투명 변형(밑줄, 선택 판, 인라인 코드 바탕)은 먹색에서 섞어 만들고 값을 따로 두지 않는다.
@@ -451,7 +483,9 @@ Thinking Garden은 한 소프트웨어 엔지니어가 글과 개발 노트, 읽
 
 ### 어두운 화면
 
-**시스템 설정 규칙.** 어두운 화면은 운영체제·브라우저 설정을 따르고, 사이트 안에 전환 버튼은 두지 않는다. 헤더에는 전환 버튼을 둘 자리가 없다. 시스템 설정을 따르면 선택을 기억하는 스크립트가 없어도 첫 화면부터 맞는 색으로 그려진다.
+**선택 우선 규칙.** 화면 모드는 독자가 헤더의 해·달 버튼으로 고르고, 고른 값만 기억한다. 고른 적이 없으면 운영체제·브라우저 설정을 따른다. 읽는 도중 시스템 설정이 바뀌어도 화면을 뒤집지 않는다. 글을 읽는 동안 색이 바뀌면 읽던 자리를 잃는다.
+
+상태는 `<html>`의 `data-theme` 한 곳에 둔다. `<head>`의 짧은 인라인 스크립트가 첫 페인트 전에 정하므로 저장된 선택과 다른 색으로 한 번 그려졌다가 바뀌는 일이 없다. 스크립트가 없으면 속성이 붙지 않고, 그때만 CSS의 미디어 쿼리가 시스템 설정을 따른다. 그래서 어두운 규칙은 `:root:not([data-theme])`와 `:root[data-theme="dark"]` 두 벌로 둔다. 시스템이 어두운데 독자가 밝은 화면을 고른 경우에 옛 규칙이 끼어들지 않게 하려는 것이다. 색을 CSS에서 읽지 못하는 곳도 같은 상태를 보고 맞춘다. `theme-color` 메타는 부트 스크립트가 첫 페인트 전에, 도표는 모듈 스크립트가 맞춘다.
 
 어두운 팔레트(`-dark` 토큰)는 밝은 팔레트를 뒤집지 않고 먹색과 같은 녹회색 색조로 따로 짰다. 바탕보다 올라온 판일수록 밝아서 그림자 없이도 층이 보인다. 따로 정한 것은 다음과 같다.
 
@@ -487,7 +521,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 ### 전환 폭
 
-720px(모바일)과 1000px(한 열)이 기본이다. 그 밖에는 홈 소개의 1240px, 책장의 480px, 좁은 헤더에서 공유 아이콘을 숨기는 359/360px, 글자를 키웠을 때 헤더를 두 줄로 나누는 19.5em만 쓴다. 19.5em만 글자 크기를 따라 움직이는 경계다.
+720px(모바일)과 1000px(한 열)이 기본이다. 그 밖에는 홈 소개의 1240px, 책장의 480px, 헤더를 두 줄로 나누는 22.125em만 쓴다. 22.125em만 글자 크기를 따라 움직이는 경계다. 글자 100%에서 354px이고, 그보다 좁으면 메뉴가 둘째 줄로 내려간다.
 
 - **1000px 이하:** 한 열로 바뀌고 참조·역참조가 본문 뒤로 가며, 목차는 접힘으로 바뀐다. 지도 패널은 하단 시트가 된다.
 - **720px 이하:** 좌우 여백과 헤더가 모바일 값이 되고, 목록의 열이 세로로 쌓인다. 긴 표와 코드는 블록 안에서 가로로 스크롤한다.
@@ -502,7 +536,9 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 **그림자 없음 규칙.** 판과 조작 요소에는 그림자를 쓰지 않는다. 층은 구분선, 판의 밝기, 여백, 겹치는 판의 테두리와 뒤 배경으로 나눈다. 뒤 배경이 이미 층을 가르므로 그림자는 같은 단서를 되풀이하고, 가는 테두리와 넓은 그림자를 함께 쓰면 경계가 흐려진다.
 
-떠 있는 판(검색 대화상자, 각주 판, 공유 실패 안내)은 경계가 보여야 하므로 먹색 테두리를 둔다. 화면을 덮는 판(도표 크게 보기, 지도 시트)은 판의 경계가 곧 화면 끝이라 구분선 색 테두리만 둔다. 예외는 도표 도구가 노드에 그리는 옅은 그림자 하나다.
+헤더는 선 대신 판의 농도로 층을 만든다. 첫 화면에서는 판을 켜지 않아 띠 위에 글자만 얹히고, 본문이 헤더 밑으로 들어오기 시작하면 종이색 판이 짙어진다. 판은 헤더 아래 24px까지 이어지다 사라져 경계가 드러나지 않고, 뒤 글자는 흐려 놓는다. 흐림은 색보다 먼저 켠다. 첫 화면에서는 흐림도 꺼서 헤더 밑에 걸친 홈 지도의 영역 이름을 선명하게 두고, 스크롤을 시작하면 본문이 메뉴 뒤에 닿기 전에 흐림을 다 켠다. 색과 같은 속도로 올리면 그사이 판이 거의 투명해서 글자가 메뉴와 겹쳐 보인다. 판 전체를 반투명하게 하지 않고 색에만 투명도를 주는 것은, 그렇게 하면 흐린 그림 아래로 원래 글자가 비치기 때문이다. 흐림을 지원하지 않는 환경과 투명도를 줄이는 설정에서는 불투명한 종이색을 쓴다.
+
+떠 있는 판(검색 대화상자, 각주 판)은 경계가 보여야 하므로 먹색 테두리를 둔다. 화면을 덮는 판(도표 크게 보기, 지도 시트)은 판의 경계가 곧 화면 끝이라 구분선 색 테두리만 둔다. 예외는 도표 도구가 노드에 그리는 옅은 그림자 하나다.
 
 ## Shapes
 
@@ -525,7 +561,15 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 ### 헤더
 
-현재 메뉴는 헤더 아래 선 위에 얹은 막대로 표시한다. 글자색 차이만으로는 흐리고, 밑줄은 호버와 헷갈린다. 글자를 키워 한 줄에 들어가지 않으면 메뉴를 둘째 줄로 내리고 고정을 푼다. 메뉴만 가로로 밀면 지금 있는 절이 가려지고, 두 줄 헤더를 붙여 두면 제목으로 건너뛴 자리를 가린다.
+헤더 아래에는 선을 긋지 않는다. 배경이 이어지는 자리에 선을 그으면 그 선에서 끊긴다. 층은 위의 판이 맡는다.
+
+오른쪽 끝에는 검색과 화면 모드 버튼을 44px 상자로 붙여 둔다. 18px 기호가 상자 안에서 이미 양옆으로 비어 있어, 상자 사이를 띄우면 두 기호가 메뉴 글자 사이보다 멀어진다. 테마 버튼의 기호는 다음에 일어날 일을 보인다. 밝은 화면에서는 달이다. 스크립트가 없으면 동작하지 않으므로 아예 보이지 않는다. 스크립트가 도는 화면에서는 버튼이 나타나기 전부터 자리를 잡아 두어, 느리게 불러올 때 메뉴와 검색 버튼이 밀리지 않게 한다.
+
+현재 메뉴는 글자 아래 6px에 얹은 막대로 표시한다. 글자색 차이만으로는 흐리고, 밑줄은 호버와 헷갈린다. 글자를 키워 한 줄에 들어가지 않으면 메뉴를 둘째 줄로 내리고 고정을 푼다. 메뉴만 가로로 밀면 지금 있는 절이 가려지고, 두 줄 헤더를 붙여 두면 제목으로 건너뛴 자리를 가린다.
+
+### 바닥글
+
+지도를 뺀 모든 페이지 끝에 같은 바닥글을 둔다. 인장과 이름, 다른 곳의 프로필, 사이트 소개, RSS 순서다. 본문과는 옅은 판의 바탕색으로 나누고 구분선은 긋지 않는다. 짧은 페이지에서도 바닥글은 화면 바닥에 붙인다. 옅은 판이 화면 중간에 뜨면 그 아래 빈 종이가 드러나 페이지가 덜 끝난 것처럼 읽힌다. 프로필은 홈 소개와 같은 회색조 아이콘 줄이다. 바닥글 바탕이 호버 판과 같은 색이라, 바닥글 안의 아이콘 호버는 한 단계 짙은 구분선 색으로 둔다. 소개 페이지 본문에는 두지 않는다. 바로 아래 바닥글과 같은 줄이 연달아 보인다. 글자 링크로 늘어놓으면 이름마다 ↗ 표시가 붙어 줄이 길고 어수선하다. 지도는 화면 높이에 맞춰 그리므로 바닥글을 붙이면 페이지 스크롤이 생긴다.
 
 ### 목록
 
@@ -626,10 +670,8 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 본문 안 글 카드의 테두리·여백·강조 | `src/styles/article-card.css` | 없음 |
 | 코드 블록 머리 줄과 복사 버튼 | `src/lib/markdown.ts`, `src/scripts/code-copy.ts`, `src/styles/body.css` | `tests/code-block.test.ts` |
 | 각주 번호·목록·판 | `src/lib/markdown.ts`, `src/scripts/footnotes.ts`, `src/styles/body.css` | `tests/markdown-footnotes.test.ts`, `tests/footnotes.test.ts` |
-| 조작 아이콘의 도안과 표시 크기 | `src/lib/pixel-icons.ts`, `site.css`의 `.search-trigger svg`, `ShareLink.astro`의 `.share-icon`, `body.css`의 `.code-copy-plate svg` | `tests/pixel-icons.test.ts` |
+| 조작 아이콘의 도안과 표시 크기 | `src/lib/pixel-icons.ts`, `site.css`의 `.search-trigger svg`·`.theme-toggle svg`, `body.css`의 `.code-copy-plate svg` | `tests/pixel-icons.test.ts` |
 | 개인 표식의 도안·파비콘·터치 아이콘 | `src/lib/mark.ts`, `src/lib/palette.ts`의 `MARK`, `scripts/make-mark.ts`가 만든 `public/favicon.svg`·`apple-touch-icon.png` | `tests/mark.test.ts` |
-| 공유 안내의 위치와 폭 | `src/components/ShareLink.astro` | 없음 |
-| 공유 안내가 5초 뒤 사라지는 동작 | `src/scripts/share.ts` | `tests/share.test.ts` |
 | 사이드바 작은 그래프의 제목과 목록의 함께 강조 | `src/components/local-graph-layout.ts`, `src/components/LocalGraph.astro`, `src/scripts/local-graph.ts`, `src/components/NoteSidebar.astro` | `tests/local-graph.test.ts`, `tests/local-graph-links.test.ts`, `tests/browser/reader.spec.ts` |
 | 폭에 따른 리더·지도 배치 | `src/components/NotePage.astro`, `src/pages/map/index.astro` | 없음 |
 | 홈 지도의 폭·입력 방식에 따른 전환(살아 있는 지도와 정적 그림) | `src/scripts/hero-graph.ts`, `src/pages/index.astro` | `tests/hero-graph.test.ts`, `tests/browser/reader.spec.ts` |
@@ -645,7 +687,10 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 표 식별자 줄바꿈과 연재 허브 표시 | `src/styles/body.css`, `src/components/NotePage.astro`, `src/components/NoteSidebar.astro` | `tests/browser/reader.spec.ts` |
 | 책장에서 책 결과를 고를 때 검색창 닫기와 필터 되돌리기 | `src/scripts/in-page-link.ts`, `src/scripts/search.ts`, `src/scripts/books.ts` | `tests/in-page-link.test.ts`, `tests/browser/search.spec.ts`, `tests/browser/books.spec.ts` |
 | 글자를 키웠을 때 책장 라벨 칸이 넓어지는 조건 | `src/pages/books/index.astro` | `tests/browser/books.spec.ts` |
-| 글자를 키웠을 때 헤더가 두 줄로 나뉘는 경계와 고정 해제 | `src/styles/site.css` | `tests/browser/header.spec.ts` |
+| 헤더가 두 줄로 나뉘는 경계와 고정 해제 | `src/styles/site.css` | `tests/browser/header.spec.ts` |
+| 첫 화면의 띠와 스크롤에 따라 짙어지는 헤더 판 | `src/styles/site.css`, `src/scripts/header.ts` | `tests/browser/header.spec.ts` |
+| 화면 모드의 선택·기억과 첫 페인트 | `src/lib/theme.ts`, `src/scripts/theme.ts`, `src/layouts/Shell.astro` | `tests/theme.test.ts`, `tests/browser/theme.spec.ts` |
+| 바닥글의 구성(프로필·사이트 소개·RSS), 손가락 영역, 호버 판, 짧은 페이지에서의 위치 | `src/layouts/Shell.astro`, `src/components/Contacts.astro`, `src/styles/site.css` | `tests/browser/footer.spec.ts` |
 | 홈 첫 화면과 최근 기록의 누르는 영역 | `src/components/About.astro`, `src/pages/index.astro` | `tests/browser/home.spec.ts` |
 
 ### 검사
@@ -656,4 +701,4 @@ npm run design:lint
 
 lint는 문서 구조, 토큰 참조, 선언한 색 조합의 대비를 검사하고 쓰이지 않는 색 토큰에 경고한다. 값의 일치는 위 표의 테스트가, 배치와 입력이 있어야 보이는 흐름은 브라우저 검사가 맡는다. 화면 낭독, 포커스의 식별성, 아이콘·선의 비텍스트 대비는 따로 확인한다. 토큰 변경이 클 때는 같은 버전의 `designmd diff <이전 파일> DESIGN.md`를 함께 쓴다.
 
-화면 변경은 홈·긴 노트·목록·지도·검색을 320px, 390px, 1440px와 전환 폭 720px·1000px 전후에서, 밝은 화면과 어두운 화면 모두 확인한다. 글자 200%도 확인한다. 긴 제목, 썸네일 유무, 검색·공유 실패, 키보드 탐색을 포함한다. 문서 검사와 화면 검증의 결과는 나눠 기록한다. 프로젝트 명령은 [AGENTS.md](AGENTS.md), 콘텐츠 표시 규칙은 [AUTHORING.md](AUTHORING.md)가 관리한다.
+화면 변경은 홈·긴 노트·목록·지도·검색을 320px, 390px, 1440px와 전환 폭 720px·1000px 전후에서, 밝은 화면과 어두운 화면 모두 확인한다. 글자 200%도 확인한다. 긴 제목, 썸네일 유무, 검색·복사 실패, 키보드 탐색을 포함한다. 문서 검사와 화면 검증의 결과는 나눠 기록한다. 프로젝트 명령은 [AGENTS.md](AGENTS.md), 콘텐츠 표시 규칙은 [AUTHORING.md](AUTHORING.md)가 관리한다.

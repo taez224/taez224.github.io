@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import vm from 'node:vm';
 import { stripTypeScriptTypes } from 'node:module';
 
-// 로컬 그래프 스크립트를 Node와 같은 타입 제거 방식으로 읽는다. share.test.ts와 같은 방식이다.
+// 로컬 그래프 스크립트를 Node와 같은 타입 제거 방식으로 읽는다. code-block.test.ts와 같은 방식이다.
 const source = stripTypeScriptTypes(await fs.readFile(new URL('../src/scripts/local-graph.ts', import.meta.url), 'utf8')).replace(/^export \{\};\s*/, '');
 
 class FakeElement {

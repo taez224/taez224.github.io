@@ -25,9 +25,10 @@
    완료 표시는 항목 자기 글(label)에만 긋는다. li에 걸면 아래 중첩 목록의 미완료 항목까지 흐려지고 그어진다. */
 .body .task-list-item { list-style: none; }
 .body .task-list-item-checkbox { appearance: none; display: inline-block; box-sizing: border-box; width: 14px; height: 14px; margin: 0 8px 0 -22px; vertical-align: -2px; border: 1.5px solid var(--ink); border-radius: 2px; background: var(--paper-strong); cursor: default; }
-.body .task-list-item-checkbox:checked { background: var(--ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2 5 8.7 9.6 3.5' fill='none' stroke='%23fdfdfa' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 10px no-repeat; }
+.body .task-list-item-checkbox:checked { background: var(--ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2 5 8.7 9.6 3.5' fill='none' stroke='%23fdfcf8' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 10px no-repeat; }
 /* 체크 표시는 채운 먹색 위의 밝은 선이다. 어두운 화면에서는 먹색이 밝아지므로 선을 바탕색으로 바꾼다. */
-@media (prefers-color-scheme: dark) { .body .task-list-item-checkbox:checked { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2 5 8.7 9.6 3.5' fill='none' stroke='%23151b17' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme]) .body .task-list-item-checkbox:checked { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2 5 8.7 9.6 3.5' fill='none' stroke='%23171e1a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); } }
+:root[data-theme="dark"] .body .task-list-item-checkbox:checked { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2 5 8.7 9.6 3.5' fill='none' stroke='%23171e1a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
 .body .task-list-item.is-checked > .task-list-item-label,
 .body .task-list-item.is-checked > p > .task-list-item-label { color: var(--muted); text-decoration: line-through; }
 .body blockquote { margin: 18px 0; padding: 4px 16px; border-left: 3px solid var(--line); color: var(--muted); }
@@ -73,25 +74,37 @@
 /* 어두운 화면의 코드 상자는 GitHub Dark 색이다. 배경은 흰 상자 대신 올라온 판(paper-strong)이라 페이지에서 튀지 않는다.
    라이트처럼 문자열은 청록으로 두어 숫자·링크의 파랑과 구분한다. 가장 흐린 주석(#8b949e)도 이 배경에서 5.26:1이다. */
 @media (prefers-color-scheme: dark) {
-  .body pre { background: var(--paper-strong); color: #e6edf3; }
-  .body .code-head { background: var(--paper-strong); }
-  .body pre :is(.th-comment, .th-meta) { color: #8b949e; }
-  .body pre :is(.th-keyword, .th-deleted) { color: #ff7b72; }
-  .body pre :is(.th-function, .th-operator, .th-command) { color: #d2a8ff; }
-  .body pre .th-string { color: #56d4bc; }
-  .body pre :is(.th-number, .th-literal, .th-property, .th-attr, .th-heading) { color: #79c0ff; }
-  .body pre :is(.th-type, .th-variable, .th-code-inline) { color: #ffa657; }
-  .body pre :is(.th-tag, .th-selector) { color: #7ee787; }
-  .body pre .th-link { color: #58a6ff; }
-  .body pre .th-inserted { color: #aff5b4; }
+  :root:not([data-theme]) .body pre { background: var(--paper-strong); color: #e6edf3; }
+  :root:not([data-theme]) .body .code-head { background: var(--paper-strong); }
+  :root:not([data-theme]) .body pre :is(.th-comment, .th-meta) { color: #8b949e; }
+  :root:not([data-theme]) .body pre :is(.th-keyword, .th-deleted) { color: #ff7b72; }
+  :root:not([data-theme]) .body pre :is(.th-function, .th-operator, .th-command) { color: #d2a8ff; }
+  :root:not([data-theme]) .body pre .th-string { color: #56d4bc; }
+  :root:not([data-theme]) .body pre :is(.th-number, .th-literal, .th-property, .th-attr, .th-heading) { color: #79c0ff; }
+  :root:not([data-theme]) .body pre :is(.th-type, .th-variable, .th-code-inline) { color: #ffa657; }
+  :root:not([data-theme]) .body pre :is(.th-tag, .th-selector) { color: #7ee787; }
+  :root:not([data-theme]) .body pre .th-link { color: #58a6ff; }
+  :root:not([data-theme]) .body pre .th-inserted { color: #aff5b4; }
 }
+:root[data-theme="dark"] .body pre { background: var(--paper-strong); color: #e6edf3; }
+:root[data-theme="dark"] .body .code-head { background: var(--paper-strong); }
+:root[data-theme="dark"] .body pre :is(.th-comment, .th-meta) { color: #8b949e; }
+:root[data-theme="dark"] .body pre :is(.th-keyword, .th-deleted) { color: #ff7b72; }
+:root[data-theme="dark"] .body pre :is(.th-function, .th-operator, .th-command) { color: #d2a8ff; }
+:root[data-theme="dark"] .body pre .th-string { color: #56d4bc; }
+:root[data-theme="dark"] .body pre :is(.th-number, .th-literal, .th-property, .th-attr, .th-heading) { color: #79c0ff; }
+:root[data-theme="dark"] .body pre :is(.th-type, .th-variable, .th-code-inline) { color: #ffa657; }
+:root[data-theme="dark"] .body pre :is(.th-tag, .th-selector) { color: #7ee787; }
+:root[data-theme="dark"] .body pre .th-link { color: #58a6ff; }
+:root[data-theme="dark"] .body pre .th-inserted { color: #aff5b4; }
 .body table { display: block; overflow-x: auto; width: 100%; margin: 18px 0; border-collapse: collapse; font-size: var(--t-side); }
 .body th, .body td { min-width: 100px; padding: 7px 10px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
 /* 표의 코드 식별자를 글자 중간에서 나누지 않는다. 긴 값은 표 자체의 가로 스크롤로 읽는다. */
 .body :is(th, td) code { white-space: nowrap; overflow-wrap: normal; word-break: normal; }
 .body th { background: var(--paper-strong); font-weight: 600; }
 .body hr { margin: 30px 0; border: 0; border-top: 1px solid var(--line); }
-.body mark { padding: 0 3px; background: var(--highlight); }
+/* 글자색을 따로 주지 않으면 브라우저 기본값인 검정이 된다. 어두운 화면의 형광 위에서 검정은 2.49:1이라 먹색으로 둔다. */
+.body mark { padding: 0 3px; background: var(--highlight); color: var(--ink); }
 .body .mermaid { overflow-x: auto; margin: 22px 0; padding: 12px; border: 1px solid var(--line); background: var(--paper-strong); text-align: center; }
 /* 가로로 스크롤해야 하는 도표에만 붙는 버튼이다. 도표를 통째로 누르게 하면 스크롤·글자 선택과 부딪히므로
    여는 수단을 따로 두고, 도표 위 오른쪽에 놓아 내용과 겹치지 않게 한다. */
@@ -108,7 +121,8 @@
 .diagram-viewer { width: min(96vw, 1600px); max-width: none; height: min(92dvh, 1100px); max-height: none; padding: 0; border: 1px solid var(--line); background: var(--paper); color: var(--ink); }
 .diagram-viewer[open] { display: flex; flex-direction: column; }
 .diagram-viewer::backdrop { background: rgb(37 46 41 / .55); }
-@media (prefers-color-scheme: dark) { .diagram-viewer::backdrop { background: rgb(0 0 0 / .7); } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme]) .diagram-viewer::backdrop { background: rgb(0 0 0 / .7); } }
+:root[data-theme="dark"] .diagram-viewer::backdrop { background: rgb(0 0 0 / .7); }
 /* 보기를 바꾸는 버튼과 닫는 버튼은 성격이 달라 양끝으로 떼어 놓는다. 나란히 두면 크기를 바꾸려다 닫기 쉽다. */
 .diagram-viewer-tools { flex: none; display: flex; gap: 8px; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--line); }
 .diagram-viewer-tools button { display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 4px; background: var(--paper-strong); color: var(--muted); font-size: var(--t-meta); transition: border-color .15s ease, color .15s ease; }
@@ -213,7 +227,7 @@
 .body .footnotes p + p, .body.footnote-panel p + p { margin-top: 8px; }
 .body .footnote-backref { position: relative; display: inline-block; min-width: 24px; padding: 0 4px; margin-left: .2em; text-align: center; color: var(--muted); text-decoration: none; }
 @media (hover: hover) { .body .footnote-backref:hover { color: var(--ink); } }
-/* 번호를 누르면 뜨는 판(footnotes.ts). 검색 대화상자·공유 안내와 같은 떠 있는 판이다. 번호 아래 가운데에 붙고,
+/* 번호를 누르면 뜨는 판(footnotes.ts). 검색 대화상자와 같은 떠 있는 판이다. 번호 아래 가운데에 붙고,
    화면 밖으로 나가면 안쪽으로 밀리며, 아래 공간이 모자라면 위로 뒤집힌다. 판을 띄우는 번호에만 anchor-name이 있다. */
 .body.footnote-panel { position-anchor: --footnote; position-area: bottom span-all; justify-self: anchor-center; position-try-fallbacks: flip-block; inset: auto; width: min(380px, calc(100vw - 32px)); max-height: min(50vh, 320px); margin: 6px 16px; overflow-y: auto; padding: 12px 16px; border: 1px solid var(--overlay-line); border-radius: 6px; background: var(--paper-strong); color: var(--ink); font-size: var(--t-summary); line-height: 1.7; }
 .body.footnote-panel:popover-open { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 10px; }

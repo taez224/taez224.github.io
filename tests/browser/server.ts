@@ -67,6 +67,8 @@ tags:
 # 이웃 노트
 
 [[start]]
+
+==형광으로 칠한 말==이 있다.
 `);
 // 지도 범례에 주제가 둘 있어야 필터가 실제로 노드를 걸러 낸다. 노드가 셋 미만인 주제는 기타로 접힌다.
 await fs.writeFile(path.join(vault, '01_Slipbox/다른 주제.md'), `---
@@ -111,6 +113,21 @@ created: 2026-09-05
 status: 읽는 중
 ---
 # 평점 없는 책
+`);
+// 도표가 든 노트. 도표는 CSS 변수를 읽지 못해 색을 설정으로 받으므로, 화면 모드를 바꾸면 다시 그려야 한다.
+await fs.writeFile(path.join(vault, '01_Slipbox/diagram.md'), `---
+title: 도표가 있는 노트
+created: 2026-09-07
+slug: browser-diagram
+tags:
+  - AI
+---
+# 도표가 있는 노트
+
+\`\`\`mermaid
+flowchart LR
+  A[노트] --> B[사이트]
+\`\`\`
 `);
 // 절마다 화면 두 배 넘게 긴 노트. 스크롤 한 번으로 제목을 건너뛰어도 목차가 지금 읽는 절을 가리키는지 본다.
 // 마지막 절은 한 문단뿐이라 끝까지 내려도 제목이 읽는 선에 닿지 못한다.

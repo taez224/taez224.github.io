@@ -6,7 +6,9 @@ import { DARK_PALETTE } from '../src/lib/palette.ts';
 // 코드 강조의 토큰 색은 body.css가 유일한 출처다. DESIGN.md에는 코드 상자의 바탕과 기본 글자색만 두고,
 // 토큰 색마다 대비를 맞췄는지는 여기서 CSS를 직접 읽어 밝은 화면과 어두운 화면 모두 검사한다.
 const css = readFileSync(new URL('../src/styles/body.css', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
-const darkStart = css.search(/@media \(prefers-color-scheme: dark\) \{\s*\.body pre \{/);
+// 어두운 화면은 두 갈래다. 선택이 없을 때의 미디어 쿼리와 독자가 고른 data-theme이다. 둘의 색이 갈라지면 한쪽만 옛 색으로 남는다.
+const darkStart = css.search(/@media \(prefers-color-scheme: dark\) \{\s*:root:not\(\[data-theme\]\) \.body pre \{/);
+const chosenDark = css.split('\n').filter((line) => line.startsWith(':root[data-theme="dark"] .body ')).join('\n');
 const blocks = { light: css.slice(0, darkStart), dark: css.slice(darkStart, css.indexOf('\n}\n', darkStart)) };
 const TOKENS = ['comment', 'keyword', 'function', 'string', 'number', 'type', 'meta', 'tag', 'link', 'inserted'];
 
@@ -47,4 +49,9 @@ test('the DESIGN.md code block tokens match the code box in body.css', () => {
   const tokens = new Map([...yaml.matchAll(/^ {2}([\w-]+): '(#[0-9a-f]{6})'$/gm)].map((m) => [m[1], m[2]]));
   assert.deepEqual([tokens.get('code-bg'), tokens.get('code-text')], [box(blocks.light).background, box(blocks.light).text]);
   assert.deepEqual([tokens.get('code-bg-dark'), tokens.get('code-text-dark')], [box(blocks.dark).background, box(blocks.dark).text]);
+});
+
+test('the system and the chosen dark path declare the same code colors', () => {
+  for (const name of TOKENS) assert.equal(tokenColor(chosenDark, name), tokenColor(blocks.dark, name), `.th-${name}`);
+  assert.deepEqual(box(chosenDark), box(blocks.dark), '코드 상자의 바탕과 기본 글자색');
 });

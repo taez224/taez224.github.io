@@ -26,12 +26,19 @@ test('site.css :root declares every palette color with the same value', () => {
   for (const [name, value] of Object.entries(PALETTE)) assert.equal(vars.get(name), value, `--${name}`);
 });
 
-test('site.css declares the dark palette under prefers-color-scheme: dark with the same values', () => {
-  const block = read('src/styles/site.css').match(/@media \(prefers-color-scheme: dark\) \{\s*:root \{([^}]*)\}/)?.[1] ?? '';
-  const vars = new Map([...block.matchAll(/--([\w-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2].trim().toLowerCase()]));
-  assert.equal(vars.size > 0, true, '어두운 화면 :root 블록이 있다');
-  for (const [name, value] of Object.entries(DARK_PALETTE)) assert.equal(vars.get(name), value, `--${name}`);
-  assert.equal(vars.get('accent'), DARK_PALETTE.ink, 'accent는 어두운 화면에서도 먹색 역할과 같다');
+// 어두운 화면은 두 경로로 들어온다. 독자가 고른 data-theme과, 선택이 없을 때의 시스템 설정이다. 두 블록의 값이 갈라지면 한쪽만 옛 색으로 남는다.
+test('site.css declares the same dark palette for the chosen theme and the system setting', () => {
+  const css = read('src/styles/site.css');
+  const blocks = [
+    css.match(/@media \(prefers-color-scheme: dark\) \{\s*:root:not\(\[data-theme\]\) \{([^}]*)\}/)?.[1] ?? '',
+    css.match(/:root\[data-theme="dark"\] \{([^}]*)\}/)?.[1] ?? ''
+  ];
+  for (const block of blocks) {
+    const vars = new Map([...block.matchAll(/--([\w-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2].trim().toLowerCase()]));
+    assert.equal(vars.size > 0, true, '어두운 화면 블록이 있다');
+    for (const [name, value] of Object.entries(DARK_PALETTE)) assert.equal(vars.get(name), value, `--${name}`);
+    assert.equal(vars.get('accent'), DARK_PALETTE.ink, 'accent는 어두운 화면에서도 먹색 역할과 같다');
+  }
 });
 
 test('DESIGN.md color tokens match the palette', () => {

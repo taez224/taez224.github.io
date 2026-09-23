@@ -1,4 +1,5 @@
-.graph { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; background: var(--paper); }
+/* 무대는 색을 칠하지 않는다. 종이색을 칠하면 첫 화면 위쪽의 옅은 띠 위에 종이색 사각형이 얹혀 경계가 보인다. */
+.graph { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
 .graph.is-panning { cursor: grabbing; }
 /* Chrome은 <svg>를 마우스로 클릭하면 포커스를 준다. 탭 순서에 없는 무대라 테두리는 노드에만 남긴다. */
 .graph:focus, .graph:focus-visible { outline: none; }
@@ -15,11 +16,15 @@
 .graph .region { stroke-width: 64; stroke-linejoin: round; transition: opacity .15s ease; } /* 색면 여백 32px. 45px는 경계처럼 오해된다는 사용자 피드백 */
 .graph.map.has-topic-filter [data-regions] { opacity: .1; }
 /* 어두운 화면에서는 같은 불투명도의 색면이 바탕에 묻혀 영역이 보이지 않으므로 올린다. 더 올리면 크게 겹치는 영역이 무거워진다. */
+/* 색면 농도도 색과 같은 조건을 따른다. 미디어 쿼리는 스크립트가 없어 data-theme이 없을 때만 쓴다. */
 @media (prefers-color-scheme: dark) {
-  .graph [data-regions] { opacity: .1; }
-  .graph.hero [data-regions] { opacity: .11; }
-  .graph.map.has-topic-filter [data-regions] { opacity: .16; }
+  :root:not([data-theme]) .graph [data-regions] { opacity: .1; }
+  :root:not([data-theme]) .graph.hero [data-regions] { opacity: .11; }
+  :root:not([data-theme]) .graph.map.has-topic-filter [data-regions] { opacity: .16; }
 }
+:root[data-theme="dark"] .graph [data-regions] { opacity: .1; }
+:root[data-theme="dark"] .graph.hero [data-regions] { opacity: .11; }
+:root[data-theme="dark"] .graph.map.has-topic-filter [data-regions] { opacity: .16; }
 .graph.map .region.is-topic-dim { opacity: .25; }
 .graph [data-region-labels] { pointer-events: none; }
 .graph .region-label { font-family: var(--display); font-weight: 700; letter-spacing: .16em; paint-order: stroke; stroke: var(--paper); stroke-linejoin: round; transition: opacity .15s ease; }

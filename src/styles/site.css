@@ -1,12 +1,12 @@
 :root {
   color-scheme: light;
-  --paper: #f7f7f2; --paper-strong: #fdfdfa; --ink: #252e29; --muted: #626d64;
+  --paper: #f7f6f0; --paper-strong: #fdfcf8; --ink: #252e29; --muted: #626d64;
   /* UI의 기본 색은 먹색 하나이며 주제색과 의미 상태색만 예외로 사용한다. accent 토큰은 이름만 남기고 값은 먹색이다(2026-09-07). */
-  --line: #d8ded4; --accent: #252e29; --accent-soft: #ecede8; --warning: #985d2f; --bug: #8e5d5d; --highlight: #e7d99b;
+  --line: #d8ddd3; --accent: #252e29; --accent-soft: #eceee6; --tint-top: #eeeee3; --tint-mid: #f3f3eb; --warning: #985d2f; --bug: #8e5d5d; --highlight: #e7d99b;
   --edge: #9aab9d;
   /* 링크 밑줄. 먹색 링크를 주변 글과 구분할 만큼 보이되 글자보다 옅다. 본문 링크와 홀로 선 링크·글자 버튼이 같은 선을 쓴다. */
   --link-underline: color-mix(in srgb, var(--ink) 35%, transparent);
-  /* 페이지 위에 떠 있는 판(검색 대화상자, 공유 안내)의 테두리. 그림자 없이 이 선과 뒤 배경만으로 층을 나눈다. */
+  /* 페이지 위에 떠 있는 판(검색 대화상자, 각주 판)의 테두리. 그림자 없이 이 선과 뒤 배경만으로 층을 나눈다. */
   --overlay-line: color-mix(in srgb, var(--ink) 28%, transparent);
   --display: 'Gowun Batang', 'Apple Myungjo', 'Nanum Myeongjo', serif;
   --sans: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
@@ -25,25 +25,44 @@
   --s-title-gap: 40px; --s-paragraph-gap: 22px; --s-side-list-gap: 8px;
   /* 앞머리로 테마를 지정한 도표가 놓이는 판. 그 테마가 전제한 밝기를 화면 모드와 상관없이 지키므로 어두운 화면 블록에서 덮지 않는다.
      값은 각 모드의 paper-strong이다. */
-  --diagram-plate-light: #fdfdfa; --diagram-plate-dark: #1c221e;
+  --diagram-plate-light: #fdfcf8; --diagram-plate-dark: #1e2822;
 }
-/* 어두운 화면. 시스템 설정을 따르며 사이트 안에 전환 버튼은 두지 않는다. 값은 palette.ts의 DARK_PALETTE와 같다.
+/* 어두운 화면은 두 길로 들어온다. 헤더의 테마 버튼이 <html>에 data-theme을 달고, 스크립트가 없어 그 값이 없을 때만 시스템 설정을 따른다.
+   시스템이 어둡고 독자가 밝은 화면을 고른 경우에 옛 규칙이 끼어들지 않도록 미디어 쿼리는 data-theme이 없을 때로 좁힌다.
+   두 블록의 선언은 같아야 하므로 붙여 둔다. 값은 palette.ts의 DARK_PALETTE와 같다.
    accent는 라이트처럼 먹색 역할(ink)과 같은 값이다. 먹색 반투명 변형(color-mix)은 --ink를 따라 저절로 바뀐다. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]) {
     color-scheme: dark;
-    --paper: #151b17; --paper-strong: #1c221e; --ink: #e1e8e3; --muted: #89948c;
-    --line: #353d37; --accent: #e1e8e3; --accent-soft: #242b26; --warning: #b37d51; --bug: #ae7e7d; --highlight: #574d24;
+    --paper: #171e1a; --paper-strong: #1e2822; --ink: #e1e8e3; --muted: #9ca99f;
+    --line: #36433b; --accent: #e1e8e3; --accent-soft: #28362d; --warning: #bd8455; --bug: #b68483; --highlight: #574d24;
+    --tint-top: #242f28; --tint-mid: #1d2721;
     --edge: #616c64;
   }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #171e1a; --paper-strong: #1e2822; --ink: #e1e8e3; --muted: #9ca99f;
+  --line: #36433b; --accent: #e1e8e3; --accent-soft: #28362d; --warning: #bd8455; --bug: #b68483; --highlight: #574d24;
+  --tint-top: #242f28; --tint-mid: #1d2721;
+  --edge: #616c64;
 }
 /* 대표 글 제목은 두 열 배치가 좁아지는 태블릿 폭에서 한 단계 줄인다. */
 @media (min-width: 721px) and (max-width: 1000px) { :root { --t-featured: 1.75rem; } } /* 28 */
 * { box-sizing: border-box; }
 :where([hidden]) { display: none !important; }
-/* 앵커 이동은 즉시 한다. 부드럽게 움직이면 출발할 때 계산한 자리로 가서, 그사이 도표가 그려져 길어진 만큼 제목이 밀려난다. */
+/* 테마 전환은 두 화면을 짧게 겹친다. 색이 한꺼번에 뒤집히면 읽던 자리를 잃는다. 길게 끌면 다음 동작이 그만큼 늦어지므로 0.32초로 둔다.
+   움직임 줄이기 설정에서는 스크립트가 전환 없이 바꾸므로 이 규칙이 쓰이지 않는다. */
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .32s; animation-timing-function: ease; }
+/* 앵커 이동은 즉시 한다. 부드럽게 움직이면 출발할 때 계산한 자리로 가서, 그사이 도표가 그려져 길어진 만큼 제목이 밀려난다.
+   100px은 고정 헤더(72px)와 그 아래로 사라지는 판(24px)을 덮는다. 제목과 책 카드에는 각자의 scroll-margin이 더 있다. */
 html { scroll-padding-top: 100px; }
-body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: var(--t-base); line-height: 1.85; -webkit-font-smoothing: antialiased; word-break: keep-all; overflow-wrap: anywhere; }
+/* 첫 화면 위쪽에 옅은 띠를 깔아 헤더와 본문이 같은 바탕 위에 이어지게 한다. 띠는 본문 쪽으로 내려오며 종이색으로 풀린다.
+   가장 뒤에 깔고 누름을 가로채지 않는다. */
+body::before { content: ""; position: absolute; z-index: -1; inset: 0 0 auto; height: 430px; pointer-events: none; background: linear-gradient(180deg, var(--tint-top) 0%, var(--tint-mid) 40%, var(--paper) 100%); }
+/* 바닥글은 옅은 판이라 짧은 페이지에서 화면 중간에 뜨면 그 아래 빈 종이가 드러나 페이지가 덜 끝난 것처럼 읽힌다.
+   본문(main)이 남는 높이를 채워 바닥글을 화면 바닥에 붙인다. 건너뛰기 링크는 절대 배치라 이 흐름에 들지 않는다. */
+body { display: flex; flex-direction: column; min-height: 100dvh; position: relative; isolation: isolate; margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: var(--t-base); line-height: 1.85; -webkit-font-smoothing: antialiased; word-break: keep-all; overflow-wrap: anywhere; }
 a { color: var(--accent); text-decoration: none; }
 /* 호버는 마우스처럼 올려 둘 수 있는 기기에서만 준다. 터치 기기는 탭한 요소에 호버가 남아, 대화상자를 닫은 뒤에도 버튼 판이 깔려 있다. */
 @media (hover: hover) { a:hover { text-decoration: underline; text-underline-offset: 4px; } }
@@ -121,7 +140,21 @@ h1, h2, h3, p { margin-top: 0; }
 .scroll-list.is-long .side-list { max-height: 236px; overflow-y: auto; padding-right: 6px; scrollbar-gutter: stable; }
 .scroll-list.is-long[data-overflow]::after { position: absolute; right: 0; bottom: 0; left: 0; height: 36px; pointer-events: none; background: linear-gradient(180deg, transparent 0%, var(--paper) 100%); content: ""; }
 
-.site-header { position: sticky; z-index: 20; top: 0; background: var(--paper); border-bottom: 1px solid var(--line); }
+/* 헤더는 띠 위에 그대로 얹힌다. 아래 선을 그으면 이어진 바탕이 그 선에서 끊긴다.
+   스크롤한 만큼 종이색 판이 짙어져 본문 글자가 메뉴 뒤로 비치지 않게 하고, 판은 헤더 아래 24px까지 이어지다 사라져 경계가 드러나지 않는다.
+   판 전체를 반투명하게 하면 흐린 그림 아래로 원래 글자가 비치므로, 투명도는 색에만 준다. --header-presence(색)와 --header-blur(흐림)는 header.ts가 스크롤에 따라 채운다.
+   흐림은 색이 투명해도 걸리므로 따로 끈다. 맨 위에서 켜 두면 헤더 밑에 걸친 홈 지도의 영역 이름이 흐려진다. */
+.site-header { position: sticky; z-index: 20; top: 0; }
+.site-header::before { content: ""; position: absolute; z-index: -1; inset: 0 0 -24px; pointer-events: none; background: color-mix(in srgb, var(--paper) calc(var(--header-presence, 0) * 88%), transparent); -webkit-backdrop-filter: blur(calc(var(--header-blur, 0) * 16px)); backdrop-filter: blur(calc(var(--header-blur, 0) * 16px)); -webkit-mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 24px), transparent 100%); mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 24px), transparent 100%); }
+/* 흐림이 없으면 옅은 판으로는 본문을 가리지 못하므로 스크롤과 상관없이 불투명한 종이색을 깐다.
+   스크립트가 없을 때도 마찬가지다. 농도를 채울 수 없어 계속 투명하게 남는다. 첫 화면의 띠 위에 판이 깔리는 것은 그 대가다. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .site-header::before { background: var(--paper); }
+}
+:root:not([data-js]) .site-header::before { background: var(--paper); }
+@media (prefers-reduced-transparency: reduce) {
+  .site-header::before { inset: 0; background: var(--paper); -webkit-backdrop-filter: none; backdrop-filter: none; -webkit-mask-image: none; mask-image: none; }
+}
 .site-header .wrap { display: flex; align-items: center; height: var(--s-header-height); }
 .wordmark { display: inline-flex; align-items: center; min-height: 44px; font-size: var(--t-wordmark); line-height: 1; color: var(--ink); }
 @media (hover: hover) { .wordmark:hover { text-decoration: none; } }
@@ -130,36 +163,54 @@ h1, h2, h3, p { margin-top: 0; }
    같은 양의 음수 여백으로 되돌려 배치가 바뀌지 않고, 옆 링크의 영역과도 겹치지 않는다. "글"처럼 짧은 메뉴도 손가락으로 맞힐 수 있다.
    짧은 메뉴는 옆 메뉴와의 간격 때문에 폭을 44px로 넓힐 수 없어, 간격을 포함한 WCAG 2.5.8 최소 기준(24px)을 따른다. */
 .site-nav a { position: relative; display: flex; align-items: center; align-self: stretch; margin: 0 calc(var(--nav-gap) / -2); padding: 0 calc(var(--nav-gap) / 2); color: var(--muted); }
-/* 마지막 메뉴는 바로 옆 공유·검색 버튼의 영역과 겹치지 않도록 오른쪽으로는 넓히지 않는다. */
+/* 마지막 메뉴는 바로 옆 검색 버튼의 영역과 겹치지 않도록 오른쪽으로는 넓히지 않는다. */
 .site-nav a:last-child { margin-right: 0; padding-right: 0; }
 /* 누르는 영역을 헤더 높이까지 넓혀서 링크 상자에 포커스 링을 그리면 위는 화면 밖으로 잘리고 아래는 헤더 선을 넘는다.
    링크 상자 대신 글자(span)에 전역 포커스 링과 같은 모양을 그린다. */
 .site-nav a:focus-visible { outline: none; }
 .site-nav a:focus-visible > span { outline: 2px solid var(--accent); outline-offset: 4px; }
 .site-nav a[aria-current="page"] { color: var(--ink); }
-/* 현재 메뉴는 헤더 아래 선 위에 글자 폭만큼 2px 먹색 막대를 얹는다. 글자색 차이(보조색과 2.59:1)만으로는 어느 메뉴인지 흐리고,
-   밑줄은 호버 밑줄과 헷갈린다. 링크 상자는 좌우로 메뉴 간격의 절반만큼 넓으므로 그만큼 안쪽에서 시작한다. */
-.site-nav a[aria-current="page"]::after { position: absolute; right: calc(var(--nav-gap) / 2); bottom: -1px; left: calc(var(--nav-gap) / 2); height: 2px; background: var(--ink); content: ""; }
+/* 현재 메뉴는 글자 아래에 글자 폭만큼 2px 먹색 막대를 얹는다. 글자색 차이(보조색과 2.59:1)만으로는 어느 메뉴인지 흐리고,
+   밑줄은 호버 밑줄과 헷갈린다. 헤더 아래 선이 없으므로 막대는 헤더 바닥이 아니라 글자에서 6px 아래에 둔다.
+   링크 상자는 좌우로 메뉴 간격의 절반만큼 넓으므로 그만큼 안쪽에서 시작한다. */
+.site-nav a[aria-current="page"]::after { position: absolute; right: calc(var(--nav-gap) / 2); bottom: calc(var(--s-header-height) / 2 - 14px); left: calc(var(--nav-gap) / 2); height: 2px; background: var(--ink); content: ""; }
 .site-nav a[aria-current="page"]:last-child::after { right: 0; }
 .search-trigger { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin-left: 12px; margin-right: -13px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); transition: background-color .15s ease, color .15s ease, transform .15s cubic-bezier(.23, 1, .32, 1); }
 @media (hover: hover) { .search-trigger:hover { background: var(--accent-soft); color: var(--accent); } }
-/* 공유 아이콘이 앞에 보이면 상자를 붙인다. 상자 안 여백만으로 그림 사이가 내비 간격과 비슷해진다.
-   360px 미만에서는 헤더 공유 아이콘이 숨고, JS가 없으면 hidden으로 남으므로 그때는 검색 버튼의 원래 여백을 둔다.
-   ShareLink의 스크립트가 컨트롤 바로 뒤에 렌더되므로 인접(+)이 아니라 일반 형제(~)로 고른다. */
-@media (min-width: 360px) { .share-control:not([hidden]) ~ .search-trigger { margin-left: 0; } }
 .search-trigger svg { width: 18px; height: 18px; fill: currentColor; }
-main { min-height: 60vh; }
-/* 사이트 바닥글: 페이지가 마지막 항목 뒤에서 그냥 끝나지 않게 구분선 아래 한 줄을 둔다. 링크는 홀로 선 링크와 같은 밑줄이다. */
-.site-footer { border-top: 1px solid var(--line); color: var(--muted); font-size: var(--t-meta); }
-.site-footer .wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 20px 0 32px; }
+/* 테마 버튼은 검색 버튼과 같은 상자다. 두 기호를 겹쳐 두지 않고 지금 화면에 맞는 하나만 그린다.
+   두 상자는 붙인다. 18px 기호가 44px 상자 안에서 이미 양옆 13px씩 비어 있어, 상자 사이를 더 띄우면 두 기호가
+   메뉴 글자 사이(28px)보다 멀어져 헤더에서 가장 가까워야 할 둘이 가장 떨어져 보인다. 붙이면 기호 사이는 26px이다. */
+.theme-toggle { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin-left: 0; margin-right: -13px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); transition: background-color .15s ease, color .15s ease, transform .15s cubic-bezier(.23, 1, .32, 1); }
+.theme-toggle:active { transform: scale(.97); }
+@media (hover: hover) { .theme-toggle:hover { background: var(--accent-soft); color: var(--accent); } }
+.theme-toggle svg { width: 18px; height: 18px; fill: currentColor; }
+.theme-toggle .is-sun, :root[data-theme="dark"] .theme-toggle .is-moon { display: none; }
+:root[data-theme="dark"] .theme-toggle .is-sun { display: inline-flex; }
+/* 테마 버튼은 스크립트가 없으면 동작하지 않으므로 숨긴다. data-js는 부트 스크립트가 첫 페인트 전에 단다. */
+:root:not([data-js]) .theme-toggle { display: none; }
+/* 모듈 스크립트가 붙기 전에 첫 화면이 그려져도 자리는 잡아 둔다. 뒤늦게 44px을 차지하면 메뉴와 검색 버튼이 밀린다.
+   theme.ts가 data-ready를 달 때까지는 보이지 않고, 누를 수도 포커스할 수도 없다. */
+.theme-toggle:not([data-ready]) { visibility: hidden; }
+/* 테마 버튼이 오른쪽 끝을 맡으므로 검색 버튼은 제 여백으로 돌아간다. 판단은 테마 버튼이 자리를 차지하는지, 곧 data-js로 한다.
+   DOM 순서(:last-child)로 보면 스크립트 없는 화면에서 숨은 테마 버튼 때문에 검색 버튼이 오른쪽 끝선보다 안쪽으로 들어오고,
+   버튼이 보이는지로 보면 자리를 먼저 잡아 둔 사이에 검색 버튼이 그 자리에 13px 겹쳤다가 밀린다. */
+:root[data-js] .search-trigger { margin-right: 0; }
+main { flex: 1 0 auto; }
+/* 사이트 바닥글: 페이지가 마지막 항목 뒤에서 그냥 끝나지 않게 옅은 판 위에 한 줄을 둔다. 판과 바탕의 색 차이가 경계라 구분선은 긋지 않는다.
+   이름은 왼쪽 끝에, 프로필 아이콘 줄과 사이트 정보 링크는 오른쪽에 둔다. 글자 링크는 홀로 선 링크와 같은 밑줄이다. */
+.site-footer { background: var(--accent-soft); color: var(--muted); font-size: var(--t-meta); }
+.site-footer .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 32px; padding: 24px 0; }
 /* 인장이 이름의 첫 어절을 대신한다. 글자보다 높은 도장이 끼므로 줄 기준선 대신 가운데로 맞춘다.
    인장만 먹색이다. 비워 새긴 글자가 21px에서 2px 굵기라 보조색으로는 획이 바탕에 묻힌다. */
-.site-footer .site-name { display: flex; align-items: center; gap: 8px; }
+.site-footer .site-name { display: flex; align-items: center; gap: 8px; margin-right: auto; }
 .site-footer .site-name .seal { color: var(--ink); }
 .site-footer nav { display: flex; flex-wrap: wrap; gap: 4px 20px; }
-.site-footer a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--link-underline); text-underline-offset: 4px; }
-@media (hover: hover) { .site-footer a:hover { text-decoration-color: var(--ink); } }
-@media (pointer: coarse) { .site-footer a { padding-block: 12px; margin-block: -12px; } }
+.site-footer nav a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--link-underline); text-underline-offset: 4px; }
+@media (hover: hover) { .site-footer nav a:hover { text-decoration-color: var(--ink); } }
+/* 손가락으로 누르는 기기에서는 글자 링크를 아이콘 상자처럼 44px 높이로 세운다. 글자 줄에 위아래 여백만 붙이면 상자가 글자 높이에 여백을 더한 만큼만 남아
+   44px에 못 미친다. 줄바꿈된 묶음 사이 간격(4px)이 있어 위아래 링크의 영역이 겹치지 않는다. */
+@media (pointer: coarse) { .site-footer nav a { display: inline-flex; align-items: center; min-height: 44px; } }
 /* 장부 행 위에 올린 링크는 제목 아래 여백(6px)까지만 넓힌다. 더 넓히면 제목 글자를 눌러도 이 링크로 간다.
    압축 행(개발 노트)은 제목 아래가 3px이지만 메타 줄에 링크를 두지 않아 해당하지 않는다. */
 @media (pointer: coarse) { .ledger-row:not(.is-compact) .meta a { padding-block: 6px; margin-block: -6px; } }
@@ -174,25 +225,32 @@ main { min-height: 60vh; }
     --s-page-gutter: 20px; --s-header-height: 56px; --s-page-top-index: 24px; --s-page-top-reading: 32px; --s-page-bottom: 64px; --s-title-gap: 28px;
   }
   /* 헤더는 한 줄. 글자 100%에서는 워드마크·내비·검색이 320px 폭에서도 줄바꿈 없이 들어간다. */
+  body::before { height: 350px; }
   .site-nav { --nav-gap: 14px; font-size: var(--t-side); }
   .site-nav a { white-space: nowrap; }
   .search-trigger { margin-left: 6px; margin-right: -12px; }
+  /* 좁은 폭에서는 이름을 한 줄에 두고 링크 묶음을 그 아래로 내린다. 이름 옆에 링크 일부만 걸리면 어디서 줄이 바뀌는지 읽히지 않는다. */
+  .site-footer .wrap { gap: 8px 24px; padding: 20px 0; }
+  .site-footer .site-name { flex-basis: 100%; }
 }
-/* 머리글의 한 줄 약속은 글자 100%에서만 성립한다. 한 줄에 필요한 폭은 100%에서 307px(19.19em)이고,
-   검색·공유 버튼과 간격 약 124px은 글자를 따라 커지지 않아 글자가 클수록 em 대비 비율이 줄어든다.
-   그래서 100%의 비율을 경계로 두면 어느 글자 크기에서든 넘치기 전에 두 줄로 나뉜다. 19.5em은 100%에서 312px이라
-   320px 휴대폰은 한 줄을 지킨다. 사이트가 html의 글자 크기를 정하지 않아 rem과 이 em이 모두 브라우저 기본값을 따른다.
+/* 머리글의 한 줄 약속은 글자 100%에서만 성립한다. 한 줄에 필요한 폭은 100%에서 346px이고, 경계는 글꼴 렌더링 차이를 받아 줄
+   8px을 더한 354px(22.125em)이다. 검색·테마 버튼과 좌우 여백 약 121px은 글자를 따라 커지지 않아 글자가 클수록 em 대비 비율이 줄어든다.
+   그래서 100%의 비율을 경계로 두면 어느 글자 크기에서든 넘치기 전에 두 줄로 나뉜다. 22.125em은 100%에서 354px이라
+   360px 휴대폰은 한 줄을 지키고, 320px처럼 더 좁은 화면은 메뉴를 둘째 줄로 내린다. 버튼을 숨기는 대신 자리를 내주는 쪽이다.
+   사이트가 html의 글자 크기를 정하지 않아 rem과 이 em이 모두 브라우저 기본값을 따른다.
    두 줄이 된 머리글은 109px을 넘는다. 화면 위에 붙여 두면 제목으로 건너뛴 자리(scroll-padding 100px)가 그 아래에 가리고,
-   큰 글자로 읽는 좁은 화면을 늘 차지하므로 고정을 푼다. */
-@media (max-width: 19.5em) {
-  .site-header { position: static; }
-  .site-header .wrap { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: "mark share search" "nav nav nav"; grid-template-rows: var(--s-header-height) auto; height: auto; }
+   큰 글자로 읽는 좁은 화면을 늘 차지하므로 고정을 푼다. static이 아니라 relative로 두는 것은 판(::before)의 기준 상자를 헤더에 남기기 위해서다.
+   static이면 판이 가장 가까운 기준인 body까지 올라가 문서 전체 크기로 늘어나고, 첫 화면의 띠를 덮으며 문서 크기의 흐림 층을 만든다. */
+@media (max-width: 22.125em) {
+  .site-header { position: relative; }
+  .site-header .wrap { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: "mark search theme" "nav nav nav"; grid-template-rows: var(--s-header-height) auto; height: auto; }
   .wordmark { grid-area: mark; justify-self: start; }
-  .share-control { grid-area: share; }
   .search-trigger { grid-area: search; }
+  .theme-toggle { grid-area: theme; }
   /* 둘째 줄에서도 넘치면 메뉴끼리 줄을 바꾼다. 누르는 영역은 줄마다 44px이다. */
   .site-nav { grid-area: nav; margin-left: 0; flex-wrap: wrap; row-gap: 0; }
   .site-nav a { min-height: 44px; }
+  .site-nav a[aria-current="page"]::after { bottom: 8px; }
 }
 /* 손가락으로 누르는 기기에서는 세로로 쌓인 목록의 줄을 44px 높이로 넓힌다. 마우스 환경은 지금의 촘촘한 간격을 유지한다. */
 @media (pointer: coarse) {
@@ -208,9 +266,11 @@ main { min-height: 60vh; }
 .search::backdrop { background: rgb(37 46 41 / .32); }
 /* 썸네일은 흰 바탕 그림이 많아 어두운 화면에서 밝은 덩어리로 뜬다. 색을 뒤집으면 사진·포스터가 망가지므로 밝기만 85%로 낮춘다.
    본문 안 그림과 책 표지는 내용이라 손대지 않는다. */
-@media (prefers-color-scheme: dark) { :is(.featured-image, .external-thumbnail, .article-card) img { filter: brightness(.85); } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme]) :is(.featured-image, .external-thumbnail, .article-card) img { filter: brightness(.85); } }
+:root[data-theme="dark"] :is(.featured-image, .external-thumbnail, .article-card) img { filter: brightness(.85); }
 /* 뒤 배경은 페이지를 어둡게 덮어야 하는데, 어두운 화면의 먹색은 밝은 색이라 검정 반투명을 따로 둔다. */
-@media (prefers-color-scheme: dark) { .search::backdrop { background: rgb(0 0 0 / .5); } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme]) .search::backdrop { background: rgb(0 0 0 / .5); } }
+:root[data-theme="dark"] .search::backdrop { background: rgb(0 0 0 / .5); }
 /* 입력과 닫기는 같은 머리 줄에 두되, 닫기가 검색어 지우기로 읽히지 않도록 입력 윤곽선 밖에 둔다. */
 /* 버튼 자체가 여백을 포함하므로 오른쪽 바깥 여백은 포커스 윤곽선이 들어갈 만큼만 둔다. */
 .search-head { display: flex; align-items: center; gap: 12px; margin: 0; padding: 12px 8px 12px 16px; border-bottom: 1px solid var(--line); }

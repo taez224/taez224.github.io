@@ -1,7 +1,6 @@
 ---
 import { withBase } from '../lib/format.ts';
 import { pixelIcon } from '../lib/pixel-icons.ts';
-import ShareLink from './ShareLink.astro';
 interface Props { active?: string }
 const { active = '' } = Astro.props;
 const items = [['map', '/map/', '생각 지도'], ['posts', '/posts/', '글'], ['dev', '/dev/', '개발 노트'], ['books', '/books/', '책장']];
@@ -12,9 +11,17 @@ const items = [['map', '/map/', '생각 지도'], ['posts', '/posts/', '글'], [
     <nav class="site-nav" aria-label="공개 기록">
       {items.map(([id, href, label]) => <a href={withBase(href)} aria-current={active === id ? 'page' : undefined}><span>{label}</span></a>)}
     </nav>
-    <ShareLink />
     <button class="search-trigger" type="button" data-search-open aria-label="검색" title="검색">
       <Fragment set:html={pixelIcon('search')} />
     </button>
+    {/* 테마 버튼은 스크립트가 있어야 동작한다. 스크립트가 없으면 site.css가 숨기고, 있으면 첫 페인트부터 자리만 잡아 두었다가
+       theme.ts가 data-ready를 달 때 보인다. 그래서 버튼이 나타날 때 메뉴가 밀리지 않는다. 기호는 다음 동작을 보인다(밝은 화면에서는 달).
+       hidden 속성은 쓰지 않는다. 전역 [hidden] 규칙이 !important라 자리를 잡아 둘 수 없다. */}
+    <button class="theme-toggle" type="button" data-theme-toggle aria-label="어두운 화면으로 바꾸기" title="어두운 화면으로 바꾸기">
+      <span class="theme-icon is-moon" set:html={pixelIcon('moon')} />
+      <span class="theme-icon is-sun" set:html={pixelIcon('sun')} />
+    </button>
   </div>
 </header>
+<script src="../scripts/header.ts"></script>
+<script src="../scripts/theme.ts"></script>

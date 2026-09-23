@@ -95,8 +95,12 @@ export function pinsOwnTheme(parsed: Exclude<Awaited<ReturnType<Mermaid['parse']
   return pinnedTheme(parsed) !== null;
 }
 
-// 화면 모드에 맞는 사이트 설정이다. 창이 없는 환경(테스트 대역)에서는 밝은 화면으로 그린다.
-export function siteConfigFor(view: Pick<Window, 'matchMedia'> | null | undefined): MermaidConfig {
+// 화면 모드에 맞는 사이트 설정이다. 독자가 고른 화면(html의 data-theme)이 먼저이고, 그 값이 없을 때만 시스템 설정을 본다.
+// 도표는 CSS 변수를 읽지 못해 색을 설정으로 받으므로, 이 판정이 페이지와 어긋나면 밝은 도표가 어두운 본문 위에 남는다.
+// 창이 없는 환경(테스트 대역)에서는 밝은 화면으로 그린다.
+export function siteConfigFor(view: (Pick<Window, 'matchMedia'> & { document?: Document }) | null | undefined): MermaidConfig {
+  const chosen = view?.document?.documentElement?.dataset?.theme;
+  if (chosen === 'dark' || chosen === 'light') return chosen === 'dark' ? MERMAID_DARK_CONFIG : MERMAID_CONFIG;
   return view?.matchMedia?.(DARK_SCHEME_QUERY).matches ? MERMAID_DARK_CONFIG : MERMAID_CONFIG;
 }
 

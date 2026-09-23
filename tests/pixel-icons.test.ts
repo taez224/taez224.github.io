@@ -32,7 +32,7 @@ test('an icon is a filled shape whose coordinates are its own grid', () => {
 });
 
 test('the buttons draw the grids instead of keeping their own line icons', () => {
-  for (const path of ['src/components/Header.astro', 'src/components/ShareLink.astro', 'src/scripts/code-copy.ts']) {
+  for (const path of ['src/components/Header.astro', 'src/scripts/code-copy.ts']) {
     assert.doesNotMatch(read(path), /stroke-width/, path);
     assert.match(read(path), /pixelIcon/, path);
   }
@@ -42,9 +42,7 @@ test('each icon is shown at the size of its own grid so one cell stays one pixel
   assert.equal(width(read('src/pages/map/index.astro'), '.graph-controls svg'), ICON_GRIDS.fit.length);
   assert.equal(width(read('src/styles/site.css'), '.search-close svg'), ICON_GRIDS.close.length);
   assert.equal(width(read('src/styles/site.css'), '.search-trigger svg'), ICON_GRIDS.search.length);
-  assert.equal(width(read('src/components/ShareLink.astro'), '.share-icon'), ICON_GRIDS.share.length);
   assert.equal(width(read('src/styles/body.css'), '.body .code-copy-plate svg'), ICON_GRIDS.copy.length);
-  assert.equal(ICON_GRIDS.shareDone.length, ICON_GRIDS.share.length, '공유와 완료는 같은 상자에 들어간다');
   assert.equal(ICON_GRIDS.copyDone.length, ICON_GRIDS.copy.length);
 });
 

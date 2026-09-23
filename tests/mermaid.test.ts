@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import mermaid from 'mermaid';
 import { MERMAID_CONFIG, MERMAID_DARK_CONFIG, DARK_SCHEME_QUERY } from '../src/scripts/mermaid-config.ts';
 import { fitDiagram, pinsOwnTheme, renderMermaidBlocks, siteConfigFor } from '../src/scripts/mermaid-render.ts';
+import { keepDiagramsInTheme, queueTasks } from '../src/scripts/mermaid-queue.ts';
 import { DARK_PALETTE } from '../src/lib/palette.ts';
 
 // 렌더링된 SVG의 대역이다. max-width가 100%가 되면 컨테이너 폭에 맞춰 줄어든 것으로 본다.
@@ -384,8 +386,14 @@ test('a light pinned theme is marked light so it keeps a light plate in the dark
 
 
 test('diagrams follow the dark color scheme with the dark site palette', async () => {
-  const view = (dark: boolean) => ({ matchMedia: (query: string) => ({ matches: dark && query === DARK_SCHEME_QUERY }) as MediaQueryList });
-  assert.equal(siteConfigFor(view(true)), MERMAID_DARK_CONFIG);
+  const view = (dark: boolean, theme?: string) => ({
+    matchMedia: (query: string) => ({ matches: dark && query === DARK_SCHEME_QUERY }) as MediaQueryList,
+    document: { documentElement: { dataset: theme ? { theme } : {} } } as unknown as Document
+  });
+  // 독자가 고른 화면이 시스템 설정을 이긴다. 도표만 시스템을 보면 밝은 도표가 어두운 본문 위에 남는다.
+  assert.equal(siteConfigFor(view(false, 'dark')), MERMAID_DARK_CONFIG);
+  assert.equal(siteConfigFor(view(true, 'light')), MERMAID_CONFIG);
+  assert.equal(siteConfigFor(view(true)), MERMAID_DARK_CONFIG, '선택이 없으면 시스템 설정을 따른다');
   assert.equal(siteConfigFor(view(false)), MERMAID_CONFIG);
   assert.equal(siteConfigFor(undefined), MERMAID_CONFIG, '창이 없으면 밝은 화면으로 그린다');
   const received: unknown[] = [];
@@ -461,4 +469,97 @@ test('Mermaid accepts frontmatter theme variables', async () => {
   } finally {
     mermaid.initialize(MERMAID_CONFIG);
   }
+});
+
+// 도표는 불러오기와 그리기에 시간이 걸린다. 그동안 테마를 바꾸면 요청이 사라지거나, 먼저 시작한 그리기가 나중에 끝나 마지막 선택을 덮는다.
+test('queued renders run one after another even when a request arrives while one is running', async () => {
+  const order: string[] = [];
+  const enqueue = queueTasks();
+  let releaseFirst = () => {};
+  const first = new Promise<void>((resolve) => { releaseFirst = resolve; });
+  enqueue(async () => { order.push('첫 그리기 시작'); await first; order.push('첫 그리기 끝'); });
+  enqueue(async () => { order.push('전환 그리기'); });
+  releaseFirst();
+  await enqueue(async () => { order.push('마지막'); });
+  assert.deepEqual(order, ['첫 그리기 시작', '첫 그리기 끝', '전환 그리기', '마지막']);
+});
+
+test('a failed render does not block the next request', async () => {
+  const order: string[] = [];
+  const enqueue = queueTasks();
+  enqueue(async () => { throw new Error('렌더 실패'); });
+  await enqueue(async () => { order.push('다음 요청'); });
+  assert.deepEqual(order, ['다음 요청']);
+});
+
+// 도표 모듈을 불러오고 처음 그리는 동안에도 독자는 화면 모드를 바꿀 수 있다. 그 사이의 전환을 놓치면 본문만 어두워지고 도표는 밝은 채로 남는다.
+const plan = () => {
+  const drawn: string[] = [];
+  let theme = 'light';
+  let handler = () => {};
+  const release: { load?: () => void; draw?: () => void } = {};
+  const done = keepDiagramsInTheme({
+    themeNow: () => theme,
+    load: () => new Promise<void>((resolve) => { release.load = resolve; }),
+    draw: () => new Promise<void>((resolve) => { drawn.push(theme); release.draw = resolve; }),
+    listen: (fn) => { handler = fn; }
+  });
+  return { drawn, done, release, change: (next: string) => { theme = next; handler(); } };
+};
+
+const tick = () => new Promise(setImmediate);
+
+test('a theme change while the diagram module is loading is drawn after the first render', async () => {
+  const run = plan();
+  await tick();
+  run.change('dark');
+  run.release.load!();
+  await tick();
+  run.release.draw!();
+  await tick();
+  await run.done;
+  assert.deepEqual(run.drawn, ['dark'], '불러오는 동안 바꾼 화면으로 처음부터 그린다');
+});
+
+test('a theme change during the first render is not lost', async () => {
+  const run = plan();
+  await tick();
+  run.release.load!();
+  await tick();
+  // 첫 그리기가 도는 중에 바꾼다. 이 전환을 놓치면 도표만 옛 색으로 남는다.
+  run.change('dark');
+  run.release.draw!();
+  await tick();
+  run.release.draw!();
+  await tick();
+  await run.done;
+  assert.deepEqual(run.drawn, ['light', 'dark']);
+});
+
+test('a change back to the drawn theme does not redraw', async () => {
+  const run = plan();
+  await tick();
+  run.release.load!();
+  await tick();
+  run.release.draw!();
+  await tick();
+  run.change('light');
+  await tick();
+  await run.done;
+  assert.deepEqual(run.drawn, ['light'], '같은 화면이면 다시 그리지 않는다');
+});
+
+test('the diagram script keeps the queue in one place', () => {
+  const source = readFileSync(new URL('../src/scripts/mermaid.ts', import.meta.url), 'utf8');
+  assert.match(source, /keepDiagramsInTheme\(/, '순서 처리는 검사한 함수가 맡는다');
+});
+
+// 모든 노트 페이지가 이 스크립트를 싣는다. 렌더러를 정적으로 가져왔더니 도표가 없는 노트도 렌더러와 크게 보기 코드,
+// 도표들이 함께 쓰는 조각까지 처음부터 받았다. 순서 처리만 정적으로 가져오고 나머지는 도표가 있을 때 불러온다.
+test('the diagram script loads the renderer only on pages with diagrams', () => {
+  const source = readFileSync(new URL('../src/scripts/mermaid.ts', import.meta.url), 'utf8');
+  const eager = [...source.matchAll(/^import\s+(?!type\b)[^;]*?from\s+'([^']+)'/gm)].map((match) => match[1]);
+  assert.deepEqual(eager, ['./mermaid-queue.ts']);
+  const queue = readFileSync(new URL('../src/scripts/mermaid-queue.ts', import.meta.url), 'utf8');
+  assert.doesNotMatch(queue, /^import\s/m, '순서 처리 모듈은 다른 모듈을 가져오지 않는다');
 });
