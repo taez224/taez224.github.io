@@ -33,7 +33,7 @@ test('the header fits the screen when the reader doubles the default text size',
     expect(measured.lastMenu, `${width}px에서 마지막 메뉴가 화면 안에 있다`).toBeLessThanOrEqual(measured.width);
     expect(measured.wordmarkLines, `${width}px에서 TaeZ가 한 줄로 남는다`).toBe(1);
     // 두 줄이 된 머리글이 화면 위에 계속 붙어 있으면 제목으로 건너뛴 자리가 그 아래에 가린다.
-    await expect(page.locator('.site-header')).toHaveCSS('position', 'static');
+    await expect(page.locator('.site-header')).not.toHaveCSS('position', 'sticky');
   }
 });
 
@@ -60,7 +60,7 @@ test('the header keeps one sticky row at the default text size on a common narro
 test('a phone too narrow for both buttons gets a two-row header that does not stay on top', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
   await page.goto('/books/');
-  await expect(page.locator('.site-header')).toHaveCSS('position', 'static');
+  await expect(page.locator('.site-header')).not.toHaveCSS('position', 'sticky');
   const measured = await page.evaluate(() => {
     const wordmark = document.querySelector('.wordmark')!;
     const range = document.createRange();
@@ -77,6 +77,18 @@ test('a phone too narrow for both buttons gets a two-row header that does not st
   expect(measured.rows, '메뉴가 둘째 줄로 내려간다').toBeGreaterThan(measured.token);
   expect(measured.wordmarkLines, 'TaeZ가 한 줄로 남는다').toBe(1);
   expect(measured.theme, '테마 버튼이 화면 안에 있다').toBeLessThanOrEqual(320);
+
+  // 고정을 풀어도 판은 헤더를 기준으로 남아야 한다. 판의 기준이 body로 올라가면 판이 문서 전체 크기로 늘어나
+  // 첫 화면의 띠를 덮는다. 데스크톱 폭에서는 헤더가 붙어 있어 드러나지 않았다.
+  const plate = await page.evaluate(() => {
+    const header = document.querySelector('.site-header')!;
+    return { plate: parseFloat(getComputedStyle(header, '::before').height), header: header.getBoundingClientRect().height };
+  });
+  expect(plate.plate, '판은 헤더와 그 아래 24px까지만 덮는다').toBeCloseTo(plate.header + 24, 0);
+
+  await page.evaluate(() => window.scrollTo(0, 400));
+  const headerBottom = await page.evaluate(() => document.querySelector('.site-header')!.getBoundingClientRect().bottom);
+  expect(headerBottom, '스크롤하면 헤더가 화면 위로 지나간다').toBeLessThanOrEqual(0);
 });
 
 // 헤더는 첫 화면에서 띠 위에 글자만 얹히고, 본문이 밑으로 들어오기 시작하면 종이색 판이 짙어진다.
@@ -120,5 +132,20 @@ test.describe('without scripts', () => {
     await page.goto('/notes/browser-sections/');
     const background = await page.evaluate(() => getComputedStyle(document.querySelector('.site-header')!, '::before').backgroundColor);
     expect(opacity(background), '스크롤하지 않아도 불투명하다').toBe(1);
+  });
+
+  // 테마 버튼은 스크립트가 있어야 보인다. 숨은 버튼이 DOM에 남아 있어도, 오른쪽 끝은 검색 버튼이 테마 버튼과 같은 자리에서 맡는다.
+  test('the search button takes the right edge when the theme button is hidden', async ({ page }) => {
+    for (const width of [1280, 390, 320]) {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto('/books/');
+      const edges = await page.evaluate(() => ({
+        search: document.querySelector('.search-trigger')!.getBoundingClientRect().right,
+        wrap: document.querySelector('.site-header .wrap')!.getBoundingClientRect().right,
+        margin: parseFloat(getComputedStyle(document.querySelector('.search-trigger')!).marginRight)
+      }));
+      expect(edges.search - edges.wrap, `${width}px에서 검색 버튼 상자가 본문 끝선 밖으로 여백만큼 나간다`).toBeCloseTo(-edges.margin, 0);
+      expect(edges.margin, `${width}px에서 검색 버튼이 제 음수 여백을 유지한다`).toBeLessThan(0);
+    }
   });
 });

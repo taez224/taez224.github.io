@@ -182,8 +182,9 @@ h1, h2, h3, p { margin-top: 0; }
 .theme-toggle svg { width: 18px; height: 18px; fill: currentColor; }
 .theme-toggle .is-sun, :root[data-theme="dark"] .theme-toggle .is-moon { display: none; }
 :root[data-theme="dark"] .theme-toggle .is-sun { display: inline-flex; }
-/* 테마 버튼이 오른쪽 끝을 맡으므로 검색 버튼은 제 여백으로 돌아간다. */
-.search-trigger:not(:last-child) { margin-right: 0; }
+/* 테마 버튼이 오른쪽 끝을 맡으므로 검색 버튼은 제 여백으로 돌아간다. 스크립트가 없으면 테마 버튼은 hidden이어도 DOM의 마지막 자식으로 남으므로,
+   순서(:last-child) 대신 테마 버튼이 보이는지로 판단한다. 순서로 보면 스크립트 없는 화면에서 검색 버튼이 오른쪽 끝선보다 안쪽으로 들어온다. */
+.search-trigger:has(+ .theme-toggle:not([hidden])) { margin-right: 0; }
 main { min-height: 60vh; }
 /* 사이트 바닥글: 페이지가 마지막 항목 뒤에서 그냥 끝나지 않게 옅은 판 위에 한 줄을 둔다. 판과 바탕의 색 차이가 경계라 구분선은 긋지 않는다.
    이름은 왼쪽 끝에, 프로필 아이콘 줄과 사이트 정보 링크는 오른쪽에 둔다. 글자 링크는 홀로 선 링크와 같은 밑줄이다. */
@@ -227,9 +228,10 @@ main { min-height: 60vh; }
    360px 휴대폰은 한 줄을 지키고, 320px처럼 더 좁은 화면은 메뉴를 둘째 줄로 내린다. 버튼을 숨기는 대신 자리를 내주는 쪽이다.
    사이트가 html의 글자 크기를 정하지 않아 rem과 이 em이 모두 브라우저 기본값을 따른다.
    두 줄이 된 머리글은 109px을 넘는다. 화면 위에 붙여 두면 제목으로 건너뛴 자리(scroll-padding 100px)가 그 아래에 가리고,
-   큰 글자로 읽는 좁은 화면을 늘 차지하므로 고정을 푼다. */
+   큰 글자로 읽는 좁은 화면을 늘 차지하므로 고정을 푼다. static이 아니라 relative로 두는 것은 판(::before)의 기준 상자를 헤더에 남기기 위해서다.
+   static이면 판이 가장 가까운 기준인 body까지 올라가 문서 전체 크기로 늘어나고, 첫 화면의 띠를 덮으며 문서 크기의 흐림 층을 만든다. */
 @media (max-width: 22.125em) {
-  .site-header { position: static; }
+  .site-header { position: relative; }
   .site-header .wrap { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: "mark search theme" "nav nav nav"; grid-template-rows: var(--s-header-height) auto; height: auto; }
   .wordmark { grid-area: mark; justify-self: start; }
   .search-trigger { grid-area: search; }
