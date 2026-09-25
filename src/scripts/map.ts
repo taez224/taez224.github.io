@@ -97,6 +97,10 @@ graph = createGraph(svg, {
 });
 
 // 모바일 시트가 고른 노드를 덮을 때만 배율은 그대로 두고 노드가 시트 위 띠 안에 오도록 세로로 민다.
+// sheetOrigin은 처음 밀기 전의 세로 위치다. 시트를 닫으면 이 자리로 되돌리고, 밀지 않았으면 null이다.
+// 닫아도 밀린 채 두었더니 휴대폰 지도의 아래쪽이 최대 215px 비어 보였다. 시트가 열린 동안 지도는 inert라
+// 가로 위치와 배율은 바뀌지 않는다. 시트 안에서 다른 노드를 연달아 골라도 처음 자리로 돌아간다.
+let sheetOrigin: number | null = null;
 function keepNodeAboveSheet(id: string) {
   const p = positions.get(id);
   if (!p || !narrow.matches) return;
@@ -106,6 +110,7 @@ function keepNodeAboveSheet(id: string) {
   const margin = 56; // 노드 반지름과 아래 제목 한 줄
   const limit = window.innerHeight - panel.offsetHeight - margin;
   if (nodeY <= limit) return;
+  if (sheetOrigin === null) sheetOrigin = view.y;
   const top = Math.max(svgTop, header?.getBoundingClientRect().bottom ?? 0) + margin;
   graph.moveTo({ ...view, y: view.y + Math.max(top, limit) - nodeY });
 }
@@ -132,7 +137,10 @@ function select(id: string | null, pushUrl: boolean, { open = true } = {}) {
 }
 
 // 시트만 닫는다. 선택은 유지된다. 선택 해제는 빈 곳 탭.
-function closeSheet() { delete panel.dataset.open; syncSheet(); }
+function closeSheet() {
+  delete panel.dataset.open; syncSheet();
+  if (sheetOrigin !== null) { graph.moveTo({ ...graph.view(), y: sheetOrigin }); sheetOrigin = null; }
+}
 
 const pressedTopics = () => new Set([...document.querySelectorAll<HTMLElement>('[data-topic][aria-pressed="true"]')].map((b) => b.dataset.topic!));
 const hubFilter = document.querySelector('[data-hub-filter]');
@@ -193,6 +201,8 @@ window.addEventListener('resize', () => {
   const width = Math.round(svg.parentElement!.getBoundingClientRect().width);
   if (width === stageWidth) return;
   stageWidth = width;
+  // 맞춤이 시점을 새로 정하므로 시트 때문에 민 자리는 더 되돌리지 않는다.
+  sheetOrigin = null;
   graph.fit();
 });
 // 시트 손잡이를 아래로 끌면 따라 내려오고, 80px 넘게 끌어 놓으면 닫힌다.

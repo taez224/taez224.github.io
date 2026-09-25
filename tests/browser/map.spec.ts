@@ -90,6 +90,31 @@ test('one-column widths keep the start lists and hold the sheet out of the way',
   await expect(page.locator('.map-panel')).toHaveAttribute('inert', '');
 });
 
+// 휴대폰 폭에서 노드를 고르면 시트에 가리지 않게 지도를 위로 민다. 시트를 닫아도 밀린 채 두었더니 지도 아래쪽이 최대 215px 비었다.
+// 시트 안의 링크로 다른 노드를 연달아 골라 여러 번 밀었어도, 닫으면 시트를 열기 전 자리로 돌아와야 한다.
+test('closing the sheet on a phone moves the map back to where it was before the sheet opened', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/map/');
+  const offsetY = () => page.locator('[data-map] > g').evaluate((g) => Number(/translate\([-\d.]+ ([-\d.]+)\)/.exec(g.getAttribute('transform')!)![1]));
+  const nodes = page.locator('.graph .node');
+  await expect(nodes.first()).toBeAttached();
+  const start = await offsetY();
+  // 가장 아래에 있는 노드를 골라 시트가 덮게 한다.
+  const lowest = await nodes.evaluateAll((gs) => gs.map((g, i) => [i, g.getBoundingClientRect().bottom]).sort((a, b) => b[1] - a[1])[0][0]);
+  await nodes.nth(lowest).dispatchEvent('click');
+  await expect.poll(offsetY, '시트가 덮지 않게 지도를 위로 민다').toBeLessThan(start - 10);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.map-panel')).toHaveAttribute('inert', '');
+  await expect.poll(offsetY, '시트를 닫으면 처음 자리로 돌아온다').toBeCloseTo(start, 0);
+  await nodes.nth(lowest).dispatchEvent('click');
+  await expect.poll(offsetY).toBeLessThan(start - 10);
+  const link = page.locator('.map-panel a[data-node]').first();
+  await expect(link, '시트에 다른 노드로 가는 링크가 있다').toBeAttached();
+  await link.click();
+  await page.keyboard.press('Escape');
+  await expect.poll(offsetY, '시트 안에서 다른 노드를 골라도 닫으면 처음 자리로 돌아온다').toBeCloseTo(start, 0);
+});
+
 // 휴대폰 폭 지도에서 허브 제목을 자리가 없어도 아래에 두었더니 제목끼리, 또는 영역 이름과 겹쳤다. 오른쪽 아래 확대 조작은
 // 영역 이름을 가렸다. 첫 화면과 노드를 하나씩 고른 화면에서 보이는 글자끼리 겹치지 않고 조작 아래로 들어가지 않는지 잰다.
 // 고른 제목 아래 깔린 영역 이름은 흐려지므로(is-under-label) 겹침에서 뺀다.
