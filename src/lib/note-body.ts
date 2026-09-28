@@ -24,10 +24,20 @@ function bodyHeadings(body: string): BodyHeading[] {
 }
 
 // 본문 발췌. 제목 줄과 코드 블록을 뺀 텍스트의 앞 220자다.
+// 220자 안에서 끝나는 마지막 문장까지 자른다. 글자 수로만 자르면 문장 한가운데서 끊긴 채 메타 설명과 검색 결과에 나갔다.
+// 짧은 본문도 같다. 허브는 소개 문장 뒤에 마침표 없는 링크 목록이 이어져, 220자 안이라도 목록 제목이 요약에 붙었다.
+// 문장 끝은 목록의 firstSentence(format.ts)와 같은 기준이라 1.5 같은 소수점에서는 끊지 않는다.
+// 문장 끝이 하나도 없는 글만 220자까지 쓰고, 넘치면 어절 경계에서 자르고 말줄임표를 붙인다.
+const EXCERPT_LENGTH = 220;
 function excerpt(text: TextAnalysis): string {
   const cleaned = text.excerptText;
-  if (cleaned.length <= 220) return cleaned;
-  return `${cleaned.slice(0, 220).replace(/\s+\S*$/, '')}…`;
+  if (cleaned.length <= EXCERPT_LENGTH && /[.!?]$/.test(cleaned)) return cleaned;
+  // 220번째 글자가 마침표일 때 뒤따르는 공백까지 보려고 한 글자를 더 읽는다. 발췌 끝은 원문의 끝이 아니므로 $는 문장 끝으로 보지 않는다.
+  const head = cleaned.slice(0, EXCERPT_LENGTH + 1);
+  const sentenceEnd = [...head.matchAll(/[.!?](?=\s)/g)].at(-1);
+  if (sentenceEnd?.index !== undefined) return head.slice(0, sentenceEnd.index + 1);
+  if (cleaned.length <= EXCERPT_LENGTH) return cleaned;
+  return `${cleaned.slice(0, EXCERPT_LENGTH).replace(/\s+\S*$/, '')}…`;
 }
 
 // 노트 한 편의 요약 규칙. 목록·카드·노트 엔트리가 모두 이 함수를 부른다.
