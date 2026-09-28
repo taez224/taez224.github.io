@@ -19,7 +19,7 @@ import { readBooks } from './books.ts';
 import { createAssetResolver } from './public-assets.ts';
 import { selectGraphNodes } from '../graph/select.ts';
 import { slugFor, kindPrefix, noteUrl, assertUniqueSlugs } from './slug.ts';
-import { analyzeText, type TextAnalysis } from './text.ts';
+import { analyzeText, readingMinutes, type TextAnalysis } from './text.ts';
 import { publicTags, cleanTitle, topicFor } from './format.ts';
 import { kstDate, noteDates } from './dates.ts';
 import { groupDevelopment } from './development.ts';
@@ -183,8 +183,8 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
       slug: slugByPath.get(relativePath)!,
       publicTags: publicTags(record.tags),
       bodyText,
-      // 한국어 평균 읽기 속도 분당 600자 기준. 리더 메타 줄의 "N분".
-      readingMinutes: record.contentMode === 'external' ? 0 : Math.max(1, Math.round([...bodyText].length / 600)),
+      // 리더 메타 줄과 글 목록의 "N분". 세는 규칙은 text.ts의 readingMinutes에 있다.
+      readingMinutes: record.contentMode === 'external' ? 0 : readingMinutes(bodyText),
       topic: topicFor(record.tags),
       publicContent
     };
