@@ -3,10 +3,13 @@ import Shell from '../../layouts/Shell.astro';
 import { getGarden } from '../../lib/get-garden.ts';
 import { formatDate, firstSentence } from '../../lib/format.ts';
 import { blogLedger } from '../../lib/blog.ts';
-const { blog } = await getGarden();
+const { blog, notes } = await getGarden();
 // 연재는 링 표시가 붙은 한 행이다. 장부를 짜는 규칙은 blogLedger에 있다.
 const finished = (series: { ended: string }) => Boolean(series.ended);
 const years = blogLedger(blog);
+// 읽는 시간은 조립이 노트마다 한 번 계산한 값을 쓴다. 외부 발행 글은 본문이 없어 0분이고 표시하지 않는다.
+// 연재 행에는 붙이지 않는다. 허브 한 페이지의 분량이 연재 전체의 분량처럼 읽힌다.
+const readingMinutes = new Map(notes.map((note) => [note.path, note.readingMinutes]));
 ---
 <Shell title="글" description="TaeZ가 발행한 글과 연재." path="/posts/" active="posts">
   <div class="wrap posts-page">
@@ -17,7 +20,7 @@ const years = blogLedger(blog);
         ? <article class="ledger-row">
             <div>
               <h3><a href={row.post.url}>{row.post.title}</a></h3>
-              <div class="meta"><time datetime={row.post.published}>{formatDate(row.post.published)}</time>{row.post.publishedUrl && <a href={row.post.publishedUrl} target="_blank" rel="noreferrer">{row.post.publication || '원문'} ↗</a>}</div>
+              <div class="meta"><time datetime={row.post.published}>{formatDate(row.post.published)}</time>{(readingMinutes.get(row.post.path) ?? 0) > 0 && <span>{readingMinutes.get(row.post.path)}분</span>}{row.post.publishedUrl && <a href={row.post.publishedUrl} target="_blank" rel="noreferrer">{row.post.publication || '원문'} ↗</a>}</div>
             </div>
             {row.post.summary ? <p class="summary">{firstSentence(row.post.summary)}</p> : <div></div>}
           </article>

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { analyzeText } from '../src/lib/text.ts';
+import { analyzeText, readingMinutes } from '../src/lib/text.ts';
 
 const searchText = (body: string) => analyzeText(body).bodyText;
 
@@ -88,4 +88,28 @@ test('the summary excerpt keeps table text without image or table markup', () =>
   const { excerptText } = analyzeText('![](https://example.com/tool.png)\n\n| 명령 | 설명 |\n| --- | --- |\n| rg | 검색 |\n\n도구를 고르는 기준.');
   assert.equal(excerptText, '명령 설명 rg 검색 도구를 고르는 기준.');
   assert.doesNotMatch(excerptText, /!\[|https?:\/\/|\|/);
+});
+
+test('reading time counts Korean by syllables at 450 per minute and ignores spaces', () => {
+  // 900음절을 공백으로 잘게 나눠도 2분이다. 공백과 문장부호는 읽는 시간에 넣지 않는다.
+  assert.equal(readingMinutes('가나다 '.repeat(300)), 2);
+  assert.equal(readingMinutes('가'.repeat(900)), 2);
+});
+
+test('reading time counts English and code by words at 200 per minute, not by letters', () => {
+  // 400단어가 2분이다. 단어 길이가 달라도 결과는 같다.
+  assert.equal(readingMinutes('word '.repeat(400)), 2);
+  assert.equal(readingMinutes('internationalization '.repeat(400)), 2);
+  // 코드의 식별자도 단어 하나로 센다. 점과 하이픈으로 이어진 이름은 한 단어라 한 줄이 네 단어다.
+  assert.equal(readingMinutes('const value = config.get(\'max-size\'); '.repeat(100)), 2);
+});
+
+test('reading time adds Korean syllables and English words together', () => {
+  // 450음절(1분)과 200단어(1분)를 합쳐 2분이다.
+  assert.equal(readingMinutes(`${'가'.repeat(450)} ${'API '.repeat(200)}`), 2);
+});
+
+test('reading time is at least one minute', () => {
+  assert.equal(readingMinutes('짧은 노트.'), 1);
+  assert.equal(readingMinutes(''), 1);
 });
