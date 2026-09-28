@@ -5,7 +5,7 @@ import mermaid from 'mermaid';
 import { MERMAID_CONFIG, MERMAID_DARK_CONFIG, DARK_SCHEME_QUERY } from '../src/scripts/mermaid-config.ts';
 import { fitDiagram, pinsOwnTheme, renderMermaidBlocks, siteConfigFor } from '../src/scripts/mermaid-render.ts';
 import { keepDiagramsInTheme, queueTasks } from '../src/scripts/mermaid-queue.ts';
-import { DARK_PALETTE } from '../src/lib/palette.ts';
+import { PALETTE, DARK_PALETTE } from '../src/lib/palette.ts';
 
 // 렌더링된 SVG의 대역이다. max-width가 100%가 되면 컨테이너 폭에 맞춰 줄어든 것으로 본다.
 type FakeSvg = { style: { maxWidth: string; height: string } };
@@ -562,4 +562,10 @@ test('the diagram script loads the renderer only on pages with diagrams', () => 
   assert.deepEqual(eager, ['./mermaid-queue.ts']);
   const queue = readFileSync(new URL('../src/scripts/mermaid-queue.ts', import.meta.url), 'utf8');
   assert.doesNotMatch(queue, /^import\s/m, '순서 처리 모듈은 다른 모듈을 가져오지 않는다');
+});
+
+// 도표의 바탕은 본문의 도표 상자와 같은 올라온 판이다. 밝은 설정에만 옛 판 색이 남아 팔레트와 연결이 끊긴 적이 있다.
+test('both diagram configs paint the backdrop with the raised paper of their color scheme', () => {
+  assert.equal(MERMAID_CONFIG.themeVariables?.background, PALETTE['paper-strong']);
+  assert.equal(MERMAID_DARK_CONFIG.themeVariables?.background, DARK_PALETTE['paper-strong']);
 });

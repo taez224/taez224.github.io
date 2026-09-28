@@ -55,3 +55,13 @@ test('the system and the chosen dark path declare the same code colors', () => {
   for (const name of TOKENS) assert.equal(tokenColor(chosenDark, name), tokenColor(blocks.dark, name), `.th-${name}`);
   assert.deepEqual(box(chosenDark), box(blocks.dark), '코드 상자의 바탕과 기본 글자색');
 });
+
+// 코드 머리 줄은 코드 상자와 한 덩어리로 보여야 한다. 바탕을 규칙마다 따로 적어 두어서 한쪽만 바꾸면 머리 줄이 다른 색 띠로 뜬다.
+test('the code block header row shares the code box background in both color schemes', () => {
+  for (const [scheme, block] of Object.entries(blocks)) {
+    const background = (selector: RegExp) => block.match(selector)?.[1].match(/background:\s*([^;]+);/)?.[1].trim();
+    const head = background(/\.body \.code-head \{([^}]*)\}/);
+    assert.ok(head, `${scheme} 머리 줄 바탕`);
+    assert.equal(head, background(/\.body pre \{([^}]*)\}/), `${scheme} 머리 줄과 코드 상자의 바탕`);
+  }
+});
