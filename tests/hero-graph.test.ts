@@ -6,7 +6,8 @@ import { LIVE_HERO_QUERY, mountHeroGraph, type HeroGraph } from '../src/scripts/
 test('the live hero map is limited to devices that can hover with a fine pointer', () => {
   // 지도 SVG는 touch-action: none이라 손가락 스와이프를 가져간다. 태블릿 세로 폭에서 올라오면 페이지가 내려가지 않는다.
   // 살아 있는 지도가 주는 것은 호버로 제목을 미리 보는 일이라 호버가 없는 기기에서는 얻는 것도 없다.
-  assert.match(LIVE_HERO_QUERY, /\(min-width: 721px\)/);
+  // 한 열로 접히는 폭에서는 지도 상자가 280px로 낮아져 엔진의 영역 이름이 허브 제목과 겹친다. 그 폭은 정적 그림이 맡는다.
+  assert.match(LIVE_HERO_QUERY, /\(min-width: 1001px\)/);
   assert.match(LIVE_HERO_QUERY, /\(hover: hover\)/);
   assert.match(LIVE_HERO_QUERY, /\(pointer: fine\)/);
 });

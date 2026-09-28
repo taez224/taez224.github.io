@@ -5,6 +5,10 @@ import { nodeRadius } from './layout.ts';
 import { topicColor, topicLabelColor, cleanTitle, escapeHtml as escape } from '../lib/format.ts';
 import { topicRegions, regionPath, placeRegionLabels, regionLabelBox } from './regions.ts';
 import { estimateTextWidth, labelIds, placeLabels, nodeBox, RING_GAP, ringedRadius } from './label.ts';
+import { heroFadeDefs } from './hero-fade.ts';
+
+// 정적 그림과 살아 있는 지도가 한 페이지에 함께 있으므로 마스크 id를 나눈다.
+const HERO_FADE_SNAPSHOT_ID = 'hero-fade-snapshot';
 
 const n = (value: number) => +value.toFixed(2);
 
@@ -80,11 +84,14 @@ function renderDesktop(nodes: readonly GraphNode[], edges: readonly GraphEdge[],
   const inside = (b: Box) => b.left >= 0 && b.right <= width && b.top >= minY - pad && b.bottom <= maxY + pad;
   const idle = labelIds(nodes, []);
   const plan = placeLabels(placed.filter((node) => idle.has(node.id)).map((node) => ({ node, mustPlace: true })), { positions, radius: labelRadius, u, obstacles, inside });
-  let out = `<svg viewBox="${viewBox}" xmlns="http://www.w3.org/2000/svg" class="snap is-desktop" role="img" aria-label="${escape(label)}">`;
+  // 바깥 SVG는 viewBox가 없어 좌표가 상자의 px과 같다. 가장자리 마스크(heroFadeDefs)는 이 좌표계에서 상자 크기로 씌우고,
+  // 그림은 viewBox를 가진 안쪽 SVG 두 장에 나눠 그린다. 색면·간선·노드는 마스크 안, 영역 이름과 제목은 마스크 밖이다.
+  // 두 장은 viewBox와 맞춤이 같아 겹쳐 보면 한 장이다. 글자가 도형 위에 오는 순서는 엔진의 hero 모드와 같다.
+  const inner = `<svg viewBox="${viewBox}" width="100%" height="100%">`;
+  let out = `<svg xmlns="http://www.w3.org/2000/svg" class="snap is-desktop" role="img" aria-label="${escape(label)}">${heroFadeDefs(HERO_FADE_SNAPSHOT_ID)}`;
+  out += `<g mask="url(#${HERO_FADE_SNAPSHOT_ID})">${inner}`;
   out += `<g data-regions="" opacity=".07">${regions.map((r) => `<path d="${regionPath(r.hull)}" fill="${topicColor(r.topic)}" stroke="${topicColor(r.topic)}" stroke-width="64" stroke-linejoin="round"></path>`).join('')}</g>`;
-  out += `<g font-family="var(--display)" font-weight="700" font-size="${n(15 * u)}" letter-spacing=".16em" paint-order="stroke" stroke="var(--paper)" stroke-width="${n(3.5 * u)}" stroke-linejoin="round">`;
-  out += regions.map((r) => { const a = regionLabelAt.get(r.topic); if (!a) return ''; return `<text x="${a.x.toFixed(1)}" y="${a.y.toFixed(1)}" text-anchor="${a.anchor}" fill="${topicLabelColor(r.topic)}">${escape(r.topic)}</text>`; }).join('');
-  out += `</g><g stroke="var(--edge)" stroke-width="1.1" stroke-opacity=".28">`;
+  out += `<g stroke="var(--edge)" stroke-width="1.1" stroke-opacity=".28">`;
   for (const edge of edges) { const a = at(edge.source), b = at(edge.target); if (a && b) out += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"></line>`; }
   out += '</g><g>';
   for (const node of placed) {
@@ -93,11 +100,13 @@ function renderDesktop(nodes: readonly GraphNode[], edges: readonly GraphEdge[],
     if (node.type === 'hub') out += `<circle cx="${p.x}" cy="${p.y}" r="${(r + RING_GAP.hub).toFixed(1)}" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-opacity=".9"></circle>`;
     out += `<circle cx="${p.x}" cy="${p.y}" r="${r.toFixed(1)}" fill="${topicColor(node.topic)}" stroke="var(--paper)" stroke-width="${node.isEntry ? 2.8 : 2}"></circle>`;
   }
+  out += `</g></svg></g>${inner}<g font-family="var(--display)" font-weight="700" font-size="${n(15 * u)}" letter-spacing=".16em" paint-order="stroke" stroke="var(--paper)" stroke-width="${n(3.5 * u)}" stroke-linejoin="round">`;
+  out += regions.map((r) => { const a = regionLabelAt.get(r.topic); if (!a) return ''; return `<text x="${a.x.toFixed(1)}" y="${a.y.toFixed(1)}" text-anchor="${a.anchor}" fill="${topicLabelColor(r.topic)}">${escape(r.topic)}</text>`; }).join('');
   out += `</g><g font-family="var(--sans)" font-size="${n(13 * u)}" fill="var(--ink)" paint-order="stroke" stroke="var(--paper)" stroke-width="${n(4.5 * u)}" stroke-linejoin="round">`;
   for (const [id, { lines, g }] of plan) {
     const node = placed.find((item) => item.id === id)!;
     const tspans = lines.map((line, index) => `<tspan x="${g.x.toFixed(1)}" dy="${index === 0 ? 0 : n(18 * u)}">${escape(line)}</tspan>`).join('');
     out += `<text x="${g.x.toFixed(1)}" y="${g.y.toFixed(1)}" text-anchor="${g.anchor}"${node.isEntry ? ' fill="var(--accent)" font-weight="700"' : ''}>${tspans}</text>`;
   }
-  return `${out}</g></svg>`;
+  return `${out}</g></svg></svg>`;
 }

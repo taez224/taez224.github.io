@@ -104,6 +104,29 @@ test('a short phone shrinks the home map smoothly so the next section starts on 
   expect((await measure(390, 844)).map, '키가 큰 휴대폰은 지도를 그대로 둔다').toBeGreaterThan(280);
 });
 
+// 가장자리를 옅게 하는 마스크를 상자 전체에 걸었더니, 가장자리 가까이 놓인 영역 이름이 배경에 묻혔다(1280px에서 1.68:1).
+// 마스크는 도형 층에만 씌우므로 어느 그림의 글자도 마스크를 씌운 요소 안에 있으면 안 되고, 상자에는 CSS 마스크가 없어야 한다.
+test('the wide home map fades its edges without fading any text', async ({ page, isMobile }) => {
+  test.skip(isMobile, '가장자리를 네 방향으로 옅게 하는 그림은 넓은 화면에서만 쓴다');
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await gotoBeforeModules(page, '/');
+  const inspect = (svg: SVGSVGElement) => ({
+    masked: svg.querySelectorAll('[mask] text').length,
+    texts: svg.querySelectorAll('text').length,
+    boxMask: getComputedStyle(svg.closest('.hero-graph')!).maskImage
+  });
+  const snapshot = await page.locator('.hero-graph svg.is-desktop').evaluate(inspect);
+  expect(snapshot.texts, '정적 그림에 글자가 있다').toBeGreaterThan(0);
+  expect(snapshot.masked, '정적 그림').toBe(0);
+  expect(snapshot.boxMask).toBe('none');
+  await page.unroute('**/*');
+  await page.goto('/');
+  const live = page.locator('svg.graph.hero');
+  await expect(live).toBeVisible();
+  await expect(live.locator('[data-region-labels] text').first()).toBeAttached();
+  expect((await live.evaluate(inspect)).masked, '살아 있는 지도').toBe(0);
+});
+
 // 홈 노드는 누르면 그 노트로 이동할 뿐 눌린 채로 남지 않는다.
 // 그런데도 aria-pressed를 달면 낭독기에 눌리지 않는 토글 버튼 수십 개로 읽힌다.
 test('home map nodes do not claim a pressed state', async ({ page, isMobile }) => {

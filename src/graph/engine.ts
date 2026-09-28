@@ -9,9 +9,12 @@ import { topicColor, topicLabelColor, cleanTitle } from '../lib/format.ts';
 import { createGraphGesture } from './gestures.ts';
 import { boxesOverlap, estimateTextWidth, labelIds, mustPlaceLabel, placeLabels, nodeBox, RING_GAP, ringedRadius } from './label.ts';
 import { topicRegions, regionPath, placeRegionLabels, regionLabelBox } from './regions.ts';
+import { heroFadeDefs } from './hero-fade.ts';
 
 const MIN_SCALE = 0.65;
 const MAX_SCALE = 3.2;
+// 넓은 화면의 정적 그림(snapshot.ts)과 한 페이지에 있으므로 마스크 id를 나눈다.
+const HERO_FADE_LIVE_ID = 'hero-fade-live';
 const key = (s: string, t: string) => JSON.stringify([s, t]);
 
 export function classifyEdges(edges: readonly GraphEdge[], selected: string | null) {
@@ -115,7 +118,14 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
   // 색면과 글자 층은 노드 위에 겹쳐 그리는 그림이다. 이름은 노드마다 aria-label로 이미 있으므로 층은 접근성 트리에서 뺀다.
   const regionLayer = el('g', { 'data-regions': '', 'aria-hidden': 'true' }), regionLabelLayer = el('g', { 'data-region-labels': '', 'aria-hidden': 'true' });
   const edgeLayer = el('g'), nodeLayer = el('g'), labelLayer = el('g', { 'data-labels': '', 'aria-hidden': 'true' });
-  scene.append(regionLayer, regionLabelLayer, edgeLayer, nodeLayer, labelLayer);
+  // 홈 지도는 가장자리를 옅게 하되 글자는 흐리지 않는다(hero-fade.ts). 마스크는 변환 밖에서 씌워야 상자 크기로 맞으므로
+  // 도형 층과 글자 층을 같은 변환을 받는 장면 두 개로 나누고, 도형 장면만 마스크를 씌운 묶음에 넣는다.
+  // 그래서 hero에서는 영역 이름이 간선·노드 위에 온다. 넓은 화면의 정적 그림도 같은 순서로 그린다.
+  const textScene = mode === 'hero' ? el('g') : scene;
+  if (mode === 'hero') {
+    scene.append(regionLayer, edgeLayer, nodeLayer);
+    textScene.append(regionLabelLayer, labelLayer);
+  } else scene.append(regionLayer, regionLabelLayer, edgeLayer, nodeLayer, labelLayer);
   // 주제 영역은 배치가 정해지면 고정이다. 색면은 장면 좌표(확대하면 같이 커짐), 이름은 제목처럼 화면 크기 고정.
   const regionList = topicRegions(nodes, positions);
   // 영역 이름은 노드 원을 피하고 무대 안에 둔다. 노드 제목은 planLabels가 영역 이름을 장애물로 보고 피한다.
@@ -167,7 +177,12 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
     }
     refreshRegionStates();
   };
-  svg.append(scene);
+  if (mode === 'hero') {
+    svg.insertAdjacentHTML('beforeend', heroFadeDefs(HERO_FADE_LIVE_ID));
+    const faded = el('g', { mask: `url(#${HERO_FADE_LIVE_ID})` });
+    faded.append(scene);
+    svg.append(faded, textScene);
+  } else svg.append(scene);
 
   // 선택한 노드로 부드럽게 이동·확대. 드래그가 시작되면 애니메이션을 끊는다.
   let animation: number | null = null;
@@ -189,7 +204,9 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
   const applyTransform = () => {
     const { width, height } = size();
     svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-    scene.setAttribute('transform', `translate(${state.transform.x.toFixed(1)} ${state.transform.y.toFixed(1)}) scale(${state.transform.scale.toFixed(3)})`);
+    const transform = `translate(${state.transform.x.toFixed(1)} ${state.transform.y.toFixed(1)}) scale(${state.transform.scale.toFixed(3)})`;
+    scene.setAttribute('transform', transform);
+    if (textScene !== scene) textScene.setAttribute('transform', transform);
     if (Math.abs(state.transform.scale - labelScale) > 0.005) { labelScale = state.transform.scale; resizeNodes(); drawLabels(); } else hideUnderControls();
   };
   // 원 크기 조정은 지도에만 한다. 홈 지도는 넓은 화면에서 정적 그림과 바뀔 때 티가 나지 않도록 같은 크기를 지켜야 한다.

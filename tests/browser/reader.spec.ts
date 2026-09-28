@@ -104,9 +104,9 @@ test('home switches both ways across the live graph breakpoint without duplicate
   const snapshot = page.locator('.hero-snapshot');
   const engine = page.locator('.hero-graph > .graph');
   if (isMobile) await expect(snapshot).toBeVisible(); else await expect(engine).toBeVisible();
-  for (const width of [720, 721, 1000, 1440, 390, 1440]) {
+  for (const width of [720, 1000, 1001, 1440, 390, 1440]) {
     await page.setViewportSize({ width, height: 900 });
-    if (isMobile || width <= 720) {
+    if (isMobile || width <= 1000) {
       await expect(snapshot).toBeVisible();
       await expect(engine).not.toBeVisible();
     } else {

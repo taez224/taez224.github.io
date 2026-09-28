@@ -31,7 +31,7 @@ const seriesNote = series?.noteUrl ? garden.notes.find((note) => note.url === se
 const seriesEntry = seriesNote?.thumbnail ? await getEntry('notes', `${kindPrefix(seriesNote.kind)}/${seriesNote.slug}`) : null;
 const seriesThumbnail = seriesEntry?.data.thumbnail;
 const softSeriesThumbnail = seriesNote?.thumbnailStyle === 'soft';
-// 모바일 홈의 정적 지도. <img>가 아니라 인라인이라 영역 이름에 페이지 서체가 적용된다. 720px보다 넓으면 hero-graph.ts가 살아 있는 지도를 올리고 CSS가 이 그림을 가린다.
+// 모바일 홈의 정적 지도. <img>가 아니라 인라인이라 영역 이름에 페이지 서체가 적용된다. 1000px보다 넓고 마우스를 쓰면 hero-graph.ts가 살아 있는 지도를 올리고 CSS가 이 그림을 가린다.
 const positions = layoutGraph(garden.nodes, garden.edges, { width: 1000, height: 640, ...ATLAS_LAYOUT });
 const snapshotLabel = `생각 지도. 노드 ${garden.stats.nodes}개와 연결 ${garden.stats.edges}개.`;
 // 데스크톱(1000px 초과)은 hero-graph.ts가 살아 있는 지도를 올리기 전까지 같은 모습의 정적 그림을 보여 교체가 눈에 띄지 않게 한다.
@@ -97,19 +97,19 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
   .hero-snapshot :global(.snap-regions-compact) { display: none; }
   /* 살아 있는 지도는 넓은 폭에서 마우스로 쓸 때만 보인다. 경계는 hero-graph.ts의 LIVE_HERO_QUERY와 같다.
      엔진을 그린 뒤 휴대폰 폭으로 줄이면 엔진을 숨기고 정적 그림을 다시 보인다.
+     1000px 이하에서는 지도가 소개 아래 높이 280px 상자로 내려간다. 거기서 엔진을 올렸더니 영역 이름이 허브 제목과 겹쳤고,
+     정적 그림은 같은 상자에 맞춰 그린 배치라 겹치지 않는다. 그래서 한 열로 접히는 폭에서는 입력 방식과 관계없이 정적 그림을 쓴다.
      손가락으로 쓰는 기기를 빼는 것은 지도 SVG가 touch-action: none이라 세로 스와이프를 가져가기 때문이다.
      살아 있는 지도가 주는 것은 호버로 제목을 미리 보는 일이라 호버가 없는 기기에서는 얻는 것도 없다. */
   .hero-graph > :global(.graph) { display: none; }
-  @media (min-width: 721px) and (hover: hover) and (pointer: fine) {
+  @media (min-width: 1001px) and (hover: hover) and (pointer: fine) {
     .hero-graph > :global(.graph) { display: block; }
     .hero-graph.is-live .hero-snapshot { display: none; }
   }
   /* 스냅샷의 색면 불투명도는 SVG 속성이라 어두운 화면에서는 CSS로 엔진과 같은 값까지 올린다. */
   @media (prefers-color-scheme: dark) { :global(:root:not([data-theme])) .hero-snapshot :global([data-regions]) { opacity: .11; } }
   :global(:root[data-theme="dark"]) .hero-snapshot :global([data-regions]) { opacity: .11; }
-  /* 네 가장자리를 모두 옅게. 색면과 간선이 헤더·대표 글 선에 닿거나 화면 끝에서 뚝 잘리지 않게 한다.
-     왼쪽은 소개 글과 만나는 자리라 더 일찍 풀린다. 예전에는 종이색 덮개가 이 일을 했지만, 첫 화면 위쪽에 띠가 깔리면서 덮개의 종이색이 띠와 어긋났다. */
-  .hero-graph { -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14%, #000 84%, transparent 100%), linear-gradient(180deg, transparent 0, #000 10%, #000 90%, transparent 100%); mask-image: linear-gradient(90deg, transparent 0, #000 14%, #000 84%, transparent 100%), linear-gradient(180deg, transparent 0, #000 10%, #000 90%, transparent 100%); -webkit-mask-composite: source-in; mask-composite: intersect; }
+  /* 넓은 화면의 네 가장자리 흐림은 두 SVG가 안에서 도형 층에만 씌운다(src/graph/hero-fade.ts). 상자에 CSS 마스크를 걸면 가장자리 가까이 놓인 영역 이름까지 흐려진다. */
   .hero-graph .graph { cursor: pointer; }
   /* 지도와 종이색 그라데이션은 절대 배치라 안쪽 여백의 영향을 받지 않는다. 소개 블록만 흐름에 두어 높이를 밀어낸다.
      왼쪽 자리는 본문 열(1180px)의 왼쪽 끝이다. 화면이 그보다 좁으면 음수가 되어 제목과 소개문 앞이 잘리므로,
