@@ -62,7 +62,7 @@ npm run mark:build           # 표식 도안을 고쳤을 때만. public/favicon
 ## TypeScript 검사
 
 - 애플리케이션(`src/`), 빌드 도구, 테스트를 모두 TypeScript로 쓴다. `tsconfig.json`은 Astro strict 설정이고 `allowJs`는 끈다. `npm run check`(`tsconfig.check.json`)와 `npm run check:astro`가 CI에서 모두 통과해야 한다.
-- TypeScript는 `astro check`가 지원하는 6.x를 쓴다. TypeScript 7은 검사 도구에 필요한 programmatic API를 아직 제공하지 않는다.
+- TypeScript는 6.x를 쓴다. `astro check`가 7을 지원하지 않으며, 전환 조건은 `.github/dependabot.yml`의 주석에 있다.
 - 상대 import에는 실제 `.ts` 확장자를 적고, 타입은 `import type`으로 가져온다.
 - 테스트는 Node 26의 타입 스트리핑으로 빌드 단계 없이 실행한다. 그래서 `erasableSyntaxOnly`로 enum과 매개변수 프로퍼티처럼 실행 코드 변환이 필요한 문법을 막는다.
 - Mermaid는 npm 의존성으로 관리하고, 도표가 있는 페이지에서만 동적 import로 불러온다.

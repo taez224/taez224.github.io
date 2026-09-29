@@ -13,9 +13,11 @@ on:
 
 permissions: {}
 
+# PR은 새 커밋이 오면 이전 실행을 취소한다. 배포는 도중에 끊으면 Pages 배포가 중간에 멈추므로, 진행 중인 실행은 끝까지 마치고
+# 기다리는 실행 가운데 가장 최근 것만 이어서 실행한다.
 concurrency:
   group: pages-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'deploy' }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   GARDEN_VAULT_ROOT: ${{ github.workspace }}/vault
