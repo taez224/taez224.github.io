@@ -76,6 +76,23 @@ test('renderSnapshotSvg desktop preset scales labels like the live hero and labe
   assert.ok(svg.includes('class="snap is-desktop"'));
   assert.ok(svg.includes(`font-size="${+(13 * u).toFixed(2)}"`), '제목 13px');
   assert.ok(svg.includes(`font-size="${+(15 * u).toFixed(2)}"`), '영역 이름 15px');
-  assert.match(svg, /^<svg viewBox="-?[\d.]+ -?[\d.]+ [\d.]+ [\d.]+"/, 'viewBox는 경계 상자 + 여백');
+  assert.match(svg, /^<svg xmlns="[^"]+" class="snap is-desktop"/, '바깥 SVG는 viewBox 없이 상자 px 좌표를 쓴다');
+  assert.match(svg, /<svg viewBox="-?[\d.]+ -?[\d.]+ [\d.]+ [\d.]+" width="100%" height="100%">/, '안쪽 viewBox는 경계 상자 + 여백');
   assert.ok(svg.includes('>생각의 정원<') && svg.includes('>지식관리와 글쓰기<') && !svg.includes('>잎<'), '허브 제목만');
+});
+
+// 가장자리를 옅게 하는 마스크가 상자 전체에 걸리면 가장자리 가까이 놓인 영역 이름이 배경과 거의 같은 색이 되었다(1.68:1).
+test('renderSnapshotSvg desktop preset fades only the shapes at the edges and keeps every text outside the mask', () => {
+  const nodes: GraphNode[] = [
+    { id: 'hub', title: '허브', type: 'hub', topic: 'AI', degree: 4, isEntry: false, url: '' },
+    ...['a', 'b', 'c'].map((id) => ({ id, title: id, type: 'permanent' as const, topic: 'AI', degree: 1, isEntry: false, url: '' }))
+  ];
+  const edges = ['a', 'b', 'c'].map((target) => ({ source: 'hub', target }));
+  const svg = renderSnapshotSvg(nodes, edges, layoutGraph(nodes, edges, { width: 1000, height: 640 }), { width: 1000, height: 640, preset: 'desktop', pixelHeight: 500 });
+  const open = '<g mask="url(#hero-fade-snapshot)">', start = svg.indexOf(open), end = svg.indexOf('</svg></g>', start);
+  assert.ok(svg.includes('<mask id="hero-fade-snapshot"') && start > 0 && end > start, '마스크를 씌운 묶음이 있다');
+  const masked = svg.slice(start, end), rest = svg.slice(0, start) + svg.slice(end);
+  assert.ok(masked.includes('data-regions') && masked.includes('<line ') && masked.includes('<circle '), '색면·간선·노드는 마스크 안');
+  assert.ok(!masked.includes('<text'), '글자는 마스크 안에 없다');
+  assert.ok(rest.includes('>AI<') && rest.includes('>허브<'), '영역 이름과 허브 제목은 마스크 밖');
 });

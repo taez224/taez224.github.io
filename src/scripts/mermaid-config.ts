@@ -126,8 +126,9 @@ function siteDiagramConfig(colors: DiagramColors): MermaidConfig {
 
 // 도표의 테마·배치·외형을 여기서만 바꾼다. 값을 비교할 때 이 파일 하나만 고치면 된다.
 // 12가 배치·외형·접힘 폭 기본값을 한꺼번에 바꿨으므로, 측정해서 고른 값을 기본값에 맡기지 않고 적어 둔다.
+// 바탕은 본문의 도표 상자와 같은 올라온 판이다. 옛 판 색(#fbfaf6)을 적어 두었더니 팔레트를 바꿀 때 따라오지 않았다.
 export const MERMAID_CONFIG: MermaidConfig = siteDiagramConfig({
-  theme: 'redux-color', ink: PALETTE.ink, line: PALETTE.line, surface: '#fbfaf6', lineColor: '#746f64',
+  theme: 'redux-color', ink: PALETTE.ink, line: PALETTE.line, surface: PALETTE['paper-strong'], lineColor: '#746f64',
   mainBkg: '#e3ece5', secondaryColor: '#f2efe7', noteBkgColor: '#f4efd8', noteBorderColor: '#c9b978',
   borders: DIAGRAM_BORDER_COLORS, fills: DIAGRAM_FILL_COLORS
 });

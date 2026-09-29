@@ -24,6 +24,11 @@ function sourceFiles(dir: string): string[] {
 test('site.css :root declares every palette color with the same value', () => {
   const vars = rootVariables(read('src/styles/site.css'));
   for (const [name, value] of Object.entries(PALETTE)) assert.equal(vars.get(name), value, `--${name}`);
+  // accent는 이름만 남은 토큰이고 값은 먹색이다. 어두운 화면 쪽과 함께 검사한다.
+  assert.equal(vars.get('accent'), PALETTE.ink, 'accent는 먹색과 같다');
+  // 테마를 지정한 도표의 판은 화면 모드와 상관없이 각 모드의 paper-strong이다. 판 색을 바꾸면 이 값도 따라가야 한다.
+  assert.equal(vars.get('diagram-plate-light'), PALETTE['paper-strong'], '--diagram-plate-light');
+  assert.equal(vars.get('diagram-plate-dark'), DARK_PALETTE['paper-strong'], '--diagram-plate-dark');
 });
 
 // 어두운 화면은 두 경로로 들어온다. 독자가 고른 data-theme과, 선택이 없을 때의 시스템 설정이다. 두 블록의 값이 갈라지면 한쪽만 옛 색으로 남는다.
@@ -52,15 +57,47 @@ test('DESIGN.md color tokens match the palette', () => {
   for (const [name, value] of Object.entries(DARK_PALETTE)) if (tokens.has(`${name}-dark`)) assert.equal(tokens.get(`${name}-dark`), value, `${name}-dark`);
 });
 
-test('palette hex values are written only in palette.ts and site.css', () => {
+// 팔레트 색은 hex 말고도 rgb()(쉼표·공백 문법)나 data URI 안의 %23hex로 옮겨 적을 수 있다. 찾은 값은 #rrggbb로 맞춰 돌려준다.
+const toHex = (r: string, g: string, b: string) => `#${[r, g, b].map((v) => Number(v).toString(16).padStart(2, '0')).join('')}`;
+function colorLiterals(text: string): { at: number; value: string }[] {
+  return [
+    ...[...text.matchAll(/(?:#|%23)([0-9a-fA-F]{6})\b/g)].map((m) => ({ at: m.index!, value: `#${m[1].toLowerCase()}` })),
+    ...[...text.matchAll(/rgba?\(\s*(\d{1,3})[\s,]+(\d{1,3})[\s,]+(\d{1,3})/g)].map((m) => ({ at: m.index!, value: toHex(m[1], m[2], m[3]) }))
+  ];
+}
+
+// CSS 변수를 쓸 수 없어 팔레트 값을 옮겨 적은 자리다. 구형 브라우저의 ::backdrop은 문서의 변수를 물려받지 않고,
+// data URI 안의 SVG는 페이지의 변수를 읽지 못한다. near 바로 뒤의 첫 색이 팔레트와 같아야 한다.
+const COPIES = [
+  { file: 'src/styles/site.css', near: '.search::backdrop { background: rgb(', color: PALETTE.ink },
+  { file: 'src/styles/body.css', near: '.diagram-viewer::backdrop { background: rgb(', color: PALETTE.ink },
+  { file: 'src/styles/body.css', near: '.body .task-list-item-checkbox:checked { background: var(--ink) url(', color: PALETTE['paper-strong'] },
+  { file: 'src/styles/body.css', near: ':root:not([data-theme]) .body .task-list-item-checkbox:checked { background-image: url(', color: DARK_PALETTE.paper },
+  { file: 'src/styles/body.css', near: ':root[data-theme="dark"] .body .task-list-item-checkbox:checked { background-image: url(', color: DARK_PALETTE.paper }
+];
+const copyAt = ({ file, near }: (typeof COPIES)[number]) => {
+  const text = read(file), start = text.indexOf(near);
+  return { start, literal: start < 0 ? undefined : colorLiterals(text).filter((c) => c.at > start).sort((a, b) => a.at - b.at)[0] };
+};
+
+test('palette values copied where CSS variables cannot reach still match the palette', () => {
+  for (const copy of COPIES) {
+    const { start, literal } = copyAt(copy);
+    assert.ok(start >= 0, `${copy.file}: ${copy.near}`);
+    assert.equal(literal?.value, copy.color, `${copy.file}: ${copy.near}`);
+  }
+});
+
+test('palette colors are written only in palette.ts and site.css, in any notation', () => {
   const allowed = new Set(['src/lib/palette.ts', 'src/styles/site.css']);
   const values = new Set<string>([...Object.values(PALETTE), ...Object.values(DARK_PALETTE)]);
+  const declared = new Set(COPIES.map((copy) => `${copy.file}@${copyAt(copy).literal?.at}`));
   const copies = sourceFiles('src').filter((path) => !allowed.has(path)).flatMap((path) =>
-    [...read(path).matchAll(/#[0-9a-fA-F]{6}\b/g)].filter((m) => values.has(m[0].toLowerCase())).map((m) => `${relative('.', path)}: ${m[0]}`));
+    colorLiterals(read(path)).filter((c) => values.has(c.value) && !declared.has(`${path}@${c.at}`)).map((c) => `${relative('.', path)}: ${c.value}`));
   assert.deepEqual(copies, []);
 });
 
 test('the retired ink #242720 does not come back as hex or rgb', () => {
-  const copies = sourceFiles('src').filter((path) => /#242720|rgba?\(\s*36\s*,\s*39\s*,\s*32/i.test(read(path)));
+  const copies = sourceFiles('src').filter((path) => /(?:#|%23)242720|rgba?\(\s*36[\s,]+39[\s,]+32\b/i.test(read(path)));
   assert.deepEqual(copies, []);
 });

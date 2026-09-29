@@ -38,7 +38,8 @@ test('page shells read structural sizes from spacing tokens', () => {
 });
 
 test('breakpoints stay on the documented widths in CSS and scripts', () => {
-  const allowed = new Set([359, 360, 480, 720, 721, 1000, 1240]);
+  // 721과 1001은 720·1000의 짝이다. 그 폭보다 넓을 때만 적용하는 규칙(min-width)이 쓴다.
+  const allowed = new Set([359, 360, 480, 720, 721, 1000, 1001, 1240]);
   // Astro 파일은 스타일 블록만 본다. 이미지 sizes 속성의 폭은 받을 이미지를 고르는 힌트라 전환 폭이 아니다.
   const text = (path: string) => (path.endsWith('.ts') ? read(path) : styleText(path));
   const found = sourceFiles('src', /\.(css|astro|ts)$/).flatMap((path) => [...text(path).matchAll(/\((?:min|max)-width:\s*([\d.]+)px\)/g)]
