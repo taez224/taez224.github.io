@@ -31,7 +31,7 @@ const lines = (edge: { x1: number; y1: number; x2: number; y2: number; direction
             {/* 제목은 단어 경계에서 두 줄까지 줄여 보이고(local-graph-layout.ts), 전체 제목은 툴팁(title)과 목록의 같은 줄이 보여 준다.
                 링크 이름은 aria-label이 준다. 목록의 같은 줄은 호버·포커스에서 함께 강조된다(local-graph.ts). */}
             <title>{cleanTitle(node.title)}</title>
-            <circle cx={node.x} cy={node.y} r="14" fill="transparent" />
+            <circle cx={node.x} cy={node.y} r="14" fill="transparent" class="hit" />
             <circle cx={node.x} cy={node.y} r="6" fill={node.color} />
             {node.label && <text x={node.label.x} y={node.label.y} text-anchor="middle">{node.label.lines.map((line, index) => <tspan x={node.label!.x} dy={index ? 13 : undefined}>{line}</tspan>)}</text>}
           </a>)}
@@ -55,6 +55,8 @@ const lines = (edge: { x1: number; y1: number; x2: number; y2: number; direction
   .edge { stroke: var(--accent); stroke-width: 1.2; stroke-opacity: .75; }
   .edge.is-in { stroke-dasharray: 5 4; }
   .node circle { stroke: var(--paper); stroke-width: 2.5; }
+  /* 누르는 원(14px)은 투명해도 테두리는 그려진다. 종이색 테두리가 간선을 가로질러 점 앞에서 선을 끊어 보이게 했다. */
+  .node .hit { stroke: none; }
   .node .ring { fill: none; stroke: var(--accent); stroke-width: 1.2; stroke-opacity: .65; }
   /* 작은 그래프의 이름은 SVG 좌표 안에서 px 기준으로 배치하므로 역할 토큰(rem)을 쓰지 않는다. */
   .node text { font-family: var(--sans); font-size: 11px; fill: var(--ink); paint-order: stroke; stroke: var(--paper); stroke-width: 3.5px; stroke-linejoin: round; pointer-events: none; }

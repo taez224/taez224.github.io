@@ -79,6 +79,21 @@ test('a linked neighbor in the small graph changes its dot outline without cover
   expect(covered, '칠한 원이 제목을 덮지 않는다').toBe(false);
 });
 
+// 누르는 원(14px)이 투명한데도 점과 같은 종이색 테두리를 받아, 그 고리가 간선을 가로질러 점 앞에서 선이 끊겨 보였다.
+// 간선 끝을 떼는 종이색 테두리는 보이는 점에만 둔다.
+test('small graph edges reach each neighbor dot without a gap from the invisible hit circle', async ({ page }) => {
+  await page.goto('/notes/browser-many/');
+  const strokes = await page.locator('.local-graph a.node').evaluateAll((nodes) => nodes.map((a) => {
+    const [hit, dot] = a.querySelectorAll('circle');
+    return { hit: getComputedStyle(hit).stroke, dot: getComputedStyle(dot).stroke };
+  }));
+  expect(strokes.length).toBeGreaterThan(0);
+  for (const { hit, dot } of strokes) {
+    expect(hit, '누르는 원은 테두리를 그리지 않는다').toBe('none');
+    expect(dot, '보이는 점은 종이색 테두리로 간선 끝을 뗀다').not.toBe('none');
+  }
+});
+
 test('linked highlighting survives mixed focus and hover', async ({ page, isMobile }) => {
   await page.goto('/notes/browser-start/');
   const graph = page.locator('.local-graph a.node').first();
