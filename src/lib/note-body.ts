@@ -27,7 +27,7 @@ function bodyHeadings(body: string): BodyHeading[] {
 // 220자 안에서 끝나는 마지막 문장까지 자른다. 글자 수로만 자르면 문장 한가운데서 끊긴 채 메타 설명과 검색 결과에 나갔다.
 // 짧은 본문도 같다. 허브는 소개 문장 뒤에 마침표 없는 링크 목록이 이어져, 220자 안이라도 목록 제목이 요약에 붙었다.
 // 문장 끝은 목록의 firstSentence(format.ts)와 같은 기준이라 1.5 같은 소수점에서는 끊지 않는다.
-// 문장 끝이 하나도 없는 글만 220자까지 쓰고, 넘치면 어절 경계에서 자르고 말줄임표를 붙인다.
+// 220자 안에 문장 끝이 없는 글만 220자까지 쓰고, 넘치면 어절 경계에서 자르고 말줄임표를 붙인다.
 const EXCERPT_LENGTH = 220;
 function excerpt(text: TextAnalysis): string {
   const cleaned = text.excerptText;

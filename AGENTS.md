@@ -46,9 +46,9 @@ npm run mark:build           # 표식 도안을 고쳤을 때만. public/favicon
 - 조립 코드의 규칙(모듈 책임과 의존 방향, 빌드를 멈추는 조건, OG 카드 캐시)은 `src/lib/AGENTS.md`에 있다. `src/lib/`을 고치기 전에 읽는다.
 - 조립이 읽는 입력을 새로 더하면 `src/loaders/vault.ts`의 `watchPathsFor`에도 더한다. 빠뜨리면 dev에서 그 파일을 고쳐도 다시 조립되지 않는다.
 - 홈과 지도는 페이지에 인라인한 JSON(`data-hero-data`, `data-map-data`)으로 그래프를 그리므로 fetch하지 않는다. fetch는 검색이 `search.json`을 열 때만 한다. `data/site.json`은 페이지가 쓰지 않지만 공개 데이터 엔드포인트이자 check-dist의 기준 자료라 남긴다.
-- 홈과 지도의 그래프는 프레임워크 없는 SVG 엔진 `src/graph/engine.ts`가 그린다. `src/graph`의 나머지 모듈은 DOM을 쓰지 않는 순수 함수이고, 함수가 든 모듈마다 단위 테스트가 있다. 노트 사이드바의 작은 그래프와 OG 카드의 그래프는 엔진 없이 `src/components/local-graph-layout.ts`의 순수 함수로 빌드 때 그린다.
-- 홈은 빌드 때 그린 SVG 스냅샷(`src/graph/snapshot.ts`)을 먼저 보여 주고, 넓은 화면에서는 엔진이 올라오면 스냅샷을 가린다. 두 쪽이 같은 제목 배치 규칙(`label.ts`의 `placeLabels`)과 맞춤을 써야 교체가 눈에 띄지 않으므로, 배치 규칙을 바꾸면 두 쪽이 함께 바뀌는지 확인한다.
-- 한 열로 접히는 폭(1000px 이하)과 손가락으로 쓰는 기기에서는 엔진을 숨기고 스냅샷을 보인다. 지도 SVG가 `touch-action: none`이라 엔진이 올라오면 세로 스와이프를 가져가고, 살아 있는 지도가 주는 호버 미리보기는 손가락으로 얻을 수 없다. 1000px 이하에서는 지도 상자가 280px로 낮아져 엔진의 영역 이름이 허브 제목과 겹치므로, 마우스를 쓰더라도 그 상자에 맞춰 그린 스냅샷을 쓴다. 창을 줄이거나 기기를 돌려도 스냅샷이 돌아와야 하므로, 스냅샷은 DOM에서 지우지 않고 CSS로만 가린다. 이 경계는 `src/scripts/hero-graph.ts`의 `LIVE_HERO_QUERY`와 `src/pages/index.astro`의 미디어 쿼리 두 곳에 있고, `tests/hero-graph.test.ts`가 둘이 같은지 검사한다.
+- 홈과 지도의 그래프는 프레임워크 없는 SVG 엔진 `src/graph/engine.ts`가 그린다. `src/graph`의 나머지 모듈은 DOM을 쓰지 않는 순수 함수이고 단위 테스트로 검사한다. 노트 사이드바의 작은 그래프와 글별 OG 카드의 그래프는 엔진 없이 `src/components/local-graph-layout.ts`로 빌드 때 그린다.
+- 홈은 빌드 때 그린 SVG 스냅샷(`src/graph/snapshot.ts`)을 먼저 보여 주고, 넓은 화면에서만 엔진이 올라오면 스냅샷을 가린다. 두 쪽이 같은 제목 배치 규칙(`label.ts`의 `placeLabels`)을 써야 교체가 눈에 띄지 않으므로, 배치 규칙을 바꾸면 두 쪽이 함께 바뀌는지 확인한다. 창을 줄이거나 기기를 돌리면 스냅샷이 돌아와야 하므로 스냅샷은 DOM에서 지우지 않고 CSS로만 가린다.
+- 엔진을 올리는 조건은 `src/scripts/hero-graph.ts`의 `LIVE_HERO_QUERY`와 `src/pages/index.astro`의 미디어 쿼리 두 곳에 있고, `tests/hero-graph.test.ts`가 둘이 같은지 검사한다. 조건을 그렇게 정한 이유는 `DESIGN.md`의 「페이지별 배치」에 있다.
 - 지도는 무대 크기가 화면마다 달라 스냅샷을 둘 수 없다. 대신 `src/integrations/module-preload.ts`가 지도 스크립트를 `<head>`로 옮기고 `blocking="render"`를 달아, 그래프가 올라간 뒤에 첫 화면을 그린다.
 
 ### 공개 범위 규칙 (바꿀 때 주의)
@@ -81,7 +81,7 @@ npm run mark:build           # 표식 도안을 고쳤을 때만. public/favicon
 화면 작업 전에 `DESIGN.md`의 Overview와 관련 절을 읽는다. 이 문서는 Google Labs의 DESIGN.md 형식으로 현재 디자인의 규칙과 의도를 기록한다.
 
 - 디자인은 기존 컴포넌트에서 출발해 고친다. `DESIGN.md` 본문에는 규칙과 그 이유, 절의 성격을 정하는 대표 값만 적는다. 한 컴포넌트 안에서만 쓰이는 값은 토큰과 CSS에, 동작의 세부는 코드 주석과 테스트에, 결정의 경위는 커밋 메시지에 둔다. 어느 값이 어느 파일에서 오고 어떤 테스트가 문서와 구현의 일치를 검사하는지는 `DESIGN.md`의 「문서와 구현의 대응」 표에 있다. 문서와 구현이 어긋나면 의도한 변경인지 확인하고, 문서가 낡았으면 현재 구현에 맞춘다.
-- 사이트 색의 단일 출처는 `src/lib/palette.ts`의 `PALETTE`(밝은 화면)와 `DARK_PALETTE`(어두운 화면)다. 같은 값이 `site.css`의 `:root`(어두운 화면은 미디어 쿼리와 `data-theme` 두 블록)와 `DESIGN.md` 앞머리 색 토큰에도 있으므로 색을 바꾸면 세 곳을 함께 고친다. `tests/palette.test.ts`가 세 곳이 같은지, 다른 파일에 hex 값이 없는지 검사한다. 컴포넌트 CSS는 `var(--이름)`으로 읽고, CSS 변수를 읽지 못하는 OG 카드·Mermaid 설정·`theme-color` 메타만 이 상수를 가져다 쓴다.
+- 사이트 색의 단일 출처는 `src/lib/palette.ts`의 `PALETTE`(밝은 화면)와 `DARK_PALETTE`(어두운 화면)다. 같은 값이 `site.css`의 `:root`(어두운 화면은 미디어 쿼리와 `data-theme` 두 블록)와 `DESIGN.md` 앞머리 색 토큰에도 있으므로 색을 바꾸면 세 곳을 함께 고친다. `tests/palette.test.ts`가 세 곳이 같은지, 다른 파일에 팔레트 색을 hex나 `rgb()`로 옮겨 적지 않았는지 검사한다. 컴포넌트 CSS는 `var(--이름)`으로 읽고, CSS 변수를 읽지 못하는 OG 카드·Mermaid 설정·`theme-color` 메타만 이 상수를 가져다 쓴다. `::backdrop`과 data URI처럼 CSS 안에서도 변수를 못 읽는 자리는 테스트의 `COPIES`에 등록해 값을 맞춘다.
 - 픽셀 도안의 단일 출처는 `src/lib/mark.ts`(개인 표식)와 `src/lib/pixel-icons.ts`(조작 아이콘)의 격자다. 한 칸이 1px이므로 격자 칸 수와 표시 크기가 어긋나면 도안이 흐려지고, `tests/mark.test.ts`와 `tests/pixel-icons.test.ts`가 실패한다. 파비콘과 터치 아이콘은 `npm run mark:build`가 만드는 생성물이라 직접 고치지 않는다.
 - `npm run design:lint`(`@google/design.md@0.4.0`)는 문서 형식과 선언한 색 조합의 대비만 검사한다. 오류가 0이어도 실제 화면은 따로 확인한다.
 
@@ -106,7 +106,7 @@ npm run mark:build           # 표식 도안을 고쳤을 때만. public/favicon
 
 vault(`../obsidian`)에 쓰는 노트와 글은 그 저장소의 규칙과 스킬이 정본이다.
 
-Codex는 이 절만 읽고, Claude Code는 여기에 더해 위의 output-style 전문까지 읽는다. 두 도구에 같은 조항을 두 벌 싣지 않으려고 조항 전문과 관할 배분을 나눠 두었다.
+Codex는 이 절만 읽고, Claude Code는 output-style 전문까지 읽는다.
 
 ## 테스트
 
@@ -123,7 +123,7 @@ Codex는 이 절만 읽고, Claude Code는 여기에 더해 위의 output-style 
 - `AGENTS.md`, `DESIGN.md`, `AUTHORING.md`를 점검하거나 최신화할 때는 `doc-audit` 스킬의 절차를 따른다. 문장을 다듬기 전에 서술을 코드와 대조한다.
 - 새 표시 문법이나 조건을 추가하면 `AUTHORING.md`와 관련 테스트를 고친다. 공개 범위나 배포 산출물의 필수 조건이 바뀔 때만 `check-dist.ts`를 고친다. frontmatter 속성을 바꾸면 vault의 속성 스키마도 고친다.
 - 생성물인 `dist/`와 `.astro/`는 편집하지 않는다.
-- `docs/`는 설계 문서, 계획서, 비교 기록을 두는 로컬 전용 폴더다(`.git/info/exclude`). `git add` 하지 않는다. 2026-09-06 리디자인 문서들은 사이트가 vault 안에 있던 시절(`basePath: /obsidian`) 기준이라 경로가 낡았다.
+- `docs/`는 설계 문서, 계획서, 비교 기록을 두는 로컬 전용 폴더다(`.git/info/exclude`). `git add` 하지 않는다.
 - 독자에게 `published`·`slipbox`·`blog`·`프로젝트/*`·`status` 같은 내부 메타데이터 값을 보이지 않는다. 문구와 배치 변경은 화면에서 검토한다.
 
 ## 커밋 규칙
