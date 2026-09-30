@@ -8,7 +8,8 @@ updates:
     groups:
       compatible-updates:
         update-types: [minor, patch]
-    # astro check가 TypeScript 6.x의 programmatic API를 쓴다. 7.x는 그 API가 없어 설치부터 실패하므로 major 갱신은 받지 않는다.
+    # astro check는 TypeScript 7을 지원하지 않고, Astro 7.3.4부터는 7을 감지하면 검사를 거부한다.
+    # TS 7.1과 @astrojs/ts-content-mapper로 옮기기 전까지 major 갱신은 받지 않는다.
     ignore:
       - dependency-name: typescript
         update-types: ['version-update:semver-major']
