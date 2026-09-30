@@ -35,6 +35,80 @@ test('adjacent footnotes have their own space and open the intended note', async
   await expect(page.locator('.footnote-panel')).not.toBeVisible();
 });
 
+// 짧은 노트는 글 끝 각주 목록이 처음부터 화면에 보여 미리보기가 뜨지 않는다. 목록을 화면 밖으로 밀어 두고 검사한다.
+const pushFootnotesOffscreen = (page: import('@playwright/test').Page) => page.addStyleTag({ content: '.body .footnotes { margin-top: 3000px; }' });
+
+test('hovering a footnote number previews it until the pointer leaves both number and panel', async ({ page, isMobile }) => {
+  test.skip(isMobile, '호버 미리보기는 마우스에서만 쓴다');
+  await page.goto('/notes/browser-start/');
+  await pushFootnotesOffscreen(page);
+  const panel = page.locator('.footnote-panel');
+  const first = page.getByRole('link', { name: '각주 1', exact: true });
+  await first.hover();
+  // 스쳐 지나가는 포인터에는 열리지 않도록 잠시 기다린 뒤에 연다.
+  await expect(panel).toBeHidden();
+  await expect(panel).toContainText('첫 각주 내용');
+  // 번호에서 판으로 옮겨 가는 동안과 판 위에 있는 동안은 닫히지 않는다.
+  await panel.hover();
+  await page.waitForTimeout(500);
+  await expect(panel).toBeVisible();
+  // 이웃 번호로 옮기면 기다리지 않고 그 각주로 바뀐다.
+  await page.getByRole('link', { name: '각주 2', exact: true }).hover();
+  await expect(panel).toContainText('둘째 각주 내용', { timeout: 200 });
+  await page.mouse.move(5, 5);
+  await expect(panel).toBeHidden();
+});
+
+test('clicking a previewed footnote pins the panel until Escape', async ({ page, isMobile }) => {
+  test.skip(isMobile, '호버 미리보기는 마우스에서만 쓴다');
+  await page.goto('/notes/browser-start/');
+  await pushFootnotesOffscreen(page);
+  const panel = page.locator('.footnote-panel');
+  const first = page.getByRole('link', { name: '각주 1', exact: true });
+  await first.hover();
+  await expect(panel).toContainText('첫 각주 내용');
+  await first.click();
+  await page.mouse.move(5, 5);
+  await page.waitForTimeout(500);
+  await expect(panel).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(panel).toBeHidden();
+});
+
+// 닫히는 판을 전환으로 남겨 두면 번호의 anchor-name이 먼저 빠져 그 사이 판이 화면 왼쪽 위로 튄다.
+test('a closing footnote panel disappears at once instead of losing its anchor', async ({ page, isMobile }) => {
+  await page.goto('/notes/browser-start/');
+  const first = page.getByRole('link', { name: '각주 1', exact: true });
+  if (isMobile) await first.tap(); else await first.click();
+  await expect(page.locator('.footnote-panel')).toBeVisible();
+  const display = await page.evaluate(() => new Promise<string>((resolve) => {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    requestAnimationFrame(() => resolve(getComputedStyle(document.getElementById('footnote-panel')!).display));
+  }));
+  expect(display).toBe('none');
+});
+
+test('moving to a number whose footnote is on screen closes the previous preview', async ({ page, isMobile }) => {
+  test.skip(isMobile, '호버 미리보기는 마우스에서만 쓴다');
+  await page.goto('/notes/browser-start/');
+  // 첫 항목은 화면 안에 두고 둘째 항목만 화면 밖으로 민다.
+  await page.addStyleTag({ content: '.body .footnotes li:first-child { margin-bottom: 3000px; }' });
+  const panel = page.locator('.footnote-panel');
+  await page.getByRole('link', { name: '각주 2', exact: true }).hover();
+  await expect(panel).toContainText('둘째 각주 내용');
+  await page.getByRole('link', { name: '각주 1', exact: true }).hover();
+  await expect(panel).toBeHidden();
+});
+
+test('the preview stays closed when the footnote list is already on screen', async ({ page, isMobile }) => {
+  test.skip(isMobile, '호버 미리보기는 마우스에서만 쓴다');
+  await page.goto('/notes/browser-start/');
+  await expect(page.locator('.body .footnotes')).toBeInViewport();
+  await page.getByRole('link', { name: '각주 1', exact: true }).hover();
+  await page.waitForTimeout(500);
+  await expect(page.locator('.footnote-panel')).toBeHidden();
+});
+
 test('copy works inside the footnote panel each time it opens', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto('/notes/browser-start/');

@@ -586,6 +586,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 - **메타 줄:** 구분점은 뒤 항목에 붙여, 줄이 바뀔 때 점만 앞줄 끝에 남지 않게 한다.
 - **콜아웃:** 밝은 판, 위쪽 2px 먹색 괘선, 본문보다 작은 활자의 세 단서를 겹친다. 가는 선 하나로는 본문의 일부처럼 읽힌다. 판을 더 짙게 칠하지 않는 것은 보조색 머리표가 4.5:1을 넘기 어렵기 때문이다.
 - **각주:** 번호를 누르면 번호에 붙은 떠 있는 판이 열린다. 키보드로 누르거나 판을 띄우지 못하는 브라우저에서는 판 없이 글 끝 목록으로 가서 ↩로 돌아온다. 낭독기와 키보드 사용자가 흐름을 잃지 않기 때문이다.
+  - 마우스에서는 번호에 잠시 머물면 같은 판을 미리보기로 띄우고, 포인터가 번호와 판을 모두 떠나면 닫는다. 번호를 누르면 판이 고정된다. 미리보기는 누르는 동작을 대신하지 않고 더할 뿐이라 터치와 마우스의 누르기가 같다. 본문을 읽다 스쳐 지나가는 포인터에는 열리지 않게 기다리고, 이웃 번호로 옮길 때는 기다리지 않는다. 글 끝 목록의 그 항목이 이미 화면에 보이면 같은 내용을 겹쳐 띄우지 않는다.
 - **코드 블록:** 문단보다 토큰 종류를 빨리 가려 읽어야 하므로 사이트 톤보다 문법 구분과 대비를 앞세운다. 밝은 화면은 흰 바탕을 쓴다. 가장 흐린 주석이 종이색 위에서 4.5:1에 못 미치기 때문이다. 강조는 빌드 때 끝내 방문자에게 스크립트를 보내지 않는다. 복사 버튼은 스크립트 없이는 동작하지 않으므로 스크립트가 붙인다.
 - **도표:** 노드는 한 가지 면 색으로 두고 색은 묶음이 지게 한다. 노드까지 색을 돌리면 색이 묶음을 뜻하는지 항목을 뜻하는지 가릴 수 없다. 앞머리로 테마를 지정한 도표는 사이트 색을 입히지 않고, 그 테마가 전제한 밝기의 판에 화면 모드와 상관없이 둔다.
 - **글 카드:** 사방 테두리를 쓴다. 위아래 괘선만 두면 절 제목의 밑줄과 다음 절의 구분선으로 읽혀 한 덩어리로 묶이지 않는다. 테두리는 링크에 두어 누르는 자리와 강조되는 영역을 맞춘다.
@@ -677,7 +678,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 본문 모양(콜아웃, 표, 도표 상자) | `src/styles/body.css` | 일부만: `tests/interaction-states.test.ts`(콜아웃 머리표 영역), `tests/browser/reader.spec.ts`(표 안 식별자) |
 | 본문 안 글 카드의 테두리·여백·강조 | `src/styles/article-card.css` | 없음 |
 | 코드 블록 머리 줄과 복사 버튼 | `src/lib/markdown.ts`, `src/scripts/code-copy.ts`, `src/styles/body.css` | `tests/code-block.test.ts` |
-| 각주 번호·목록·판 | `src/lib/markdown.ts`, `src/scripts/footnotes.ts`, `src/styles/body.css` | `tests/markdown-footnotes.test.ts`, `tests/footnotes.test.ts` |
+| 각주 번호·목록·판과 호버 미리보기 | `src/lib/markdown.ts`, `src/scripts/footnotes.ts`, `src/styles/body.css` | `tests/markdown-footnotes.test.ts`, `tests/footnotes.test.ts`, `tests/browser/reader.spec.ts` |
 | 조작 아이콘의 도안과 표시 크기 | `src/lib/pixel-icons.ts`, `site.css`의 `.search-trigger svg`·`.search-close svg`, `map/index.astro`의 `.graph-controls svg`, `body.css`의 `.code-copy-plate svg` | `tests/pixel-icons.test.ts` |
 | 개인 표식의 도안·파비콘·터치 아이콘 | `src/lib/mark.ts`, `src/lib/palette.ts`의 `MARK`, `scripts/make-mark.ts`가 만든 `public/favicon.svg`·`apple-touch-icon.png` | `tests/mark.test.ts` |
 | 사이드바 작은 그래프의 제목과 목록의 함께 강조 | `src/components/local-graph-layout.ts`, `src/components/LocalGraph.astro`, `src/scripts/local-graph.ts`, `src/components/NoteSidebar.astro` | `tests/local-graph.test.ts`, `tests/local-graph-links.test.ts`, `tests/browser/reader.spec.ts` |
