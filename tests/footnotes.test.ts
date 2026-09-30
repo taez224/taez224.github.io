@@ -44,6 +44,7 @@ class FakeElement {
   getAttribute(name: string) { return this.attributes.get(name) ?? null; }
   setAttribute(name: string, value: string) { this.attributes.set(name, value); }
   removeAttribute(name: string) { this.attributes.delete(name); }
+  toggleAttribute(name: string, force: boolean) { if (force) this.attributes.set(name, ''); else this.attributes.delete(name); }
   addEventListener(event: string, listener: (event: unknown) => void) { this.listeners.set(event, listener); }
   showPopover() { this.open = true; }
   hidePopover() { this.open = false; }
@@ -68,6 +69,9 @@ function page({ anchorPositioning = true } = {}) {
     setupCodeCopy: (root: FakeElement) => initialized.push(root),
     CSS: { supports: (query: string) => anchorPositioning && /anchor-name/.test(query) },
     HTMLElement: { prototype: { showPopover() {} } },
+    // 호버 미리보기는 브라우저 회귀 검사(reader.spec.ts)가 다룬다. 여기서는 호버할 수 없는 기기로 두고 누르기만 본다.
+    matchMedia: () => ({ matches: false }),
+    performance, setTimeout, clearTimeout, window: { setTimeout }, innerHeight: 800,
     document: {
       body,
       querySelectorAll: () => refs,
