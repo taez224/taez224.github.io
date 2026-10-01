@@ -34,13 +34,15 @@ const SITE = "TaeZ's Thinking Garden: a personal Korean-language website that pu
 const ISSUE = "An issue filed in the website's repository, either by a reader reporting something or by the owner tracking work. `title` is its title and `body` is its text.";
 
 // Jev는 글자 그대로 읽는다. 경계는 입력에서 확인할 수 있는 말로 적는다.
-// "설계대로 동작한다"는 제보 글만으로 알 수 없다. "고장 났다"와 "동작하지만 불편하다"는 글에 드러난다.
-// 동작하지만 불편한 것은 개선 제안이다. 이 경계가 없을 때 "누르기 어렵다", "글자가 흐리다"를 오류 쪽으로 읽었다.
+// "설계대로 동작한다"는 제보 글만으로 알 수 없어서 쓰지 않는다. "쓸 수 없다"와 "쓸 수 있지만 불편하다"는 글에 드러난다.
+// 쓸 수 있지만 불편한 것은 개선 제안이다. 이 경계가 없을 때 "누르기 어렵다", "글자가 흐리다"를 오류 쪽으로 읽었다.
+// 읽거나 조작할 수 없는 것은 오류다. Tab을 많이 눌러야 하는 것과 키보드로 아예 닿지 못하는 것은 다르다.
+// 영향도는 오류와 내용 정정에만 쓰므로, 막힌 문제를 개선 제안으로 읽으면 우선순위 후보에서도 빠진다.
 const typeCriteria: Record<TypeOption, Option> = {
   bug: {
-    what: 'Something on the site is broken for a reader: it does not work, does not load, or is displayed wrongly.',
-    not_for: 'Something that works but is inconvenient or could be better. Mistakes in what an article says. Failures that only show up in tests or CI.',
-    examples: ['목차 버튼을 눌러도 열리지 않아요', '모바일에서 표가 화면 밖으로 잘려요', '검색 결과를 눌러도 이동하지 않습니다']
+    what: 'Something on the site is broken for a reader: it does not work, does not load, is displayed wrongly, or cannot be read or operated at all.',
+    not_for: 'Something that can be used but is inconvenient or could be better. Mistakes in what an article says. Failures that only show up in tests or CI.',
+    examples: ['목차 버튼을 눌러도 열리지 않아요', '모바일에서 표가 화면 밖으로 잘려요', '키보드로는 이 버튼에 갈 수가 없어요', '글자가 배경과 같은 색이라 전혀 안 보여요']
   },
   content: {
     what: 'What a note or article says is wrong or broken: a typo, a factual error, an outdated statement, a dead link inside the text.',
@@ -49,8 +51,8 @@ const typeCriteria: Record<TypeOption, Option> = {
     examples: ['둘째 문단에 오타가 있어요', '이 설명은 사실과 다릅니다', '본문에 걸린 링크가 없는 페이지로 갑니다']
   },
   enhancement: {
-    what: 'A suggestion to make the site better: a new feature, or something that works as designed but is inconvenient, hard to use or could be improved.',
-    not_for: 'Something that is broken.',
+    what: 'A request for a new feature, or a suggestion to make something that can already be used more convenient.',
+    not_for: 'Something that is broken, or that cannot be read, reached or operated at all.',
     examples: ['버튼이 작아서 누르기 어려워요', 'Tab을 너무 많이 눌러야 합니다', '태그로도 걸러 볼 수 있으면 좋겠어요']
   },
   question: {
@@ -137,11 +139,12 @@ export const QUESTIONS = {
     ]
   },
   // 장소와 증상이 둘 다 있어야 한다. "주소나 인용문이 있으면 예"로 적었을 때는 주소만 있고 "이상해요"인 글을 반쯤 예로 보았다.
+  // 주소가 꼭 있어야 하는 것은 아니다. 검색이나 헤더처럼 모든 페이지에 있는 기능은 이름만으로 자리를 알 수 있다.
   has_repro_info: {
     type: 'noul',
     instructions: { input: ISSUE, question: 'Does the issue say both where the problem is and what is wrong, specifically enough for the site owner to find it again?' },
     criteria: {
-      true: 'It names the place (a page, a passage or a feature) and describes the symptom concretely.',
+      true: 'It names the place and describes the symptom concretely. The place can be a page, a passage, or a feature of the site named by what it is, such as the search dialog or the header menu. A page address is not required.',
       false: 'The place or the symptom is missing or too vague to act on, for example a page address followed only by "it looks odd".'
     }
   },
