@@ -67,6 +67,7 @@ npm run mark:build           # 표식 도안을 고쳤을 때만. public/favicon
 - 이슈 제목과 본문은 스크립트가 이벤트 파일에서 읽는다. 워크플로에 `github.event.issue.title` 같은 식을 쓰지 않는다. `tests/issue-triage-workflow.test.ts`가 이 조건과 권한, 액션 고정을 검사한다.
 - 라벨은 `scripts/issue-triage/rules.ts`의 대응표에 있는 것만 붙인다. 질문 문구를 바꾸면 `QUESTIONS_VERSION`을, 임계값이나 대응표를 바꾸면 `RULES_VERSION`을 올린다.
 - 첫 실행은 판정을 댓글로 남긴다. 댓글에는 정해 둔 문구와 판정값만 쓰고 이슈의 제목과 본문을 옮기지 않는다. 숨긴 주석의 판정 기록도 공개된 값이다.
+- 사이트의 제보 링크는 `src/lib/feedback.ts`가 만든 주소로 `.github/ISSUE_TEMPLATE/feedback.yml` 폼을 연다. 폼의 이름이나 칸 id를 바꾸면 이 파일도 함께 고친다. 링크와 폼은 이슈 제목을 채우지 않는다. `tests/feedback.test.ts`가 둘이 같은지 검사한다. 링크를 두는 자리의 규칙은 `DESIGN.md`의 「제보 링크」에 있다.
 - Jev 키는 `issue-triage` 환경의 비밀 값이다. 로컬에서는 `TRIAGE_DRY_RUN=1`을 주면 라벨을 고치지 않고 판정만 확인한다.
 
 ## TypeScript 검사
