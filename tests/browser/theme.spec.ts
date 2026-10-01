@@ -81,6 +81,8 @@ test('a theme change that arrives before the diagram script still reaches the di
   await page.addInitScript(() => localStorage.setItem('theme', 'dark'));
   await page.goto('/notes/browser-diagram/');
   await expect(page.locator('.mermaid svg')).toHaveCount(1);
+  // Mermaid는 컨테이너 안에 svg를 먼저 만들고 도형을 나중에 채우므로, svg만 보고 읽으면 기준 색이 null로 굳는다.
+  await expect.poll(() => page.evaluate(fills), { message: '기준 도표의 도형이 그려진다' }).not.toContain(null);
   const expected = await page.evaluate(fills);
 
   const raced = await page.context().newPage();
