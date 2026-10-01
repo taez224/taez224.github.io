@@ -76,6 +76,12 @@ test('only the first attempt of an issues event counts as the opening run', () =
   assert.equal(triggerFor('workflow_dispatch', '1'), 'dispatch');
 });
 
+test('repository work gets its own type and area, and is not weighed for reader impact', () => {
+  // 테스트, CI, 빌드처럼 독자에게 보이지 않는 일이다. 영향도와 재현 정보는 독자가 겪는 문제에만 쓴다.
+  const decision = decide(verdict({ type: kind('maintenance'), area: place('internal'), hasReproInfo: 0.1, impact: { score: 3, confidence: 1 } }), [NEEDS_TRIAGE], 'opened');
+  assert.deepEqual(sorted(decision.add), ['area:internal', 'maintenance']);
+});
+
 test('a rerun leaves an issue alone once the owner has removed needs-triage', () => {
   assert.equal(isConfirmed(['bug'], 'dispatch'), true);
   assert.equal(isConfirmed(['bug', NEEDS_TRIAGE], 'dispatch'), false);

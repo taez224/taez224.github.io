@@ -3,8 +3,8 @@ import { AREA_LABELS, CHOICE_MIN_CONFIDENCE, TYPE_LABELS } from './rules.ts';
 import type { TriageRecord } from './run.ts';
 
 // 댓글에 보이는 이름이다. 선택지의 영어 이름은 내부 값이어서 독자에게 그대로 보이지 않는다.
-const TYPE_NAMES: Record<TypeOption, string> = { bug: '오류', content: '내용 정정', enhancement: '개선 제안', question: '질문', none: '해당 없음' };
-const AREA_NAMES: Record<AreaOption, string> = { reader: '읽기 화면', map: '지도', home: '홈', search: '검색', books: '책장', site: '사이트 전반', unknown: '알 수 없음' };
+const TYPE_NAMES: Record<TypeOption, string> = { bug: '오류', content: '내용 정정', enhancement: '개선 제안', question: '질문', maintenance: '유지 보수', none: '해당 없음' };
+const AREA_NAMES: Record<AreaOption, string> = { reader: '읽기 화면', map: '지도', home: '홈', search: '검색', books: '책장', site: '사이트 전반', internal: '내부', unknown: '알 수 없음' };
 
 const RECORD_MARK = 'issue-triage:record';
 
@@ -54,20 +54,22 @@ export function renderComment(record: TriageRecord, owner: string | null): strin
   const verdict = record.verdict;
   if (!verdict) {
     // triage-failed 라벨은 붙으므로 "라벨을 붙이지 못했다"고 쓰지 않는다.
+    if (record.byOwner) return ['종류와 영역을 자동으로 분류하지 못했습니다.', '', hidden(record)].join('\n');
     return ['제보 감사합니다. 종류와 영역을 자동으로 분류하지 못했습니다.', '', `${who}가 내용을 직접 확인합니다.`, '', hidden(record)].join('\n');
   }
   const typeName = verdict.type.choice === 'none' ? '정하지 못함' : TYPE_NAMES[verdict.type.choice];
   const areaName = verdict.area.choice === 'unknown' ? '정하지 못함' : AREA_NAMES[verdict.area.choice];
+  // 소유자가 직접 올린 이슈에는 인사와 태그를 넣지 않는다. 자기 글에 감사 인사를 받고 자기 자신을 부르게 된다.
+  const greeting = record.byOwner ? [] : ['제보 감사합니다. 아래는 자동 분류의 추정이어서 틀릴 수 있습니다.', ''];
+  const closing = record.byOwner ? [] : [`최종 분류는 ${who}가 내용을 확인한 뒤 정합니다.`, ''];
   return [
-    '제보 감사합니다. 아래는 자동 분류의 추정이어서 틀릴 수 있습니다.',
-    '',
+    ...greeting,
     '| 항목 | 추정 | 현재 처리 |',
     '|---|---|---|',
     `| 종류 | ${typeName} | ${handling('종류', verdict.type, TYPE_LABELS, record)} |`,
     `| 영역 | ${areaName} | ${handling('영역', verdict.area, AREA_LABELS, record)} |`,
     '',
-    `최종 분류는 ${who}가 내용을 확인한 뒤 정합니다.`,
-    '',
+    ...closing,
     '<details><summary>자세히</summary>',
     '',
     `확신도는 0에서 1 사이의 값이고, ${CHOICE_MIN_CONFIDENCE} 이상일 때만 라벨을 붙입니다.`,

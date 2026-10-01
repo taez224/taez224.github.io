@@ -1,13 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readRecord, renderComment } from '../scripts/issue-triage/comment.ts';
+import { QUESTIONS_VERSION } from '../scripts/issue-triage/questions.ts';
+import { RULES_VERSION } from '../scripts/issue-triage/rules.ts';
 import { newRecord, type TriageRecord } from '../scripts/issue-triage/run.ts';
 import { kind, place, verdict } from './helpers/triage.ts';
 
 // 종류는 개선 제안과 오류로 갈려 보류되고, 영역은 읽기 화면으로 붙은 실행이다. 실제 이슈 #41의 판정과 같은 모양이다.
 function record(over: Partial<TriageRecord> = {}): TriageRecord {
-  const split = { ...kind('enhancement', 0.58), probabilities: { bug: 0.33, content: 0, enhancement: 0.67, question: 0, none: 0 } };
-  const reader = { ...place('reader', 0.92), probabilities: { reader: 0.93, map: 0.07, home: 0, search: 0, books: 0, site: 0, unknown: 0 } };
+  const split = { ...kind('enhancement', 0.58), probabilities: { bug: 0.33, content: 0, enhancement: 0.67, question: 0, maintenance: 0, none: 0 } };
+  const reader = { ...place('reader', 0.92), probabilities: { reader: 0.93, map: 0.07, home: 0, search: 0, books: 0, site: 0, internal: 0, unknown: 0 } };
   return {
     ...newRecord(41, 'opened'),
     outcome: 'classified',
@@ -39,7 +41,8 @@ test('numbers stay inside the folded part', () => {
   assert.ok(folded.includes('| 종류 | 0.58 | 개선 제안 0.67, 오류 0.33 |'));
   assert.ok(folded.includes('| 영역 | 0.92 | 읽기 화면 0.93, 지도 0.07 |'));
   assert.ok(folded.includes('0.9 이상일 때만 라벨을 붙입니다'));
-  assert.ok(folded.includes('모델 jev-1.13.0, 질문 버전 1, 규칙 버전 1.'));
+  // 버전은 상수에서 읽는다. 질문이나 규칙을 고쳐 버전을 올려도 이 검사를 함께 고칠 필요가 없다.
+  assert.ok(folded.includes(`모델 jev-1.13.0, 질문 버전 ${QUESTIONS_VERSION}, 규칙 버전 ${RULES_VERSION}.`));
 });
 
 test('impact and the flag verdicts are not shown to the reporter', () => {
@@ -90,6 +93,24 @@ test('the owner is tagged only when the value looks like an account name', () =>
     assert.ok(comment.includes('최종 분류는 운영자가 내용을 확인한 뒤 정합니다.'), String(odd));
     assert.ok(!visible(comment).includes('@'), String(odd));
   }
+});
+
+test('an issue the owner filed gets the table without the greeting or the tag', () => {
+  // 테스트나 CI처럼 독자에게 보이지 않는 일을 소유자가 적어 둔 이슈다.
+  const own = record({ byOwner: true, verdict: verdict({ type: kind('maintenance'), area: place('internal') }), added: ['maintenance', 'area:internal'] });
+  const comment = renderComment(own, 'taez224');
+  const shown = visible(comment);
+  assert.ok(shown.startsWith('| 항목 | 추정 | 현재 처리 |'));
+  assert.ok(shown.includes('| 종류 | 유지 보수 | `maintenance` |'));
+  assert.ok(shown.includes('| 영역 | 내부 | `area:internal` |'));
+  for (const reportOnly of ['제보 감사합니다', '@taez224', '최종 분류는']) assert.ok(!comment.slice(0, comment.indexOf('<!--')).includes(reportOnly), reportOnly);
+  // 기록과 접힌 부분은 독자의 제보와 같다.
+  assert.ok(comment.includes('<details><summary>자세히</summary>'));
+  assert.equal(readRecord(comment)?.byOwner, true);
+
+  const failed = renderComment(record({ byOwner: true, outcome: 'failed', verdict: null, added: ['triage-failed'], error: 'Jev 응답 503' }), 'taez224');
+  assert.match(failed, /^종류와 영역을 자동으로 분류하지 못했습니다\./);
+  assert.ok(!failed.includes('@taez224'));
 });
 
 test('a failed classification gets a short comment that still tags the owner', () => {

@@ -9,7 +9,7 @@ import { renderSummary } from '../scripts/issue-triage/report.ts';
 import { DAILY_NEW_ISSUE_LIMIT, runTriage } from '../scripts/issue-triage/run.ts';
 
 const verdict: Verdict = makeVerdict({ type: kind('content'), impact: { score: 0.01, confidence: 0.99 }, hasReproInfo: 0.96 });
-const issue = (over: Partial<Issue> = {}): Issue => ({ number: 7, title: '[제보] 오타', body: '방벙 → 방법', labels: ['needs-triage'], isPullRequest: false, ...over });
+const issue = (over: Partial<Issue> = {}): Issue => ({ number: 7, title: '[제보] 오타', body: '방벙 → 방법', labels: ['needs-triage'], isPullRequest: false, author: 'a-reader', ...over });
 
 type Options = {
   recent?: number | null;
@@ -42,9 +42,9 @@ const oldIssue = (number: number): RawIssue => ({ number, title: 'old', created_
 const many = (length: number, make: (number: number) => RawIssue) => Array.from({ length }, (_, index) => make(index + 1));
 
 test('GitHub label objects and strings both become label names, and a pull request is recognised', () => {
-  const converted = toIssue({ number: 3, title: '제목', body: null, labels: ['bug', { name: 'area:map' }, {}], pull_request: {} });
-  assert.deepEqual(converted, { number: 3, title: '제목', body: null, labels: ['bug', 'area:map'], isPullRequest: true });
-  assert.equal(toIssue({ number: 4, title: '제목' }).isPullRequest, false);
+  const converted = toIssue({ number: 3, title: '제목', body: null, labels: ['bug', { name: 'area:map' }, {}], pull_request: {}, user: { login: 'a-reader' } });
+  assert.deepEqual(converted, { number: 3, title: '제목', body: null, labels: ['bug', 'area:map'], isPullRequest: true, author: 'a-reader' });
+  assert.deepEqual([toIssue({ number: 4, title: '제목' }).isPullRequest, toIssue({ number: 4, title: '제목' }).author], [false, null]);
 });
 
 test('the daily count takes issues by creation time and leaves pull requests out', () => {
@@ -185,6 +185,16 @@ test('the first run leaves one comment with the verdict, and reruns leave none',
   const rerun = fixture(issue());
   await rerun.run('dispatch');
   assert.deepEqual(rerun.comments, []);
+});
+
+test('an issue the owner filed is marked as such and gets no greeting', async () => {
+  const own = fixture(issue({ author: 'taez224' }));
+  const record = await own.run('opened');
+  assert.equal(record.byOwner, true);
+  assert.ok(own.comments[0]?.startsWith('| 항목 | 추정 | 현재 처리 |'));
+  assert.ok(!own.comments[0]?.includes('@taez224'));
+  // 독자의 이슈는 소유자의 것으로 표시되지 않는다.
+  assert.equal((await fixture(issue()).run('opened')).byOwner, false);
 });
 
 test('a failed classification is announced, but a capped or skipped run is not', async () => {

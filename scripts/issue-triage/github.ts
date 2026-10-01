@@ -1,6 +1,6 @@
-export type Issue = { number: number; title: string; body: string | null; labels: string[]; isPullRequest: boolean };
+export type Issue = { number: number; title: string; body: string | null; labels: string[]; isPullRequest: boolean; author: string | null };
 // GitHub API와 이벤트 파일이 주는 이슈에서 이 스크립트가 읽는 칸만 적는다.
-export type RawIssue = { number: number; title: string; body?: string | null; labels?: (string | { name?: string })[]; pull_request?: unknown; created_at?: string };
+export type RawIssue = { number: number; title: string; body?: string | null; labels?: (string | { name?: string })[]; pull_request?: unknown; created_at?: string; user?: { login?: string } | null };
 
 export type Client = {
   getIssue(number: number): Promise<Issue>;
@@ -16,7 +16,8 @@ export function toIssue(raw: RawIssue): Issue {
     title: raw.title,
     body: raw.body ?? null,
     labels: (raw.labels ?? []).map((label) => (typeof label === 'string' ? label : label.name ?? '')).filter(Boolean),
-    isPullRequest: raw.pull_request !== undefined
+    isPullRequest: raw.pull_request !== undefined,
+    author: raw.user?.login ?? null
   };
 }
 

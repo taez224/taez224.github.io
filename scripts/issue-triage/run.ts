@@ -18,6 +18,8 @@ export type TriageRecord = {
   trigger: Trigger;
   outcome: Outcome;
   stage: Stage;
+  // 저장소 소유자가 직접 올린 이슈인가. 계정 이름은 남기지 않는다. 평가할 때 독자의 제보와 소유자의 이슈를 나눠 보는 데 쓴다.
+  byOwner: boolean;
   model: string;
   questionsVersion: string;
   rulesVersion: string;
@@ -34,7 +36,7 @@ export type TriageRecord = {
 
 export function newRecord(issue: number | null, trigger: Trigger): TriageRecord {
   return {
-    issue, trigger, outcome: 'skipped', stage: 'load', model: MODEL, questionsVersion: QUESTIONS_VERSION, rulesVersion: RULES_VERSION,
+    issue, trigger, outcome: 'skipped', stage: 'load', byOwner: false, model: MODEL, questionsVersion: QUESTIONS_VERSION, rulesVersion: RULES_VERSION,
     inputHash: null, truncated: null, verdict: null, labelsBefore: null, added: [], removed: [], notes: [], error: null
   };
 }
@@ -50,6 +52,7 @@ type Deps = {
 // 예외를 올리지 않는다. 어떤 오류든 기록에 담아 돌려주어, 진입점이 요약과 아티팩트를 남긴 뒤에 실패로 끝낼 수 있게 한다.
 export async function runTriage(issue: Issue, trigger: Trigger, deps: Deps): Promise<TriageRecord> {
   const record = newRecord(issue.number, trigger);
+  record.byOwner = deps.owner !== null && issue.author === deps.owner;
   // 실행을 시작할 때의 라벨이다. 재실행에서는 아래에서 GitHub의 현재 라벨로 바꾼다.
   let labelsAtStart: readonly string[] = issue.labels;
 
