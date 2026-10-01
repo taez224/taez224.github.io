@@ -186,8 +186,8 @@ h1, h2, h3, p { margin-top: 0; }
 @media (hover: hover) { .theme-toggle:hover { background: var(--accent-soft); color: var(--accent); } }
 /* 아이콘은 테마마다 span으로 한 번 더 감싼다. svg가 글자처럼 줄 안에 놓이면 기준선에 앉아 돋보기보다 3px 높아지므로 블록으로 둔다. */
 .theme-toggle svg { display: block; width: 18px; height: 18px; fill: currentColor; }
-.theme-toggle .is-sun, :root[data-theme="dark"] .theme-toggle .is-moon { display: none; }
-:root[data-theme="dark"] .theme-toggle .is-sun { display: inline-flex; }
+.theme-toggle .is-moon, :root[data-theme="dark"] .theme-toggle .is-sun { display: none; }
+:root[data-theme="dark"] .theme-toggle .is-moon { display: inline-flex; }
 /* 테마 버튼은 스크립트가 없으면 동작하지 않으므로 숨긴다. data-js는 부트 스크립트가 첫 페인트 전에 단다. */
 :root:not([data-js]) .theme-toggle { display: none; }
 /* 모듈 스크립트가 붙기 전에 첫 화면이 그려져도 자리는 잡아 둔다. 뒤늦게 44px을 차지하면 메뉴와 검색 버튼이 밀린다.
