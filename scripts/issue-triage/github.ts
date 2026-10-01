@@ -1,12 +1,13 @@
-export type Issue = { number: number; title: string; body: string | null; labels: string[]; isPullRequest: boolean };
+export type Issue = { number: number; title: string; body: string | null; labels: string[]; isPullRequest: boolean; author: string | null };
 // GitHub API와 이벤트 파일이 주는 이슈에서 이 스크립트가 읽는 칸만 적는다.
-export type RawIssue = { number: number; title: string; body?: string | null; labels?: (string | { name?: string })[]; pull_request?: unknown; created_at?: string };
+export type RawIssue = { number: number; title: string; body?: string | null; labels?: (string | { name?: string })[]; pull_request?: unknown; created_at?: string; user?: { login?: string } | null };
 
 export type Client = {
   getIssue(number: number): Promise<Issue>;
   recentIssueCount(nowMs: number, stopAbove: number): Promise<number | null>;
   addLabels(number: number, labels: string[]): Promise<void>;
   removeLabel(number: number, label: string): Promise<void>;
+  addComment(number: number, body: string): Promise<void>;
 };
 
 export function toIssue(raw: RawIssue): Issue {
@@ -15,7 +16,8 @@ export function toIssue(raw: RawIssue): Issue {
     title: raw.title,
     body: raw.body ?? null,
     labels: (raw.labels ?? []).map((label) => (typeof label === 'string' ? label : label.name ?? '')).filter(Boolean),
-    isPullRequest: raw.pull_request !== undefined
+    isPullRequest: raw.pull_request !== undefined,
+    author: raw.user?.login ?? null
   };
 }
 
@@ -64,7 +66,7 @@ export function createClient(options: { token: string; repository: string; apiUr
     if (!res.ok) throw new Error(`GitHub API ${method} ${path}: ${res.status}`);
     return res.status === 204 ? null : res.json();
   }
-  // 이 권한(issues: write)으로는 이슈를 닫거나 댓글을 고칠 수도 있다. 여기서는 라벨을 붙이고 떼는 호출만 만든다.
+  // 이 권한(issues: write)으로는 이슈를 닫거나 댓글을 고칠 수도 있다. 여기서는 라벨을 붙이고 떼는 호출과 댓글을 다는 호출만 만든다.
   return {
     async getIssue(number) {
       return toIssue(await request('GET', `/issues/${number}`) as RawIssue);
@@ -79,6 +81,9 @@ export function createClient(options: { token: string; repository: string; apiUr
     // 이미 떼어진 라벨이면 404가 온다. 재실행에서 흔한 일이라 오류로 보지 않는다.
     async removeLabel(number, label) {
       await request('DELETE', `/issues/${number}/labels/${encodeURIComponent(label)}`, undefined, true);
+    },
+    async addComment(number, body) {
+      await request('POST', `/issues/${number}/comments`, { body });
     }
   };
 }

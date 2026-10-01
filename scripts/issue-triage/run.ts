@@ -1,3 +1,4 @@
+import { renderComment } from './comment.ts';
 import type { Client, Issue } from './github.ts';
 import { buildInput } from './input.ts';
 import { TriageError } from './jev.ts';
@@ -9,7 +10,7 @@ export const DAILY_NEW_ISSUE_LIMIT = 20;
 
 export type Outcome = 'classified' | 'failed' | 'capped' | 'skipped' | 'error';
 // 실행이 어디까지 갔는지를 적는다. 오류로 끝났을 때 어느 단계에서 멈췄는지 알 수 있다.
-export type Stage = 'load' | 'count' | 'ask' | 'labels' | 'done';
+export type Stage = 'load' | 'count' | 'ask' | 'labels' | 'comment' | 'done';
 
 // 한 번의 실행이 남기는 기록이다. 이슈의 제목과 본문은 넣지 않고 해시만 넣는다. 공개 저장소의 실행 요약과 아티팩트는 누구나 볼 수 있다.
 export type TriageRecord = {
@@ -17,12 +18,16 @@ export type TriageRecord = {
   trigger: Trigger;
   outcome: Outcome;
   stage: Stage;
+  // 저장소 소유자가 직접 올린 이슈인가. 계정 이름은 남기지 않는다. 평가할 때 독자의 제보와 소유자의 이슈를 나눠 보는 데 쓴다.
+  byOwner: boolean;
   model: string;
   questionsVersion: string;
   rulesVersion: string;
   inputHash: string | null;
   truncated: boolean | null;
   verdict: Verdict | null;
+  // 라벨을 적용하기 직전에 이슈에 있던 라벨이다. 댓글이 소유자가 먼저 붙인 라벨을 구분해서 적는 데 쓴다.
+  labelsBefore: string[] | null;
   added: string[];
   removed: string[];
   notes: string[];
@@ -31,20 +36,23 @@ export type TriageRecord = {
 
 export function newRecord(issue: number | null, trigger: Trigger): TriageRecord {
   return {
-    issue, trigger, outcome: 'skipped', stage: 'load', model: MODEL, questionsVersion: QUESTIONS_VERSION, rulesVersion: RULES_VERSION,
-    inputHash: null, truncated: null, verdict: null, added: [], removed: [], notes: [], error: null
+    issue, trigger, outcome: 'skipped', stage: 'load', byOwner: false, model: MODEL, questionsVersion: QUESTIONS_VERSION, rulesVersion: RULES_VERSION,
+    inputHash: null, truncated: null, verdict: null, labelsBefore: null, added: [], removed: [], notes: [], error: null
   };
 }
 
 type Deps = {
-  client: Pick<Client, 'getIssue' | 'recentIssueCount' | 'addLabels' | 'removeLabel'>;
+  client: Pick<Client, 'getIssue' | 'recentIssueCount' | 'addLabels' | 'removeLabel' | 'addComment'>;
   ask: (state: { title: string; body: string }) => Promise<Verdict>;
   now: number;
+  // 댓글에서 태그할 저장소 소유자다. 없으면 태그하지 않는다.
+  owner: string | null;
 };
 
 // 예외를 올리지 않는다. 어떤 오류든 기록에 담아 돌려주어, 진입점이 요약과 아티팩트를 남긴 뒤에 실패로 끝낼 수 있게 한다.
 export async function runTriage(issue: Issue, trigger: Trigger, deps: Deps): Promise<TriageRecord> {
   const record = newRecord(issue.number, trigger);
+  record.byOwner = deps.owner !== null && issue.author === deps.owner;
   // 실행을 시작할 때의 라벨이다. 재실행에서는 아래에서 GitHub의 현재 라벨로 바꾼다.
   let labelsAtStart: readonly string[] = issue.labels;
 
@@ -52,6 +60,7 @@ export async function runTriage(issue: Issue, trigger: Trigger, deps: Deps): Pro
     record.stage = 'labels';
     // 이벤트에 실린 라벨은 이슈가 열릴 때의 것이다. 작업이 기다리는 동안 소유자가 고쳤을 수 있으므로 지금의 라벨을 다시 읽어 정한다.
     const current = (await deps.client.getIssue(issue.number)).labels;
+    record.labelsBefore = [...current];
     const confirmedMeanwhile = labelsAtStart.includes(NEEDS_TRIAGE) && !current.includes(NEEDS_TRIAGE);
     if (confirmedMeanwhile || isConfirmed(current, trigger)) {
       record.notes = ['확인을 마친 이슈라 건드리지 않음'];
@@ -70,6 +79,17 @@ export async function runTriage(issue: Issue, trigger: Trigger, deps: Deps): Pro
       record.removed.push(label);
     }
     record.outcome = outcome;
+    record.stage = 'done';
+  };
+
+  // 판정을 댓글로 남긴다. 이슈가 열릴 때의 실행에서 한 번만 단다. 재실행마다 달면 같은 내용이 쌓인다.
+  // 하루 상한에 걸렸거나 건너뛴 실행은 보여 줄 판정이 없어서 달지 않는다.
+  const comment = async (): Promise<void> => {
+    if (trigger !== 'opened' || (record.outcome !== 'classified' && record.outcome !== 'failed')) return;
+    // 댓글에 숨겨 넣는 기록은 라벨 적용까지 끝난 상태의 것이다. 단계를 바꾸기 전에 만든다.
+    const body = renderComment(record, deps.owner);
+    record.stage = 'comment';
+    await deps.client.addComment(issue.number, body);
     record.stage = 'done';
   };
 
@@ -108,11 +128,13 @@ export async function runTriage(issue: Issue, trigger: Trigger, deps: Deps): Pro
       if (!(error instanceof TriageError)) throw error;
       record.error = error.message;
       await apply(decideFailure, 'failed');
+      await comment();
       return record;
     }
     record.verdict = verdict;
     record.model = verdict.model;
     await apply((current) => decide(verdict, current, trigger), 'classified');
+    await comment();
   } catch (error) {
     // GitHub 장애나 스크립트의 버그다. 라벨을 더 붙이려 하지 않는다. GitHub이 실패한 것이라면 그 호출도 실패한다.
     record.outcome = 'error';

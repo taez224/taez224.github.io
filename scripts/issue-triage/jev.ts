@@ -22,11 +22,14 @@ export function parseVerdict(json: unknown): Verdict {
   const root = record(json, '응답');
   const answers = record(root.answers, 'answers');
   const usage = record(root.usage, 'usage');
-  const choice = <T extends string>(id: string, options: readonly T[]): { choice: T; confidence: number } => {
+  const choice = <T extends string>(id: string, options: readonly T[]): { choice: T; confidence: number; probabilities: Record<T, number> } => {
     const answer = record(answers[id], id);
     const picked = options.find((option) => option === answer.choice);
     if (picked === undefined) throw new TriageError(`${id}: 선택지 목록에 없는 값`);
-    return { choice: picked, confidence: unit(answer.confidence, `${id}.confidence`) };
+    // 응답에 다른 키가 있어도 정해 둔 선택지의 확률만 읽는다. 하나라도 빠지면 분류 실패다.
+    const given = record(answer.probabilities, `${id}.probabilities`);
+    const probabilities = Object.fromEntries(options.map((option) => [option, unit(given[option], `${id}.probabilities.${option}`)])) as Record<T, number>;
+    return { choice: picked, confidence: unit(answer.confidence, `${id}.confidence`), probabilities };
   };
   const noul = (id: string): number => unit(record(answers[id], id).noul, `${id}.noul`);
   const impact = record(answers.impact, 'impact');

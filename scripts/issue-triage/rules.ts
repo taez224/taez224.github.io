@@ -1,7 +1,7 @@
 import type { Verdict } from './questions.ts';
 
 // 임계값이나 대응표를 바꾸면 올린다. 버전이 다른 판정을 한 평가에 섞지 않기 위해서다.
-export const RULES_VERSION = '1';
+export const RULES_VERSION = '2';
 
 export const NEEDS_TRIAGE = 'needs-triage';
 export const TRIAGE_FAILED = 'triage-failed';
@@ -12,9 +12,9 @@ export const FLAG_OFF_TOPIC = 'flag:off-topic';
 
 // none과 unknown은 대응표에 없다. 확신도가 높아도 라벨로 바꾸지 않고 소유자의 확인에 맡긴다.
 // 라벨 이름은 이 표에서만 나온다. Jev가 돌려준 문자열을 라벨 이름으로 쓰지 않는다.
-export const TYPE_LABELS: Readonly<Record<string, string>> = { bug: 'bug', content: 'content', enhancement: 'enhancement', question: 'question' };
+export const TYPE_LABELS: Readonly<Record<string, string>> = { bug: 'bug', content: 'content', enhancement: 'enhancement', question: 'question', maintenance: 'maintenance' };
 export const AREA_LABELS: Readonly<Record<string, string>> = {
-  reader: 'area:reader', map: 'area:map', home: 'area:home', search: 'area:search', books: 'area:books', site: 'area:site'
+  reader: 'area:reader', map: 'area:map', home: 'area:home', search: 'area:search', books: 'area:books', site: 'area:site', internal: 'area:internal'
 };
 export const ALL_LABELS: readonly string[] = [
   ...Object.values(TYPE_LABELS), ...Object.values(AREA_LABELS),

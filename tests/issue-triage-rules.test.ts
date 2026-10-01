@@ -1,25 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { AREA_OPTIONS, IMPACT_LEVELS, QUESTIONS, TYPE_OPTIONS, type Verdict } from '../scripts/issue-triage/questions.ts';
+import { AREA_OPTIONS, IMPACT_LEVELS, QUESTIONS, TYPE_OPTIONS } from '../scripts/issue-triage/questions.ts';
 import {
   ALL_LABELS, AREA_LABELS, FLAG_INSTRUCTIONS, FLAG_OFF_TOPIC, HIGH_CANDIDATE, NEEDS_INFO, NEEDS_TRIAGE, TRIAGE_FAILED, TYPE_LABELS,
   decide, decideCapped, decideFailure, isConfirmed, noulState, triggerFor
 } from '../scripts/issue-triage/rules.ts';
+import { kind, place, verdict } from './helpers/triage.ts';
 
-// 확신 있게 "읽기 화면의 사소한 오류"로 판정한 응답이다. 각 테스트가 필요한 값만 바꾼다.
-function verdict(over: Partial<Verdict> = {}): Verdict {
-  return {
-    model: 'jev-1.13.0',
-    inputTokens: 1700,
-    type: { choice: 'bug', confidence: 1 },
-    area: { choice: 'reader', confidence: 1 },
-    impact: { score: 0.5, confidence: 0.95 },
-    hasReproInfo: 0.9,
-    hasInstructions: 0.02,
-    offTopic: 0.02,
-    ...over
-  };
-}
 const sorted = (labels: string[]) => [...labels].sort();
 
 test('every choice option has a description and every non-fallback option maps to a label', () => {
@@ -28,6 +15,13 @@ test('every choice option has a description and every non-fallback option maps t
   assert.deepEqual(Object.keys(TYPE_LABELS), TYPE_OPTIONS.filter((option) => option !== 'none'));
   assert.deepEqual(Object.keys(AREA_LABELS), AREA_OPTIONS.filter((option) => option !== 'unknown'));
   assert.equal(QUESTIONS.impact.criteria.length, IMPACT_LEVELS);
+});
+
+test('every option says what it covers, what belongs elsewhere, and gives an example', () => {
+  // 선택지마다 같은 칸을 쓴다. 칸이 빠진 선택지는 이웃한 선택지와의 경계가 적히지 않은 것이다.
+  for (const [name, option] of [...Object.entries(QUESTIONS.type.criteria), ...Object.entries(QUESTIONS.area.criteria)]) {
+    assert.ok(option.what.length > 0 && option.not_for.length > 0 && option.examples.length > 0, name);
+  }
 });
 
 test('a confident verdict on a new issue adds its type and area labels and keeps the issue in triage', () => {
@@ -42,13 +36,13 @@ test('labels already on the issue are not added again', () => {
 });
 
 test('each axis is judged on its own confidence', () => {
-  const decision = decide(verdict({ area: { choice: 'reader', confidence: 0.89 } }), [NEEDS_TRIAGE], 'opened');
+  const decision = decide(verdict({ area: place('reader', 0.89) }), [NEEDS_TRIAGE], 'opened');
   assert.deepEqual(decision.add, ['bug']);
   assert.ok(decision.notes.some((note) => note.startsWith('영역')));
 });
 
 test('the fallback options never become labels, however confident', () => {
-  const decision = decide(verdict({ type: { choice: 'none', confidence: 1 }, area: { choice: 'unknown', confidence: 1 } }), [NEEDS_TRIAGE], 'opened');
+  const decision = decide(verdict({ type: kind('none'), area: place('unknown') }), [NEEDS_TRIAGE], 'opened');
   assert.deepEqual(decision.add, []);
 });
 
@@ -62,11 +56,11 @@ test('a noul value is yes from 0.8, no up to 0.2, and held in between', () => {
 test('needs-info is added only to bug reports that clearly lack reproduction detail', () => {
   assert.ok(decide(verdict({ hasReproInfo: 0.1 }), [NEEDS_TRIAGE], 'opened').add.includes(NEEDS_INFO));
   assert.ok(!decide(verdict({ hasReproInfo: 0.5 }), [NEEDS_TRIAGE], 'opened').add.includes(NEEDS_INFO));
-  assert.ok(!decide(verdict({ type: { choice: 'question', confidence: 1 }, hasReproInfo: 0.1 }), [NEEDS_TRIAGE], 'opened').add.includes(NEEDS_INFO));
+  assert.ok(!decide(verdict({ type: kind('question'), hasReproInfo: 0.1 }), [NEEDS_TRIAGE], 'opened').add.includes(NEEDS_INFO));
 });
 
 test('the instruction and off-topic flags are added only on a clear yes', () => {
-  const decision = decide(verdict({ type: { choice: 'none', confidence: 1 }, area: { choice: 'unknown', confidence: 1 }, hasInstructions: 0.99, offTopic: 0.82 }), [NEEDS_TRIAGE], 'opened');
+  const decision = decide(verdict({ type: kind('none'), area: place('unknown'), hasInstructions: 0.99, offTopic: 0.82 }), [NEEDS_TRIAGE], 'opened');
   assert.deepEqual(sorted(decision.add), [FLAG_INSTRUCTIONS, FLAG_OFF_TOPIC]);
   assert.deepEqual(decide(verdict({ hasInstructions: 0.7, offTopic: 0.7 }), [NEEDS_TRIAGE], 'opened').add.filter((label) => label.startsWith('flag:')), []);
 });
@@ -74,8 +68,8 @@ test('the instruction and off-topic flags are added only on a clear yes', () => 
 test('the priority candidate needs a bug or content issue, a high score and a confident score', () => {
   const high = { score: 2, confidence: 1 };
   assert.ok(decide(verdict({ impact: high }), [NEEDS_TRIAGE], 'opened').add.includes(HIGH_CANDIDATE));
-  assert.ok(decide(verdict({ type: { choice: 'content', confidence: 1 }, impact: high }), [NEEDS_TRIAGE], 'opened').add.includes(HIGH_CANDIDATE));
-  assert.ok(!decide(verdict({ type: { choice: 'enhancement', confidence: 1 }, impact: high }), [NEEDS_TRIAGE], 'opened').add.includes(HIGH_CANDIDATE));
+  assert.ok(decide(verdict({ type: kind('content'), impact: high }), [NEEDS_TRIAGE], 'opened').add.includes(HIGH_CANDIDATE));
+  assert.ok(!decide(verdict({ type: kind('enhancement'), impact: high }), [NEEDS_TRIAGE], 'opened').add.includes(HIGH_CANDIDATE));
   assert.ok(!decide(verdict({ impact: { score: 2.51, confidence: 0.51 } }), [NEEDS_TRIAGE], 'opened').add.includes(HIGH_CANDIDATE));
   assert.ok(!decide(verdict({ impact: { score: 1.54, confidence: 1 } }), [NEEDS_TRIAGE], 'opened').add.includes(HIGH_CANDIDATE));
 });
@@ -87,6 +81,12 @@ test('only the first attempt of an issues event counts as the opening run', () =
   // Actions의 Re-run jobs는 같은 이벤트를 시도 번호만 올려 다시 실행한다.
   assert.equal(triggerFor('issues', '2'), 'dispatch');
   assert.equal(triggerFor('workflow_dispatch', '1'), 'dispatch');
+});
+
+test('repository work gets its own type and area, and is not weighed for reader impact', () => {
+  // 테스트, CI, 빌드처럼 독자에게 보이지 않는 일이다. 영향도와 재현 정보는 독자가 겪는 문제에만 쓴다.
+  const decision = decide(verdict({ type: kind('maintenance'), area: place('internal'), hasReproInfo: 0.1, impact: { score: 3, confidence: 1 } }), [NEEDS_TRIAGE], 'opened');
+  assert.deepEqual(sorted(decision.add), ['area:internal', 'maintenance']);
 });
 
 test('a rerun leaves an issue alone once the owner has removed needs-triage', () => {

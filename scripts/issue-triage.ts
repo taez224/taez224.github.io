@@ -25,7 +25,8 @@ function dryClient(eventIssue: Issue | null): Client {
     },
     async recentIssueCount() { return 0; },
     async addLabels(number, labels) { console.log(`[시험] #${number} 라벨 추가: ${labels.join(', ')}`); },
-    async removeLabel(number, label) { console.log(`[시험] #${number} 라벨 제거: ${label}`); }
+    async removeLabel(number, label) { console.log(`[시험] #${number} 라벨 제거: ${label}`); },
+    async addComment(number, body) { console.log(`[시험] #${number} 댓글:\n${body}\n`); }
   };
 }
 
@@ -46,7 +47,9 @@ async function run(): Promise<TriageRecord> {
   }
   // 키가 없으면 askJev가 분류 실패로 처리해 triage-failed를 남긴다. 여기서 멈추면 이슈에 흔적이 남지 않는다.
   const apiKey = process.env.TYPESAFE_API_KEY ?? '';
-  return runTriage(issue, trigger, { client, ask: (state) => askJev(state, { apiKey }), now: Date.now() });
+  // 저장소 소유자는 Actions가 주는 값이다. 이슈의 내용으로 바꿀 수 없다.
+  const owner = process.env.GITHUB_REPOSITORY_OWNER ?? null;
+  return runTriage(issue, trigger, { client, ask: (state) => askJev(state, { apiKey }), now: Date.now(), owner });
 }
 
 // 이슈를 읽기 전에 실패해도 기록을 남긴다. GitHub 장애 중에는 실패 라벨도 붙일 수 없어서 이 기록이 유일한 흔적이다.
