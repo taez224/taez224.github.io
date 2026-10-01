@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { AREA_OPTIONS, IMPACT_LEVELS, QUESTIONS, TYPE_OPTIONS, type Verdict } from '../scripts/issue-triage/questions.ts';
 import {
   ALL_LABELS, AREA_LABELS, FLAG_INSTRUCTIONS, FLAG_OFF_TOPIC, HIGH_CANDIDATE, NEEDS_INFO, NEEDS_TRIAGE, TRIAGE_FAILED, TYPE_LABELS,
-  decide, decideCapped, decideFailure, isConfirmed, noulState
+  decide, decideCapped, decideFailure, isConfirmed, noulState, triggerFor
 } from '../scripts/issue-triage/rules.ts';
 
 // 확신 있게 "읽기 화면의 사소한 오류"로 판정한 응답이다. 각 테스트가 필요한 값만 바꾼다.
@@ -78,6 +78,15 @@ test('the priority candidate needs a bug or content issue, a high score and a co
   assert.ok(!decide(verdict({ type: { choice: 'enhancement', confidence: 1 }, impact: high }), [NEEDS_TRIAGE], 'opened').add.includes(HIGH_CANDIDATE));
   assert.ok(!decide(verdict({ impact: { score: 2.51, confidence: 0.51 } }), [NEEDS_TRIAGE], 'opened').add.includes(HIGH_CANDIDATE));
   assert.ok(!decide(verdict({ impact: { score: 1.54, confidence: 1 } }), [NEEDS_TRIAGE], 'opened').add.includes(HIGH_CANDIDATE));
+});
+
+test('only the first attempt of an issues event counts as the opening run', () => {
+  assert.equal(triggerFor('issues', '1'), 'opened');
+  // 로컬 시험 실행에는 시도 번호가 없다.
+  assert.equal(triggerFor('issues', undefined), 'opened');
+  // Actions의 Re-run jobs는 같은 이벤트를 시도 번호만 올려 다시 실행한다.
+  assert.equal(triggerFor('issues', '2'), 'dispatch');
+  assert.equal(triggerFor('workflow_dispatch', '1'), 'dispatch');
 });
 
 test('a rerun leaves an issue alone once the owner has removed needs-triage', () => {

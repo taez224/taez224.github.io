@@ -31,6 +31,12 @@ export const IMPACT_MIN_CONFIDENCE = 0.9;
 export type Trigger = 'opened' | 'dispatch';
 export type Decision = { add: string[]; remove: string[]; notes: string[] };
 
+// 이슈가 열릴 때의 첫 실행만 opened다. Actions에서 같은 실행을 다시 돌리면 이벤트는 그대로 issues지만 시도 번호가 2 이상이다.
+// 그 실행을 opened로 보면 소유자가 뗀 표시가 되살아나고, 확인을 마친 이슈를 다시 건드린다.
+export function triggerFor(eventName: string | undefined, runAttempt: string | undefined): Trigger {
+  return eventName === 'issues' && (runAttempt ?? '1') === '1' ? 'opened' : 'dispatch';
+}
+
 // Noul에는 confidence가 없어서 값의 구간으로 예, 아니오, 보류를 나눈다.
 export function noulState(value: number): 'yes' | 'no' | 'hold' {
   if (value >= NOUL_YES) return 'yes';

@@ -40,6 +40,11 @@ test('every action is pinned to a commit', () => {
   for (const ref of uses) assert.match(ref, /@[0-9a-f]{40}$/, ref);
 });
 
+test('a rerun of the same run keeps its own verdict record', () => {
+  // run_id는 재실행에서도 같다. 시도 번호가 없으면 같은 이름의 아티팩트가 이미 있어 업로드가 실패한다.
+  assert.match(workflow, /name: triage-record-.*\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}$/m);
+});
+
 test('the report form asks only for free text, marks the issue for triage, and tells the reader where the text goes', () => {
   assert.deepEqual([...form.matchAll(/^\s+id: (\w+)$/gm)].map((match) => match[1]), ['page', 'what', 'expected']);
   assert.match(form, /^labels: \[needs-triage\]$/m);
