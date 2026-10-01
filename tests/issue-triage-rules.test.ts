@@ -17,6 +17,13 @@ test('every choice option has a description and every non-fallback option maps t
   assert.equal(QUESTIONS.impact.criteria.length, IMPACT_LEVELS);
 });
 
+test('every option says what it covers, what belongs elsewhere, and gives an example', () => {
+  // 선택지마다 같은 칸을 쓴다. 칸이 빠진 선택지는 이웃한 선택지와의 경계가 적히지 않은 것이다.
+  for (const [name, option] of [...Object.entries(QUESTIONS.type.criteria), ...Object.entries(QUESTIONS.area.criteria)]) {
+    assert.ok(option.what.length > 0 && option.not_for.length > 0 && option.examples.length > 0, name);
+  }
+});
+
 test('a confident verdict on a new issue adds its type and area labels and keeps the issue in triage', () => {
   const decision = decide(verdict(), [], 'opened');
   assert.deepEqual(sorted(decision.add), ['area:reader', 'bug', NEEDS_TRIAGE]);
