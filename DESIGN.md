@@ -567,7 +567,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 헤더 아래에는 선을 긋지 않는다. 배경이 이어지는 자리에 선을 그으면 그 선에서 끊긴다. 층은 위의 판이 맡는다.
 
-오른쪽 끝에는 검색과 화면 모드 버튼을 44px 상자로 붙여 둔다. 18px 기호가 상자 안에서 이미 양옆으로 비어 있어, 상자 사이를 띄우면 두 기호가 메뉴 글자 사이보다 멀어진다. 테마 버튼의 기호는 다음에 일어날 일을 보인다. 밝은 화면에서는 달이다. 스크립트가 없으면 동작하지 않으므로 아예 보이지 않는다. 스크립트가 실행되는 화면에서는 버튼이 나타나기 전부터 자리를 잡아 두어, 느리게 불러올 때 메뉴와 검색 버튼이 밀리지 않게 한다.
+오른쪽 끝에는 검색과 화면 모드 버튼을 44px 상자로 붙여 둔다. 18px 기호가 상자 안에서 이미 양옆으로 비어 있어, 상자 사이를 띄우면 두 기호가 메뉴 글자 사이보다 멀어진다. 테마 버튼의 기호는 지금 화면을 보인다. 밝은 화면에서는 해다. 다른 사이트 대부분이 이렇게 써서 독자가 익힌 읽는 법과 같다. 누르면 일어날 일은 버튼의 이름과 툴팁이 말한다. 스크립트가 없으면 동작하지 않으므로 아예 보이지 않는다. 스크립트가 실행되는 화면에서는 버튼이 나타나기 전부터 자리를 잡아 두어, 느리게 불러올 때 메뉴와 검색 버튼이 밀리지 않게 한다.
 
 현재 메뉴는 글자 아래 6px에 얹은 막대로 표시한다. 글자색 차이만으로는 흐리고, 밑줄은 호버와 헷갈린다. 글자를 키워 한 줄에 들어가지 않으면 메뉴를 둘째 줄로 내리고 고정을 푼다. 메뉴만 가로로 밀면 지금 있는 절이 가려지고, 두 줄 헤더를 붙여 두면 제목으로 건너뛴 자리를 가린다.
 
@@ -578,6 +578,8 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 ### 목록
 
 장부는 왼쪽 열에 연도·분류·등급 라벨을 명조로 크게 두고, 오른쪽 행이 다시 제목·메타와 요약을 나눈다. 라벨 칸은 한 글자 등급에 맞춘 폭이고, 세 글자 미분류 묶음만 글자를 키웠을 때 칸이 글자를 따라 넓어진다.
+
+홈의 최근 기록은 새로 쓴 노트와 다듬은 노트를 한 목록에 날짜순으로 싣는다. 노트는 계속 고쳐 쓰는 기록이라, 새로 쓴 것만 보이면 달라진 것의 절반이 빠진다. 날짜는 마지막으로 쓰거나 다듬은 날 하나만 적고, 다듬은 날이면 제목 뒤에 보조색 물뿌리개를 둔다. 글자 라벨을 쓰지 않는 것은 새 글과 다듬은 글의 구분이 독자에게 가벼운 정보이기 때문이다. 다듬은 노트는 두 편까지만 더해 새 글이 밀리지 않게 한다.
 
 ### 리더
 
@@ -625,7 +627,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 ### 아이콘
 
-화면 가장자리에서 누르는 조작 아이콘은 픽셀 격자로, 본문 안에서 뜻을 나르는 아이콘은 선으로 그린다. 1배율 화면에서 가는 선은 획 대부분이 중간색으로 칠해져 대비가 남지 않지만, 격자에 맞춘 면은 또렷하다. 복고 인상은 결과이지 목적이 아니다. 격자 도안은 칸 수와 같은 px로만 보이고, 125%·150% 화면에서 가장자리가 번지는 것은 한계로 두고 고치지 않는다. 본문 안 아이콘은 테두리가 기호를 감싸는 도형이 많아 작은 격자에 담기지 않고, 참조·역참조 화살표는 지도 간선의 실선·점선과 짝이라 선으로 남긴다.
+화면 가장자리에서 누르는 조작 아이콘과 목록의 작은 표시(홈의 물뿌리개)는 픽셀 격자로, 본문 안에서 뜻을 나르는 아이콘은 선으로 그린다. 1배율 화면에서 가는 선은 획 대부분이 중간색으로 칠해져 대비가 남지 않지만, 격자에 맞춘 면은 또렷하다. 복고 인상은 결과이지 목적이 아니다. 격자 도안은 칸 수와 같은 px로만 보이고, 125%·150% 화면에서 가장자리가 번지는 것은 한계로 두고 고치지 않는다. 본문 안 아이콘은 테두리가 기호를 감싸는 도형이 많아 작은 격자에 담기지 않고, 참조·역참조 화살표는 지도 간선의 실선·점선과 짝이라 선으로 남긴다.
 
 ### 개인 표식
 
@@ -679,7 +681,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 본문 안 글 카드의 테두리·여백·강조 | `src/styles/article-card.css` | 없음 |
 | 코드 블록 머리 줄과 복사 버튼 | `src/lib/markdown.ts`, `src/scripts/code-copy.ts`, `src/styles/body.css` | `tests/code-block.test.ts` |
 | 각주 번호·목록·판과 호버 미리보기 | `src/lib/markdown.ts`, `src/scripts/footnotes.ts`, `src/styles/body.css` | `tests/markdown-footnotes.test.ts`, `tests/footnotes.test.ts`, `tests/browser/reader.spec.ts` |
-| 조작 아이콘의 도안과 표시 크기 | `src/lib/pixel-icons.ts`, `site.css`의 `.search-trigger svg`·`.search-close svg`, `map/index.astro`의 `.graph-controls svg`, `body.css`의 `.code-copy-plate svg` | `tests/pixel-icons.test.ts` |
+| 조작 아이콘의 도안과 표시 크기 | `src/lib/pixel-icons.ts`, `site.css`의 `.search-trigger svg`·`.search-close svg`, `map/index.astro`의 `.graph-controls svg`, `body.css`의 `.code-copy-plate svg`, `index.astro`의 `.tended svg` | `tests/pixel-icons.test.ts` |
 | 개인 표식의 도안·파비콘·터치 아이콘 | `src/lib/mark.ts`, `src/lib/palette.ts`의 `MARK`, `scripts/make-mark.ts`가 만든 `public/favicon.svg`·`apple-touch-icon.png` | `tests/mark.test.ts` |
 | 사이드바 작은 그래프의 제목과 목록의 함께 강조 | `src/components/local-graph-layout.ts`, `src/components/LocalGraph.astro`, `src/scripts/local-graph.ts`, `src/components/NoteSidebar.astro` | `tests/local-graph.test.ts`, `tests/local-graph-links.test.ts`, `tests/browser/reader.spec.ts` |
 | 폭에 따른 리더·지도 배치 | `src/components/NotePage.astro`, `src/pages/map/index.astro` | `tests/browser/reader.spec.ts`, `tests/browser/map.spec.ts` |
@@ -705,6 +707,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 화면 모드의 선택·기억과 첫 페인트 | `src/lib/theme.ts`, `src/scripts/theme.ts`, `src/layouts/Shell.astro` | `tests/theme.test.ts`, `tests/browser/theme.spec.ts` |
 | 바닥글의 구성(프로필·사이트 소개·RSS), 손가락 영역, 호버 판, 짧은 페이지에서의 위치 | `src/layouts/Shell.astro`, `src/components/Contacts.astro`, `src/styles/site.css` | `tests/browser/footer.spec.ts` |
 | 홈 첫 화면과 최근 기록의 누르는 영역 | `src/components/About.astro`, `src/pages/index.astro` | `tests/browser/home.spec.ts` |
+| 홈 최근 기록에 싣는 노트와 다듬은 표시 | `src/lib/home.ts`, `src/pages/index.astro` | `tests/home.test.ts` |
 
 ### 검사
 

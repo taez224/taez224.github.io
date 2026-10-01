@@ -6,7 +6,7 @@ import { groupDevelopment, selectDevelopmentRecords, type DevelopmentCategory } 
 const kind: NoteKind = kindFor('01_Slipbox/노트.md');
 const slug = slugFor({ slug: null }, '노트');
 const url: string = noteUrl('', kind, slug);
-const label: '노트' = KINDS.slipbox.label;
+const label: '생각 노트' = KINDS.slipbox.label;
 void [url, label];
 assertUniqueSlugs([{ kind: 'book', slug: 'book', path: 'book.md' }]);
 

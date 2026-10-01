@@ -24,6 +24,20 @@ test('the first visit follows the system setting and the button remembers the re
   await expect(root).toHaveAttribute('data-theme', dark ? 'light' : 'dark');
 });
 
+// 버튼의 기호는 누르면 바뀔 화면이 아니라 지금 화면이다. 밝은 화면에서 해, 어두운 화면에서 달을 보인다.
+test('the theme button shows the icon of the current mode', async ({ page }, info) => {
+  const dark = systemDark(info);
+  await page.goto('/books/');
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+  const sun = page.locator('.theme-toggle .is-sun'), moon = page.locator('.theme-toggle .is-moon');
+  await expect(dark ? moon : sun).toBeVisible();
+  await expect(dark ? sun : moon).toBeHidden();
+  await page.locator('[data-theme-toggle]').click();
+  await expect(dark ? sun : moon).toBeVisible();
+  await expect(dark ? moon : sun).toBeHidden();
+});
+
 // 브라우저 UI 색 메타는 시스템 설정에 따라 하나가 뽑힌다. 시스템과 다른 화면을 고른 독자는 모듈 스크립트가 돌 때까지
 // 휴대폰 상단 색이 본문과 달랐다. 모듈 스크립트를 걷어 첫 페인트 전의 부트 스크립트만 돈 상태를 본다.
 test('the browser UI color follows the stored choice before the module script runs', async ({ page }, info) => {

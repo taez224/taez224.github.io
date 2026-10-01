@@ -14,7 +14,7 @@ const dev = (extra: Partial<FeedNote> & Record<string, unknown> = {}) => note({ 
 test('full articles, notes and development notes link to the garden, external articles link to the publisher; drafts and hubs are excluded', () => {
  const items = feedItems([note(), post(), external(), dev(), post({ status: 'draft' }), note({ type: 'hub' }), note({ type: 'series' })], options);
  assert.deepEqual(items.map(x=>x.url), ['https://example.com/obsidian/dev/test/', 'https://publisher.test/article', 'https://example.com/obsidian/posts/test/', 'https://example.com/obsidian/notes/test/']);
- assert.deepEqual(items.map(x=>x.label), ['개발 노트', '글', '글', '노트']);
+ assert.deepEqual(items.map(x=>x.label), ['개발 노트', '글', '글', '생각 노트']);
 });
 test('a development-only feed carries only development notes', () => {
  const items = feedItems([note(), post(), dev()], { ...options, kinds: ['development'] });
@@ -74,7 +74,7 @@ test('filtered feeds declare their own identity and escape feed metadata', () =>
  assert.ok(xml.includes('https://example.com/obsidian/feeds/posts.xml'));
  assert.ok(xml.includes('<title>글 &amp; 기록</title>'));
  assert.ok(xml.includes('<category>글</category>'));
- assert.ok(!xml.includes('<category>노트</category>'));
+ assert.ok(!xml.includes('<category>생각 노트</category>'));
 });
 test('items from the same day are ordered by their guid, so editing a title does not reorder the feed', () => {
  const order = (titles: string[]) => feedItems([note({ title: titles[0], url: '/obsidian/notes/b/' }), note({ title: titles[1], url: '/obsidian/notes/a/' })], options).map(x => x.url);
