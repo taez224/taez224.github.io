@@ -59,6 +59,15 @@ npm run mark:build           # 표식 도안을 고쳤을 때만. public/favicon
 - `externalPublications` 규칙에 걸리는 글은 `contentMode: 'external'`이 되어 본문·목차·검색 텍스트 없이 소개 페이지만 만든다. 이때 `source`가 그 호스트의 유효한 https URL이 아니면 빌드가 실패한다.
 - 비공개 노트는 존재 여부만 기록하고 제목·요약·본문을 절대 출력하지 않는다. HTML, 검색 데이터, 그래프 데이터 어디에도 비공개 메타데이터와 외부 발행 글의 본문을 내보내지 않는다.
 
+## 이슈 분류
+
+`.github/workflows/issue-triage.yml`이 새 이슈를 Jev(TypeSafe)로 분류해 라벨을 붙인다. 독자가 쓴 글이 입력이므로 다음을 지킨다.
+
+- 워크플로는 `main`의 `scripts/issue-triage.ts`만 실행한다. 이 스크립트는 npm 패키지를 쓰지 않고, 워크플로는 `npm ci`를 실행하지 않는다.
+- 이슈 제목과 본문은 스크립트가 이벤트 파일에서 읽는다. 워크플로에 `github.event.issue.title` 같은 식을 쓰지 않는다. `tests/issue-triage-workflow.test.ts`가 이 조건과 권한, 액션 고정을 검사한다.
+- 라벨은 `scripts/issue-triage/rules.ts`의 대응표에 있는 것만 붙인다. 질문 문구를 바꾸면 `QUESTIONS_VERSION`을, 임계값이나 대응표를 바꾸면 `RULES_VERSION`을 올린다.
+- Jev 키는 `issue-triage` 환경의 비밀 값이다. 로컬에서는 `TRIAGE_DRY_RUN=1`을 주면 라벨을 고치지 않고 판정만 확인한다.
+
 ## TypeScript 검사
 
 - 애플리케이션(`src/`), 빌드 도구, 테스트를 모두 TypeScript로 쓴다. `tsconfig.json`은 Astro strict 설정이고 `allowJs`는 끈다. `npm run check`(`tsconfig.check.json`)와 `npm run check:astro`가 CI에서 모두 통과해야 한다.
