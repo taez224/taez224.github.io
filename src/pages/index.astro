@@ -9,7 +9,8 @@ import { formatDate, withBase, firstSentence, inlineJson, topicColor } from '../
 import { inlineGraph } from '../lib/graph-data.ts';
 import { parentLink } from '../lib/note-nav.ts';
 import { latestSeries } from '../lib/blog.ts';
-import { recentByKind } from '../lib/home.ts';
+import { recentActivity } from '../lib/home.ts';
+import { pixelIcon } from '../lib/pixel-icons.ts';
 import { KINDS } from '../lib/kinds.ts';
 import { kindPrefix } from '../lib/slug.ts';
 import { layoutGraph, ATLAS_LAYOUT } from '../graph/layout.ts';
@@ -20,9 +21,9 @@ const featured = byPath.get(garden.home.featured[0]);
 const featuredEntry = featured ? await getEntry('notes', `${kindPrefix(featured.kind)}/${featured.slug}`) : null;
 const thumbnail = featuredEntry?.data.thumbnail;
 const softThumbnail = featured?.thumbnailStyle === 'soft';
-// 최근 기록은 종류마다 최신 한 편이고 건수는 적지 않는다. 고르는 규칙은 recentByKind에 있고, 대표 글은 위에 따로 보이므로 뺀다.
-const recent = recentByKind(garden.notes, { kinds: ['slipbox', 'development', 'blog'], series: garden.blog.series, exclude: [featured?.path] })
-  .map((note) => ({ note, label: KINDS[note.kind].label, listUrl: withBase(parentLink(note).path) }));
+// 최근 기록은 종류마다 최신 한 편에 최근 다듬은 노트를 더한 것이고 건수는 적지 않는다. 고르는 규칙은 recentActivity에 있고, 대표 글은 위에 따로 보이므로 뺀다.
+const recent = recentActivity(garden.notes, { kinds: ['slipbox', 'development', 'blog'], series: garden.blog.series, exclude: [featured?.path] })
+  .map(({ note, when, tended }) => ({ note, when, tended, label: KINDS[note.kind].label, listUrl: withBase(parentLink(note).path) }));
 // 공개된 마지막 편이 가장 최근인 연재 하나. 없으면 이 영역을 그리지 않는다.
 const series = latestSeries(garden.blog.series);
 const seriesUrl = series && (series.noteUrl || series.posts[0]?.url);
@@ -63,10 +64,11 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
   </section>}
   <section class="wrap home-section recent" aria-labelledby="recent-heading">
     <h2 id="recent-heading" class="display section-title">최근 기록</h2>
-    <ol>{recent.map(({ note, label, listUrl }) => <li>
-      <time class="meta recent-date" datetime={note.date}>{formatDate(note.date)}</time>
+    <ol>{recent.map(({ note, when, tended, label, listUrl }) => <li>
+      <time class="meta recent-date" datetime={when}>{formatDate(when)}</time>
       <a class="meta recent-kind" href={listUrl}>{label}</a>
-      <a class="recent-title" href={note.url}>{note.title}</a>
+      {/* 날짜는 쓴 날과 다듬은 날 가운데 늦은 날이다. 다듬은 날이면 제목 뒤에 물뿌리개를 둔다. 글자 대신 기호를 쓴 것은 새 글과 다듬은 글의 구분이 독자에게 가벼운 정보이기 때문이다. */}
+      <span class="recent-main"><a class="recent-title" href={note.url}>{note.title}</a>{tended && <span class="tended" role="img" aria-label="다듬은 노트" title="다듬은 노트" set:html={pixelIcon('tended')} />}</span>
       <span class="meta recent-topic"><i style={`background:${topicColor(note.topic)}`} aria-hidden="true"></i>{note.topicTag || note.topic}</span>
     </li>)}</ol>
   </section>
@@ -149,6 +151,9 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
   .recent-kind { color: var(--muted); }
   .recent-topic { display: inline-flex; align-items: center; gap: 6px; }
   .recent-topic i { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; }
+  /* 물뿌리개는 행 전체를 덮는 제목 링크 위에 올려야 설명(title)이 뜬다. 격자 한 칸이 1px이 되도록 격자 크기 그대로 보인다. */
+  .tended { position: relative; z-index: 1; display: inline-block; margin-left: 8px; color: var(--muted); vertical-align: -2px; cursor: help; }
+  .tended :global(svg) { display: block; width: 14px; height: 14px; }
   /* 최근 연재 제목은 목록 제목 크기로 두어 대표 글보다 낮은 위계에 둔다. */
   .latest-series h3 { margin: 0; font-size: var(--t-list); font-weight: 600; line-height: 1.45; }
   .latest-series p { margin: 10px 0 0; color: var(--muted); line-height: 1.7; }
@@ -185,7 +190,7 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
     .featured-content.has-thumbnail { grid-template-columns: minmax(0, 1fr); gap: 24px; }
     .featured-image { max-width: 420px; }
     .recent li { grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px 12px; padding: 16px 0; }
-    .recent-title { grid-column: 1 / -1; grid-row: 1; }
+    .recent-main { grid-column: 1 / -1; grid-row: 1; }
     .recent-date { grid-column: 1; grid-row: 2; }
     .recent-kind { grid-column: 2; grid-row: 2; }
     .recent-topic { grid-column: 3; grid-row: 2; }
