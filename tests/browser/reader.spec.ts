@@ -259,6 +259,50 @@ test('the original link above an external article reaches 44px on touch without 
   expect(measured.gap, '넓힌 영역이 제목에 닿지 않는다').toBeGreaterThanOrEqual(0);
 });
 
+// 한 열 화면에서는 목차가 글 맨 위에 접혀 있어, 읽는 도중 다른 절로 가려면 맨 위까지 올라가 목차를 펴야 했다.
+// 목차 버튼은 이 이동을 탭 두 번으로 줄인다. 채택 근거가 이 편의이므로 그 조작 자체를 검사한다.
+test('from the middle of a note the contents button reaches another section in two taps', async ({ page, isMobile }) => {
+  test.skip(!isMobile, '목차 버튼은 한 열로 접힌 화면에만 있다');
+  await page.goto('/notes/browser-sections/');
+  const button = page.locator('.toc-button'), sheet = page.locator('#toc-sheet');
+  await expect(button, '접힌 목차가 화면에 있는 동안은 버튼이 겹쳐 뜨지 않는다').toBeHidden();
+  await page.evaluate(() => document.getElementById([...document.querySelectorAll('.body h2')].find((h) => h.textContent === '셋째 절')!.id)!.scrollIntoView({ block: 'start' }));
+  await page.evaluate(() => window.scrollBy(0, 600));
+  await expect(button).toBeVisible();
+  const box = await button.boundingBox();
+  expect(box!.width, '누르는 영역 44px').toBeGreaterThanOrEqual(44);
+  expect(box!.height).toBeGreaterThanOrEqual(44);
+
+  await button.tap();
+  await expect(sheet).toBeVisible();
+  await expect(sheet.locator('a[aria-current="location"]'), '열면 지금 읽는 절을 가리킨다').toHaveText('셋째 절');
+  await sheet.getByRole('link', { name: '첫째 절', exact: true }).tap();
+  await expect(sheet, '절을 고르면 닫힌다').toBeHidden();
+  await expect(page.locator('.body h2', { hasText: '첫째 절' })).toBeInViewport();
+});
+
+// 막대는 본문만 기준으로 채운다. 마지막 문단이 화면에 들어오면 다 찬다. 참조 목록과 바닥글까지 지나야 차면 다 읽고도 덜 찬 채로 남는다.
+test('the contents button bar fills as the body is read and is full when the last block is on screen', async ({ page, isMobile }) => {
+  test.skip(!isMobile, '목차 버튼은 한 열로 접힌 화면에만 있다');
+  await page.goto('/notes/browser-sections/');
+  const progress = () => page.evaluate(() => Number(getComputedStyle(document.querySelector('.toc-button')!).getPropertyValue('--progress')));
+  await page.evaluate(() => document.getElementById([...document.querySelectorAll('.body h2')].find((h) => h.textContent === '둘째 절')!.id)!.scrollIntoView({ block: 'start' }));
+  await expect(page.locator('.toc-button')).toBeVisible();
+  const early = await progress();
+  expect(early).toBeGreaterThan(0);
+  expect(early).toBeLessThan(0.5);
+  await page.evaluate(() => { const last = document.querySelector('.note-article .body')!.lastElementChild!; window.scrollTo({ top: window.scrollY + last.getBoundingClientRect().top - innerHeight + 40, behavior: 'instant' }); });
+  await expect.poll(progress, { message: '마지막 문단이 화면에 들어오면 다 찬다' }).toBe(1);
+});
+
+test('the contents button stays out of the two-column reader, where the sidebar already shows the contents', async ({ page, isMobile }) => {
+  test.skip(isMobile, '데스크톱 폭만 본다');
+  await page.goto('/notes/browser-sections/');
+  await page.evaluate(() => window.scrollTo({ top: 2000, behavior: 'instant' }));
+  await expect(page.locator('.rail a[aria-current="location"]')).toBeVisible();
+  await expect(page.locator('.toc-button')).toBeHidden();
+});
+
 // 목차는 읽는 선을 지난 마지막 제목을 가리킨다. 선 근처의 좁은 띠만 지켜보면, 한 번의 스크롤로 띠를 건너뛴 제목은
 // 띠에 들어온 적이 없어 알림이 오지 않았고 이전 절이 그대로 남았다. 맨 위로 가기가 가장 흔한 경우다.
 test('the table of contents follows scrolls that jump past headings', async ({ page }) => {
