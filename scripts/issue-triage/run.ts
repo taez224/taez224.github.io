@@ -45,12 +45,14 @@ type Deps = {
 // 예외를 올리지 않는다. 어떤 오류든 기록에 담아 돌려주어, 진입점이 요약과 아티팩트를 남긴 뒤에 실패로 끝낼 수 있게 한다.
 export async function runTriage(issue: Issue, trigger: Trigger, deps: Deps): Promise<TriageRecord> {
   const record = newRecord(issue.number, trigger);
+  // 실행을 시작할 때의 라벨이다. 재실행에서는 아래에서 GitHub의 현재 라벨로 바꾼다.
+  let labelsAtStart: readonly string[] = issue.labels;
 
   const apply = async (make: (current: readonly string[]) => Decision, outcome: Outcome): Promise<void> => {
     record.stage = 'labels';
     // 이벤트에 실린 라벨은 이슈가 열릴 때의 것이다. 작업이 기다리는 동안 소유자가 고쳤을 수 있으므로 지금의 라벨을 다시 읽어 정한다.
     const current = (await deps.client.getIssue(issue.number)).labels;
-    const confirmedMeanwhile = issue.labels.includes(NEEDS_TRIAGE) && !current.includes(NEEDS_TRIAGE);
+    const confirmedMeanwhile = labelsAtStart.includes(NEEDS_TRIAGE) && !current.includes(NEEDS_TRIAGE);
     if (confirmedMeanwhile || isConfirmed(current, trigger)) {
       record.notes = ['확인을 마친 이슈라 건드리지 않음'];
       record.stage = 'done';
@@ -76,7 +78,10 @@ export async function runTriage(issue: Issue, trigger: Trigger, deps: Deps): Pro
       record.notes = ['PR이라 분류하지 않음'];
       return record;
     }
-    if (isConfirmed(issue.labels, trigger)) {
+    // Actions에서 같은 실행을 다시 돌리면 이슈는 이벤트 파일에서 오고, 거기 실린 라벨은 이슈가 열릴 때의 것이다.
+    // 빈 이슈로 연 이슈는 그때 라벨이 없어서, 그 라벨로 판단하면 아직 확인하지 않은 이슈를 확인이 끝난 것으로 보고 건너뛴다.
+    if (trigger === 'dispatch') labelsAtStart = (await deps.client.getIssue(issue.number)).labels;
+    if (isConfirmed(labelsAtStart, trigger)) {
       record.notes = ['확인을 마친 이슈라 건드리지 않음'];
       return record;
     }
