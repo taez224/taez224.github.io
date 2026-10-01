@@ -7,13 +7,20 @@ const rgb = (hex: string) => `rgb(${[1, 3, 5].map((at) => parseInt(hex.slice(at,
 const footerLinks = (page: import('@playwright/test').Page) => page.locator('.site-footer a').evaluateAll((links) =>
   links.map((link) => [link.getAttribute('aria-label') ?? link.textContent!.trim(), link.getAttribute('href')]));
 
-// 바닥글은 지도를 뺀 모든 페이지에서 같다. 다른 곳의 프로필, 사이트 소개, RSS 순서다.
+// 바닥글은 지도를 뺀 모든 페이지에 있다. 다른 곳의 프로필, 사이트 소개, RSS, 제보 링크 순서다.
+// 글 페이지는 글 끝 줄에 제보 링크가 있어 바닥글에서는 뺀다. 같은 링크가 바로 위아래로 두 번 보인다.
 test('every page but the map ends with the same footer links', async ({ page }) => {
   await page.goto('/books/');
   const books = await footerLinks(page);
+  const feedback = books.pop()!;
   expect(books).toEqual([['GitHub', 'https://example.com/profile'], ['이 위키에 대해', '/about/'], ['RSS', '/rss.xml']]);
+  await expect(page.locator('.site-footer nav a').last()).toHaveAccessibleName('오류·의견 보내기');
+  expect(feedback[1]).toContain('https://github.com/taez224/taez224.github.io/issues/new?template=feedback.yml');
+  // ↗는 글의 일부가 아니라 표시라 밑줄을 긋지 않는다. 터치에서는 링크가 flex 상자라 링크에 그은 밑줄이 화살표까지 이어진다.
+  await expect(page.locator('.site-footer .feedback-link')).toHaveCSS('text-decoration-line', 'none');
+  await expect(page.locator('.site-footer .feedback-label')).toHaveCSS('text-decoration-line', 'underline');
   await page.goto('/notes/browser-sections/');
-  expect(await footerLinks(page)).toEqual(books);
+  expect(await footerLinks(page), '글 페이지의 바닥글에는 제보 링크가 없다').toEqual(books);
   // 로고만 있는 링크는 마우스로 올렸을 때도 이름이 보여야 한다. 헤더 검색 버튼과 같은 방식이다.
   expect(await page.locator('.site-footer .contacts a').evaluateAll((links) => links.map((link) => link.getAttribute('title')))).toEqual(['GitHub']);
   // 화면 높이에 맞춰 그리는 지도는 바닥글이 붙으면 페이지 스크롤이 생긴다.
