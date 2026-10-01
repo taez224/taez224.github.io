@@ -132,17 +132,29 @@ test('a triage failure is recorded on the issue instead of being turned into a v
 test('a manual rerun skips the daily limit and clears the failure label', async () => {
   const { calls, run } = fixture(issue({ labels: ['needs-triage', 'triage-failed'] }), { recent: 999 });
   const record = await run('dispatch');
-  assert.deepEqual(calls, ['ask', 'get #7', 'add #7 content,area:reader', 'remove #7 triage-failed']);
+  assert.deepEqual(calls, ['get #7', 'ask', 'get #7', 'add #7 content,area:reader', 'remove #7 triage-failed']);
   assert.deepEqual(record.removed, ['triage-failed']);
 });
 
+test('a rerun judges an issue by its current labels, not the ones in the event', async () => {
+  // 빈 이슈로 열어 이벤트에는 라벨이 없다. 첫 실행이 needs-triage와 영역을 붙였고, 그 실행을 Actions에서 다시 돌린다.
+  const { calls, run } = fixture(issue({ labels: [] }), { labelsNow: ['needs-triage', 'area:map'] });
+  const record = await run('dispatch');
+  assert.deepEqual(calls, ['get #7', 'ask', 'get #7', 'add #7 content']);
+  assert.equal(record.outcome, 'classified');
+});
+
 test('a confirmed issue and a pull request are left untouched without calling Jev', async () => {
-  for (const target of [issue({ labels: ['bug'] }), issue({ isPullRequest: true })]) {
-    const { calls, run } = fixture(target);
-    const record = await run('dispatch');
-    assert.deepEqual(calls, []);
-    assert.equal(record.outcome, 'skipped');
-  }
+  const confirmed = fixture(issue({ labels: ['bug'] }));
+  assert.equal((await confirmed.run('dispatch')).outcome, 'skipped');
+  assert.deepEqual(confirmed.calls, ['get #7']);
+  // 이벤트에는 needs-triage가 실려 있어도, 그 뒤에 소유자가 뗐으면 확인이 끝난 것이다.
+  const confirmedLater = fixture(issue(), { labelsNow: ['content'] });
+  assert.equal((await confirmedLater.run('dispatch')).outcome, 'skipped');
+  assert.deepEqual(confirmedLater.calls, ['get #7']);
+  const pull = fixture(issue({ isPullRequest: true }));
+  assert.equal((await pull.run('dispatch')).outcome, 'skipped');
+  assert.deepEqual(pull.calls, []);
 });
 
 test('a GitHub outage or a script bug ends as a recorded error with its stage, never as an exception', async () => {
