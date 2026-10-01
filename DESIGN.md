@@ -250,6 +250,7 @@ spacing:
   page-gutter-mobile: 20px
   column-gap: 40px
   reader-column: 720px
+  reader-gap: 100px
   sidebar: 310px
   paragraph-gap: 22px
   side-list-gap: 8px
@@ -479,7 +480,7 @@ TaeZ's Thinking Garden은 소프트웨어 엔지니어 TaeZ의 개인 사이트�
 
 ### 링크와 선택
 
-링크는 먹색을 옅게 섞은 밑줄로 구분하고 호버에서 밑줄을 먹색으로 채운다. 행 전체가 이미 링크인 자리의 링크도 밑줄을 긋는다. 색 대비만으로는 무엇이 따로 눌리는지 알 수 없다. 예외는 홈 최근 기록의 분류 링크로, 지금은 밑줄 없이 보조색 글자로만 둔다. 목록과 메타 줄에서 밖으로 나가는 링크는 ↗가 그 일을 하므로 밑줄을 겹치지 않는다. 본문 문장 속 링크는 밖으로 나가더라도 다른 링크와 같이 밑줄을 긋고 ↗를 더한다. 선택은 먹색 글자와 막대로 알린다. 글자 선택은 먹색 판으로 칠한다. 형광으로 칠하면 본문 강조와 구분되지 않는다. 먹색의 반투명 변형(밑줄, 선택 판, 인라인 코드 바탕)은 먹색에서 섞어 만들고 값을 따로 두지 않는다.
+링크는 먹색을 옅게 섞은 밑줄로 구분하고 호버에서 밑줄을 먹색으로 채운다. 글자가 본문과 같은 색이라 밑줄이 유일한 단서이므로, 밑줄은 종이색과 3:1을 넘는 농도로 둔다. 링크에 색을 넣는 안은 글 끝의 연관 노트와 참고 자료 목록이 색 글자 덩어리가 되어 택하지 않았다. 행 전체가 이미 링크인 자리의 링크도 밑줄을 긋는다. 색 대비만으로는 무엇이 따로 눌리는지 알 수 없다. 예외는 홈 최근 기록의 분류 링크로, 지금은 밑줄 없이 보조색 글자로만 둔다. 목록과 메타 줄에서 밖으로 나가는 링크는 ↗가 그 일을 하므로 밑줄을 겹치지 않는다. 본문 문장 속 링크는 밖으로 나가더라도 다른 링크와 같이 밑줄을 긋고 ↗를 더한다. 밑줄은 링크 글자까지만 긋고 ↗에는 긋지 않는다. ↗는 글의 일부가 아니라 표시다. 선택은 먹색 글자와 막대로 알린다. 글자 선택은 먹색 판으로 칠한다. 형광으로 칠하면 본문 강조와 구분되지 않는다. 먹색의 반투명 변형(밑줄, 선택 판, 인라인 코드 바탕)은 먹색에서 섞어 만들고 값을 따로 두지 않는다.
 
 ### 주제색
 
@@ -521,13 +522,13 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 **여백 두 단계 규칙.** 헤더 아래 첫 요소까지의 여백은 목록 페이지가 `page-top-index`, 읽는 페이지가 `page-top-reading`이다. 같은 종류의 페이지를 오갈 때 제목이 같은 높이에서 시작한다.
 
-**구조에 맞춘 정렬 규칙.** 사이드바가 있는 두 열 페이지는 워드마크와 같은 선에서 시작하고, 사이드바가 없는 한 열 페이지는 리더 열을 가운데에 둔다. 한 열 페이지를 왼쪽에 붙이면 넓은 화면에서 오른쪽이 비어 미완성처럼 보인다. 리더와 소개를 오가면 시작선이 옮겨 가지만 그런 이동이 드물어 구조를 우선한다.
+**구조에 맞춘 정렬 규칙.** 사이드바가 있는 두 열 페이지는 워드마크와 같은 선에서 시작하고, 사이드바가 없는 한 열 페이지는 리더 열을 가운데에 둔다. 한 열 페이지를 왼쪽에 붙이면 넓은 화면에서 오른쪽이 비어 미완성처럼 보인다. 리더와 소개를 오가면 시작선이 옮겨 가지만 그런 이동이 드물어 구조를 우선한다. 리더의 사이드바는 본문 옆 100px에 두고 오른쪽 끝을 헤더에 맞추지 않는다. 헤더에 맞추면 본문에서 150px 떨어져 따로 놓인 것처럼 보인다. 창이 좁아지면 본문보다 이 간격이 먼저 줄어든다.
 
 ### 전환 폭
 
 720px(모바일)과 1000px(한 열)이 기본이다. 그 밖에는 홈 소개의 1240px, 책장의 480px, 헤더를 두 줄로 나누는 22.125em만 쓴다. 22.125em만 글자 크기를 따라 움직이는 경계다. 글자 100%에서 354px이고, 그보다 좁으면 메뉴가 둘째 줄로 내려간다.
 
-- **1000px 이하:** 한 열로 바뀌고 참조·역참조가 본문 뒤로 가며, 목차는 접힘으로 바뀐다. 지도 패널은 하단 시트가 된다.
+- **1000px 이하:** 한 열로 바뀌고 참조·역참조가 본문 뒤로 가며, 목차는 접힘으로 바뀐다. 접힌 목차가 화면을 벗어나면 오른쪽 아래에 목차 버튼이 나타난다. 지도 패널은 하단 시트가 된다.
 - **720px 이하:** 좌우 여백과 헤더가 모바일 값이 되고, 목록의 열이 세로로 쌓인다. 긴 표와 코드는 블록 안에서 가로로 스크롤한다.
 
 ### 페이지별 배치
@@ -559,7 +560,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 ### 버튼
 
 - **채운 버튼:** 페이지의 주요 행동에 한 페이지 하나만 둔다. 홈에는 두지 않는다. 홈이 권하는 일은 한 편을 읽는 것이고 그 자리는 대표 글이라, 버튼이 가장 강한 신호를 다른 곳으로 가져간다. 채운 버튼은 모양이 이미 이동을 뜻하므로 사이트 안으로 가는 버튼에는 화살표를 붙이지 않고, 밖으로 나가는 전문 읽기만 ↗를 단다.
-- **테두리 버튼:** 본문 위에 홀로 놓여 경계가 필요한 도표 크게 보기와 그 도구에 쓴다.
+- **테두리 버튼:** 본문 위에 홀로 놓여 경계가 필요한 도표 크게 보기와 그 도구, 한 열 화면의 목차 버튼에 쓴다.
 - **투명 버튼:** 헤더·검색 닫기 아이콘, 책장 필터, 지도 범례와 확대 버튼에 쓴다. 선택은 헤더의 현재 메뉴처럼 먹색 글자와 글자 폭의 2px 먹색 막대로 알린다. 막대는 버튼 바닥이 아니라 글자 바로 아래에 두어, 터치에서 버튼을 키워도 글자에서 떨어져 뜨지 않는다.
 - **글자 버튼:** 지도 시트 닫기, 필터 해제, 검색 재시도·더 보기에 쓰고 링크와 같은 밑줄을 긋는다.
 
@@ -594,6 +595,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 - **글 카드:** 사방 테두리를 쓴다. 위아래 괘선만 두면 절 제목의 밑줄과 다음 절의 구분선으로 읽혀 한 덩어리로 묶이지 않는다. 테두리는 링크에 두어 누르는 자리와 강조되는 영역을 맞춘다.
 - **연결 탐색:** 참조는 실선, 역참조는 점선이고, 전체 연결은 목록으로도 읽는다.
   - 지도 노드는 버튼으로 읽히지만 Enter는 노트를 열고 Space는 지도에서 고른다. 버튼의 약속과 달라 숨긴 한 줄로 설명하고, 키보드가 지도에 닿았을 때만(`:focus-visible`) 같은 말을 드러낸다. 늘 띄우면 마우스로 오는 대다수에게 쓰지 않는 글이 남는다. 허브는 화면에서 링으로만 구분되므로 접근 가능한 이름에 "허브"를 붙인다.
+  - 한 열 화면에서는 목차가 글 맨 위에 접혀 있어, 읽는 도중 다른 절로 가려면 맨 위까지 올라가야 한다. 접힌 목차가 화면을 벗어나면 오른쪽 아래의 목차 버튼이 그 이동을 탭 두 번으로 줄인다. 버튼의 아래 막대는 본문을 읽은 만큼 차고 숫자는 적지 않는다. 초반·중간·끝 가운데 어디인지만 알리고, 정확한 위치는 판을 열었을 때 강조되는 현재 절이 알린다. 막대는 본문만 세고 마지막 문단이 화면에 들어오면 다 찬다. 두 열 화면에는 두지 않는다. 사이드바의 목차가 현재 절을 늘 보인다.
   - 목차는 화면 위 30% 선을 지난 마지막 제목을 가리킨다. 목차에서 누르거나 주소로 가리킨 절은 다시 스크롤할 때까지 먼저 가리킨다. 페이지 끝의 짧은 절은 제목이 선에 닿지 못해 누른 항목 대신 앞 절이 강조되기 때문이다.
   - 사이드바의 작은 그래프는 이웃 제목을 단어 경계에서 두 줄까지 적고, 제목이 읽히도록 이웃은 여섯까지만 그린다. 목록의 같은 줄과 함께 강조할 때는 지도처럼 점 테두리만 바꾼다. 누르는 영역에 판을 깔면 이웃 제목을 덮는다.
 
@@ -665,7 +667,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 | 내용 | 값의 출처 | 일치를 검사하는 테스트 |
 |---|---|---|
-| 역할 색(밝은·어두운 화면) | `src/lib/palette.ts`, `src/styles/site.css` | `tests/palette.test.ts` |
+| 역할 색(밝은·어두운 화면)과 링크 밑줄의 대비 | `src/lib/palette.ts`, `src/styles/site.css` | `tests/palette.test.ts` |
 | 주제색 | `src/lib/format.ts`(화면에는 `var(--topic-…)`로 나감) | `tests/topic-colors.test.ts` |
 | 코드 강조색 | `src/styles/body.css` | `tests/code-colors.test.ts` |
 | 도표 색과 배치 설정 | `src/scripts/mermaid-config.ts` | `tests/mermaid.test.ts` |
@@ -681,7 +683,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 본문 안 글 카드의 테두리·여백·강조 | `src/styles/article-card.css` | 없음 |
 | 코드 블록 머리 줄과 복사 버튼 | `src/lib/markdown.ts`, `src/scripts/code-copy.ts`, `src/styles/body.css` | `tests/code-block.test.ts` |
 | 각주 번호·목록·판과 호버 미리보기 | `src/lib/markdown.ts`, `src/scripts/footnotes.ts`, `src/styles/body.css` | `tests/markdown-footnotes.test.ts`, `tests/footnotes.test.ts`, `tests/browser/reader.spec.ts` |
-| 조작 아이콘의 도안과 표시 크기 | `src/lib/pixel-icons.ts`, `site.css`의 `.search-trigger svg`·`.search-close svg`, `map/index.astro`의 `.graph-controls svg`, `body.css`의 `.code-copy-plate svg`, `index.astro`의 `.tended svg` | `tests/pixel-icons.test.ts` |
+| 조작 아이콘의 도안과 표시 크기 | `src/lib/pixel-icons.ts`, `site.css`의 `.search-trigger svg`·`.search-close svg`, `map/index.astro`의 `.graph-controls svg`, `body.css`의 `.code-copy-plate svg`, `index.astro`의 `.tended svg`, `NotePage.astro`의 `.toc-button svg` | `tests/pixel-icons.test.ts` |
 | 개인 표식의 도안·파비콘·터치 아이콘 | `src/lib/mark.ts`, `src/lib/palette.ts`의 `MARK`, `scripts/make-mark.ts`가 만든 `public/favicon.svg`·`apple-touch-icon.png` | `tests/mark.test.ts` |
 | 사이드바 작은 그래프의 제목과 목록의 함께 강조 | `src/components/local-graph-layout.ts`, `src/components/LocalGraph.astro`, `src/scripts/local-graph.ts`, `src/components/NoteSidebar.astro` | `tests/local-graph.test.ts`, `tests/local-graph-links.test.ts`, `tests/browser/reader.spec.ts` |
 | 폭에 따른 리더·지도 배치 | `src/components/NotePage.astro`, `src/pages/map/index.astro` | `tests/browser/reader.spec.ts`, `tests/browser/map.spec.ts` |
@@ -689,6 +691,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 홈 지도 가장자리 흐림(도형 층에만, 글자는 마스크 밖) | `src/graph/hero-fade.ts`, `src/graph/snapshot.ts`, `src/graph/engine.ts` | `tests/layout.test.ts`, `tests/browser/home.spec.ts` |
 | 외부 발행 글의 목록 복귀 링크와 앞 목록의 클릭 영역 | `src/components/ExternalArticle.astro` | `tests/browser/reader.spec.ts` |
 | 목차의 현재 위치 | `src/scripts/toc.ts` | `tests/browser/reader.spec.ts` |
+| 한 열 화면의 목차 버튼과 읽은 정도 막대 | `src/components/NotePage.astro`, `src/scripts/toc-button.ts`, `src/scripts/reading-progress.ts` | `tests/reading-progress.test.ts`, `tests/browser/reader.spec.ts` |
 | 앵커 이동의 즉시 이동 | `src/styles/site.css` | `tests/browser/reader.spec.ts` |
 | 지도와 홈 지도가 나누는 호버 예고편·누름 상태 | `src/graph/engine.ts` | `tests/browser/map.spec.ts`, `tests/browser/home.spec.ts` |
 | 지도 시트로 바뀌는 폭과 그 폭의 대화상자 처리 | `src/components/MapPanel.astro`, `src/scripts/map.ts`, `src/pages/map/index.astro` | `tests/interaction-states.test.ts`, `tests/browser/map.spec.ts` |

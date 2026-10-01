@@ -44,6 +44,7 @@ test('each icon is shown at the size of its own grid so one cell stays one pixel
   assert.equal(width(read('src/styles/site.css'), '.search-trigger svg'), ICON_GRIDS.search.length);
   assert.equal(width(read('src/styles/body.css'), '.body .code-copy-plate svg'), ICON_GRIDS.copy.length);
   assert.equal(width(read('src/pages/index.astro'), '.tended :global(svg)'), ICON_GRIDS.tended.length);
+  assert.equal(width(read('src/components/NotePage.astro'), '.toc-button :global(svg)'), ICON_GRIDS.contents.length);
   assert.equal(ICON_GRIDS.copyDone.length, ICON_GRIDS.copy.length);
 });
 

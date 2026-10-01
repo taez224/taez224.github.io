@@ -116,6 +116,18 @@ test('links that stand alone in a line are marked with the shared underline', ()
   assert.doesNotMatch(blockFor(site, '.ledger-row .meta a'), /text-decoration/, '↗를 단 링크에는 밑줄을 겹치지 않는다');
 });
 
+test('the arrow of an external link in the body is not underlined and cannot wrap alone', () => {
+  // 밑줄은 흐름 안의 자식에게 전해져, 크기와 높이가 다른 화살표 아래에서 어긋난 선으로 이어졌다. 화살표를 흐름에서 빼면 전해지지 않는다.
+  // inline-block도 밑줄은 빼지만 줄 끝에서 화살표만 다음 줄로 떨어진다. 자리는 링크의 안쪽 여백이 맡아야 마지막 낱말과 함께 넘어간다.
+  const body = read('src/styles/body.css');
+  const arrow = blockFor(body, '.body a[href^="http"]::after');
+  assert.match(arrow, /position:\s*absolute/);
+  assert.doesNotMatch(arrow, /inline-block|vertical-align/);
+  const link = blockFor(body, '.body a[href^="http"]');
+  assert.match(link, /padding-right:/, '화살표가 놓일 자리');
+  assert.match(link, /position:\s*relative/, '스크롤되는 표 안에서도 화살표가 링크를 따라간다');
+});
+
 test('the external article page reaches its links like the reader does', () => {
   // 소개 페이지의 연결 목록과 되돌아가기 링크는 리더의 같은 자리와 성격이 같다. 누르는 영역도 같아야 한다.
   const css = styleText('src/components/ExternalArticle.astro');

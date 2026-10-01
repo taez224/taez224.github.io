@@ -43,8 +43,8 @@ test('state transitions use the documented durations', () => {
 });
 
 test('thick one-sided borders stay on quotes and the table of contents rail', () => {
-  // 카드·안내 상자의 한쪽 막대는 장식으로 읽힌다. 인용문과 목차 레일만 관례로 남긴다.
-  const allowed = /blockquote|\.rail\b/;
+  // 카드·안내 상자의 한쪽 막대는 장식으로 읽힌다. 인용문과 목차 레일(사이드바, 한 열 화면의 목차 판)만 관례로 남긴다.
+  const allowed = /blockquote|\.(?:toc-)?rail\b/;
   const found = allRules.filter((rule) => !allowed.test(rule.selector) && !iconDrawings.test(rule.selector)).flatMap((rule) => [...rule.body.matchAll(/border-(?:left|right)(?:-width)?:\s*(\d*\.?\d+)px/g)]
     .filter((m) => Number(m[1]) > 1)
     .map((m) => `${rule.path}: ${rule.selector} (${m[0]})`));
