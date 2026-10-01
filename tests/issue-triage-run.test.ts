@@ -1,21 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { RECENT_PAGE_LIMIT, countIssuesCreatedSince, countRecentIssues, toIssue, type Issue, type RawIssue } from '../scripts/issue-triage/github.ts';
+import { readRecord } from '../scripts/issue-triage/comment.ts';
 import { TriageError } from '../scripts/issue-triage/jev.ts';
 import type { Verdict } from '../scripts/issue-triage/questions.ts';
+import { kind, verdict as makeVerdict } from './helpers/triage.ts';
 import { renderSummary } from '../scripts/issue-triage/report.ts';
 import { DAILY_NEW_ISSUE_LIMIT, runTriage } from '../scripts/issue-triage/run.ts';
 
-const verdict: Verdict = {
-  model: 'jev-1.13.0',
-  inputTokens: 1700,
-  type: { choice: 'content', confidence: 1 },
-  area: { choice: 'reader', confidence: 1 },
-  impact: { score: 0.01, confidence: 0.99 },
-  hasReproInfo: 0.96,
-  hasInstructions: 0.02,
-  offTopic: 0.02
-};
+const verdict: Verdict = makeVerdict({ type: kind('content'), impact: { score: 0.01, confidence: 0.99 }, hasReproInfo: 0.96 });
 const issue = (over: Partial<Issue> = {}): Issue => ({ number: 7, title: '[제보] 오타', body: '방벙 → 방법', labels: ['needs-triage'], isPullRequest: false, ...over });
 
 type Options = {
@@ -23,7 +16,7 @@ type Options = {
   ask?: () => Promise<Verdict>;
   // 라벨을 적용하기 직전에 GitHub에서 다시 읽은 라벨이다. 주지 않으면 이벤트의 라벨과 같다.
   labelsNow?: string[];
-  fail?: 'count' | 'get' | 'add' | 'remove';
+  fail?: 'count' | 'get' | 'add' | 'remove' | 'comment';
 };
 
 // GitHub 호출과 Jev 호출을 기록하는 대역이다. 실제 GitHub과 Jev를 부르지 않는다.
@@ -34,10 +27,12 @@ function fixture(target: Issue, { recent = 1, ask = async () => verdict, labelsN
     async getIssue(number: number) { calls.push(`get #${number}`); outage('get'); return { ...target, labels: labelsNow ?? target.labels }; },
     async recentIssueCount(_now: number, stopAbove: number) { calls.push(`count>${stopAbove}`); outage('count'); return recent; },
     async addLabels(number: number, labels: string[]) { calls.push(`add #${number} ${labels.join(',')}`); outage('add'); },
-    async removeLabel(number: number, label: string) { calls.push(`remove #${number} ${label}`); outage('remove'); }
+    async removeLabel(number: number, label: string) { calls.push(`remove #${number} ${label}`); outage('remove'); },
+    async addComment(number: number, body: string) { calls.push(`comment #${number}`); comments.push(body); outage('comment'); }
   };
-  const deps = { client, ask: async () => { calls.push('ask'); return ask(); }, now: Date.parse('2026-10-01T00:00:00Z') };
-  return { calls, run: (trigger: 'opened' | 'dispatch') => runTriage(target, trigger, deps) };
+  const comments: string[] = [];
+  const deps = { client, ask: async () => { calls.push('ask'); return ask(); }, now: Date.parse('2026-10-01T00:00:00Z'), owner: 'taez224' };
+  return { calls, comments, run: (trigger: 'opened' | 'dispatch') => runTriage(target, trigger, deps) };
 }
 
 const since = Date.parse('2026-09-30T00:00:00Z');
@@ -84,7 +79,7 @@ test('the count is unknown when the page limit is reached without an answer', as
 test('a new issue is classified against the labels it has at that moment', async () => {
   const { calls, run } = fixture(issue());
   const record = await run('opened');
-  assert.deepEqual(calls, [`count>${DAILY_NEW_ISSUE_LIMIT}`, 'ask', 'get #7', 'add #7 content,area:reader']);
+  assert.deepEqual(calls, [`count>${DAILY_NEW_ISSUE_LIMIT}`, 'ask', 'get #7', 'add #7 content,area:reader', 'comment #7']);
   assert.equal(record.outcome, 'classified');
   assert.equal(record.stage, 'done');
   assert.deepEqual(record.added, ['content', 'area:reader']);
@@ -94,10 +89,13 @@ test('a new issue is classified against the labels it has at that moment', async
 
 test('a type the owner set while the job was waiting is kept', async () => {
   // 이벤트에는 needs-triage만 실려 있다. 그사이 소유자가 bug를 붙였고 Jev는 content라고 답한다.
-  const { calls, run } = fixture(issue(), { labelsNow: ['needs-triage', 'bug'] });
+  const { calls, comments, run } = fixture(issue(), { labelsNow: ['needs-triage', 'bug'] });
   const record = await run('opened');
-  assert.equal(calls.at(-1), 'add #7 area:reader');
+  assert.ok(calls.includes('add #7 area:reader'));
   assert.deepEqual(record.added, ['area:reader']);
+  assert.deepEqual(record.labelsBefore, ['needs-triage', 'bug']);
+  // 댓글도 실제로 일어난 일을 적는다. 판정은 내용 정정이지만 남은 라벨은 소유자의 bug다.
+  assert.ok(comments[0]?.includes('| 종류 | 내용 정정 | 기존 `bug` 유지 |'));
 });
 
 test('an issue the owner confirmed while the job was waiting is left alone', async () => {
@@ -123,7 +121,7 @@ test('over the daily limit, or when the count is unknown, a new issue is only ma
 test('a triage failure is recorded on the issue instead of being turned into a verdict', async () => {
   const { calls, run } = fixture(issue(), { ask: async () => { throw new TriageError('Jev 응답 503'); } });
   const record = await run('opened');
-  assert.deepEqual(calls, [`count>${DAILY_NEW_ISSUE_LIMIT}`, 'ask', 'get #7', 'add #7 triage-failed']);
+  assert.deepEqual(calls, [`count>${DAILY_NEW_ISSUE_LIMIT}`, 'ask', 'get #7', 'add #7 triage-failed', 'comment #7']);
   assert.equal(record.outcome, 'failed');
   assert.equal(record.error, 'Jev 응답 503');
   assert.equal(record.verdict, null);
@@ -169,6 +167,44 @@ test('a GitHub outage or a script bug ends as a recorded error with its stage, n
 
   const get = await fixture(issue(), { fail: 'get' }).run('opened');
   assert.deepEqual([get.outcome, get.stage, get.verdict?.type.choice], ['error', 'labels', 'content']);
+});
+
+test('the first run leaves one comment with the verdict, and reruns leave none', async () => {
+  const first = fixture(issue());
+  const record = await first.run('opened');
+  assert.equal(first.comments.length, 1);
+  const comment = first.comments[0] ?? '';
+  assert.ok(comment.includes('| 종류 | 내용 정정 | `content` |'));
+  assert.ok(comment.includes('@taez224가'));
+  // 댓글에 숨겨 넣은 기록은 라벨 적용까지 끝난 상태의 것이다.
+  assert.deepEqual(readRecord(comment), record);
+  // 독자가 쓴 제목과 본문은 댓글에 옮기지 않는다.
+  assert.ok(!comment.includes('방벙'));
+  assert.ok(!comment.includes('[제보] 오타'));
+
+  const rerun = fixture(issue());
+  await rerun.run('dispatch');
+  assert.deepEqual(rerun.comments, []);
+});
+
+test('a failed classification is announced, but a capped or skipped run is not', async () => {
+  const failed = fixture(issue(), { ask: async () => { throw new TriageError('Jev 응답 503'); } });
+  await failed.run('opened');
+  assert.match(failed.comments[0] ?? '', /자동으로 분류하지 못했습니다/);
+
+  const capped = fixture(issue(), { recent: null });
+  await capped.run('opened');
+  assert.deepEqual(capped.comments, []);
+
+  const confirmed = fixture(issue(), { labelsNow: ['bug'] });
+  await confirmed.run('opened');
+  assert.deepEqual(confirmed.comments, []);
+});
+
+test('a comment that cannot be posted is an error, but the labels already applied are kept in the record', async () => {
+  const record = await fixture(issue(), { fail: 'comment' }).run('opened');
+  assert.deepEqual([record.outcome, record.stage], ['error', 'comment']);
+  assert.deepEqual(record.added, ['content', 'area:reader']);
 });
 
 test('labels applied before an outage stay in the record', async () => {

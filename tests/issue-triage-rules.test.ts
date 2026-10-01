@@ -1,25 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { AREA_OPTIONS, IMPACT_LEVELS, QUESTIONS, TYPE_OPTIONS, type Verdict } from '../scripts/issue-triage/questions.ts';
+import { AREA_OPTIONS, IMPACT_LEVELS, QUESTIONS, TYPE_OPTIONS } from '../scripts/issue-triage/questions.ts';
 import {
   ALL_LABELS, AREA_LABELS, FLAG_INSTRUCTIONS, FLAG_OFF_TOPIC, HIGH_CANDIDATE, NEEDS_INFO, NEEDS_TRIAGE, TRIAGE_FAILED, TYPE_LABELS,
   decide, decideCapped, decideFailure, isConfirmed, noulState, triggerFor
 } from '../scripts/issue-triage/rules.ts';
+import { kind, place, verdict } from './helpers/triage.ts';
 
-// 확신 있게 "읽기 화면의 사소한 오류"로 판정한 응답이다. 각 테스트가 필요한 값만 바꾼다.
-function verdict(over: Partial<Verdict> = {}): Verdict {
-  return {
-    model: 'jev-1.13.0',
-    inputTokens: 1700,
-    type: { choice: 'bug', confidence: 1 },
-    area: { choice: 'reader', confidence: 1 },
-    impact: { score: 0.5, confidence: 0.95 },
-    hasReproInfo: 0.9,
-    hasInstructions: 0.02,
-    offTopic: 0.02,
-    ...over
-  };
-}
 const sorted = (labels: string[]) => [...labels].sort();
 
 test('every choice option has a description and every non-fallback option maps to a label', () => {
@@ -42,13 +29,13 @@ test('labels already on the issue are not added again', () => {
 });
 
 test('each axis is judged on its own confidence', () => {
-  const decision = decide(verdict({ area: { choice: 'reader', confidence: 0.89 } }), [NEEDS_TRIAGE], 'opened');
+  const decision = decide(verdict({ area: place('reader', 0.89) }), [NEEDS_TRIAGE], 'opened');
   assert.deepEqual(decision.add, ['bug']);
   assert.ok(decision.notes.some((note) => note.startsWith('영역')));
 });
 
 test('the fallback options never become labels, however confident', () => {
-  const decision = decide(verdict({ type: { choice: 'none', confidence: 1 }, area: { choice: 'unknown', confidence: 1 } }), [NEEDS_TRIAGE], 'opened');
+  const decision = decide(verdict({ type: kind('none'), area: place('unknown') }), [NEEDS_TRIAGE], 'opened');
   assert.deepEqual(decision.add, []);
 });
 
@@ -62,11 +49,11 @@ test('a noul value is yes from 0.8, no up to 0.2, and held in between', () => {
 test('needs-info is added only to bug reports that clearly lack reproduction detail', () => {
   assert.ok(decide(verdict({ hasReproInfo: 0.1 }), [NEEDS_TRIAGE], 'opened').add.includes(NEEDS_INFO));
   assert.ok(!decide(verdict({ hasReproInfo: 0.5 }), [NEEDS_TRIAGE], 'opened').add.includes(NEEDS_INFO));
-  assert.ok(!decide(verdict({ type: { choice: 'question', confidence: 1 }, hasReproInfo: 0.1 }), [NEEDS_TRIAGE], 'opened').add.includes(NEEDS_INFO));
+  assert.ok(!decide(verdict({ type: kind('question'), hasReproInfo: 0.1 }), [NEEDS_TRIAGE], 'opened').add.includes(NEEDS_INFO));
 });
 
 test('the instruction and off-topic flags are added only on a clear yes', () => {
-  const decision = decide(verdict({ type: { choice: 'none', confidence: 1 }, area: { choice: 'unknown', confidence: 1 }, hasInstructions: 0.99, offTopic: 0.82 }), [NEEDS_TRIAGE], 'opened');
+  const decision = decide(verdict({ type: kind('none'), area: place('unknown'), hasInstructions: 0.99, offTopic: 0.82 }), [NEEDS_TRIAGE], 'opened');
   assert.deepEqual(sorted(decision.add), [FLAG_INSTRUCTIONS, FLAG_OFF_TOPIC]);
   assert.deepEqual(decide(verdict({ hasInstructions: 0.7, offTopic: 0.7 }), [NEEDS_TRIAGE], 'opened').add.filter((label) => label.startsWith('flag:')), []);
 });
@@ -74,8 +61,8 @@ test('the instruction and off-topic flags are added only on a clear yes', () => 
 test('the priority candidate needs a bug or content issue, a high score and a confident score', () => {
   const high = { score: 2, confidence: 1 };
   assert.ok(decide(verdict({ impact: high }), [NEEDS_TRIAGE], 'opened').add.includes(HIGH_CANDIDATE));
-  assert.ok(decide(verdict({ type: { choice: 'content', confidence: 1 }, impact: high }), [NEEDS_TRIAGE], 'opened').add.includes(HIGH_CANDIDATE));
-  assert.ok(!decide(verdict({ type: { choice: 'enhancement', confidence: 1 }, impact: high }), [NEEDS_TRIAGE], 'opened').add.includes(HIGH_CANDIDATE));
+  assert.ok(decide(verdict({ type: kind('content'), impact: high }), [NEEDS_TRIAGE], 'opened').add.includes(HIGH_CANDIDATE));
+  assert.ok(!decide(verdict({ type: kind('enhancement'), impact: high }), [NEEDS_TRIAGE], 'opened').add.includes(HIGH_CANDIDATE));
   assert.ok(!decide(verdict({ impact: { score: 2.51, confidence: 0.51 } }), [NEEDS_TRIAGE], 'opened').add.includes(HIGH_CANDIDATE));
   assert.ok(!decide(verdict({ impact: { score: 1.54, confidence: 1 } }), [NEEDS_TRIAGE], 'opened').add.includes(HIGH_CANDIDATE));
 });

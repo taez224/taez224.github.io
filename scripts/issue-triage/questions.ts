@@ -14,8 +14,9 @@ export type AreaOption = (typeof AREA_OPTIONS)[number];
 export type Verdict = {
   model: string;
   inputTokens: number;
-  type: { choice: TypeOption; confidence: number };
-  area: { choice: AreaOption; confidence: number };
+  // 선택지별 확률을 함께 둔다. 확신도가 낮을 때 둘째 후보가 무엇이었는지를 댓글과 평가가 여기서 읽는다.
+  type: { choice: TypeOption; confidence: number; probabilities: Record<TypeOption, number> };
+  area: { choice: AreaOption; confidence: number; probabilities: Record<AreaOption, number> };
   impact: { score: number; confidence: number };
   hasReproInfo: number;
   hasInstructions: number;

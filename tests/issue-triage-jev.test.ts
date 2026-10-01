@@ -9,8 +9,8 @@ function reply(answers: Record<string, unknown> = {}) {
   return {
     model: 'jev-1.13.0',
     answers: {
-      type: { type: 'choice', choice: 'bug', confidence: 1, probabilities: { bug: 1 } },
-      area: { type: 'choice', choice: 'reader', confidence: 0.95, probabilities: { reader: 1 } },
+      type: { type: 'choice', choice: 'bug', confidence: 1, probabilities: { bug: 1, content: 0, enhancement: 0, question: 0, none: 0 } },
+      area: { type: 'choice', choice: 'reader', confidence: 0.95, probabilities: { reader: 0.97, map: 0.03, home: 0, search: 0, books: 0, site: 0, unknown: 0 } },
       impact: { type: 'score', score: 1.54, confidence: 0.54, legend: {}, probabilities: { 1: 0.46, 2: 0.54 } },
       has_repro_info: { type: 'noul', noul: 0.93 },
       has_instructions: { type: 'noul', noul: 0.02 },
@@ -61,8 +61,8 @@ test('a well-formed response becomes a verdict', () => {
   assert.deepEqual(parseVerdict(reply()), {
     model: 'jev-1.13.0',
     inputTokens: 1764,
-    type: { choice: 'bug', confidence: 1 },
-    area: { choice: 'reader', confidence: 0.95 },
+    type: { choice: 'bug', confidence: 1, probabilities: { bug: 1, content: 0, enhancement: 0, question: 0, none: 0 } },
+    area: { choice: 'reader', confidence: 0.95, probabilities: { reader: 0.97, map: 0.03, home: 0, search: 0, books: 0, site: 0, unknown: 0 } },
     impact: { score: 1.54, confidence: 0.54 },
     hasReproInfo: 0.93,
     hasInstructions: 0.02,
@@ -72,8 +72,13 @@ test('a well-formed response becomes a verdict', () => {
 
 test('a missing answer, an unknown option or a number out of range is a triage failure', () => {
   assert.throws(() => parseVerdict(reply({ area: undefined })), TriageError);
-  assert.throws(() => parseVerdict(reply({ type: { choice: 'priority:high', confidence: 1 } })), TriageError);
-  assert.throws(() => parseVerdict(reply({ type: { choice: 'bug', confidence: 1.2 } })), TriageError);
+  const full = { bug: 1, content: 0, enhancement: 0, question: 0, none: 0 };
+  assert.throws(() => parseVerdict(reply({ type: { choice: 'priority:high', confidence: 1, probabilities: full } })), TriageError);
+  assert.throws(() => parseVerdict(reply({ type: { choice: 'bug', confidence: 1.2, probabilities: full } })), TriageError);
+  // 선택지 하나의 확률이 빠지거나 범위를 벗어나도 실패다.
+  assert.throws(() => parseVerdict(reply({ type: { choice: 'bug', confidence: 1, probabilities: { bug: 1 } } })), TriageError);
+  assert.throws(() => parseVerdict(reply({ type: { choice: 'bug', confidence: 1, probabilities: { ...full, none: 1.5 } } })), TriageError);
+  assert.throws(() => parseVerdict(reply({ type: { choice: 'bug', confidence: 1 } })), TriageError);
   assert.throws(() => parseVerdict(reply({ off_topic: { noul: -0.1 } })), TriageError);
   assert.throws(() => parseVerdict(reply({ impact: { score: 3.5, confidence: 1 } })), TriageError);
   assert.throws(() => parseVerdict(reply({ has_repro_info: { noul: '0.9' } })), TriageError);
