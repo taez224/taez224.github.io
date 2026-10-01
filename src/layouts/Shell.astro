@@ -6,6 +6,7 @@ import Header from '../components/Header.astro';
 import SearchDialog from '../components/SearchDialog.astro';
 import Seal from '../components/Seal.astro';
 import Contacts from '../components/Contacts.astro';
+import FeedbackLink from '../components/FeedbackLink.astro';
 import { inlineJson, withBase, topicColorCss } from '../lib/format.ts';
 import { SITE_TITLE } from '../lib/site-meta.ts';
 import { FEED_LINKS } from '../lib/feeds.ts';
@@ -14,12 +15,15 @@ import siteConfig from '../../config.json';
 import { PALETTE, DARK_PALETTE } from '../lib/palette.ts';
 import { getGarden } from '../lib/get-garden.ts';
 import { THEME_BOOT } from '../lib/theme.ts';
-interface Props { title: string; description: string; path: string; active?: string; ogType?: string; ogImage?: string | null; kind?: string | null; pageType?: string | null; published?: string | null; updated?: string | null; footer?: boolean }
+interface Props { title: string; description: string; path: string; active?: string; ogType?: string; ogImage?: string | null; kind?: string | null; pageType?: string | null; published?: string | null; updated?: string | null; footer?: boolean; feedback?: boolean; feedbackPath?: string | null }
 const umami = siteConfig.analytics?.umami?.websiteId ? siteConfig.analytics.umami : null;
 // Search Console 소유권 확인 토큰. 공개되는 값이고, 지우면 소유권이 풀리므로 확인 뒤에도 남긴다.
 const googleSiteVerification = siteConfig.googleSiteVerification ?? '';
 const naverSiteVerification = siteConfig.naverSiteVerification ?? '';
-const { title, description, path, active = '', ogType = 'website', ogImage: ogImagePath = null, kind = null, pageType = null, published = null, updated = null, footer = true } = Astro.props;
+const { title, description, path, active = '', ogType = 'website', ogImage: ogImagePath = null, kind = null, pageType = null, published = null, updated = null, footer = true, feedback = true } = Astro.props;
+// 바닥글의 제보 링크는 이 페이지의 주소를 폼에 채운다. 독자가 보던 주소를 빌드 때 알 수 없는 페이지(찾을 수 없는 페이지)는
+// feedbackPath={null}로 주소 칸을 비워 둔다. 글 페이지는 글 끝 줄에 제보 링크가 있어 feedback={false}로 바닥글에서 뺀다.
+const feedbackPath = Astro.props.feedbackPath === undefined ? path : Astro.props.feedbackPath;
 const siteName = 'TaeZ';
 const fullTitle = path === '/' ? SITE_TITLE : `${title} · ${siteName}`;
 // 푸터에서는 인장이 이름의 첫 어절을 대신한다. 상수를 쪼개서 쓰므로 제목을 바꿔도 인장이 읽는 말과 남은 문구가 어긋나지 않는다.
@@ -74,12 +78,12 @@ const jsonLd = inlineJson(structuredData({ ogType, kind, pageType, title: path =
     <SearchDialog />
     <main id="app" tabindex="-1"><slot /></main>
     {/* 모든 페이지 끝의 같은 한 줄. 다른 곳의 프로필, 사이트 소개, <head>에만 있던 RSS로 가는 길을 사람에게도 보인다.
-       노트 끝 줄에는 소개 링크를 두지 않는다. 화면 높이에 맞춰 그리는 지도 페이지는 바닥글이 붙으면 페이지 스크롤이 생기므로 footer={false}로 뺀다. */}
+       노트 끝 줄에는 소개 링크를 두지 않는다. 제보 링크는 반대로 글 끝 줄에 있는 페이지에서 여기에 두지 않는다. 같은 링크가 바로 위아래로 두 번 보인다. 화면 높이에 맞춰 그리는 지도 페이지는 바닥글이 붙으면 페이지 스크롤이 생기므로 footer={false}로 뺀다. */}
     {footer && <footer class="site-footer">
       <div class="wrap">
         <span class="site-name"><Seal label={sealLabel} />{restOfTitle.join(' ')}</span>
         <Contacts contacts={contacts} />
-        <nav aria-label="사이트 정보"><a href={withBase('/about/')}>이 위키에 대해</a><a href={withBase('/rss.xml')}>RSS</a></nav>
+        <nav aria-label="사이트 정보"><a href={withBase('/about/')}>이 위키에 대해</a><a href={withBase('/rss.xml')}>RSS</a>{feedback && <FeedbackLink path={feedbackPath} />}</nav>
       </div>
     </footer>}
   </body>

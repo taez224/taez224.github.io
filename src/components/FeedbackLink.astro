@@ -1,0 +1,16 @@
+---
+// 제보 링크 하나. 자리마다 모양(크기, 색, 정렬)이 달라서 여기서는 주소와 문구만 정하고 스타일은 놓이는 쪽이 준다.
+// 밖으로 나가는 링크라 ↗를 단다. 목록과 메타 줄의 다른 바깥 링크처럼 밑줄은 긋지 않고, 바닥글만 그 줄의 다른 링크와 같이 밑줄을 긋는다.
+import { FEEDBACK_LABEL, feedbackUrl } from '../lib/feedback.ts';
+import { withBase } from '../lib/format.ts';
+interface Props { path: string | null }
+const { path } = Astro.props;
+const page = path === null ? null : new URL(withBase(path), Astro.site).href;
+---
+<a class="feedback-link" href={feedbackUrl(page)} target="_blank" rel="noreferrer"><span class="feedback-label">{FEEDBACK_LABEL}</span><span class="feedback-arrow" aria-hidden="true">↗</span></a>
+<style>
+  /* ↗는 글의 일부가 아니라 표시다. 인라인 블록으로 두어 호버의 밑줄이 화살표와 그 앞 간격까지 이어지지 않게 한다.
+     글자를 따로 감싼 것은 바닥글 때문이다. 그 줄은 늘 밑줄을 긋는데, 터치에서 링크가 flex 상자가 되면 화살표가 인라인 블록으로 남지 않는다.
+     줄 높이는 1로 둔다. 인라인 블록은 줄 높이만큼의 상자를 가져서, 그대로 두면 글자 상자 위아래로 나가 포커스 윤곽선이 화살표에서 한 단 튀어나온다. */
+  .feedback-arrow { display: inline-block; margin-left: .3em; line-height: 1; }
+</style>

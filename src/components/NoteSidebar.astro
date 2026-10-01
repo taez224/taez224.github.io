@@ -1,10 +1,11 @@
 ---
 import LocalGraph from './LocalGraph.astro';
 import Icon from './Icon.astro';
+import FeedbackLink from './FeedbackLink.astro';
 import type { PublicNote, CollectionNote } from '../lib/content-model.ts';
 import type { seriesNeighbors } from '../lib/note-nav.ts';
-interface Props { note: CollectionNote; headings: PublicNote['headings']; outgoing: PublicNote[]; incoming: PublicNote[]; mapUrl: string; series?: ReturnType<typeof seriesNeighbors> }
-const { note, headings, outgoing, incoming, mapUrl, series = null } = Astro.props;
+interface Props { note: CollectionNote; headings: PublicNote['headings']; outgoing: PublicNote[]; incoming: PublicNote[]; mapUrl: string; series?: ReturnType<typeof seriesNeighbors>; feedbackPath: string }
+const { note, headings, outgoing, incoming, mapUrl, series = null, feedbackPath } = Astro.props;
 // 목차는 h2·h3. h3에는 자기 h2의 id를 달아 두고, 스크립트가 읽고 있는 절의 h3만 펼친다(JS 없이는 전부 보인다).
 let section = '';
 const toc = headings.filter((h) => h.level === 2 || h.level === 3).map((h) => { if (h.level === 2) section = h.id; return { ...h, parent: h.level === 3 ? section : '' }; });
@@ -21,6 +22,9 @@ const hasNeighbors = outgoing.length + incoming.length > 0;
   {toc.length >= 2 && <div class:list={['rail-scroll', { 'is-long': toc.length > 10 }]}><nav class="rail" aria-label="목차">
     {toc.map((h) => <a href={`#${h.id}`} data-heading={h.id} data-parent={h.parent || undefined} class:list={[{ 'level-3': h.level === 3 }]}>{h.title}</a>)}
   </nav></div>}
+  {/* 읽는 도중에 닿는 제보 링크. 지금 읽는 절을 보려고 목차를 볼 때 함께 보인다. 목차가 없는 짧은 글은 글 끝 줄이 가까워 두지 않는다.
+     긴 목차의 아래쪽 페이드가 덮지 않게 목차 블록 밖에 둔다. */}
+  {toc.length >= 2 && <div class="rail-feedback"><FeedbackLink path={feedbackPath} /></div>}
   {series && series.total > 0 && <section class="list-block series-block">
     <div class="meta">연재<span class="count">{series.isHub ? series.total : `${series.position} / ${series.total}`}</span></div>
     {!series.isHub && (series.url ? <a class="series-hub" href={series.url}>{series.title}</a> : <span class="series-hub">{series.title}</span>)}
@@ -40,8 +44,14 @@ const hasNeighbors = outgoing.length + incoming.length > 0;
      목차는 왼쪽 레일이 경계라 위 선을 두지 않는다. 목차가 없는 글에서도 첫 블록이 위 선으로 시작해야 제목 옆에 떠 보이지 않는다. */
   .note-side { display: flex; flex-direction: column; }
   /* 로컬 그래프는 다른 컴포넌트의 루트라 스코프 속성이 없다. :global로 두어야 그래프에도 선이 붙는다. */
-  .note-side > :global(:not(.rail-scroll)) { border-top: 1px solid var(--line); }
-  .rail-scroll { padding-bottom: 24px; }
+  .note-side > :global(:not(.rail-scroll, .rail-feedback)) { border-top: 1px solid var(--line); }
+  .rail-scroll { padding-bottom: 12px; }
+  /* 제보 링크는 목차와 한 덩어리로 읽히게 목차의 글자 시작선에 맞추고 위 선을 두지 않는다. 색은 목차 줄과 같은 보조색이다. */
+  .rail-feedback { flex: none; padding: 0 0 22px 16px; font-size: var(--t-meta); line-height: 1.5; }
+  .rail-feedback :global(.feedback-link) { color: var(--muted); }
+  @media (hover: hover) { .rail-feedback :global(.feedback-link:hover) { color: var(--accent); } }
+  /* 한 열 화면에서는 목차와 함께 숨긴다. 그 폭에서는 목차 판의 제목 줄이 같은 링크를 보인다. */
+  @media (max-width: 1000px) { .rail-feedback { display: none; } }
   .note-side .list-block { padding: 20px 0; border-bottom: 0; }
   .map-link { padding: 20px 0; font-size: var(--t-meta); }
   .rail { display: flex; flex-direction: column; border-left: 2px solid var(--line); }
@@ -65,6 +75,8 @@ const hasNeighbors = outgoing.length + incoming.length > 0;
   .side-list a.is-linked { text-decoration: underline; text-underline-offset: 4px; }
   @media (pointer: coarse) {
     .rail a { padding-block: calc((44px - 1.5em) / 2); }
+    /* 목차 줄과 같은 식으로 44px을 채운다. 위쪽은 목차까지의 간격(12px)만큼만 당겨 마지막 목차 줄을 덮지 않는다. */
+    .rail-feedback :global(.feedback-link) { display: inline-block; padding-block: calc((44px - 1.5em) / 2); margin-block: -12px calc((1.5em - 44px) / 2); }
     .series-hub { padding-block: 10px; margin-block: -6px -4px; }
   }
 </style>

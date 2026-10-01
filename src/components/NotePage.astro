@@ -3,6 +3,7 @@ import { render } from 'astro:content';
 import Shell from '../layouts/Shell.astro';
 import NoteSidebar from './NoteSidebar.astro';
 import ArticleBody from './ArticleBody.astro';
+import FeedbackLink from './FeedbackLink.astro';
 import { getGarden } from '../lib/get-garden.ts';
 import { formatDate, displayTag, withBase, cleanTitle, topicColor } from '../lib/format.ts';
 import { parentLink, seriesNeighbors } from '../lib/note-nav.ts';
@@ -33,8 +34,11 @@ const hasSeriesNav = series && (series.prev || series.next);
 // 노트(Slipbox)는 사이드바의 "생각 지도에서 보기"가 같은 곳으로 가므로 페이지 끝에 목록 링크를 두지 않는다.
 // 사이드바는 모바일에서도 보이므로 여기서 한 번 더 두면 같은 링크가 두 개가 된다.
 const endLink = note.kind === 'slipbox' ? null : parent.listLabel;
+// 제보 링크는 읽는 도중(넓은 화면은 목차 아래, 한 열 화면은 목차 판의 제목 줄)과 다 읽은 뒤(글 끝 줄)에 닿는다.
+// 세 자리가 같은 주소를 폼에 채운다.
+const feedbackPath = articleMeta(note).path;
 ---
-<Shell title={title} description={note.summary} {...articleMeta(note)} updated={note.updated || null} active={note.kind === 'blog' ? 'posts' : note.kind === 'development' ? 'dev' : 'map'}>
+<Shell title={title} description={note.summary} {...articleMeta(note)} updated={note.updated || null} feedback={false} active={note.kind === 'blog' ? 'posts' : note.kind === 'development' ? 'dev' : 'map'}>
   <div class="wrap note-view" style={`--topic:${topicColor(note.topic)}`}>
     <article class="note-article">
       <div class="meta note-meta">
@@ -66,18 +70,19 @@ const endLink = note.kind === 'slipbox' ? null : parent.listLabel;
         {series.next && <a class="series-link is-next" href={series.next.url}><span class="series-direction">{series.isHub ? '1편부터 읽기' : '다음 편'} <span aria-hidden="true">→</span></span><span class="series-title">{series.next.title}</span></a>}
       </nav>}
     </article>
-    <NoteSidebar note={note} headings={note.headings} outgoing={outgoing} incoming={incoming} mapUrl={mapUrl} series={series} />
-    {/* 사이트 소개 링크는 모든 페이지의 바닥글에 있어 여기서는 목록으로 돌아가는 링크만 둔다. 목록 링크가 없는 생각 노트는 이 줄을 그리지 않는다. */}
-    {endLink && <footer class="note-footer"><a href={parentUrl}><span aria-hidden="true">←</span> {endLink}</a></footer>}
+    <NoteSidebar note={note} headings={note.headings} outgoing={outgoing} incoming={incoming} mapUrl={mapUrl} series={series} feedbackPath={feedbackPath} />
+    {/* 글 끝 줄: 목록으로 돌아가는 링크와 제보 링크. 사이트 소개 링크는 모든 페이지의 바닥글에 있어 여기에 두지 않는다.
+       목록 링크가 없는 생각 노트는 제보 링크만 왼쪽에 둔다. */}
+    <footer class="note-footer">{endLink && <a href={parentUrl}><span aria-hidden="true">←</span> {endLink}</a>}<FeedbackLink path={feedbackPath} /></footer>
   </div>
   {/* 한 열 화면에서는 목차가 글 맨 위에 접혀 있어, 읽는 도중 다른 절로 가려면 맨 위까지 올라가야 한다. 접힌 목차가 화면을 벗어나면
      이 버튼이 나타나 탭 두 번으로 절을 옮긴다. 아래 막대는 본문을 읽은 만큼 찬다. 스크립트(toc-button.ts)가 hidden을 푼다. */}
   {mobileToc.length >= 2 && <>
     <button type="button" class="toc-button" popovertarget="toc-sheet" aria-label="목차" title="목차" data-toc-button hidden><Fragment set:html={pixelIcon('contents')} /><span class="toc-progress" aria-hidden="true"></span></button>
-    <nav id="toc-sheet" class="toc-sheet" popover aria-label="목차">
-      <p class="meta">목차</p>
-      <div class="toc-rail">{mobileToc.map((heading) => <a class:list={[{ 'level-3': heading.level === 3 }]} href={`#${heading.id}`} data-toc-target={heading.id}>{heading.title}</a>)}</div>
-    </nav>
+    <div id="toc-sheet" class="toc-sheet" popover>
+      <div class="toc-head"><span class="meta">목차</span><FeedbackLink path={feedbackPath} /></div>
+      <nav class="toc-scroll" aria-label="목차"><div class="toc-rail">{mobileToc.map((heading) => <a class:list={[{ 'level-3': heading.level === 3 }]} href={`#${heading.id}`} data-toc-target={heading.id}>{heading.title}</a>)}</div></nav>
+    </div>
   </>}
 </Shell>
 <style is:global>
@@ -86,9 +91,11 @@ const endLink = note.kind === 'slipbox' ? null : parent.listLabel;
   .note-view { display: grid; grid-template-columns: minmax(0, var(--s-reader-column)) var(--s-sidebar); justify-content: start; gap: var(--s-column-gap) clamp(var(--s-column-gap), 100% - var(--s-reader-column) - var(--s-sidebar), var(--s-reader-gap)); align-items: start; padding: var(--s-page-top-reading) 0 var(--s-page-bottom); }
   .note-side { position: sticky; top: 100px; max-height: calc(100dvh - 120px); overflow-y: auto; padding-top: 82px; scrollbar-gutter: stable; }
   .note-view > .note-side { grid-column: 2; grid-row: 1 / span 2; }
-  /* 페이지 끝 한 줄: 목록으로 돌아가는 링크. 사이트 소개는 모든 페이지의 바닥글이 맡는다.
+  /* 글 끝 한 줄: 목록으로 돌아가는 링크와 제보 링크. 사이트 소개는 모든 페이지의 바닥글이 맡는다.
      본문 밖에 두어 한 열에서는 연결 목록 뒤에 온다. 두 열에서는 본문 바로 아래가 된다. */
   .note-footer { grid-column: 1; display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 24px; padding-top: 24px; border-top: 1px solid var(--line); font-size: var(--t-side); }
+  /* 목록 링크가 있으면 제보 링크를 줄의 오른쪽 끝으로 보낸다. 혼자일 때는 왼쪽에서 시작한다. */
+  .note-footer .feedback-link:not(:only-child) { margin-left: auto; }
   .note-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
   /* 구분점은 항목의 앞에 붙인다. 별도 span이면 좁은 화면에서 줄 끝에 점만 남고 항목은 다음 줄로 넘어간다. */
   .note-meta > * + *::before { content: '·'; margin-right: 8px; }
@@ -140,9 +147,13 @@ const endLink = note.kind === 'slipbox' ? null : parent.listLabel;
     /* 막대는 읽은 정도를 대략 알린다. 숫자를 적지 않는 것은 초반·중간·끝 가운데 어디인지만 알면 되기 때문이다. */
     .toc-progress { position: absolute; right: 0; bottom: 0; left: 0; height: 3px; background: var(--line); }
     .toc-progress::after { position: absolute; inset: 0; background: var(--ink); transform: scaleX(var(--progress, 0)); transform-origin: left; content: ""; }
-    .toc-sheet { position: fixed; inset: auto 16px calc(70px + env(safe-area-inset-bottom)) auto; width: min(320px, calc(100vw - 32px)); max-height: min(60vh, 420px); margin: 0; overflow-y: auto; padding: 12px 16px 14px; border: 1px solid var(--overlay-line); border-radius: 6px; background: var(--paper-strong); color: var(--ink); }
-    .toc-sheet:popover-open { display: block; }
-    .toc-sheet p { margin: 0 0 8px; }
+    .toc-sheet { position: fixed; inset: auto 16px calc(70px + env(safe-area-inset-bottom)) auto; width: min(320px, calc(100vw - 32px)); max-height: min(60vh, 420px); margin: 0; overflow: hidden; padding: 12px 16px 14px; border: 1px solid var(--overlay-line); border-radius: 6px; background: var(--paper-strong); color: var(--ink); }
+    /* 제목 줄은 판에 남기고 목록만 스크롤한다. 판 전체를 스크롤하면 글 후반에서 열었을 때 현재 절까지 내려가면서 제목과 제보 링크가 위로 가려진다. */
+    .toc-sheet:popover-open { display: flex; flex-direction: column; }
+    .toc-head { display: flex; flex: none; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 8px; }
+    .toc-head .feedback-link { font-size: var(--t-meta); white-space: nowrap; }
+    /* 스크롤은 레일의 바깥 상자가 맡는다. 레일에 직접 걸면 현재 절의 막대가 레일의 왼쪽 선 위로 나가 있어 잘린다. */
+    .toc-scroll { min-height: 0; overflow-y: auto; }
     .toc-sheet .toc-rail { display: flex; flex-direction: column; border-left: 2px solid var(--line); }
     .toc-sheet .toc-rail a { margin-left: -2px; padding: 7px 0 7px 14px; border-left: 2px solid transparent; color: var(--muted); font-size: var(--t-side); line-height: 1.5; }
     .toc-sheet .toc-rail a.level-3 { padding-left: 26px; font-size: var(--t-meta); }
@@ -171,6 +182,11 @@ const endLink = note.kind === 'slipbox' ? null : parent.listLabel;
        페이지 끝 줄은 링크가 하나뿐이라 겹칠 일이 없어 44px을 채운다. */
     .note-meta a { padding-block: 4px; margin-block: -4px; }
     .note-footer a { padding-block: 12px; margin-block: -12px; }
+    /* 글자를 키우거나 폭이 좁으면 제보 링크가 둘째 줄로 내려간다. 두 링크가 12px씩 넓힌 영역이 맞닿기만 하게 줄 사이를 24px로 벌린다.
+       10px 그대로면 14px 겹쳐, 목록 링크의 아래쪽을 눌러도 제보 폼이 열린다. */
+    .note-footer { row-gap: 24px; }
+    /* 목차 판의 제보 링크는 위로는 판의 안쪽 여백(12px), 아래로는 목록까지의 간격(8px)까지만 넓힌다. 줄 높이 24px과 합쳐 44px이 되고 첫 목차 줄을 덮지 않는다. */
+    .toc-head .feedback-link { padding-block: 12px 8px; margin-block: -12px -8px; }
   }
 </style>
 <script src="../scripts/mermaid.ts"></script>

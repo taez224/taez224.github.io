@@ -1,6 +1,5 @@
-name: 오류·의견 제보
+name: 오류·의견 보내기
 description: 사이트의 오류, 글의 잘못된 내용, 개선 의견을 알려 주세요.
-title: '[제보] '
 labels: [needs-triage]
 body:
   - type: markdown

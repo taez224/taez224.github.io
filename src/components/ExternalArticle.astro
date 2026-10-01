@@ -4,6 +4,7 @@ import { Image } from 'astro:assets';
 import { getGarden } from '../lib/get-garden.ts';
 import { cleanTitle, formatDate, kindLabel, withBase } from '../lib/format.ts';
 import { articleMeta } from '../lib/seo.ts';
+import FeedbackLink from './FeedbackLink.astro';
 
 import type { NoteEntry, PublicNote } from '../lib/content-model.ts';
 interface Props { entry: NoteEntry }
@@ -14,7 +15,7 @@ const garden = await getGarden();
 const byPath = new Map(garden.notes.map((item) => [item.path, item]));
 const related = [...new Set([...note.outgoing, ...note.incoming])].filter((path) => path !== note.path).map((path) => byPath.get(path)).filter((item): item is PublicNote => item !== undefined);
 ---
-<Shell title={title} description={note.summary} {...articleMeta(note)} active="posts">
+<Shell title={title} description={note.summary} {...articleMeta(note)} feedback={false} active="posts">
   <article class="external-article">
     <div class="external-meta meta">
       <a href={note.publishedUrl} target="_blank" rel="noreferrer">{note.publication || note.externalPublisher} <span aria-hidden="true">↗</span></a>
@@ -31,7 +32,8 @@ const related = [...new Set([...note.outgoing, ...note.incoming])].filter((path)
       <h2 id="related-heading" class="display">연결된 노트</h2>
       <ul>{related.map((item) => <li><a href={item.url}>{item.type === 'hub' && <i class="hub-mark" aria-hidden="true"></i>}{cleanTitle(item.displayTitle || item.title)}</a><span class="meta">{kindLabel(item)}</span></li>)}</ul>
     </section>}
-    <a class="back-to-posts" href={withBase('/posts/')}><span aria-hidden="true">←</span> 글 목록</a>
+    {/* 글 끝 줄은 리더와 같다. 목록으로 돌아가는 링크가 왼쪽, 제보 링크가 오른쪽이다. */}
+    <div class="article-end"><a class="back-to-posts" href={withBase('/posts/')}><span aria-hidden="true">←</span> 글 목록</a><FeedbackLink path={articleMeta(note).path} /></div>
   </article>
 </Shell>
 <style>
@@ -58,9 +60,14 @@ const related = [...new Set([...note.outgoing, ...note.incoming])].filter((path)
   li a { flex: 1; line-height: 1.6; }
   li a::after { position: absolute; inset: 0; content: ""; }
   li .meta { flex-shrink: 0; }
+  .article-end { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 24px; font-size: var(--t-side); }
+  /* 오른쪽 끝으로 보내는 일은 링크의 왼쪽 여백이 맡는다. 줄 양쪽 정렬로 하면 링크가 둘째 줄로 내려갔을 때 혼자 왼쪽에 붙는다. */
+  .article-end :global(.feedback-link) { margin-left: auto; }
   .back-to-posts { display: inline-flex; gap: 8px; margin-top: 34px; font-size: var(--t-side); }
   /* 위쪽 여백 34px 중 12px만 누르는 영역으로 옮긴다. 위 여백까지 -12px로 덮으면 앞 목록과 겹친다. */
   @media (pointer: coarse) { .back-to-posts { padding-block: 12px; margin-top: 22px; margin-bottom: -12px; } }
+  /* 줄이 둘로 나뉘면 두 링크가 12px씩 넓힌 영역이 맞닿기만 하게 줄 사이를 24px로 벌린다. 리더의 글 끝 줄과 같다. */
+  @media (pointer: coarse) { .article-end { row-gap: 24px; } .article-end :global(.feedback-link) { padding-block: 12px; margin-block: -12px; } }
   @media (max-width: 720px) {
     .external-thumbnail :global(img) { max-height: 220px; }
     .external-related { margin-top: 40px; }
