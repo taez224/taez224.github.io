@@ -101,3 +101,20 @@ test('the retired ink #242720 does not come back as hex or rgb', () => {
   const copies = sourceFiles('src').filter((path) => /(?:#|%23)242720|rgba?\(\s*36[\s,]+39[\s,]+32\b/i.test(read(path)));
   assert.deepEqual(copies, []);
 });
+
+// 링크 글자는 본문과 같은 먹색이라 링크임을 알리는 단서가 밑줄 하나다. 밑줄이 바탕과 3:1에 못 미치면 링크가 본문에 묻힌다.
+// 밑줄은 먹색을 투명과 섞은 값이라 놓이는 바탕에 따라 결과가 달라지므로, 종이와 올라온 판 양쪽에서 계산한다.
+test('the link underline, the only cue of an ink-colored link, keeps 3:1 against both papers in both themes', () => {
+  const share = Number(rootVariables(read('src/styles/site.css')).get('link-underline')?.match(/var\(--ink\)\s*([\d.]+)%/)?.[1]) / 100;
+  assert.ok(share > 0 && share <= 1, '--link-underline은 먹색을 투명과 섞은 값이다');
+  const channels = (hex: string) => [1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16));
+  const luminance = (rgb: number[]) => { const [r, g, b] = rgb.map((v) => { const c = v / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+  const contrast = (a: number[], b: number[]) => { const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x); return (hi + 0.05) / (lo + 0.05); };
+  for (const [name, palette] of [['밝은 화면', PALETTE], ['어두운 화면', DARK_PALETTE]] as const) {
+    for (const ground of ['paper', 'paper-strong'] as const) {
+      const ink = channels(palette.ink), base = channels(palette[ground]);
+      const underline = ink.map((value, at) => value * share + base[at] * (1 - share));
+      assert.ok(contrast(underline, base) >= 3, `${name} ${ground}: ${contrast(underline, base).toFixed(2)}`);
+    }
+  }
+});
