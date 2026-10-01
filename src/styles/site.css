@@ -20,7 +20,7 @@
   /* 구조 간격 토큰. DESIGN.md spacing과 같은 값이다. 페이지 틀(폭·좌우 여백·열·헤더·페이지 위아래)만 토큰으로 두고,
      컴포넌트 안쪽의 작은 여백은 모양에 맞춘 값이라 묶지 않는다. 페이지 위쪽 여백은 목록형(index)과 읽는 페이지(reading) 두 단계라
      같은 종류의 페이지를 오갈 때 제목이 같은 높이에서 시작한다. */
-  --s-content-max: 1180px; --s-page-gutter: 24px; --s-column-gap: 40px; --s-reader-column: 720px; --s-sidebar: 310px;
+  --s-content-max: 1180px; --s-page-gutter: 24px; --s-column-gap: 40px; --s-reader-column: 720px; --s-reader-gap: 100px; --s-sidebar: 310px;
   --s-header-height: 72px; --s-page-top-index: 36px; --s-page-top-reading: 56px; --s-page-bottom: 96px;
   --s-title-gap: 40px; --s-paragraph-gap: 22px; --s-side-list-gap: 8px;
   /* 앞머리로 테마를 지정한 도표가 놓이는 판. 그 테마가 전제한 밝기를 화면 모드와 상관없이 지키므로 어두운 화면 블록에서 덮지 않는다.

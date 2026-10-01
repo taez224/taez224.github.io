@@ -71,7 +71,9 @@ const endLink = note.kind === 'slipbox' ? null : parent.listLabel;
   </div>
 </Shell>
 <style is:global>
-  .note-view { display: grid; grid-template-columns: minmax(0, var(--s-reader-column)) var(--s-sidebar); justify-content: space-between; gap: var(--s-column-gap); align-items: start; padding: var(--s-page-top-reading) 0 var(--s-page-bottom); }
+  /* 사이드바는 본문 옆 100px에 둔다. 오른쪽 끝을 헤더에 맞추면 본문과 150px 떨어져 따로 놓인 것처럼 보였다.
+     창이 좁아지면 본문보다 간격이 먼저 줄도록, 본문과 사이드바를 뺀 남는 폭을 간격으로 쓰되 40~100px 안에 둔다. */
+  .note-view { display: grid; grid-template-columns: minmax(0, var(--s-reader-column)) var(--s-sidebar); justify-content: start; gap: var(--s-column-gap) clamp(var(--s-column-gap), 100% - var(--s-reader-column) - var(--s-sidebar), var(--s-reader-gap)); align-items: start; padding: var(--s-page-top-reading) 0 var(--s-page-bottom); }
   .note-side { position: sticky; top: 100px; max-height: calc(100dvh - 120px); overflow-y: auto; padding-top: 82px; scrollbar-gutter: stable; }
   .note-view > .note-side { grid-column: 2; grid-row: 1 / span 2; }
   /* 페이지 끝 한 줄: 목록으로 돌아가는 링크. 사이트 소개는 모든 페이지의 바닥글이 맡는다.
