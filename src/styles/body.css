@@ -13,7 +13,11 @@
 .body .visibility-hint { position: absolute; z-index: 2; right: 0; bottom: calc(100% + 5px); width: max-content; padding: 5px 8px; border-radius: 4px; background: var(--ink); color: var(--paper); font-size: var(--t-micro); line-height: 1.5; visibility: hidden; }
 .body .visibility-mark:focus .visibility-hint { visibility: visible; }
 @media (hover: hover) { .body .visibility-mark:hover .visibility-hint { visibility: visible; } }
-.body a[href^="http"]::after { content: "↗"; margin-left: .15em; font-size: .78em; vertical-align: .1em; }
+/* 화살표는 링크 글의 일부가 아니라 표시이므로 밑줄을 긋지 않는다. 밑줄은 흐름 안의 자식에게 전해지므로 화살표를 흐름에서 뺀다.
+   inline-block으로 두어도 밑줄은 빠지지만, 줄 끝에서 화살표만 다음 줄로 떨어진다. 자리는 링크 끝의 안쪽 여백이 맡아
+   화살표가 마지막 낱말과 함께 줄을 넘는다. 링크를 기준 상자로 두어야 가로로 스크롤되는 표 안에서도 화살표가 링크를 따라간다. */
+.body a[href^="http"] { position: relative; padding-right: .8em; }
+.body a[href^="http"]::after { position: absolute; margin-left: .15em; content: "↗"; font-size: .78em; }
 .body h2, .body h3, .body h4 { font-family: var(--display); font-weight: 700; line-height: 1.4; letter-spacing: -.02em; scroll-margin-top: 110px; }
 .body h2 { margin: 44px 0 14px; font-size: var(--t-h2); }
 .body h3 { margin: 32px 0 10px; font-size: var(--t-h3); }
