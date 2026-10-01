@@ -63,7 +63,7 @@ test('llms.txt lists public notes by kind, newest first, with absolute urls', ()
   assert.equal(lines[0], '# 정원');
   assert.equal(lines[2], '> 소개');
   assert.ok(text.includes('사이트: https://example.com/obsidian/'));
-  assert.ok(text.indexOf('## 글') < text.indexOf('## 노트'), '글이 노트보다 먼저 온다');
+  assert.ok(text.indexOf('## 글') < text.indexOf('## 생각 노트'), '글이 생각 노트보다 먼저 온다');
   assert.ok(text.indexOf('[새 글]') < text.indexOf('[옛 글]'), '최신 글이 먼저 온다');
   assert.ok(text.includes('- [새 글](https://example.com/obsidian/posts/new/): 요약'));
   assert.ok(text.includes('- [옛 글](https://example.com/obsidian/posts/old/)\n'), '요약이 없으면 콜론을 붙이지 않는다');

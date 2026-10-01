@@ -13,7 +13,7 @@ const edges = [{ source: 'a.md', target: 'b.md' }, { source: 'c.md', target: 'a.
 
 test('panelModel builds meta, topic dots and reference lists from public edges only', () => {
   const model = panelModel(hubNote, notes, edges);
-  assert.deepEqual([model.kind, model.date, model.isHub, model.title, model.url], ['노트', '2026.07.12', true, 'A', '/obsidian/notes/a/']);
+  assert.deepEqual([model.kind, model.date, model.isHub, model.title, model.url], ['생각 노트', '2026.07.12', true, 'A', '/obsidian/notes/a/']);
   assert.deepEqual(model.topics.map((t) => t.name), ['AI', '개발']);
   assert.equal(model.topics[0].color, topicColor('AI'));
   const folded = panelModel(hubNote, notes, edges, { 개발: '기타' });
