@@ -349,6 +349,29 @@ test('a table of contents entry chosen at the end stays marked until the reader 
   await expect(current, '입력 없이 맨 위로').toHaveText('첫째 절');
 });
 
+// 긴 목차는 목차만 따로 스크롤한다. 스크롤 상자는 자기 테두리 안쪽까지만 그리므로, 현재 절의 막대를 상자의 테두리 위에
+// 겹쳐 그리면 막대가 잘려 굵은 제목만 남았다. 막대 자리를 눌렀을 때 그 줄이 잡히는지로 실제로 그려지는지 본다.
+test('a long table of contents shows the bar beside the current section', async ({ page, isMobile }) => {
+  test.skip(isMobile, '한 열 화면에서는 사이드바 목차를 쓰지 않는다');
+  await page.goto('/posts/browser-long-toc/');
+  const current = page.locator('.rail a[aria-current="location"]');
+  const atBar = () => current.evaluate((link) => {
+    const box = link.getBoundingClientRect();
+    return document.elementFromPoint(box.left + 1, box.top + box.height / 2) === link;
+  });
+  await expect(current).toHaveText('1번 절');
+  expect(await page.locator('.rail').evaluate((rail) => rail.scrollHeight > rail.clientHeight), '전제: 목차가 안에서 스크롤된다').toBe(true);
+  expect(await atBar(), '첫 절').toBe(true);
+  // 목차가 스크롤된 뒤의 줄도 같다.
+  await page.evaluate(() => {
+    const link = [...document.querySelectorAll<HTMLAnchorElement>('.rail a[data-heading]')].find((a) => a.textContent === '11번 절')!;
+    window.scrollTo({ top: window.scrollY + document.getElementById(link.dataset.heading!)!.getBoundingClientRect().top + 300, behavior: 'instant' });
+  });
+  await expect(current).toHaveText('11번 절');
+  await expect.poll(() => page.locator('.rail').evaluate((rail) => rail.scrollTop), '전제: 목차가 현재 절까지 내려갔다').toBeGreaterThan(0);
+  await expect.poll(atBar, '스크롤된 목차의 절').toBe(true);
+});
+
 // 앵커 이동을 부드럽게 움직이면 애니메이션이 출발할 때 계산한 자리로 가서, 그사이 위쪽 도표가 그려져 길어진 만큼
 // 제목이 밀려났다. 도표가 많은 글에서는 한 절 앞에 떨어졌다. 즉시 이동하면 브라우저의 스크롤 고정이 자리를 지킨다.
 test('a heading reached by its address stays in place when content above grows afterwards', async ({ page }) => {
