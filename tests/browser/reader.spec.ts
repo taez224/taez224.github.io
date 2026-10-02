@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures.ts';
+import { test, expect, gotoWithDefaultFontSize } from './fixtures.ts';
 import { PALETTE, DARK_PALETTE } from '../../src/lib/palette.ts';
 
 const rgb = (hex: string) => `rgb(${[1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16)).join(', ')})`;
@@ -294,6 +294,26 @@ test('the contents button bar fills as the body is read and is full when the las
   await page.evaluate(() => { const last = document.querySelector('.note-article .body')!.lastElementChild!; window.scrollTo({ top: window.scrollY + last.getBoundingClientRect().top - innerHeight + 40, behavior: 'instant' }); });
   await expect.poll(progress, { message: '마지막 문단이 화면에 들어오면 다 찬다' }).toBe(1);
 });
+
+// 목차 버튼은 화면 오른쪽 아래에 고정되어 있어 글 끝까지 내리면 바닥글 위에 놓인다. 320px에서는 바닥글의 마지막 링크가,
+// 바닥글이 한 줄이 되는 721px부터는 오른쪽 끝의 링크가 버튼에 가려 누를 수 없었다. 바닥글이 버튼의 폭만큼 오른쪽을 비운다.
+// 어느 링크가 그 자리에 오는지는 프로필 수와 글자 크기에 따라 달라지므로, 바닥글의 어떤 덩어리도 버튼이 선 세로 띠에 들어오지 않는지를 본다.
+for (const [width, fontSize] of [[320, 16], [800, 16], [390, 32]] as const) {
+  test(`the footer keeps clear of the contents button at the end of a note (${width}px, ${fontSize}px type)`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 740 });
+    await gotoWithDefaultFontSize(page, '/notes/browser-sections/', fontSize);
+    await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
+    await expect(page.locator('.toc-button')).toBeVisible();
+    const measured = await page.evaluate(() => {
+      const button = document.querySelector('.toc-button')!.getBoundingClientRect();
+      const footer = document.querySelector('.site-footer')!.getBoundingClientRect();
+      const reach = Math.max(...[...document.querySelectorAll('.site-footer .wrap > *')].map((block) => block.getBoundingClientRect().right));
+      return { reach, buttonLeft: button.left, buttonOnFooter: button.bottom > footer.top };
+    });
+    expect(measured.buttonOnFooter, '전제: 글 끝에서 버튼이 바닥글 위에 놓인다').toBe(true);
+    expect(measured.reach, '바닥글 내용의 오른쪽 끝').toBeLessThanOrEqual(measured.buttonLeft);
+  });
+}
 
 test('the contents button stays out of the two-column reader, where the sidebar already shows the contents', async ({ page, isMobile }) => {
   test.skip(isMobile, '데스크톱 폭만 본다');

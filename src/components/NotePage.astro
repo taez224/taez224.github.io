@@ -143,6 +143,9 @@ const feedbackPath = articleMeta(note).path;
     .mobile-toc nav a.level-3 { padding-left: 16px; color: var(--muted); }
     /* 본문 위에 떠 있으므로 각주 판처럼 먹색 테두리로 경계를 보인다. 누르는 영역은 44px이다. */
     .toc-button { position: fixed; z-index: 30; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); display: grid; place-items: center; width: 44px; height: 44px; padding: 0; overflow: hidden; border: 1px solid var(--overlay-line); border-radius: 4px; background: var(--paper-strong); color: var(--ink); }
+    /* 글 끝에서는 고정된 버튼이 바닥글 위에 놓인다. 바닥글이 버튼의 왼쪽 끝에서 20px 앞까지만 쓰게 오른쪽을 비운다.
+       비우지 않으면 320px에서는 마지막 링크가, 바닥글이 한 줄이 되는 721px부터는 오른쪽 끝의 링크가 버튼에 가려 누를 수 없다. */
+    body:has(.toc-button) .site-footer .wrap { padding-right: calc(80px - var(--s-page-gutter)); }
     .toc-button :global(svg) { display: block; width: 16px; height: 16px; }
     /* 막대는 읽은 정도를 대략 알린다. 숫자를 적지 않는 것은 초반·중간·끝 가운데 어디인지만 알면 되기 때문이다. */
     .toc-progress { position: absolute; right: 0; bottom: 0; left: 0; height: 3px; background: var(--line); }
