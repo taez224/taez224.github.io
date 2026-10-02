@@ -27,15 +27,24 @@ function designFontSizes(): Map<string, number> {
   return new Map([...yaml.matchAll(/^ {2}([\w-]+):\n(?: {4}.+\n)*? {4}fontSize: ([\d.]+)px/gm)].map((m) => [m[1], Number(m[2])]));
 }
 
+const MOBILE = '(max-width: 720px)';
+const TABLET = '(min-width: 721px) and (max-width: 1000px)';
+
+const desktopTokens = () => typeTokens(siteCss.match(/:root\s*\{([\s\S]*?)\n\}/)?.[1] ?? '');
+
+// 미디어 쿼리와 :root 사이에 주석이 있어도 블록을 찾는다. 못 찾으면 그 폭의 검사가 통째로 빠지므로 여기서 멈춘다.
+function mediaTokens(query: string): Map<string, string> {
+  const block = siteCss.match(new RegExp(`@media ${query.replace(/[()]/g, '\\$&')} \\{\\s*(?:/\\*[\\s\\S]*?\\*/\\s*)*:root \\{([^}]*)\\}`))?.[1] ?? '';
+  const tokens = typeTokens(block);
+  assert.ok(tokens.size > 0, `${query} 블록에서 글자 토큰을 읽지 못했다`);
+  return tokens;
+}
+
 test('type role tokens are rem and match DESIGN.md typography at each width', () => {
   const design = designFontSizes();
-  const desktop = typeTokens(siteCss.match(/:root\s*\{([\s\S]*?)\n\}/)?.[1] ?? '');
+  const desktop = desktopTokens();
   assert.ok(desktop.size > 0);
-  const checks: [string, Map<string, string>][] = [['', desktop]];
-  for (const [query, suffix] of [['(max-width: 720px)', '-mobile'], ['(min-width: 721px) and (max-width: 1000px)', '-tablet']] as const) {
-    const block = siteCss.match(new RegExp(`@media ${query.replace(/[()]/g, '\\$&')} \\{\\s*:root \\{([^}]*)\\}`))?.[1] ?? '';
-    checks.push([suffix, typeTokens(block)]);
-  }
+  const checks: [string, Map<string, string>][] = [['', desktop], ['-mobile', mediaTokens(MOBILE)], ['-tablet', mediaTokens(TABLET)]];
   for (const [suffix, tokens] of checks) {
     for (const [name, value] of tokens) {
       assert.match(value, /^[\d.]+rem$/, `--t-${name}${suffix}`);
