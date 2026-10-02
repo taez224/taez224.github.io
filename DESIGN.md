@@ -90,21 +90,9 @@ typography:
     fontWeight: 700
     lineHeight: 1.4
     letterSpacing: -0.02em
-  h2-mobile:
-    fontFamily: Gowun Batang
-    fontSize: 22px
-    fontWeight: 700
-    lineHeight: 1.4
-    letterSpacing: -0.02em
   h3:
     fontFamily: Gowun Batang
     fontSize: 21px
-    fontWeight: 700
-    lineHeight: 1.4
-    letterSpacing: -0.02em
-  h3-mobile:
-    fontFamily: Gowun Batang
-    fontSize: 19px
     fontWeight: 700
     lineHeight: 1.4
     letterSpacing: -0.02em
@@ -514,7 +502,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 - **읽는 글자:** `body`(본문), `lead`(제목 아래 요약, 요약·인용 콜아웃), `summary`(목록 요약, 콜아웃, 각주).
 - **조작과 보조:** `list`·`list-small`(목록 제목, 책·글 카드 제목), `ui`(내비·버튼·검색 결과), `side`(사이드바·표·코드), `meta`, `micro`(단축키·출처).
 
-모바일에서는 제목 단계를 함께 줄여, 글 제목과 h2처럼 이웃한 단계가 같은 크기로 겹치지 않게 한다.
+모바일에서는 제목 단계를 함께 줄여, 페이지 제목과 장부 라벨처럼 이웃한 단계가 같은 크기로 겹치지 않게 한다. 본문의 `h2`와 `h3`는 줄이지 않는다. 글 제목이 줄어든 뒤에도 글 제목·`h2`·`h3`·본문이 약 1.24배씩 고르게 내려가고, 더 줄이면 `h3`가 본문 속 굵은 글자보다 약해 보인다. 본문 제목은 두 줄이 될 때 줄 길이를 맞춰, 한 어절만 다음 줄로 넘어가지 않게 한다.
 
 ## Layout
 

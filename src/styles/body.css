@@ -18,7 +18,8 @@
    화살표가 마지막 낱말과 함께 줄을 넘는다. 링크를 기준 상자로 두어야 가로로 스크롤되는 표 안에서도 화살표가 링크를 따라간다. */
 .body a[href^="http"] { position: relative; padding-right: .8em; }
 .body a[href^="http"]::after { position: absolute; margin-left: .15em; content: "↗"; font-size: .78em; }
-.body h2, .body h3, .body h4 { font-family: var(--display); font-weight: 700; line-height: 1.4; letter-spacing: -.02em; scroll-margin-top: 110px; }
+/* 좁은 화면에서 제목이 두 줄이 될 때 한 어절만 다음 줄로 넘어가지 않게 두 줄의 길이를 맞춘다. */
+.body h2, .body h3, .body h4 { font-family: var(--display); font-weight: 700; line-height: 1.4; letter-spacing: -.02em; text-wrap: balance; scroll-margin-top: 110px; }
 .body h2 { margin: 44px 0 14px; font-size: var(--t-h2); }
 .body h3 { margin: 32px 0 10px; font-size: var(--t-h3); }
 .body h4 { margin: 24px 0 8px; font-size: var(--t-h4); }
