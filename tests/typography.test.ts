@@ -53,6 +53,15 @@ test('type role tokens are rem and match DESIGN.md typography at each width', ()
   }
 });
 
+test('article title, h2, h3 and body text keep a visible step apart at desktop and mobile widths', () => {
+  const desktop = desktopTokens();
+  for (const [width, tokens] of [['desktop', desktop], ['mobile', new Map([...desktop, ...mediaTokens(MOBILE)])]] as const) {
+    const sizes = ['title', 'h2', 'h3', 'body'].map((name) => px(tokens.get(name) ?? ''));
+    // 이웃한 단계가 1.2배보다 가까우면 제목이 본문 속 굵은 글자보다 약해 보인다.
+    for (let i = 1; i < sizes.length; i++) assert.ok(sizes[i - 1] / sizes[i] >= 1.2, `${width}: ${sizes[i - 1]}px → ${sizes[i]}px`);
+  }
+});
+
 test('font sizes outside :root use role tokens instead of px', () => {
   // 그래프 SVG 글자는 엔진이 px 폭으로 이름 배치를 계산하므로 px로 둔다.
   const allowed = [/\.graph \[data-labels\]/, /\.node text/];

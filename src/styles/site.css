@@ -222,10 +222,12 @@ main { flex: 1 0 auto; }
 @media (pointer: coarse) { .ledger-row:not(.is-compact) .meta a { padding-block: 6px; margin-block: -6px; } }
 
 @media (max-width: 720px) {
-  /* 모바일에서는 제목 단계를 함께 줄여 글 제목과 h2, 페이지 제목과 장부 라벨, 절 제목과 대표 글 제목이 같은 크기로 겹치지 않게 한다.
+  /* 모바일에서는 제목 단계를 함께 줄여 페이지 제목과 장부 라벨, 절 제목과 대표 글 제목이 같은 크기로 겹치지 않게 한다.
+     본문의 h2·h3는 줄이지 않는다. 글 제목이 32px로 줄면 h2 26·h3 21·본문 17이 약 1.24배씩 고르게 내려가고,
+     더 줄이면 h3와 본문이 1.1배 차이로 붙어 굵은 본문 글자보다 약해 보인다.
      페이지 기본 글자는 16px로 줄이되 본문(--t-body)은 17px을 유지한다. */
   :root {
-    --t-title: 2rem; --t-featured: 1.5rem; --t-section: 1.25rem; --t-h2: 1.375rem; --t-h3: 1.1875rem; /* 32 24 20 22 19 */
+    --t-title: 2rem; --t-featured: 1.5rem; --t-section: 1.25rem; /* 32 24 20 */
     --t-ledger: 1.875rem; --t-ledger-year: 1.5rem; --t-ledger-word: 1.0625rem; --t-wordmark: 1.25rem; /* 30 24 17 20 */
     --t-base: 1rem; --t-summary: .9375rem; --t-list: 1.125rem; /* 16 15 18 */
     --s-page-gutter: 20px; --s-header-height: 56px; --s-page-top-index: 24px; --s-page-top-reading: 32px; --s-page-bottom: 64px; --s-title-gap: 28px;
