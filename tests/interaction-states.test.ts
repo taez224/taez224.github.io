@@ -124,7 +124,10 @@ test('a blockquote keeps body-colored text and is marked by a rule as strong as 
   // 인용의 글자를 보조색으로 두면 긴 인용이 가장 낮은 대비로 읽힌다. 글자가 본문과 같으면 왼쪽 선이 유일한 단서이고,
   // --link-underline은 palette.test.ts가 두 화면의 두 바탕에서 3:1 이상임을 검사한다.
   const quote = blockFor(read('src/styles/body.css'), '.body blockquote');
-  assert.match(quote, /border-left:\s*3px solid var\(--link-underline\)/);
+  // 두께와 값 순서, 단축형인지 border-left-color인지는 묻지 않는다. 뒤에 오는 선언이 이기므로 마지막 선언의 색을 본다.
+  const leftRule = [...quote.matchAll(/(?:^|[;\s])(border-left(?:-color)?):\s*([^;]+)/g)].at(-1);
+  assert.ok(leftRule, '인용문은 왼쪽 선을 그린다');
+  assert.match(leftRule[2], /(?:^|\s)var\(--link-underline\)(?:\s|$)/, `.body blockquote의 왼쪽 선 색 (${leftRule[0].trim()})`);
   assert.doesNotMatch(quote, /(?:^|;)\s*color:/, '인용 글자는 본문 색을 물려받는다');
 });
 
@@ -168,8 +171,8 @@ test('a pressed filter is marked the way the current menu is', () => {
 test('search results are clickable across the whole row', () => {
   // 한 줄짜리 결과의 제목 링크는 27.75px이라 44px 목표에 못 미친다. 링크의 ::after로 줄 전체를 덮어 누르는 영역만 넓힌다.
   const css = read('src/styles/site.css');
-  const row = css.match(/\n\.search-item \{([^}]+)\}/)?.[1] ?? '';
-  const stretch = css.match(/\n\.search-item a::after \{([^}]+)\}/)?.[1] ?? '';
+  const row = blockFor(css, '.search-item');
+  const stretch = blockFor(css, '.search-item a::after');
   assert.match(row, /position:\s*relative/);
   assert.match(stretch, /position:\s*absolute/);
   assert.match(stretch, /inset:\s*0/);

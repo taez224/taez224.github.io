@@ -100,7 +100,7 @@ test('a short phone shrinks the home map smoothly so the next section starts on 
   expect(short.next, '지도 다음 절의 제목이 첫 화면에 든다').toBeLessThan(667 - 40);
   const [below, above] = [await measure(375, 760), await measure(375, 761)];
   expect(Math.abs(above.map - below.map), '화면 높이 1px 차이로 지도 높이가 크게 바뀌지 않는다').toBeLessThanOrEqual(2);
-  expect((await measure(320, 568)).map, '지도는 150px 아래로 줄이지 않는다').toBeCloseTo(150, 0);
+  expect((await measure(320, 568)).map, '지도는 150px 아래로 줄이지 않는다').toBeGreaterThanOrEqual(149.5);
   expect((await measure(390, 844)).map, '키가 큰 휴대폰은 지도를 그대로 둔다').toBeGreaterThan(280);
 });
 

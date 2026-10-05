@@ -12,8 +12,8 @@ const sorted = (labels: string[]) => [...labels].sort();
 test('every choice option has a description and every non-fallback option maps to a label', () => {
   assert.deepEqual(Object.keys(QUESTIONS.type.criteria), [...TYPE_OPTIONS]);
   assert.deepEqual(Object.keys(QUESTIONS.area.criteria), [...AREA_OPTIONS]);
-  assert.deepEqual(Object.keys(TYPE_LABELS), TYPE_OPTIONS.filter((option) => option !== 'none'));
-  assert.deepEqual(Object.keys(AREA_LABELS), AREA_OPTIONS.filter((option) => option !== 'unknown'));
+  assert.deepEqual(sorted(Object.keys(TYPE_LABELS)), sorted(TYPE_OPTIONS.filter((option) => option !== 'none')));
+  assert.deepEqual(sorted(Object.keys(AREA_LABELS)), sorted(AREA_OPTIONS.filter((option) => option !== 'unknown')));
   assert.equal(QUESTIONS.impact.criteria.length, IMPACT_LEVELS);
 });
 

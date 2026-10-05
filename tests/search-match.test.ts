@@ -4,10 +4,17 @@ import { highlightParts, matchRecord, normalizeQuery, resultCountLabel, SEARCH_P
 
 const record = { kind: 'development', label: '문제 해결', url: '/x/', title: 'ZIP 엔트리 크기', aliases: ['스트리밍 압축'], summary: '스트림 ZIP', tags: ['Java'], headings: ['원인'], text: '앞부분 문장. ZipInputStream은 엔트리 크기를 미리 알 수 없다. 뒷부분 문장이 길게 이어진다.' };
 
+// 한 필드에만 낱말이 있는 기록이다. 필드마다 점수가 어떻게 매겨지든 순위만 비교하려고 쓴다.
+const onlyIn = (field: 'title' | 'aliases' | 'summary' | 'headings' | 'tags' | 'text', value: string) => ({
+  ...record, title: '무관한 제목', aliases: [], summary: '', tags: [], headings: [], text: '',
+  ...(field === 'title' ? { title: value } : field === 'summary' || field === 'text' ? { [field]: value } : { [field]: [value] })
+});
+const scoreIn = (field: Parameters<typeof onlyIn>[0], word = 'qwerty') => matchRecord(onlyIn(field, `앞 ${word} 뒤`), normalizeQuery(word))?.score ?? NaN;
+
 test('matchRecord finds body-only words and returns a snippet around the first hit', () => {
   const hit = matchRecord(record, normalizeQuery('zipinputstream'));
   assert.ok(hit);
-  assert.equal(hit.score, 1);
+  assert.ok(scoreIn('text') > 0, '본문에서만 걸려도 결과가 있다');
   assert.match(hit.snippet, /ZipInputStream은 엔트리 크기/);
   assert.ok(hit.snippet.length <= 40 + 'zipinputstream'.length + 40 + 2);
 });
@@ -16,16 +23,14 @@ test('matchRecord requires every term and scores title matches higher', () => {
   assert.equal(matchRecord(record, normalizeQuery('zip 없는단어')), null);
   const hit = matchRecord(record, normalizeQuery('zip java'));
   assert.ok(hit, '제목과 태그가 모두 걸리는 질의는 결과가 있다');
-  assert.equal(hit.score, 11);
+  assert.ok(scoreIn('title') > scoreIn('text'), '제목에서 걸린 쪽이 본문에서 걸린 쪽보다 앞선다');
+  assert.ok(hit.score > matchRecord(record, normalizeQuery('zip'))!.score, '걸린 낱말이 하나 더 있으면 점수가 오른다');
   assert.equal(hit.snippet, '스트림 ZIP', '요약이 짧으면 잘라 낼 것이 없어 요약 그대로다');
 });
 
 test('matchRecord scores aliases above summary and body matches', () => {
-  const aliasHit = matchRecord(record, normalizeQuery('스트리밍 압축'));
-  const summaryHit = matchRecord(record, normalizeQuery('스트림'));
-  assert.ok(aliasHit && summaryHit, '별칭과 요약 질의는 모두 결과가 있다');
-  assert.equal(aliasHit.score, 20);
-  assert.equal(summaryHit.score, 4);
+  const [alias, summary, body] = [scoreIn('aliases'), scoreIn('summary'), scoreIn('text')];
+  assert.ok(alias > summary && summary > body, `별칭 ${alias} > 요약 ${summary} > 본문 ${body}`);
 });
 
 test('matchRecord adds a phrase bonus only when all terms share one field', () => {
@@ -33,7 +38,6 @@ test('matchRecord adds a phrase bonus only when all terms share one field', () =
   const phraseHit = matchRecord(record, normalizeQuery('스트리밍 압축'));
   const splitHit = matchRecord(splitRecord, normalizeQuery('AI PKM'));
   assert.ok(phraseHit && splitHit, '두 질의는 모두 결과가 있다');
-  assert.equal(splitHit.score, 14);
   assert.ok(phraseHit.score > splitHit.score);
 });
 

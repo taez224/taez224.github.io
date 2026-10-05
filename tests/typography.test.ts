@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { mediaRuleBody, ruleBody } from './css-blocks.ts';
+import { flatRules, mediaRuleBody, ruleBody } from './css-blocks.ts';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const read = (path: string) => readFileSync(join(root, path), 'utf8');
@@ -72,6 +72,15 @@ test('body text line height matches DESIGN.md at desktop and mobile widths', () 
   assert.equal(mobile, design('body-mobile'), '모바일 본문');
   // KRDS와 WCAG 1.4.8이 본문 줄 간격의 하한으로 두는 값이다.
   assert.ok(mobile >= 1.5);
+});
+
+// "연결된 노트" 제목이 줄 간격을 지정하지 않아 본문의 1.85를 물려받았다. 두 줄이 되면 본문 제목(1.4)보다 벌어진다.
+// 상속값은 계산 결과가 아니라 선언의 유무로 잡을 수 있으므로 배치 없이 CSS 선언으로 검사한다.
+test('the related notes heading of an external article sets a heading line height below the body value', () => {
+  const rule = flatRules(styleText('src/components/ExternalArticle.astro')).find(({ selectors }) => selectors.includes('h2'));
+  assert.ok(rule, 'ExternalArticle.astro의 h2 규칙');
+  const lineHeight = Number(rule.body.match(/(?:^|[;\s])line-height:\s*([\d.]+)\s*(?:;|$)/)?.[1]);
+  assert.ok(lineHeight < 1.6, `line-height: ${lineHeight}`);
 });
 
 test('font sizes outside :root use role tokens instead of px', () => {

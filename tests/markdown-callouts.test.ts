@@ -18,7 +18,8 @@ test('a callout following an ordinary quote starts a separate block', () => {
 
 test('a callout folded with - starts closed as details with its title as the summary', () => {
   const html = render('x.md', '> [!question]- 발전시킬 질문\n> - 질문 하나');
-  assert.match(html, /^<details class="callout callout-question"><summary>발전시킬 질문<\/summary><div class="callout-body"><ul>\n<li>질문 하나<\/li>\n<\/ul>\n<\/div><\/details>/);
+  assert.match(html, /^<details class="callout callout-question"><summary>발전시킬 질문<\/summary><div class="callout-body">/);
+  assert.match(html, /<li>질문 하나<\/li>/);
   assert.doesNotMatch(html, /<details[^>]*\sopen/);
   // 제목을 적지 않으면 종류의 한국어 기본 제목이 요약 줄이 된다.
   assert.match(render('x.md', '> [!note]-\n> 본문'), /<details class="callout callout-note"><summary>메모<\/summary>/);

@@ -67,7 +67,10 @@ test('a single line break inside a paragraph, list item or callout shows as a li
 });
 
 test('line breaks inside code blocks and inline code stay as written', () => {
-  assert.equal(render('x.md', '```text\n첫 줄\n둘째 줄\n```').trim(), '<div class="code-block"><pre><code class="language-text">첫 줄\n둘째 줄\n</code></pre></div>');
+  // 코드 블록을 감싸는 래퍼의 모양은 code-block.test.ts가 본다. 여기서는 줄바꿈이 <br>로 바뀌지 않고 글자 그대로 남는지만 본다.
+  const block = render('x.md', '```text\n첫 줄\n둘째 줄\n```');
+  assert.match(block, /<code class="language-text">첫 줄\n둘째 줄\n<\/code>/);
+  assert.doesNotMatch(block, /<br/);
   assert.doesNotMatch(render('x.md', '`여러\n줄`'), /<br/);
 });
 
