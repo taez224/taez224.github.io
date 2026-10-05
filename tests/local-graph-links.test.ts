@@ -21,7 +21,7 @@ class FakeElement {
 function sidebar({ canHover = true } = {}) {
   const nodes = [new FakeElement('/notes/taste/'), new FakeElement('/notes/judgment/')];
   const rows = [new FakeElement('/notes/taste/'), new FakeElement('/notes/judgment/'), new FakeElement('/notes/taste/'), new FakeElement('/notes/other/')];
-  const graph = { querySelectorAll: () => nodes };
+  const graph = { querySelector: () => null, querySelectorAll: () => nodes };
   vm.runInNewContext(source, {
     document: { querySelector: () => graph, querySelectorAll: () => rows },
     matchMedia: () => ({ matches: canHover })
