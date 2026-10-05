@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { flatRules, lastCompound } from './css-blocks.ts';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const read = (path: string) => readFileSync(join(root, path), 'utf8');
@@ -39,8 +40,7 @@ test('hover styles apply only on devices that can hover', () => {
 });
 
 // 한 블록의 선언만 뽑는다. 중첩된 @규칙 안에서도 가장 안쪽 블록만 짝지어진다.
-const blocks = (css: string) => [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)]
-  .map(([, selector, body]) => ({ parts: selector.split(',').map((part) => part.trim()), body }));
+const blocks = (css: string) => flatRules(css).map(({ selectors, body }) => ({ parts: selectors, body }));
 const blockFor = (css: string, selector: string) => blocks(css).find((rule) => rule.parts.includes(selector))?.body ?? '';
 // 터치 규칙만 모은다. 파일 안 첫 번째 @media (pointer: coarse)부터 잘라 읽으면, 다른 터치 규칙이 앞에 끼어들 때
 // 그 뒤의 기본 규칙을 먼저 집는다.
@@ -61,7 +61,11 @@ test('dimming a graph node leaves its focus ring readable', () => {
   // opacity는 부분 트리를 한 층으로 합성하므로 자식에서 되돌릴 수 없다. 보이는 점에만 걸어야 링이 살아남는다.
   const css = read('src/styles/graph.css');
   for (const state of ['is-dim', 'is-faint']) {
-    assert.doesNotMatch(blockFor(css, `.graph .node.${state}`), /opacity/, `.graph .node.${state}에 묶음 불투명도가 없다`);
+    // 묶음 자체를 고르는 규칙은 마지막 복합 선택자가 .node.is-*로 끝나 자손이 없는 것이다. 선택자 앞부분(.graph 등)과 :is() 안의 쉼표에 기대지 않고 모두 찾는다.
+    const ends = new RegExp(`\\.node\\.${state}(?::[\\w-]+(?:\\([^)]*\\))?)*$`);
+    for (const rule of blocks(css).filter(({ parts }) => parts.some((part) => ends.test(lastCompound(part))))) {
+      assert.doesNotMatch(rule.body, /opacity/, `${rule.parts.join(', ')}에 묶음 불투명도가 없다`);
+    }
     const marks = blocks(css).filter((rule) => rule.parts.some((part) => part.includes(`.node.${state} `)) && /opacity/.test(rule.body));
     assert.ok(marks.length > 0, `.node.${state}의 점은 흐려진다`);
   }
@@ -80,7 +84,7 @@ test('hit areas widened for touch do not overlap the line above', () => {
   // padding-block으로 넓힌 링크는 위아래로 그만큼 커진다. 줄 간격이 넓힌 양의 두 배보다 좁으면 두 줄의 누르는 영역이 겹치고,
   // 겹친 자리에서는 뒤 줄이 이겨서 앞 줄의 글자를 눌러도 다른 곳으로 간다.
   const css = styleText('src/components/NotePage.astro').replace(/\/\*[\s\S]*?\*\//g, '');
-  const coarse = css.slice(css.indexOf('@media (pointer: coarse)'));
+  const coarse = coarseOnly(css);
   const pad = Number(blockFor(coarse, '.note-meta a').match(/padding-block:\s*(\d+)px/)?.[1] ?? 0);
   // 터치에서 줄 간격을 따로 정하지 않으면 기본 규칙의 gap이 그대로 쓰인다. 두 값 중 실제로 적용되는 쪽을 본다.
   const base = blockFor(css, '.note-meta').match(/(?:^|;)\s*gap:\s*(\d+)px/)?.[1] ?? '0';
@@ -93,14 +97,14 @@ test('widened touch targets stay inside the room their neighbour leaves', () => 
   // 넓힌 영역이 이웃에 닿으면 겹친 자리에서 뒤에 그려지는 쪽이 이겨 엉뚱한 곳으로 간다.
   // 이웃이 물러서 줄 수 있으면 그만큼 물러서게 하고, 그럴 수 없으면 이웃이 남긴 여백까지만 넓힌다.
   const body = read('src/styles/body.css');
-  const coarseBody = body.slice(body.indexOf('@media (pointer: coarse)'));
+  const coarseBody = coarseOnly(body);
   const summaryPad = Number(blockFor(coarseBody, '.body details.callout > summary').match(/padding-block:\s*(\d+)px/)?.[1] ?? 0);
   const calloutGap = Number(blockFor(coarseBody, '.body details.callout[open] > .callout-body').match(/margin-top:\s*(\d+)px/)?.[1] ?? 0);
   assert.ok(summaryPad > 0, '콜아웃 머리표는 터치에서 누르는 영역을 넓힌다');
   assert.ok(calloutGap >= summaryPad, `머리표를 ${summaryPad}px 넓히므로 펼친 본문도 그만큼 물러선다`);
 
   const site = read('src/styles/site.css');
-  const coarseSite = site.slice(site.indexOf('@media (pointer: coarse)'));
+  const coarseSite = coarseOnly(site);
   const metaPad = Number(blockFor(coarseSite, '.ledger-row:not(.is-compact) .meta a').match(/padding-block:\s*(\d+)px/)?.[1] ?? 0);
   // 장부 행의 발행처 링크 위에는 제목이 있고, 제목 아래 여백만큼만 넓힐 수 있다. 더 넓히면 제목을 눌러도 발행처로 간다.
   const titleGap = Number(blockFor(site, '.ledger-row h3').match(/margin:\s*0 0 (\d+)px/)?.[1] ?? 0);

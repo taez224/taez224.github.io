@@ -4,13 +4,13 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PALETTE, DARK_PALETTE } from '../src/lib/palette.ts';
+import { mediaRuleBody, ruleBody } from './css-blocks.ts';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const read = (path: string) => readFileSync(join(root, path), 'utf8');
 
 function rootVariables(css: string): Map<string, string> {
-  const block = css.match(/:root\s*\{([\s\S]*?)\n\}/)?.[1] ?? '';
-  return new Map([...block.matchAll(/--([\w-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2].trim().toLowerCase()]));
+  return new Map([...ruleBody(css, ':root').matchAll(/--([\w-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2].trim().toLowerCase()]));
 }
 
 function sourceFiles(dir: string): string[] {
@@ -35,8 +35,8 @@ test('site.css :root declares every palette color with the same value', () => {
 test('site.css declares the same dark palette for the chosen theme and the system setting', () => {
   const css = read('src/styles/site.css');
   const blocks = [
-    css.match(/@media \(prefers-color-scheme: dark\) \{\s*:root:not\(\[data-theme\]\) \{([^}]*)\}/)?.[1] ?? '',
-    css.match(/:root\[data-theme="dark"\] \{([^}]*)\}/)?.[1] ?? ''
+    mediaRuleBody(css, '(prefers-color-scheme: dark)', ':root:not([data-theme])'),
+    ruleBody(css, ':root[data-theme="dark"]')
   ];
   for (const block of blocks) {
     const vars = new Map([...block.matchAll(/--([\w-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2].trim().toLowerCase()]));

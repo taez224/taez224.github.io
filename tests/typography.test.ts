@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { mediaRuleBody, ruleBody } from './css-blocks.ts';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const read = (path: string) => readFileSync(join(root, path), 'utf8');
@@ -30,12 +31,11 @@ function designFontSizes(): Map<string, number> {
 const MOBILE = '(max-width: 720px)';
 const TABLET = '(min-width: 721px) and (max-width: 1000px)';
 
-const desktopTokens = () => typeTokens(siteCss.match(/:root\s*\{([\s\S]*?)\n\}/)?.[1] ?? '');
+const desktopTokens = () => typeTokens(ruleBody(siteCss, ':root'));
 
-// 미디어 쿼리와 :root 사이에 주석이 있어도 블록을 찾는다. 못 찾으면 그 폭의 검사가 통째로 빠지므로 여기서 멈춘다.
+// 미디어 쿼리와 :root 사이에 주석이 있어도 블록을 찾는다. 못 찾으면 그 폭의 검사가 통째로 빠지므로 도우미가 던진다.
 function mediaTokens(query: string): Map<string, string> {
-  const block = siteCss.match(new RegExp(`@media ${query.replace(/[()]/g, '\\$&')} \\{\\s*(?:/\\*[\\s\\S]*?\\*/\\s*)*:root \\{([^}]*)\\}`))?.[1] ?? '';
-  const tokens = typeTokens(block);
+  const tokens = typeTokens(mediaRuleBody(siteCss, query, ':root'));
   assert.ok(tokens.size > 0, `${query} 블록에서 글자 토큰을 읽지 못했다`);
   return tokens;
 }
@@ -66,12 +66,12 @@ test('body text line height matches DESIGN.md at desktop and mobile widths', () 
   const yaml = read('DESIGN.md').match(/^typography:\n([\s\S]*?)\n(?=\w)/m)?.[1] ?? '';
   const design = (name: string) => Number(yaml.match(new RegExp(`^ {2}${name}:\\n(?: {4}.+\\n)*? {4}lineHeight: ([\\d.]+)`, 'm'))?.[1]);
   const body = read('src/styles/body.css');
-  const lineHeight = (css: string) => Number(css.match(/^\s*\.body \{[^}]*line-height:\s*([\d.]+)/m)?.[1]);
-  const mobile = body.slice(body.indexOf(`@media ${MOBILE}`));
-  assert.equal(lineHeight(body), design('body'), '데스크톱 본문');
-  assert.equal(lineHeight(mobile), design('body-mobile'), '모바일 본문');
+  const lineHeight = (declarations: string) => Number(declarations.match(/(?:^|[;\s])line-height:\s*([\d.]+)/)?.[1]);
+  const desktop = lineHeight(ruleBody(body, '.body')), mobile = lineHeight(mediaRuleBody(body, MOBILE, '.body'));
+  assert.equal(desktop, design('body'), '데스크톱 본문');
+  assert.equal(mobile, design('body-mobile'), '모바일 본문');
   // KRDS와 WCAG 1.4.8이 본문 줄 간격의 하한으로 두는 값이다.
-  assert.ok(lineHeight(mobile) >= 1.5);
+  assert.ok(mobile >= 1.5);
 });
 
 test('font sizes outside :root use role tokens instead of px', () => {
