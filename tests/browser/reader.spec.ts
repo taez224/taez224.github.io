@@ -244,6 +244,59 @@ test('local graph shows up to six neighbors with two-line titles that never over
   }
 });
 
+// 이웃 제목이 pointer-events: none이라 지름 28px 점만 눌렸다(#41). 제목도 같은 링크로 누르고, 손가락 기기에서는 점을 44px로 넓힌다.
+test('a neighbor in the small graph opens from its title and its dot reaches 44px on touch without overlapping another', async ({ page, isMobile }) => {
+  await page.goto('/notes/browser-many/');
+  const measured = await page.locator('.local-graph').evaluate((graph) => {
+    const nodes = [...graph.querySelectorAll('a.node')];
+    const titleHits = nodes.map((a) => {
+      const box = a.querySelector('text')!.getBoundingClientRect();
+      // 두 줄 제목의 줄 사이도 누를 수 있어야 하므로 글자 상자의 가운데를 누른다.
+      const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)?.closest('a.node');
+      return hit === a;
+    });
+    const circle = (c: Element) => { const r = c.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, r: r.width / 2 }; };
+    const dots = nodes.map((a) => circle(a.querySelector('circle.hit')!));
+    const titles = nodes.map((a) => a.querySelector('rect.hit')!.getBoundingClientRect());
+    const ring = circle(graph.querySelector('.is-current .ring')!);
+    const touches = (c: { x: number; y: number; r: number }, b: DOMRect) => Math.hypot(Math.max(b.left - c.x, 0, c.x - b.right), Math.max(b.top - c.y, 0, c.y - b.bottom)) < c.r;
+    const overlaps: string[] = [];
+    dots.forEach((dot, i) => {
+      if (Math.hypot(dot.x - ring.x, dot.y - ring.y) < dot.r + ring.r) overlaps.push(`${i}: 가운데 노드`);
+      dots.forEach((other, j) => { if (j > i && Math.hypot(dot.x - other.x, dot.y - other.y) < dot.r + other.r) overlaps.push(`${i}·${j}: 점`); });
+      titles.forEach((title, j) => { if (j !== i && touches(dot, title)) overlaps.push(`${i}의 점·${j}의 제목`); });
+    });
+    titles.forEach((a, i) => titles.forEach((b, j) => { if (j > i && a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom) overlaps.push(`${i}·${j}: 제목`); }));
+    // 그래프는 사이드바 폭에 맞춰 늘거나 줄어든다. 화면 지름과 함께, 배율과 상관없는 SVG 좌표의 반지름도 본다.
+    return { titleHits, dotDiameter: dots[0].r * 2, svgRadius: parseFloat(getComputedStyle(nodes[0].querySelector('circle.hit')!).r), overlaps };
+  });
+  expect(measured.titleHits.length).toBe(6);
+  expect(measured.titleHits, '제목을 누르면 그 노드의 링크가 잡힌다').toEqual(measured.titleHits.map(() => true));
+  if (isMobile) expect(measured.dotDiameter, '터치에서 화면 지름 44px 이상').toBeGreaterThanOrEqual(44);
+  else expect(measured.svgRadius, '마우스에서는 점의 누르는 원을 넓히지 않는다').toBe(14);
+  expect(measured.overlaps, '한 노드의 누르는 영역이 다른 노드에 닿지 않는다').toEqual([]);
+});
+
+// 작은 그래프 아래의 지도 링크는 24px이라 사이드바의 다른 링크와 달리 손가락 기기에서 넓혀지지 않았다.
+test('the map link under the small graph reaches 44px on touch without touching a node', async ({ page, isMobile }) => {
+  test.skip(!isMobile, '누르는 영역은 터치 기기에서만 넓힌다');
+  await page.goto('/notes/browser-many/');
+  const measured = await page.locator('.local-graph').evaluate((graph) => {
+    const link = graph.querySelector('.local-graph-tools a')!.getBoundingClientRect();
+    const gap = Math.min(...[...graph.querySelectorAll('a.node .hit')].map((hit) => link.top - hit.getBoundingClientRect().bottom));
+    return { height: link.height, gap };
+  });
+  expect(measured.height).toBeGreaterThanOrEqual(44);
+  expect(measured.gap, '지도 링크가 그래프 노드의 누르는 영역에 닿지 않는다').toBeGreaterThanOrEqual(0);
+});
+
+// "연결된 노트" 제목이 줄 간격을 지정하지 않아 본문의 1.85를 물려받았다. 두 줄이 되면 다른 제목보다 벌어진다.
+test('the related notes heading of an external article keeps the heading line height', async ({ page }) => {
+  await page.goto('/posts/browser-external/');
+  const ratio = await page.locator('.external-related h2').evaluate((h) => { const s = getComputedStyle(h); return parseFloat(s.lineHeight) / parseFloat(s.fontSize); });
+  expect(ratio).toBeCloseTo(1.4, 2);
+});
+
 // 외부 발행 글 머리의 원문 링크가 터치에서 21px이었다. 노트 머리의 메타 줄은 넓혔는데 같은 역할의 이 줄은 빠졌다.
 // 줄에 링크가 하나뿐이고 위는 페이지 여백이라, 아래 제목만 덮지 않으면 44px을 채울 수 있다.
 test('the original link above an external article reaches 44px on touch without covering the title', async ({ page, isMobile }) => {
