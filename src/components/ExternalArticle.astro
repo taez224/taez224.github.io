@@ -53,7 +53,8 @@ const related = [...new Set([...note.outgoing, ...note.incoming])].filter((path)
     -webkit-mask-composite: source-in; mask-composite: intersect;
   }
   .external-related { margin-top: 52px; padding-top: 22px; border-top: 1px solid var(--line); }
-  h2 { margin: 0 0 14px; font-size: var(--t-h3); }
+  /* 줄 간격을 적지 않으면 본문의 1.85를 물려받아, 두 줄이 될 때 본문 제목(1.4)보다 벌어진다. */
+  h2 { margin: 0 0 14px; font-size: var(--t-h3); line-height: 1.4; }
   ul { list-style: none; padding: 0; margin: 0; }
   /* 리더의 목록과 같은 규칙이다. 줄 전체를 제목 링크의 영역으로 덮어 글자 한 줄만 누를 수 있는 상태를 없앤다. */
   li { position: relative; display: flex; align-items: baseline; gap: 20px; padding: 12px 0; border-bottom: 1px solid var(--line); }

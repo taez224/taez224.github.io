@@ -288,6 +288,13 @@ test('the map link under the small graph reaches 44px on touch without touching 
   expect(measured.gap, '지도 링크가 그래프 노드의 누르는 영역에 닿지 않는다').toBeGreaterThanOrEqual(0);
 });
 
+// "연결된 노트" 제목이 줄 간격을 지정하지 않아 본문의 1.85를 물려받았다. 두 줄이 되면 다른 제목보다 벌어진다.
+test('the related notes heading of an external article keeps the heading line height', async ({ page }) => {
+  await page.goto('/posts/browser-external/');
+  const ratio = await page.locator('.external-related h2').evaluate((h) => { const s = getComputedStyle(h); return parseFloat(s.lineHeight) / parseFloat(s.fontSize); });
+  expect(ratio).toBeCloseTo(1.4, 2);
+});
+
 // 외부 발행 글 머리의 원문 링크가 터치에서 21px이었다. 노트 머리의 메타 줄은 넓혔는데 같은 역할의 이 줄은 빠졌다.
 // 줄에 링크가 하나뿐이고 위는 페이지 여백이라, 아래 제목만 덮지 않으면 44px을 채울 수 있다.
 test('the original link above an external article reaches 44px on touch without covering the title', async ({ page, isMobile }) => {
