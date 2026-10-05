@@ -267,11 +267,13 @@ test('a neighbor in the small graph opens from its title and its dot reaches 44p
       titles.forEach((title, j) => { if (j !== i && touches(dot, title)) overlaps.push(`${i}의 점·${j}의 제목`); });
     });
     titles.forEach((a, i) => titles.forEach((b, j) => { if (j > i && a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom) overlaps.push(`${i}·${j}: 제목`); }));
-    return { titleHits, dotDiameter: Math.round(dots[0].r * 2), overlaps };
+    // 그래프는 사이드바 폭에 맞춰 늘거나 줄어든다. 화면 지름과 함께, 배율과 상관없는 SVG 좌표의 반지름도 본다.
+    return { titleHits, dotDiameter: dots[0].r * 2, svgRadius: parseFloat(getComputedStyle(nodes[0].querySelector('circle.hit')!).r), overlaps };
   });
   expect(measured.titleHits.length).toBe(6);
   expect(measured.titleHits, '제목을 누르면 그 노드의 링크가 잡힌다').toEqual(measured.titleHits.map(() => true));
-  expect(measured.dotDiameter).toBe(isMobile ? 44 : 28);
+  if (isMobile) expect(measured.dotDiameter, '터치에서 화면 지름 44px 이상').toBeGreaterThanOrEqual(44);
+  else expect(measured.svgRadius, '마우스에서는 점의 누르는 원을 넓히지 않는다').toBe(14);
   expect(measured.overlaps, '한 노드의 누르는 영역이 다른 노드에 닿지 않는다').toEqual([]);
 });
 
