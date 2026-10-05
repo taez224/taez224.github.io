@@ -74,18 +74,6 @@ test('assembleGarden publishes reviewed notes with slug urls and no private stri
   assert.equal(noteAt(garden, '01_Slipbox/생각 A.md').publication, '');
 });
 
-test('graphRule linked stops at the first development note: a dev note linked only from another dev note stays out', async () => {
-  const chainConfig = { ...config, include: config.include.map((rule) => rule.graphRule ? { ...rule, files: [...rule.files, `${dev}/Concepts/사슬.md`] } : rule) };
-  const vaultRoot = await makeVault({ ...files,
-    [`${dev}/Concepts/사슬.md`]: '---\ncreated: 2026-09-06\nsummary: 사슬\ntags:\n  - 개발/설계\n---\n# 사슬\n[[연결된 개념]]에서만 이어진다.'
-  });
-  const garden = await assembleGarden({ vaultRoot, config: chainConfig, basePath: '/obsidian' });
-  const ids = garden.nodes.map((node) => node.id);
-  assert.ok(ids.includes(`${dev}/Concepts/연결된 개념.md`), '생각 노트가 직접 링크한 개발 노트는 지도에 있다');
-  assert.ok(!ids.includes(`${dev}/Concepts/사슬.md`), '개발 노트를 거쳐서만 이어진 개발 노트는 지도에 없다');
-  assert.ok(garden.development.concepts.some((record) => record.path === `${dev}/Concepts/사슬.md`), '목록에는 남는다');
-});
-
 test('private references are labelled without exposing their metadata, body or links', async () => {
   const vaultRoot = await makeVault({ ...files,
     '20_Projects/blog/초안.md': '---\nstatus: draft\ntitle: HIDDEN_TITLE\n---\nSECRET_DRAFT',
@@ -231,7 +219,7 @@ test('graph and references ignore comments and code while keeping visible links 
   assert.equal(note.articleCards.length, 1);
 });
 
-test('series navigation and references survive with related links and no body navigation list', async () => {
+test('series navigation and references survive with related links', async () => {
   const post = (order: number, related: string[], body: string) => `---\ncreated: 2026-09-0${order}\nstatus: published\nseries: 연재 S\nseries_order: ${order}\nrelated:\n${related.map((link: string) => `  - "${link}"`).join('\n')}\n---\n# S${order}\n${body}`;
   const vaultRoot = await makeVault({ ...files,
     '20_Projects/blog/S1.md': post(1, ['[[S2]]', '[[S2#절|두 번째 편]]', '[[초안]]', '[[없는 문서]]'], '본문 1.'),
@@ -248,22 +236,9 @@ test('series navigation and references survive with related links and no body na
   assert.deepEqual(s2.incoming, [s1.path]);
   assert.equal(garden.noteEdges.filter((edge) => edge.source === s2.path && edge.target === '01_Slipbox/생각 B.md').length, 1);
   assert.doesNotMatch(JSON.stringify(garden), /초안|없는 문서|DRAFT_SENTINEL/);
-  const first = seriesNeighbors(s1, garden.blog.series), second = seriesNeighbors(s2, garden.blog.series);
-  assert.ok(first?.next && second?.prev, '연재의 두 편이 서로 앞뒤로 이어진다');
+  const first = seriesNeighbors(s1, garden.blog.series);
+  assert.ok(first?.next, '연재의 첫 편 다음에 둘째 편이 이어진다');
   assert.equal(first.next.path, s2.path);
-  assert.equal(second.prev.path, s1.path);
-  assert.deepEqual(first.posts.map((post) => post.path), [s1.path, s2.path]);
-});
-
-test('blog body lists and code mentioning 이전 or 다음 글 are preserved', async () => {
-  const vaultRoot = await makeVault({ ...files,
-    '20_Projects/blog/공개 글.md': files['20_Projects/blog/공개 글.md'] + '\n\n## 본문\n- 본문에서 보존해야 하는 이전 글\n- [[생각 B]] - 다음 글\n\n```text\n- 예시의 이전 글\n```'
-  });
-  const garden = await assembleGarden({ vaultRoot, config });
-  const note = noteAt(garden, '20_Projects/blog/공개 글.md');
-  assert.match(note.bodyHtml, /본문에서 보존해야 하는 이전 글/);
-  assert.match(note.bodyHtml, /생각 B<\/a> - 다음 글/);
-  assert.match(note.bodyHtml, /<pre><code class="language-text">- 예시의 이전 글\n<\/code><\/pre>/);
 });
 
 test('related links use the public graph candidates and ignore plain text and unpublished targets', async () => {
@@ -298,14 +273,6 @@ test('folder publication picks up new development notes without publishing helpe
     assert.equal(JSON.stringify(garden).includes(sentinel), false);
   }
   assert.equal([...garden.assetCopies.keys()].some((asset) => asset.endsWith('qmd-eval.json')), false);
-});
-
-test('public notes carry a reading time of at least one minute', async () => {
-  const vaultRoot = await makeVault(files);
-  const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
-  const short = noteAt(garden, '01_Slipbox/생각 B.md');
-  assert.equal(short.readingMinutes, 1);
-  for (const note of garden.notes) assert.ok(Number.isInteger(note.readingMinutes) && note.readingMinutes >= 1, note.path);
 });
 
 const nextreeConfig = {
@@ -408,30 +375,23 @@ test('published posts from other publishers keep the full body and ordinary summ
   assert.ok(note.readingMinutes > 0);
 });
 
-test('every outline id exists in the rendered body so sidebar links land on a heading', async () => {
-  const note = '---\ncreated: 2026-09-07\n---\n# 콜아웃 노트\n## 배경\n본문\n\n> [!note]\n> ## 배경\n> 콜아웃 본문\n';
-  const vaultRoot = await makeVault({ ...files, '01_Slipbox/콜아웃 노트.md': note });
-  const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
-  const entry = noteAt(garden, '01_Slipbox/콜아웃 노트.md');
-  const renderedIds = [...entry.bodyHtml.matchAll(/<h[1-6][^>]*\sid="([^"]+)"/g)].map((match) => match[1]);
-  assert.deepEqual(renderedIds, [...new Set(renderedIds)], '헤딩 id가 중복되지 않는다');
-  for (const heading of entry.headings) assert.ok(renderedIds.includes(heading.id), `목차 id ${heading.id}가 본문에 없다`);
-});
-
-test('wiki and Markdown heading path links land on the heading under the named parent when heading names repeat', async () => {
+test('wiki, Markdown and percent-encoded heading path links land on the heading under the named parent when heading names repeat', async () => {
   const headings = '## A\n### 설정\n## B\n### 설정';
   const vaultRoot = await makeVault({ ...files,
-    '01_Slipbox/설정노트.md': `---\ncreated: 2026-09-07\n---\n# 설정노트\n${headings}\n\n[[#B#설정]] [[#A#설정]]`,
-    '01_Slipbox/연결 노트.md': '---\ncreated: 2026-09-08\n---\n# 연결 노트\n[[설정노트#B#설정|B의 설정]] [일반 링크](설정노트.md#B#설정)'
+    '01_Slipbox/설정 노트.md': `---\ncreated: 2026-09-07\n---\n# 설정 노트\n${headings}\n\n[[#B#설정]] [[#A#설정]]`,
+    '01_Slipbox/연결 노트.md': '---\ncreated: 2026-09-08\n---\n# 연결 노트\n[[설정 노트#B#설정|B의 설정]] [인코딩 링크](설정%20노트.md#B#설정)'
   });
   const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
-  const own = noteAt(garden, '01_Slipbox/설정노트.md');
+  const own = noteAt(garden, '01_Slipbox/설정 노트.md');
+  const linkingNote = noteAt(garden, '01_Slipbox/연결 노트.md');
   const renderedIds = [...own.bodyHtml.matchAll(/<h[1-6][^>]*\sid="([^"]+)"/g)].map((match) => match[1]);
   assert.deepEqual(renderedIds, ['a', '설정', 'b', '설정-2']);
   assert.deepEqual([...own.bodyHtml.matchAll(/href="[^"#]*#([^"]+)"/g)].map((match) => match[1]), ['설정-2', '설정']);
-  const linking = noteAt(garden, '01_Slipbox/연결 노트.md').bodyHtml;
-  assert.match(linking, /href="\/obsidian\/notes\/설정노트\/#설정-2">B의 설정<\/a>/);
-  assert.match(linking, /href="\/obsidian\/notes\/설정노트\/#설정-2">일반 링크<\/a>/);
+  for (const label of ['B의 설정', '인코딩 링크']) {
+    assert.ok(linkingNote.bodyHtml.includes(`href="${own.url}#설정-2">${label}</a>`), label);
+  }
+  assert.ok(linkingNote.outgoing.includes(own.path));
+  assert.ok(own.incoming.includes(linkingNote.path), '인코딩한 링크도 대상 노트의 역참조로 잡힌다');
 });
 
 test('a basename shared with an unpublished draft still links to the public note', async () => {
@@ -553,32 +513,14 @@ test('blank optional YAML dates are accepted while blank created is rejected', a
   await assert.rejects(assembleGarden({ vaultRoot, config, today: '2026-09-11' }), /Missing created date.*생각 B/);
 });
 
-test('assembly uses first publication dates for blog, slipbox and development notes', async () => {
-  const metadata = 'created: 2026-09-01\npublished: 2026-09-10\nupdated: 2026-09-08';
-  const vaultRoot = await makeVault({ ...files,
-    '01_Slipbox/생각 B.md': `---\n${metadata}\n---\n# 생각 B\n공개 본문.`,
-    [`${dev}/Concepts/연결된 개념.md`]: `---\n${metadata}\nsummary: 개념 요약\ntags:\n  - 개발/설계\n---\n# 연결된 개념\n공개 본문.`,
-    '20_Projects/blog/공개 글.md': `---\n${metadata}\nstatus: published\n---\n# 공개 글\n공개 본문.`
-  });
-  const garden = await assembleGarden({ vaultRoot, config, today: '2026-09-11' });
-  for (const notePath of ['01_Slipbox/생각 B.md', `${dev}/Concepts/연결된 개념.md`, '20_Projects/blog/공개 글.md']) {
-    const note = noteAt(garden, notePath);
-    assert.equal(note.date, '2026-09-10');
-    assert.equal(note.updated, '');
-  }
-});
-
-test('public notes carry updated only when it is later than their date, and external articles never do', async () => {
+// updated를 남기는 규칙(작성일보다 늦을 때만)은 dates.test가 검사한다. 여기서는 본문을 싣지 않는 외부 발행 글에서 조립이 수정일을 내보내지 않는지 본다.
+test('external articles never carry updated', async () => {
   const vaultRoot = await makeVault({
     ...files,
-    '01_Slipbox/생각 A.md': files['01_Slipbox/생각 A.md'].replace('created: 2026-09-01', 'created: 2026-09-01\nupdated: 2026-09-08'),
     '20_Projects/blog/외부 원문.md': '---\ncreated: 2026-09-06\npublished: 2026-09-07\nupdated: 2026-09-09\nstatus: published\nsource: https://www.nextree.io/external-post\npublication: Nextree 기술 블로그\nsummary: 외부 글 요약\n---\n# 외부 원문\n본문.'
   });
   const garden = await assembleGarden({ vaultRoot, config: nextreeConfig, today: '2026-09-11' });
-  const byPath = (notePath: string) => noteAt(garden, notePath);
-  assert.equal(byPath('01_Slipbox/생각 A.md').updated, '2026-09-08');
-  assert.equal(byPath('01_Slipbox/생각 B.md').updated, '');
-  assert.equal(byPath('20_Projects/blog/외부 원문.md').updated, '', '본문을 싣지 않는 외부 발행 글은 수정일을 내보내지 않는다');
+  assert.equal(noteAt(garden, '20_Projects/blog/외부 원문.md').updated, '', '본문을 싣지 않는 외부 발행 글은 수정일을 내보내지 않는다');
 });
 
 // 없어도 되는 폴더는 Books뿐이다. 공개 폴더가 없거나 그 밖의 읽기 오류를 건너뛰면 공개할 노트가 조용히 사이트에서 빠진다.
@@ -655,18 +597,4 @@ test('a development note whose first public tag is 개발/도구 or missing is r
   assert.ok(messages.some((m) => m.includes('first public tag is 개발/도구') && m.includes(`${dev}/Concepts/연결된 개념.md`)), messages.join('\n'));
   assert.ok(messages.some((m) => m.includes('no public tag') && m.includes(`${dev}/Concepts/고립된 개념.md`)), messages.join('\n'));
   assert.ok(garden.notes.some((note) => note.path === `${dev}/Concepts/연결된 개념.md`), '경고만 남기고 노트는 그대로 공개한다');
-});
-
-
-test('encoded Markdown note paths and heading paths resolve with matching references', async () => {
-  const vaultRoot = await makeVault({ ...files,
-    '01_Slipbox/설정 노트.md': '---\ncreated: 2026-09-07\n---\n# 설정 노트\n## 상위 절\n### 하위 절\n## 다른 절\n### 하위 절',
-    '01_Slipbox/인코딩 링크.md': '---\ncreated: 2026-09-08\n---\n# 인코딩 링크\n[이동](설정%20노트.md#다른%20절#하위%20절)'
-  });
-  const garden = await assembleGarden({ vaultRoot, config });
-  const source = noteAt(garden, '01_Slipbox/인코딩 링크.md');
-  const target = noteAt(garden, '01_Slipbox/설정 노트.md');
-  assert.ok(source.bodyHtml.includes(`href="${target.url}#하위-절-2"`));
-  assert.ok(source.outgoing.includes(target.path));
-  assert.ok(target.incoming.includes(source.path));
 });

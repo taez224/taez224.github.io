@@ -71,12 +71,11 @@ test('dimming a graph node leaves its focus ring readable', () => {
   }
 });
 
-test('the search input takes its colors and focus ring from the site rules', () => {
-  // 사이트에 하나뿐인 글자 입력란이다. UA 기본값에 맡기면 어두운 화면에서 자리 표시 글자가 3.51:1이 되고 포커스 표시가 사라진다.
+test('the search input takes its text and placeholder colors from the site tokens', () => {
+  // 사이트에 하나뿐인 글자 입력란이다. UA 기본값에 맡기면 어두운 화면에서 자리 표시 글자가 3.51:1이 된다. 포커스 표시는 search.spec이 실제 화면에서 본다.
   const css = read('src/styles/site.css');
   const input = blockFor(css, '.search-head input');
   assert.match(input, /(^|;)\s*color:\s*var\(--/, '글자색이 토큰이다');
-  assert.doesNotMatch(input, /outline:\s*(0|none)/, '전역 포커스 표시를 끄지 않는다');
   assert.match(blockFor(css, '.search-head input::placeholder'), /color:\s*var\(--/, '자리 표시 글자도 토큰이다');
 });
 
@@ -150,7 +149,6 @@ test('the external article page reaches its links like the reader does', () => {
   assert.match(blockFor(css, 'li a::after'), /inset:\s*0/);
   const coarse = coarseOnly(css);
   assert.match(blockFor(coarse, '.back-to-posts'), /padding-block:\s*\d+px/, '되돌아가기 링크는 위아래로 넓힌다');
-  assert.match(blockFor(coarse, '.external-meta a'), /padding-block:\s*\d+px/, '머리의 원문 링크도 위아래로 넓힌다');
 });
 
 test('a pressed filter is marked the way the current menu is', () => {

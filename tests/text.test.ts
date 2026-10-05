@@ -18,20 +18,8 @@ test('search text strips markdown syntax but keeps heading and link text', () =>
   assert.doesNotMatch(text, /\[\[|\*\*|```|\|---/);
 });
 
-test('search text keeps fenced code content while dropping the fence markers', () => {
-  const text = searchText('설명 문단\n\n```js\nconst cache_key = 1;\n```\n');
-  assert.match(text, /cache_key/);
-  assert.doesNotMatch(text, /```/);
-});
-
 test('search text keeps indented code content', () => {
   assert.match(searchText('일반 문단\n\n    function toLabelValue() {}\n'), /toLabelValue/);
-});
-
-test('search text keeps content from tilde-fenced code blocks and drops the fence markers', () => {
-  const text = searchText('~~~python\nSEARCHABLE_TILDE\n~~~');
-  assert.match(text, /SEARCHABLE_TILDE/);
-  assert.doesNotMatch(text, /~~~/);
 });
 
 test('search text removes HTML comments entirely, including their content', () => {
@@ -82,6 +70,7 @@ test('the summary excerpt omits fenced and tilde code that search text keeps', (
   assert.equal(excerptText, '명령의 목적을 설명한다. 본문의 inline API는 남긴다.');
   assert.match(bodyText, /CODE_ONLY_SENTINEL/);
   assert.match(bodyText, /TILDE_ONLY_SENTINEL/);
+  assert.doesNotMatch(bodyText, /~~~/, '물결 울타리 표시는 검색 텍스트에서 빠진다');
 });
 
 test('the summary excerpt keeps table text without image or table markup', () => {

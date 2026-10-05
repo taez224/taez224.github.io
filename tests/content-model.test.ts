@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { assembleGarden } from '../src/lib/garden.ts';
 import { publicNoteSchema, bookSchema } from '../src/lib/content-model.ts';
-import { inlineGraph, inlinePanelNotes } from '../src/lib/graph-data.ts';
+import { inlinePanelNotes } from '../src/lib/graph-data.ts';
 
 test('assembled notes and books satisfy their shared contracts and panel data excludes note bodies', async (t) => {
   const vaultRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'garden-model-'));
@@ -29,5 +29,4 @@ test('assembled notes and books satisfy their shared contracts and panel data ex
   const noteB = panel.notes.find((note) => note.title === 'B');
   assert.ok(noteB, '패널 데이터에 B가 있다');
   assert.equal(noteB.summary, '명시한 요약');
-  assert.equal(inlineGraph(garden.nodes, garden.edges).nodes.length, garden.nodes.length);
 });

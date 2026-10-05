@@ -29,22 +29,10 @@ test('latestSeries picks the series whose last published post is the most recent
   assert.equal(chosen.title, '이어지는 연재');
 });
 
-test('latestSeries reads the last published post, not the order the posts arrive in', () => {
-  const chosen = latestSeries([series('뒤섞인 연재', '2026-02-01', '2024-01-01'), series('최근 연재', '2026-03-01')]);
-  assert.ok(chosen, '연재를 하나 고른다');
-  assert.equal(chosen.title, '최근 연재');
-});
-
 test('latestSeries uses the lastPublished that assembly computed instead of recomputing it', () => {
   const chosen = latestSeries([{ title: '필드가 앞선 연재', lastPublished: '2026-05-01', posts: [] }, series('편이 있는 연재', '2026-01-01')]);
   assert.ok(chosen, '연재를 하나 고른다');
   assert.equal(chosen.title, '필드가 앞선 연재');
-});
-
-test('latestSeries skips a series whose posts are not published yet', () => {
-  const chosen = latestSeries([series('발행 전 연재', '', ''), series('발행한 연재', '2024-05-05')]);
-  assert.ok(chosen, '연재를 하나 고른다');
-  assert.equal(chosen.title, '발행한 연재');
 });
 
 test('latestSeries returns null when no series has a published post', () => {

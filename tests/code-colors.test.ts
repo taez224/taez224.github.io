@@ -28,17 +28,14 @@ const box = (block: string) => {
   return { background: background === 'var(--paper-strong)' ? DARK_PALETTE['paper-strong'] : background, text: rule.match(/color:\s*(#[0-9a-f]{6})/)?.[1] };
 };
 
-test('both color schemes color every code token kind', () => {
-  for (const [scheme, block] of Object.entries(blocks)) for (const name of TOKENS) assert.ok(tokenColor(block, name), `${scheme} .th-${name}`);
-});
-
-test('every code token and the base code text read at 4.5:1 on the code block in both color schemes', () => {
+test('every code token kind has a color and, with the base code text, reads at 4.5:1 on the code block in both color schemes', () => {
   for (const [scheme, block] of Object.entries(blocks)) {
     const { background, text } = box(block);
     assert.ok(background?.startsWith('#') && text, `${scheme} 코드 상자의 바탕과 글자색`);
     assert.ok(contrast(text!, background!) >= 4.5, `${scheme} 기본 글자 ${text}`);
     for (const name of TOKENS) {
-      const color = tokenColor(block, name)!;
+      const color = tokenColor(block, name);
+      assert.ok(color, `${scheme} .th-${name}`);
       assert.ok(contrast(color, background!) >= 4.5, `${scheme} ${name} ${color} ${contrast(color, background!).toFixed(2)}`);
     }
   }

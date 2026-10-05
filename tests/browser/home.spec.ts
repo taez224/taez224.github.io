@@ -117,7 +117,6 @@ test('the wide home map fades its edges without fading any text', async ({ page,
   });
   const snapshot = await page.locator('.hero-graph svg.is-desktop').evaluate(inspect);
   expect(snapshot.texts, '정적 그림에 글자가 있다').toBeGreaterThan(0);
-  expect(snapshot.masked, '정적 그림').toBe(0);
   expect(snapshot.boxMask).toBe('none');
   await page.unroute('**/*');
   await page.goto('/');

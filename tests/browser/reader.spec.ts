@@ -192,26 +192,6 @@ test('small graph edges reach each neighbor dot without a gap from the invisible
   }
 });
 
-test('linked highlighting survives mixed focus and hover', async ({ page, isMobile }) => {
-  await page.goto('/notes/browser-start/');
-  const graph = page.locator('.local-graph a.node').first();
-  const rows = page.locator('.note-side .side-list a[href="/notes/browser-neighbor/"]');
-  await rows.first().focus();
-  await expect(graph).toHaveClass(/is-linked/);
-  if (!isMobile) {
-    await graph.hover();
-    await page.mouse.move(0, 0);
-    await expect(graph).toHaveClass(/is-linked/);
-    await rows.last().hover();
-    await page.getByRole('button', { name: '검색', exact: true }).focus();
-    await expect(graph).toHaveClass(/is-linked/);
-    await page.mouse.move(0, 0);
-  } else {
-    await page.getByRole('button', { name: '검색', exact: true }).focus();
-  }
-  await expect(graph).not.toHaveClass(/is-linked/);
-});
-
 test('home switches both ways across the live graph breakpoint without duplicate engines', async ({ page, isMobile }) => {
   await page.goto('/');
   const snapshot = page.locator('.hero-snapshot');

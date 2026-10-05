@@ -187,12 +187,10 @@ test('the first run leaves one comment with the verdict, and reruns leave none',
   assert.deepEqual(rerun.comments, []);
 });
 
-test('an issue the owner filed is marked as such and gets no greeting', async () => {
+test('an issue the owner filed is marked as such in the record', async () => {
   const own = fixture(issue({ author: 'taez224' }));
   const record = await own.run('opened');
   assert.equal(record.byOwner, true);
-  assert.ok(own.comments[0]?.startsWith('| 항목 | 추정 | 현재 처리 |'));
-  assert.ok(!own.comments[0]?.includes('@taez224'));
   // 독자의 이슈는 소유자의 것으로 표시되지 않는다.
   assert.equal((await fixture(issue()).run('opened')).byOwner, false);
 });

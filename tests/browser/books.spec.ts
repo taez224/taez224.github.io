@@ -37,7 +37,7 @@ test('the pressed filter bar sits right under its text on touch', async ({ page,
 });
 
 // 거르개는 책을 숨길 뿐 주소와 무관해서, 숨긴 책으로 이동하면 주소만 바뀌고 책은 보이지 않았다.
-// 검색 결과를 누른 경우와 뒤로·앞으로 가기로 주소만 바뀐 경우를 모두 본다.
+// 검색 결과를 누른 경우(이때 검색창도 닫힌다)와 뒤로·앞으로 가기로 주소만 바뀐 경우를 모두 본다.
 test('moving to a book the status filter hid reveals it', async ({ page }) => {
   await page.goto('/books/');
   const book = page.locator('article[data-status]', { hasText: '짧은 책이름' });
@@ -47,6 +47,8 @@ test('moving to a book the status filter hid reveals it', async ({ page }) => {
     await page.locator('[data-search-open]').first().click();
     await page.locator('#search-input').fill('짧은 책이름');
     await page.locator('.search-item a', { hasText: '짧은 책이름' }).click();
+    // 책 결과는 책장 안의 앵커라 페이지를 다시 열지 않는다. 검색창이 남아 도착한 책을 가리지 않아야 한다.
+    await expect(page.locator('#search')).toHaveJSProperty('open', false);
   };
   await reading.click();
   await expect(book).toBeHidden();
