@@ -426,7 +426,7 @@ test('series hubs omit the repeated graph and leave space after the mobile conte
 test('table identifiers stay on one line while long values scroll inside the table', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/posts/browser-series-part/');
-  const measured = await page.locator('.body table').evaluate(table => {
+  const measured = await page.locator('.body table').first().evaluate(table => {
     const codes = [...table.querySelectorAll('code')];
     return {
       lines: codes.map(code => { const range = document.createRange(); range.selectNodeContents(code); return new Set([...range.getClientRects()].map(r => r.top)).size; }),
@@ -436,5 +436,20 @@ test('table identifiers stay on one line while long values scroll inside the tab
   });
   expect(measured.lines).toEqual([1, 1]);
   expect(measured.scrolls).toBe(true);
+  expect(measured.overflow).toBe(0);
+});
+
+// 본문의 overflow-wrap: anywhere가 칸에 상속되면 단어 중간도 최소 폭 계산에 들어가, 첫 열이 최소 폭까지 줄며 "Organizati/onal"로 잘렸다.
+test('a long word in the first table column widens the column instead of splitting', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await page.goto('/posts/browser-series-part/');
+  const measured = await page.locator('.body table').nth(1).evaluate(table => {
+    const text = table.querySelector('td')!.firstChild!;
+    const range = document.createRange();
+    range.setStart(text, 0);
+    range.setEnd(text, 'Organizational'.length);
+    return { lines: new Set([...range.getClientRects()].map(r => Math.round(r.top))).size, overflow: document.documentElement.scrollWidth - innerWidth };
+  });
+  expect(measured.lines).toBe(1);
   expect(measured.overflow).toBe(0);
 });

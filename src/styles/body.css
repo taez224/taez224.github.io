@@ -104,8 +104,11 @@
 :root[data-theme="dark"] .body pre :is(.th-tag, .th-selector) { color: #7ee787; }
 :root[data-theme="dark"] .body pre .th-link { color: #58a6ff; }
 :root[data-theme="dark"] .body pre .th-inserted { color: #aff5b4; }
-.body table { display: block; overflow-x: auto; width: 100%; margin: 18px 0; border-collapse: collapse; font-size: var(--t-side); }
-.body th, .body td { min-width: 100px; padding: 7px 10px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
+/* 칸의 글은 한두 줄짜리 조각이라 문단의 줄 간격을 쓰면 행이 벌어진다. 글자를 본문보다 한 단계만 줄이고 줄 간격을 좁혀 표 길이를 지킨다. */
+.body table { display: block; overflow-x: auto; width: 100%; margin: 18px 0; border-collapse: collapse; font-size: var(--t-ui); line-height: 1.6; }
+/* 본문의 overflow-wrap: anywhere를 물려받으면 단어 중간도 칸의 최소 폭 계산에 들어가, 열이 min-width까지 줄며 영어 단어가 잘린다.
+   break-word는 최소 폭을 단어 단위로 재므로 열이 가장 긴 단어만큼 넓어지고, 넘치는 표는 표 안에서 가로로 스크롤한다. */
+.body th, .body td { min-width: 100px; padding: 7px 10px; border: 1px solid var(--line); overflow-wrap: break-word; text-align: left; vertical-align: top; }
 /* 표의 코드 식별자를 글자 중간에서 나누지 않는다. 긴 값은 표 자체의 가로 스크롤로 읽는다. */
 .body :is(th, td) code { white-space: nowrap; overflow-wrap: normal; word-break: normal; }
 .body th { background: var(--paper-strong); font-weight: 600; }
