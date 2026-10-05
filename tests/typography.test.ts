@@ -62,6 +62,18 @@ test('article title, h2, h3 and body text keep a visible step apart at desktop a
   }
 });
 
+test('body text line height matches DESIGN.md at desktop and mobile widths', () => {
+  const yaml = read('DESIGN.md').match(/^typography:\n([\s\S]*?)\n(?=\w)/m)?.[1] ?? '';
+  const design = (name: string) => Number(yaml.match(new RegExp(`^ {2}${name}:\\n(?: {4}.+\\n)*? {4}lineHeight: ([\\d.]+)`, 'm'))?.[1]);
+  const body = read('src/styles/body.css');
+  const lineHeight = (css: string) => Number(css.match(/^\s*\.body \{[^}]*line-height:\s*([\d.]+)/m)?.[1]);
+  const mobile = body.slice(body.indexOf(`@media ${MOBILE}`));
+  assert.equal(lineHeight(body), design('body'), '데스크톱 본문');
+  assert.equal(lineHeight(mobile), design('body-mobile'), '모바일 본문');
+  // KRDS와 WCAG 1.4.8이 본문 줄 간격의 하한으로 두는 값이다.
+  assert.ok(lineHeight(mobile) >= 1.5);
+});
+
 test('font sizes outside :root use role tokens instead of px', () => {
   // 그래프 SVG 글자는 엔진이 px 폭으로 이름 배치를 계산하므로 px로 둔다.
   const allowed = [/\.graph \[data-labels\]/, /\.node text/];
