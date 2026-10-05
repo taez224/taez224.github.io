@@ -38,38 +38,60 @@ test('adjacent footnotes have their own space and open the intended note', async
 // 짧은 노트는 글 끝 각주 목록이 처음부터 화면에 보여 미리보기가 뜨지 않는다. 목록을 화면 밖으로 밀어 두고 검사한다.
 const pushFootnotesOffscreen = (page: import('@playwright/test').Page) => page.addStyleTag({ content: '.body .footnotes { margin-top: 3000px; }' });
 
+// 미리보기의 지연은 시계를 세워 두고 경계 직전과 직후를 재서 확인한다. 실제 시간을 기다리면 느린 기계에서 경계를 넘겨 흔들리고,
+// 지연이 틀려도 넉넉히 기다린 검사는 통과한다. 두 값은 src/scripts/footnotes.ts의 OPEN_DELAY·CLOSE_GRACE와 같다.
+// 그 파일은 가져오는 순간 DOM을 건드리므로 상수를 가져올 수 없다. 값을 바꾸면 이 검사가 실패해 여기를 고치게 된다.
+const OPEN_DELAY = 300;
+const CLOSE_GRACE = 300;
+// 시계는 페이지를 열기 전에 설치해야 페이지 스크립트의 타이머가 모두 가짜 시계를 쓴다. 설치만 하면 시간이 그대로 흐르므로 곧바로 세운다.
+// 각주 미리보기는 타이머만 쓰므로 세워도 열리는 판과 hover 판정에는 영향이 없다.
+const freezeClock = async (page: import('@playwright/test').Page) => {
+  await page.clock.install({ time: 0 });
+  await page.clock.pauseAt(1000);
+};
+
 test('hovering a footnote number previews it until the pointer leaves both number and panel', async ({ page, isMobile }) => {
   test.skip(isMobile, '호버 미리보기는 마우스에서만 쓴다');
+  await freezeClock(page);
   await page.goto('/notes/browser-start/');
   await pushFootnotesOffscreen(page);
   const panel = page.locator('.footnote-panel');
   const first = page.getByRole('link', { name: '각주 1', exact: true });
   await first.hover();
   // 스쳐 지나가는 포인터에는 열리지 않도록 잠시 기다린 뒤에 연다.
+  await page.clock.runFor(OPEN_DELAY - 1);
   await expect(panel).toBeHidden();
+  await page.clock.runFor(1);
   await expect(panel).toContainText('첫 각주 내용');
   // 번호에서 판으로 옮겨 가는 동안과 판 위에 있는 동안은 닫히지 않는다.
   await panel.hover();
-  await page.waitForTimeout(500);
+  await page.clock.runFor(CLOSE_GRACE + 200);
   await expect(panel).toBeVisible();
   // 이웃 번호로 옮기면 기다리지 않고 그 각주로 바뀐다.
   await page.getByRole('link', { name: '각주 2', exact: true }).hover();
-  await expect(panel).toContainText('둘째 각주 내용', { timeout: 200 });
+  await page.clock.runFor(1);
+  await expect(panel).toContainText('둘째 각주 내용');
+  // 번호와 판을 모두 떠난 뒤에는 유예가 끝나는 때에 닫힌다.
   await page.mouse.move(5, 5);
+  await page.clock.runFor(CLOSE_GRACE - 1);
+  await expect(panel).toBeVisible();
+  await page.clock.runFor(1);
   await expect(panel).toBeHidden();
 });
 
 test('clicking a previewed footnote pins the panel until Escape', async ({ page, isMobile }) => {
   test.skip(isMobile, '호버 미리보기는 마우스에서만 쓴다');
+  await freezeClock(page);
   await page.goto('/notes/browser-start/');
   await pushFootnotesOffscreen(page);
   const panel = page.locator('.footnote-panel');
   const first = page.getByRole('link', { name: '각주 1', exact: true });
   await first.hover();
+  await page.clock.runFor(OPEN_DELAY);
   await expect(panel).toContainText('첫 각주 내용');
   await first.click();
   await page.mouse.move(5, 5);
-  await page.waitForTimeout(500);
+  await page.clock.runFor(CLOSE_GRACE + 200);
   await expect(panel).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(panel).toBeHidden();
@@ -102,10 +124,11 @@ test('moving to a number whose footnote is on screen closes the previous preview
 
 test('the preview stays closed when the footnote list is already on screen', async ({ page, isMobile }) => {
   test.skip(isMobile, '호버 미리보기는 마우스에서만 쓴다');
+  await freezeClock(page);
   await page.goto('/notes/browser-start/');
   await expect(page.locator('.body .footnotes')).toBeInViewport();
   await page.getByRole('link', { name: '각주 1', exact: true }).hover();
-  await page.waitForTimeout(500);
+  await page.clock.runFor(OPEN_DELAY + 200);
   await expect(page.locator('.footnote-panel')).toBeHidden();
 });
 
