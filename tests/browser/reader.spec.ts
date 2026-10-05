@@ -454,7 +454,13 @@ test('a heading reached by its address stays in place when content above grows a
     const late = document.createElement('div');
     late.style.height = '1000px';
     heading.closest('.body')!.prepend(late);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    // 스크롤이 멈출 때까지 기다린다. 부드러운 이동이 남아 있으면 그동안 scrollY가 매 프레임 바뀌므로, 열 프레임 연속으로 그대로일 때 잰다.
+    // 고정 시간을 기다리면 느린 기계에서는 이동이 끝나기 전에 재고, 빠른 기계에서는 남는 시간을 버린다.
+    let last = -1, still = 0;
+    for (let frame = 0; frame < 300 && still < 10; frame += 1) {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      if (window.scrollY === last) still += 1; else { still = 0; last = window.scrollY; }
+    }
     return heading.getBoundingClientRect().top;
   });
   expect(top, '제목이 머리글 아래 도착한 자리에 남는다').toBeLessThan(300);
