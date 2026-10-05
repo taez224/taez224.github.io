@@ -26,15 +26,15 @@
     "markdown-it": "^15.0.2",
     "markdown-it-footnote": "^4.0.0",
     "mermaid": "^12.0.0",
-    "sanitize-html": "^2.17.7",
-    "sharp": "^0.35.4"
+    "sanitize-html": "^2.18.0",
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
     "@google/design.md": "0.4.0",
     "@playwright/test": "^1.63.0",
-    "@types/node": "^26.6.3",
-    "@types/sanitize-html": "^2.16.1",
+    "@types/node": "^26.6.4",
+    "@types/sanitize-html": "^2.16.2",
     "typescript": "^6.0.3"
   },
   "overrides": {
