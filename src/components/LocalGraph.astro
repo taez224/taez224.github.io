@@ -75,5 +75,11 @@ const lines = (edge: { x1: number; y1: number; x2: number; y2: number; direction
   a.node.is-linked circle:last-of-type { stroke: var(--accent); }
   .local-graph-tools { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
   .local-graph-tools a { font-size: var(--t-meta); }
+  /* 손가락 기기에서는 사이드바의 다른 링크처럼 44px을 채운다. 음수 여백으로 겹치면 아래 안내 문장을 덮으므로 줄 자체를 높이고,
+     늘어난 높이는 그래프와의 위 여백에서 덜어 글자 자리를 지킨다. */
+  @media (pointer: coarse) {
+    .local-graph-tools { margin-top: 0; }
+    .local-graph-tools a { display: inline-flex; align-items: center; min-height: 44px; }
+  }
 </style>
 <script src="../scripts/local-graph.ts"></script>

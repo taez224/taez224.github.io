@@ -275,6 +275,19 @@ test('a neighbor in the small graph opens from its title and its dot reaches 44p
   expect(measured.overlaps, '한 노드의 누르는 영역이 다른 노드에 닿지 않는다').toEqual([]);
 });
 
+// 작은 그래프 아래의 지도 링크는 24px이라 사이드바의 다른 링크와 달리 손가락 기기에서 넓혀지지 않았다.
+test('the map link under the small graph reaches 44px on touch without touching a node', async ({ page, isMobile }) => {
+  test.skip(!isMobile, '누르는 영역은 터치 기기에서만 넓힌다');
+  await page.goto('/notes/browser-many/');
+  const measured = await page.locator('.local-graph').evaluate((graph) => {
+    const link = graph.querySelector('.local-graph-tools a')!.getBoundingClientRect();
+    const gap = Math.min(...[...graph.querySelectorAll('a.node .hit')].map((hit) => link.top - hit.getBoundingClientRect().bottom));
+    return { height: link.height, gap };
+  });
+  expect(measured.height).toBeGreaterThanOrEqual(44);
+  expect(measured.gap, '지도 링크가 그래프 노드의 누르는 영역에 닿지 않는다').toBeGreaterThanOrEqual(0);
+});
+
 // 외부 발행 글 머리의 원문 링크가 터치에서 21px이었다. 노트 머리의 메타 줄은 넓혔는데 같은 역할의 이 줄은 빠졌다.
 // 줄에 링크가 하나뿐이고 위는 페이지 여백이라, 아래 제목만 덮지 않으면 44px을 채울 수 있다.
 test('the original link above an external article reaches 44px on touch without covering the title', async ({ page, isMobile }) => {
