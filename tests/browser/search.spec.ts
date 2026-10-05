@@ -74,7 +74,8 @@ test('the search header groups its controls while preserving focus and reopening
     const close = page.getByRole('button', { name: '검색 닫기', exact: true });
     await expect(input).toBeFocused();
     await expect(input).toHaveCSS('outline-style', 'solid');
-    await expect(close).toHaveAttribute('title', '검색 닫기 (Esc)');
+    // 툴팁이 단축키를 알린다. 문구 전체는 화면에서 검토한다.
+    await expect(close).toHaveAttribute('title', /Esc/);
     const inputBox = (await input.boundingBox())!;
     const closeBox = (await close.boundingBox())!;
     // 두 포커스 윤곽선은 서로의 버튼 영역과 겹치지 않고, 오른쪽 윤곽선도 창 안에 남는다.

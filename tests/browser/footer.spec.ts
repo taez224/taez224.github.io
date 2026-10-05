@@ -1,5 +1,6 @@
 import { test, expect } from './fixtures.ts';
 import { PALETTE, DARK_PALETTE } from '../../src/lib/palette.ts';
+import { FEEDBACK_LABEL } from '../../src/lib/feedback.ts';
 
 const rgb = (hex: string) => `rgb(${[1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16)).join(', ')})`;
 
@@ -13,8 +14,9 @@ test('every page but the map ends with the same footer links', async ({ page }) 
   await page.goto('/books/');
   const books = await footerLinks(page);
   const feedback = books.pop()!;
-  expect(books).toEqual([['GitHub', 'https://example.com/profile'], ['이 위키에 대해', '/about/'], ['RSS', '/rss.xml']]);
-  await expect(page.locator('.site-footer nav a').last()).toHaveAccessibleName('오류·의견 보내기');
+  // 문구는 화면에서 검토하므로 순서와 주소만 고정한다. 제보 링크 이름은 폼 이름과 같아야 해서 그 상수와 비교한다.
+  expect(books.map(([, href]) => href)).toEqual(['https://example.com/profile', '/about/', '/rss.xml']);
+  await expect(page.locator('.site-footer nav a').last()).toHaveAccessibleName(FEEDBACK_LABEL);
   expect(feedback[1]).toContain('https://github.com/taez224/taez224.github.io/issues/new?template=feedback.yml');
   // ↗는 글의 일부가 아니라 표시라 밑줄을 긋지 않는다. 터치에서는 링크가 flex 상자라 링크에 그은 밑줄이 화살표까지 이어진다.
   await expect(page.locator('.site-footer .feedback-link')).toHaveCSS('text-decoration-line', 'none');

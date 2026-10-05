@@ -357,7 +357,8 @@ test('the icon control fits the map after zooming and keeps separate button targ
   await page.goto('/map/');
   const fit = page.getByRole('button', { name: '지도 전체 보기', exact: true });
   const zoom = page.getByRole('button', { name: '확대', exact: true });
-  await expect(fit).toHaveAttribute('title', '지도 전체 보기');
+  // 아이콘 버튼은 접근 가능한 이름과 같은 툴팁을 둔다.
+  await expect(fit).toHaveAttribute('title', (await fit.getAttribute('aria-label'))!);
   await expect(fit.locator('svg')).toHaveAttribute('aria-hidden', 'true');
   const transform = () => page.locator('[data-map] > g').getAttribute('transform');
   const initial = await transform();
