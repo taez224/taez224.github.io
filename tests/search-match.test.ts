@@ -39,6 +39,8 @@ test('matchRecord adds a phrase bonus only when all terms share one field', () =
   const splitHit = matchRecord(splitRecord, normalizeQuery('AI PKM'));
   assert.ok(phraseHit && splitHit, '두 질의는 모두 결과가 있다');
   assert.ok(phraseHit.score > splitHit.score);
+  const separateScore = ['AI', 'PKM'].reduce((sum, term) => sum + matchRecord(splitRecord, normalizeQuery(term))!.score, 0);
+  assert.equal(splitHit.score, separateScore, '다른 필드에 흩어진 검색어에는 보너스를 더하지 않는다');
 });
 
 test('resultCountLabel tells readers when results are cut and how many matched', () => {
