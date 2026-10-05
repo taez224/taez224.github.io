@@ -116,6 +116,14 @@ test('links that stand alone in a line are marked with the shared underline', ()
   assert.doesNotMatch(blockFor(site, '.ledger-row .meta a'), /text-decoration/, '↗를 단 링크에는 밑줄을 겹치지 않는다');
 });
 
+test('a blockquote keeps body-colored text and is marked by a rule as strong as the link underline', () => {
+  // 인용의 글자를 보조색으로 두면 긴 인용이 가장 낮은 대비로 읽힌다. 글자가 본문과 같으면 왼쪽 선이 유일한 단서이고,
+  // --link-underline은 palette.test.ts가 두 화면의 두 바탕에서 3:1 이상임을 검사한다.
+  const quote = blockFor(read('src/styles/body.css'), '.body blockquote');
+  assert.match(quote, /border-left:\s*3px solid var\(--link-underline\)/);
+  assert.doesNotMatch(quote, /(?:^|;)\s*color:/, '인용 글자는 본문 색을 물려받는다');
+});
+
 test('the arrow of an external link in the body is not underlined and cannot wrap alone', () => {
   // 밑줄은 흐름 안의 자식에게 전해져, 크기와 높이가 다른 화살표 아래에서 어긋난 선으로 이어졌다. 화살표를 흐름에서 빼면 전해지지 않는다.
   // inline-block도 밑줄은 빼지만 줄 끝에서 화살표만 다음 줄로 떨어진다. 자리는 링크의 안쪽 여백이 맡아야 마지막 낱말과 함께 넘어간다.
