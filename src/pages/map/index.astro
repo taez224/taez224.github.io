@@ -33,10 +33,11 @@ const topics = [...topicCounts].map(([name, count]) => ({ name, color: topicColo
         </div>
         <div class="graph-box">
           {/* 노드는 버튼으로 읽히는데 Space와 Enter가 다른 일을 한다. 버튼의 약속과 다르므로 설명을 붙인다. */}
-          <p id="map-keys" class="visually-hidden">노드에서 Enter를 누르면 그 노트를 열고, Space를 누르면 지도에 머문 채 노트 정보를 봅니다.</p>
-          <svg data-map role="group" aria-describedby="map-keys" aria-label="생각 지도. 노드를 고르면 선택한 노트의 정보가 나타납니다."></svg>
+          <p id="map-keys" class="visually-hidden">화살표로 노드 사이를 옮겨 다닙니다. Enter를 누르면 그 노트를 열고, Space를 누르면 지도에 머문 채 노트 정보를 봅니다. 노트를 고르면 화살표는 그 노트와 이웃 사이만 오갑니다.</p>
+          {/* 무대 자체는 Tab에 멈추지 않는다. 속성이 없으면 Chrome이 <svg>를 Tab 순서에 넣는데, 포커스 테두리를 노드에만 두므로 아무것도 보이지 않는 정지점이 생겼다. */}
+          <svg data-map tabindex="-1" role="group" aria-describedby="map-keys" aria-label="생각 지도. 노드를 고르면 선택한 노트의 정보가 나타납니다."></svg>
           {/* 위 설명과 같은 말을 눈으로도 볼 수 있게 둔다. 낭독기에는 #map-keys가 이미 전하므로 여기서는 뺀다. */}
-          <p class="key-hint" aria-hidden="true">Enter로 노트 열기 · Space로 정보 보기</p>
+          <p class="key-hint" aria-hidden="true">화살표로 이동 · Enter로 노트 열기 · Space로 정보 보기</p>
           <div class="graph-controls" aria-label="확대·축소">
             <button type="button" data-graph-zoom="out" aria-label="축소" title="축소"><Fragment set:html={pixelIcon('zoomOut')} /></button>
             <button type="button" data-graph-zoom="fit" aria-label="지도 전체 보기" title="지도 전체 보기"><Fragment set:html={pixelIcon('fit')} /></button>
