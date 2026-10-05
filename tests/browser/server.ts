@@ -203,6 +203,10 @@ series_order: 1
 | --- | --- |
 | \`sequenceDiagram\` | 참여자 사이의 시간순 호출과 응답 |
 | \`${'veryLongIdentifier'.repeat(10)}\` | 길어도 페이지 밖으로 밀지 않는다 |
+
+| 단계 | 역할 |
+| --- | --- |
+| Organizational OS | 조직 운영 구조 설계 |
 `);
 // 절이 열둘인 글. 목차가 11줄 이상이면 사이드바의 목차만 따로 스크롤한다. 지도에 노드를 더하지 않게 블로그 글로 둔다.
 await fs.writeFile(path.join(vault, '20_Projects/blog/long-toc.md'), `---
