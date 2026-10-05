@@ -84,8 +84,20 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Browser regression tests
+        id: browser-tests
         if: github.event_name == 'pull_request'
         run: npm run test:browser
+
+      # 실패한 검사의 trace와 스크린샷은 playwright.config.ts의 retain-on-failure로 test-results/에 남는다.
+      # 브라우저 검사 단계가 실패했을 때만 올려, 로컬에서 같은 실패를 재현하려고 검사를 되풀이하지 않게 한다.
+      - name: Upload browser test results
+        if: failure() && steps.browser-tests.outcome == 'failure'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-results
+          path: test-results/
+          retention-days: 7
+          if-no-files-found: ignore
 
       - name: Build
         run: npm run build
