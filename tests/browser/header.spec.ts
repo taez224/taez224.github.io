@@ -1,4 +1,4 @@
-import { test, expect, gotoBeforeModules, gotoWithDefaultFontSize } from './fixtures.ts';
+import { test, expect, gotoBeforeModules, gotoWithDefaultFontSize, BOTH_THEMES } from './fixtures.ts';
 
 // 계산된 배경색은 알파가 없으면 rgb(), 있으면 rgba()나 color(srgb ... / a) 형식으로 나온다.
 const opacity = (color: string) => {
@@ -149,7 +149,7 @@ test('a phone too narrow for both buttons gets a two-row header that does not st
 
 // 헤더는 첫 화면에서 띠 위에 글자만 얹히고, 본문이 밑으로 들어오기 시작하면 종이색 판이 짙어진다.
 // 판이 옅으면 본문 글자가 메뉴 뒤로 비친다.
-test('the header plate turns on only after the page scrolls', async ({ page }) => {
+test('the header plate turns on only after the page scrolls', { tag: BOTH_THEMES }, async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/notes/browser-sections/');
   const plate = () => page.evaluate(() => {
@@ -192,7 +192,7 @@ test('a heading reached from the contents clears the header and its fading plate
 // 판의 농도는 스크립트가 채운다. 스크립트가 없으면 채울 수 없으므로, 그때는 스크롤과 상관없이 종이색으로 가려야 본문이 메뉴 뒤로 비치지 않는다.
 test.describe('without scripts', () => {
   test.use({ javaScriptEnabled: false });
-  test('the header stays opaque so the text below cannot show through', async ({ page }) => {
+  test('the header stays opaque so the text below cannot show through', { tag: BOTH_THEMES }, async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/notes/browser-sections/');
     const background = await page.evaluate(() => getComputedStyle(document.querySelector('.site-header')!, '::before').backgroundColor);

@@ -2,11 +2,22 @@ import { test as base, expect, type Page } from '@playwright/test';
 
 // 모든 브라우저 검사가 쓰는 test다. 검사 내용은 로컬 임시 vault뿐이라 분석 도구 같은 외부 요청을 모두 막는다.
 // 검사 파일마다 beforeEach로 적어 두었더니 여섯 곳에 같은 줄이 생겼다.
-export const test = base.extend<{ localOnly: void }>({
+// 어두운 화면 프로젝트는 이 태그가 붙은 검사만 돈다(playwright.config.ts). 시스템 테마에 따라 결과가 갈리는 검사와 칠한 모양을 단언하는 검사에 붙인다.
+export const BOTH_THEMES = '@both-themes';
+
+export const test = base.extend<{ localOnly: void; systemDark: boolean }>({
   localOnly: [async ({ context, baseURL }, use) => {
     await context.route('**/*', (route) => (new URL(route.request().url()).origin === baseURL ? route.continue() : route.abort()));
     await use();
-  }, { auto: true }]
+  }, { auto: true }],
+  // 프로젝트의 시스템 테마가 어두운 화면인지 돌려준다. 어두운 화면 프로젝트는 태그가 붙은 검사만 돌므로,
+  // 태그 없이 시스템 테마를 읽는 검사는 어두운 화면 쪽 단언이 한 번도 돌지 않은 채 통과한다. 그래서 태그가 없으면 예외를 던진다.
+  systemDark: async ({ colorScheme }, use, testInfo) => {
+    if (!testInfo.tags.includes(BOTH_THEMES)) {
+      throw new Error(`'${testInfo.title}' 검사가 시스템 테마를 읽는다. 어두운 화면에서도 돌도록 { tag: BOTH_THEMES }를 붙인다.`);
+    }
+    await use(colorScheme === 'dark');
+  }
 });
 export { expect };
 

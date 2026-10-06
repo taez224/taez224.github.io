@@ -1,4 +1,4 @@
-import { test, expect, gotoWithDefaultFontSize, gotoBeforeModules, textsOnRings } from './fixtures.ts';
+import { test, expect, gotoWithDefaultFontSize, gotoBeforeModules, textsOnRings, BOTH_THEMES } from './fixtures.ts';
 
 // 위아래로 넓힌 누르는 영역이 아래 그림까지 내려오면, 그림을 눌렀는데 소개 페이지가 열린다.
 test('the hero links stay out of the map image below them', async ({ page, isMobile }) => {
@@ -106,7 +106,7 @@ test('a short phone shrinks the home map smoothly so the next section starts on 
 
 // 가장자리를 옅게 하는 마스크를 상자 전체에 걸었더니, 가장자리 가까이 놓인 영역 이름이 배경에 묻혔다(1280px에서 1.68:1).
 // 마스크는 도형 층에만 씌우므로 어느 그림의 글자도 마스크를 씌운 요소 안에 있으면 안 되고, 상자에는 CSS 마스크가 없어야 한다.
-test('the wide home map fades its edges without fading any text', async ({ page, isMobile }) => {
+test('the wide home map fades its edges without fading any text', { tag: BOTH_THEMES }, async ({ page, isMobile }) => {
   test.skip(isMobile, '가장자리를 네 방향으로 옅게 하는 그림은 넓은 화면에서만 쓴다');
   await page.setViewportSize({ width: 1280, height: 800 });
   await gotoBeforeModules(page, '/');

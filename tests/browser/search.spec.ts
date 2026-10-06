@@ -1,4 +1,4 @@
-import { test, expect, gotoWithDefaultFontSize } from './fixtures.ts';
+import { test, expect, gotoWithDefaultFontSize, BOTH_THEMES } from './fixtures.ts';
 
 // 결과 줄은 왜 이 결과가 걸렸는지 말해야 한다. 두 줄에 들어가는 글자 수는 화면 폭과 글자 크기에 따라 달라,
 // 찾은 말 앞에 문맥을 길게 두면 좁은 화면에서 두 줄 아래로 밀려 글자가 있어도 읽을 수 없다.
@@ -55,7 +55,7 @@ test('a book result shows the shelf name and still answers to its published titl
 });
 
 // 같은 외곽선 안에서도 입력과 닫기의 포커스는 구분되고, 다시 열면 새 검색어로 바로 바꿀 수 있어야 한다.
-test('the search header groups its controls while preserving focus and reopening behavior', async ({ page }) => {
+test('the search header groups its controls while preserving focus and reopening behavior', { tag: BOTH_THEMES }, async ({ page }) => {
   for (const width of [1440, 320]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/');
