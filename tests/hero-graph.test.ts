@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { LIVE_HERO_QUERY, mountHeroGraph, type HeroGraph } from '../src/scripts/hero-graph.ts';
+import { mediaRuleBody, parseBlocks, splitSelectors } from './css-blocks.ts';
 
 test('the live hero map is limited to devices that can hover with a fine pointer', () => {
   // 지도 SVG는 touch-action: none이라 손가락 스와이프를 가져간다. 태블릿 세로 폭에서 올라오면 페이지가 내려가지 않는다.
@@ -84,26 +85,17 @@ test('a graph that fails to draw leaves the snapshot in place and is not retried
   assert.equal(home.draws(), 1);
 });
 
-test('phone width shows the snapshot even after the live graph was drawn', () => {
-  // 엔진을 보이고 정적 그림을 가리는 규칙은 스크립트가 엔진을 그리는 폭과 같은 미디어 쿼리 안에만 있어야 한다.
-  // 두 경계가 어긋나면 그 사이 폭에서 지도가 둘 다 보이거나 둘 다 사라진다.
-  const css = readFileSync(new URL('../src/pages/index.astro', import.meta.url), 'utf8');
-  const blocks = (query: string) => {
-    const found: string[] = [];
-    for (let at = css.indexOf(`@media ${query} {`); at >= 0; at = css.indexOf(`@media ${query} {`, at + 1)) {
-      let depth = 0, end = css.indexOf('{', at);
-      for (let i = end; i < css.length; i++) {
-        if (css[i] === '{') depth += 1;
-        else if (css[i] === '}' && --depth === 0) { end = i; break; }
-      }
-      found.push(css.slice(at, end + 1));
-    }
-    return found.join('\n');
-  };
-  const outside = (rule: RegExp) => css.split(/@media [^{]+\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/).join('').match(rule);
-  const live = blocks(LIVE_HERO_QUERY);
-  assert.match(live, /\.hero-graph\.is-live \.hero-snapshot \{ display: none; \}/, '넓은 폭에서만 정적 그림을 가린다');
-  assert.match(live, /\.hero-graph > :global\(\.graph\) \{ display: block; \}/, '넓은 폭에서만 엔진을 보인다');
-  assert.ok(outside(/\.hero-graph > :global\(\.graph\) \{ display: none; \}/), '그 밖의 폭에서는 엔진을 숨긴다');
-  assert.ok(!outside(/\.is-live \.hero-snapshot/), '정적 그림을 가리는 규칙이 미디어 쿼리 밖에 없다');
+// 엔진을 보이고 정적 그림을 가리는 규칙은 스크립트가 엔진을 그리는 조건(LIVE_HERO_QUERY)과 같은 미디어 쿼리 안에만 있어야 한다.
+// 두 경계가 어긋나면 그 사이 폭에서 지도가 둘 다 보이거나 둘 다 사라진다. 실제 폭 전환은 reader.spec.ts가 화면으로 보지만 PR에서만 돈다.
+test('the live map and the snapshot switch under the same media query the script uses', () => {
+  const page = readFileSync(new URL('../src/pages/index.astro', import.meta.url), 'utf8');
+  const css = [...page.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map((m) => m[1]).join('\n');
+  const display = (body: string) => body.match(/(?:^|;)\s*display:\s*([\w-]+)/)?.[1];
+  assert.equal(display(mediaRuleBody(css, LIVE_HERO_QUERY, '.hero-graph.is-live .hero-snapshot')), 'none', '넓은 폭에서만 정적 그림을 가린다');
+  assert.equal(display(mediaRuleBody(css, LIVE_HERO_QUERY, '.hero-graph > :global(.graph)')), 'block', '넓은 폭에서만 엔진을 보인다');
+  // 미디어 쿼리 밖의 규칙만 모은다. @규칙은 본문에 중괄호가 있어 빠진다.
+  const outside = parseBlocks(css).filter(({ body }) => !body.includes('{'))
+    .flatMap(({ prelude, body }) => splitSelectors(prelude).map((selector) => ({ selector, body })));
+  assert.equal(display(outside.find(({ selector }) => selector === '.hero-graph > :global(.graph)')?.body ?? ''), 'none', '그 밖의 폭에서는 엔진을 숨긴다');
+  assert.ok(!outside.some(({ selector }) => selector.includes('.is-live .hero-snapshot')), '정적 그림을 가리는 규칙이 미디어 쿼리 밖에 없다');
 });

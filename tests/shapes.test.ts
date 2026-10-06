@@ -32,13 +32,20 @@ test('border radii stay on the DESIGN.md rounded tokens', () => {
   assert.deepEqual(found, []);
 });
 
+// 시간 토큰을 ms 숫자로 바꾼다. 150ms, 0.15s, .15s는 같은 값이다.
+const toMs = (amount: string, unit: string) => Math.round(parseFloat(amount) * (unit === 's' ? 1000 : 1) * 1000) / 1000;
+
 test('state transitions use the documented durations', () => {
   // 상태 변화 150ms, 모바일 지도 시트 200ms. 움직임 줄이기 설정은 0s로 끈다.
-  const allowed = new Set(['.15s', '.2s', '0s']);
-  const found = allRules.flatMap((rule) => [...rule.body.matchAll(/transition(?:-duration)?:\s*([^;]+)/g)]
-    .flatMap((m) => [...m[1].matchAll(/(?<![\w(,.])(\d*\.?\d+m?s)\b/g)].map((t) => t[1]))
-    .filter((duration) => !allowed.has(duration))
-    .map((duration) => `${rule.path}: ${rule.selector} (${duration})`));
+  const allowed = new Set([0, 150, 200]);
+  const found = allRules.flatMap((rule) => [...rule.body.matchAll(/(?<![\w-])(transition(?:-duration)?):\s*([^;]+)/g)].flatMap((m) => {
+    // cubic-bezier()와 var() 안의 숫자는 시간이 아니다. 목록의 항목마다 첫 시간값이 지속 시간이고, 단축형의 두 번째 시간값은 지연이다.
+    const items = m[2].replace(/\([^)]*\)/g, '').split(',');
+    return items.flatMap((item) => {
+      const times = [...item.matchAll(/(?<![\w.-])(\d*\.?\d+)(ms|s)\b/g)].map((t) => toMs(t[1], t[2]));
+      return m[1] === 'transition' ? times.slice(0, 1) : times;
+    }).filter((ms) => !allowed.has(ms)).map((ms) => `${rule.path}: ${rule.selector} (${ms}ms)`);
+  }));
   assert.deepEqual(found, []);
 });
 

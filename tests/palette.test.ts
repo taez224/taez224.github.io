@@ -4,13 +4,13 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PALETTE, DARK_PALETTE } from '../src/lib/palette.ts';
+import { flatRules, mediaRuleBody, ruleBody } from './css-blocks.ts';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const read = (path: string) => readFileSync(join(root, path), 'utf8');
 
 function rootVariables(css: string): Map<string, string> {
-  const block = css.match(/:root\s*\{([\s\S]*?)\n\}/)?.[1] ?? '';
-  return new Map([...block.matchAll(/--([\w-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2].trim().toLowerCase()]));
+  return new Map([...ruleBody(css, ':root').matchAll(/--([\w-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2].trim().toLowerCase()]));
 }
 
 function sourceFiles(dir: string): string[] {
@@ -35,8 +35,8 @@ test('site.css :root declares every palette color with the same value', () => {
 test('site.css declares the same dark palette for the chosen theme and the system setting', () => {
   const css = read('src/styles/site.css');
   const blocks = [
-    css.match(/@media \(prefers-color-scheme: dark\) \{\s*:root:not\(\[data-theme\]\) \{([^}]*)\}/)?.[1] ?? '',
-    css.match(/:root\[data-theme="dark"\] \{([^}]*)\}/)?.[1] ?? ''
+    mediaRuleBody(css, '(prefers-color-scheme: dark)', ':root:not([data-theme])'),
+    ruleBody(css, ':root[data-theme="dark"]')
   ];
   for (const block of blocks) {
     const vars = new Map([...block.matchAll(/--([\w-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2].trim().toLowerCase()]));
@@ -67,33 +67,42 @@ function colorLiterals(text: string): { at: number; value: string }[] {
 }
 
 // CSS 변수를 쓸 수 없어 팔레트 값을 옮겨 적은 자리다. 구형 브라우저의 ::backdrop은 문서의 변수를 물려받지 않고,
-// data URI 안의 SVG는 페이지의 변수를 읽지 못한다. near 바로 뒤의 첫 색이 팔레트와 같아야 한다.
+// data URI 안의 SVG는 페이지의 변수를 읽지 못한다. 선택자가 정확히 같은 규칙의 본문에서 첫 색이 팔레트와 같아야 한다.
+// 같은 선택자 문자열이 어두운 화면 규칙(`:root[data-theme="dark"] .search::backdrop`)에도 부분으로 들어 있어, 글자 위치로 찾으면 순서에 기댄다.
 const COPIES = [
-  { file: 'src/styles/site.css', near: '.search::backdrop { background: rgb(', color: PALETTE.ink },
-  { file: 'src/styles/body.css', near: '.diagram-viewer::backdrop { background: rgb(', color: PALETTE.ink },
-  { file: 'src/styles/body.css', near: '.body .task-list-item-checkbox:checked { background: var(--ink) url(', color: PALETTE['paper-strong'] },
-  { file: 'src/styles/body.css', near: ':root:not([data-theme]) .body .task-list-item-checkbox:checked { background-image: url(', color: DARK_PALETTE.paper },
-  { file: 'src/styles/body.css', near: ':root[data-theme="dark"] .body .task-list-item-checkbox:checked { background-image: url(', color: DARK_PALETTE.paper }
+  { file: 'src/styles/site.css', selector: '.search::backdrop', color: PALETTE.ink },
+  { file: 'src/styles/body.css', selector: '.diagram-viewer::backdrop', color: PALETTE.ink },
+  { file: 'src/styles/body.css', selector: '.body .task-list-item-checkbox:checked', color: PALETTE['paper-strong'] },
+  { file: 'src/styles/body.css', selector: ':root:not([data-theme]) .body .task-list-item-checkbox:checked', color: DARK_PALETTE.paper },
+  { file: 'src/styles/body.css', selector: ':root[data-theme="dark"] .body .task-list-item-checkbox:checked', color: DARK_PALETTE.paper }
 ];
-const copyAt = ({ file, near }: (typeof COPIES)[number]) => {
-  const text = read(file), start = text.indexOf(near);
-  return { start, literal: start < 0 ? undefined : colorLiterals(text).filter((c) => c.at > start).sort((a, b) => a.at - b.at)[0] };
-};
+function copyLiteral({ file, selector }: (typeof COPIES)[number]) {
+  const rule = flatRules(read(file)).find(({ selectors }) => selectors.includes(selector));
+  return { found: Boolean(rule), literal: rule ? colorLiterals(rule.body).sort((a, b) => a.at - b.at)[0] : undefined };
+}
 
 test('palette values copied where CSS variables cannot reach still match the palette', () => {
   for (const copy of COPIES) {
-    const { start, literal } = copyAt(copy);
-    assert.ok(start >= 0, `${copy.file}: ${copy.near}`);
-    assert.equal(literal?.value, copy.color, `${copy.file}: ${copy.near}`);
+    const { found, literal } = copyLiteral(copy);
+    assert.ok(found, `${copy.file}: ${copy.selector}`);
+    assert.equal(literal?.value, copy.color, `${copy.file}: ${copy.selector}`);
   }
 });
 
 test('palette colors are written only in palette.ts and site.css, in any notation', () => {
   const allowed = new Set(['src/lib/palette.ts', 'src/styles/site.css']);
   const values = new Set<string>([...Object.values(PALETTE), ...Object.values(DARK_PALETTE)]);
-  const declared = new Set(COPIES.map((copy) => `${copy.file}@${copyAt(copy).literal?.at}`));
-  const copies = sourceFiles('src').filter((path) => !allowed.has(path)).flatMap((path) =>
-    colorLiterals(read(path)).filter((c) => values.has(c.value) && !declared.has(`${path}@${c.at}`)).map((c) => `${relative('.', path)}: ${c.value}`));
+  // 등록한 옮겨 적기는 파일과 값의 개수로 뺀다. 같은 값이 등록한 수보다 많이 나오면 그만큼이 등록 밖의 복사본이다.
+  const declared = new Map<string, number>();
+  for (const copy of COPIES) { const key = `${copy.file}|${copyLiteral(copy).literal?.value}`; declared.set(key, (declared.get(key) ?? 0) + 1); }
+  const copies = sourceFiles('src').filter((path) => !allowed.has(path)).flatMap((path) => {
+    const spare = new Map(declared);
+    return colorLiterals(read(path)).filter((c) => values.has(c.value)).filter((c) => {
+      const key = `${path}|${c.value}`, left = spare.get(key) ?? 0;
+      if (left > 0) { spare.set(key, left - 1); return false; }
+      return true;
+    }).map((c) => `${relative('.', path)}: ${c.value}`);
+  });
   assert.deepEqual(copies, []);
 });
 

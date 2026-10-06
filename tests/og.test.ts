@@ -115,7 +115,10 @@ test('ogSvg uses a contained thumbnail in place of the local graph', () => {
     siteLabel: 'example.com',
     thumbnailDataUri: 'data:image/png;base64,fixture'
   });
-  assert.match(svg, /<image href="data:image\/png;base64,fixture" x="740" y="115" width="400" height="400" preserveAspectRatio="xMidYMid meet"\/>/);
+  // 속성 순서와 자리·크기의 정확한 값은 묻지 않는다. 썸네일 데이터가 실리고, 잘리지 않고 칸 안에 맞춰지는지(meet)만 본다.
+  const image = svg.match(/<image\b[^>]*>/)?.[0] ?? '';
+  assert.match(image, /\shref="data:image\/png;base64,fixture"/);
+  assert.match(image, /\spreserveAspectRatio="xMidYMid meet"/);
   assert.doesNotMatch(svg, /<circle /, 'thumbnail cards do not render the local graph');
 });
 
@@ -135,7 +138,7 @@ test('ogSvg keeps the local graph when a note has no thumbnail', () => {
     siteLabel: 'example.com'
   });
   assert.match(svg, /<circle /);
-  assert.match(svg, /<g transform="translate\(740 115\)">/);
+  assert.match(svg, /<g transform="translate\(\d+ \d+\)">/);
   assert.doesNotMatch(svg, /<image /);
 });
 

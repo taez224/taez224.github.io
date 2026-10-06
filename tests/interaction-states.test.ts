@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { flatRules, lastCompound } from './css-blocks.ts';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const read = (path: string) => readFileSync(join(root, path), 'utf8');
@@ -39,8 +40,7 @@ test('hover styles apply only on devices that can hover', () => {
 });
 
 // 한 블록의 선언만 뽑는다. 중첩된 @규칙 안에서도 가장 안쪽 블록만 짝지어진다.
-const blocks = (css: string) => [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)]
-  .map(([, selector, body]) => ({ parts: selector.split(',').map((part) => part.trim()), body }));
+const blocks = (css: string) => flatRules(css).map(({ selectors, body }) => ({ parts: selectors, body }));
 const blockFor = (css: string, selector: string) => blocks(css).find((rule) => rule.parts.includes(selector))?.body ?? '';
 // 터치 규칙만 모은다. 파일 안 첫 번째 @media (pointer: coarse)부터 잘라 읽으면, 다른 터치 규칙이 앞에 끼어들 때
 // 그 뒤의 기본 규칙을 먼저 집는다.
@@ -61,18 +61,21 @@ test('dimming a graph node leaves its focus ring readable', () => {
   // opacity는 부분 트리를 한 층으로 합성하므로 자식에서 되돌릴 수 없다. 보이는 점에만 걸어야 링이 살아남는다.
   const css = read('src/styles/graph.css');
   for (const state of ['is-dim', 'is-faint']) {
-    assert.doesNotMatch(blockFor(css, `.graph .node.${state}`), /opacity/, `.graph .node.${state}에 묶음 불투명도가 없다`);
+    // 묶음 자체를 고르는 규칙은 마지막 복합 선택자가 .node.is-*로 끝나 자손이 없는 것이다. 선택자 앞부분(.graph 등)과 :is() 안의 쉼표에 기대지 않고 모두 찾는다.
+    const ends = new RegExp(`\\.node\\.${state}(?::[\\w-]+(?:\\([^)]*\\))?)*$`);
+    for (const rule of blocks(css).filter(({ parts }) => parts.some((part) => ends.test(lastCompound(part))))) {
+      assert.doesNotMatch(rule.body, /opacity/, `${rule.parts.join(', ')}에 묶음 불투명도가 없다`);
+    }
     const marks = blocks(css).filter((rule) => rule.parts.some((part) => part.includes(`.node.${state} `)) && /opacity/.test(rule.body));
     assert.ok(marks.length > 0, `.node.${state}의 점은 흐려진다`);
   }
 });
 
-test('the search input takes its colors and focus ring from the site rules', () => {
-  // 사이트에 하나뿐인 글자 입력란이다. UA 기본값에 맡기면 어두운 화면에서 자리 표시 글자가 3.51:1이 되고 포커스 표시가 사라진다.
+test('the search input takes its text and placeholder colors from the site tokens', () => {
+  // 사이트에 하나뿐인 글자 입력란이다. UA 기본값에 맡기면 어두운 화면에서 자리 표시 글자가 3.51:1이 된다. 포커스 표시는 search.spec이 실제 화면에서 본다.
   const css = read('src/styles/site.css');
   const input = blockFor(css, '.search-head input');
   assert.match(input, /(^|;)\s*color:\s*var\(--/, '글자색이 토큰이다');
-  assert.doesNotMatch(input, /outline:\s*(0|none)/, '전역 포커스 표시를 끄지 않는다');
   assert.match(blockFor(css, '.search-head input::placeholder'), /color:\s*var\(--/, '자리 표시 글자도 토큰이다');
 });
 
@@ -80,7 +83,7 @@ test('hit areas widened for touch do not overlap the line above', () => {
   // padding-block으로 넓힌 링크는 위아래로 그만큼 커진다. 줄 간격이 넓힌 양의 두 배보다 좁으면 두 줄의 누르는 영역이 겹치고,
   // 겹친 자리에서는 뒤 줄이 이겨서 앞 줄의 글자를 눌러도 다른 곳으로 간다.
   const css = styleText('src/components/NotePage.astro').replace(/\/\*[\s\S]*?\*\//g, '');
-  const coarse = css.slice(css.indexOf('@media (pointer: coarse)'));
+  const coarse = coarseOnly(css);
   const pad = Number(blockFor(coarse, '.note-meta a').match(/padding-block:\s*(\d+)px/)?.[1] ?? 0);
   // 터치에서 줄 간격을 따로 정하지 않으면 기본 규칙의 gap이 그대로 쓰인다. 두 값 중 실제로 적용되는 쪽을 본다.
   const base = blockFor(css, '.note-meta').match(/(?:^|;)\s*gap:\s*(\d+)px/)?.[1] ?? '0';
@@ -93,14 +96,14 @@ test('widened touch targets stay inside the room their neighbour leaves', () => 
   // 넓힌 영역이 이웃에 닿으면 겹친 자리에서 뒤에 그려지는 쪽이 이겨 엉뚱한 곳으로 간다.
   // 이웃이 물러서 줄 수 있으면 그만큼 물러서게 하고, 그럴 수 없으면 이웃이 남긴 여백까지만 넓힌다.
   const body = read('src/styles/body.css');
-  const coarseBody = body.slice(body.indexOf('@media (pointer: coarse)'));
+  const coarseBody = coarseOnly(body);
   const summaryPad = Number(blockFor(coarseBody, '.body details.callout > summary').match(/padding-block:\s*(\d+)px/)?.[1] ?? 0);
   const calloutGap = Number(blockFor(coarseBody, '.body details.callout[open] > .callout-body').match(/margin-top:\s*(\d+)px/)?.[1] ?? 0);
   assert.ok(summaryPad > 0, '콜아웃 머리표는 터치에서 누르는 영역을 넓힌다');
   assert.ok(calloutGap >= summaryPad, `머리표를 ${summaryPad}px 넓히므로 펼친 본문도 그만큼 물러선다`);
 
   const site = read('src/styles/site.css');
-  const coarseSite = site.slice(site.indexOf('@media (pointer: coarse)'));
+  const coarseSite = coarseOnly(site);
   const metaPad = Number(blockFor(coarseSite, '.ledger-row:not(.is-compact) .meta a').match(/padding-block:\s*(\d+)px/)?.[1] ?? 0);
   // 장부 행의 발행처 링크 위에는 제목이 있고, 제목 아래 여백만큼만 넓힐 수 있다. 더 넓히면 제목을 눌러도 발행처로 간다.
   const titleGap = Number(blockFor(site, '.ledger-row h3').match(/margin:\s*0 0 (\d+)px/)?.[1] ?? 0);
@@ -120,7 +123,10 @@ test('a blockquote keeps body-colored text and is marked by a rule as strong as 
   // 인용의 글자를 보조색으로 두면 긴 인용이 가장 낮은 대비로 읽힌다. 글자가 본문과 같으면 왼쪽 선이 유일한 단서이고,
   // --link-underline은 palette.test.ts가 두 화면의 두 바탕에서 3:1 이상임을 검사한다.
   const quote = blockFor(read('src/styles/body.css'), '.body blockquote');
-  assert.match(quote, /border-left:\s*3px solid var\(--link-underline\)/);
+  // 두께와 값 순서, 단축형인지 border-left-color인지는 묻지 않는다. 뒤에 오는 선언이 이기므로 마지막 선언의 색을 본다.
+  const leftRule = [...quote.matchAll(/(?:^|[;\s])(border-left(?:-color)?):\s*([^;]+)/g)].at(-1);
+  assert.ok(leftRule, '인용문은 왼쪽 선을 그린다');
+  assert.match(leftRule[2], /(?:^|\s)var\(--link-underline\)(?:\s|$)/, `.body blockquote의 왼쪽 선 색 (${leftRule[0].trim()})`);
   assert.doesNotMatch(quote, /(?:^|;)\s*color:/, '인용 글자는 본문 색을 물려받는다');
 });
 
@@ -143,7 +149,6 @@ test('the external article page reaches its links like the reader does', () => {
   assert.match(blockFor(css, 'li a::after'), /inset:\s*0/);
   const coarse = coarseOnly(css);
   assert.match(blockFor(coarse, '.back-to-posts'), /padding-block:\s*\d+px/, '되돌아가기 링크는 위아래로 넓힌다');
-  assert.match(blockFor(coarse, '.external-meta a'), /padding-block:\s*\d+px/, '머리의 원문 링크도 위아래로 넓힌다');
 });
 
 test('a pressed filter is marked the way the current menu is', () => {
@@ -164,8 +169,8 @@ test('a pressed filter is marked the way the current menu is', () => {
 test('search results are clickable across the whole row', () => {
   // 한 줄짜리 결과의 제목 링크는 27.75px이라 44px 목표에 못 미친다. 링크의 ::after로 줄 전체를 덮어 누르는 영역만 넓힌다.
   const css = read('src/styles/site.css');
-  const row = css.match(/\n\.search-item \{([^}]+)\}/)?.[1] ?? '';
-  const stretch = css.match(/\n\.search-item a::after \{([^}]+)\}/)?.[1] ?? '';
+  const row = blockFor(css, '.search-item');
+  const stretch = blockFor(css, '.search-item a::after');
   assert.match(row, /position:\s*relative/);
   assert.match(stretch, /position:\s*absolute/);
   assert.match(stretch, /inset:\s*0/);

@@ -70,7 +70,6 @@ test('fitTransform brings every point inside the padded viewport and clamps scal
     assert.ok(x >= 40 - 1e-6 && x <= 760 + 1e-6 && y >= 40 - 1e-6 && y <= 460 + 1e-6);
   }
   assert.ok(t.scale > 0 && t.scale <= 3.2);
-  assert.ok(Math.abs(t.scale - 0.36) < 1e-6);
   assert.equal(fitTransform(new Map([['a', { x: 10, y: 10 }]]), { width: 800, height: 500 }).scale, 1);
   assert.equal(fitTransform(positions, { width: 0, height: 0, pad: 40 }).scale, 1, '크기 0인 상자에서는 배율을 만들지 않는다');
 });

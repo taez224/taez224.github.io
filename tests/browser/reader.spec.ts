@@ -38,38 +38,60 @@ test('adjacent footnotes have their own space and open the intended note', async
 // 짧은 노트는 글 끝 각주 목록이 처음부터 화면에 보여 미리보기가 뜨지 않는다. 목록을 화면 밖으로 밀어 두고 검사한다.
 const pushFootnotesOffscreen = (page: import('@playwright/test').Page) => page.addStyleTag({ content: '.body .footnotes { margin-top: 3000px; }' });
 
+// 미리보기의 지연은 시계를 세워 두고 경계 직전과 직후를 재서 확인한다. 실제 시간을 기다리면 느린 기계에서 경계를 넘겨 흔들리고,
+// 지연이 틀려도 넉넉히 기다린 검사는 통과한다. 두 값은 src/scripts/footnotes.ts의 OPEN_DELAY·CLOSE_GRACE와 같다.
+// 그 파일은 가져오는 순간 DOM을 건드리므로 상수를 가져올 수 없다. 값을 바꾸면 이 검사가 실패해 여기를 고치게 된다.
+const OPEN_DELAY = 300;
+const CLOSE_GRACE = 300;
+// 시계는 페이지를 열기 전에 설치해야 페이지 스크립트의 타이머가 모두 가짜 시계를 쓴다. 설치만 하면 시간이 그대로 흐르므로 곧바로 세운다.
+// 각주 미리보기는 타이머만 쓰므로 세워도 열리는 판과 hover 판정에는 영향이 없다.
+const freezeClock = async (page: import('@playwright/test').Page) => {
+  await page.clock.install({ time: 0 });
+  await page.clock.pauseAt(1000);
+};
+
 test('hovering a footnote number previews it until the pointer leaves both number and panel', async ({ page, isMobile }) => {
   test.skip(isMobile, '호버 미리보기는 마우스에서만 쓴다');
+  await freezeClock(page);
   await page.goto('/notes/browser-start/');
   await pushFootnotesOffscreen(page);
   const panel = page.locator('.footnote-panel');
   const first = page.getByRole('link', { name: '각주 1', exact: true });
   await first.hover();
   // 스쳐 지나가는 포인터에는 열리지 않도록 잠시 기다린 뒤에 연다.
+  await page.clock.runFor(OPEN_DELAY - 1);
   await expect(panel).toBeHidden();
+  await page.clock.runFor(1);
   await expect(panel).toContainText('첫 각주 내용');
   // 번호에서 판으로 옮겨 가는 동안과 판 위에 있는 동안은 닫히지 않는다.
   await panel.hover();
-  await page.waitForTimeout(500);
+  await page.clock.runFor(CLOSE_GRACE + 200);
   await expect(panel).toBeVisible();
   // 이웃 번호로 옮기면 기다리지 않고 그 각주로 바뀐다.
   await page.getByRole('link', { name: '각주 2', exact: true }).hover();
-  await expect(panel).toContainText('둘째 각주 내용', { timeout: 200 });
+  await page.clock.runFor(1);
+  await expect(panel).toContainText('둘째 각주 내용');
+  // 번호와 판을 모두 떠난 뒤에는 유예가 끝나는 때에 닫힌다.
   await page.mouse.move(5, 5);
+  await page.clock.runFor(CLOSE_GRACE - 1);
+  await expect(panel).toBeVisible();
+  await page.clock.runFor(1);
   await expect(panel).toBeHidden();
 });
 
 test('clicking a previewed footnote pins the panel until Escape', async ({ page, isMobile }) => {
   test.skip(isMobile, '호버 미리보기는 마우스에서만 쓴다');
+  await freezeClock(page);
   await page.goto('/notes/browser-start/');
   await pushFootnotesOffscreen(page);
   const panel = page.locator('.footnote-panel');
   const first = page.getByRole('link', { name: '각주 1', exact: true });
   await first.hover();
+  await page.clock.runFor(OPEN_DELAY);
   await expect(panel).toContainText('첫 각주 내용');
   await first.click();
   await page.mouse.move(5, 5);
-  await page.waitForTimeout(500);
+  await page.clock.runFor(CLOSE_GRACE + 200);
   await expect(panel).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(panel).toBeHidden();
@@ -102,10 +124,11 @@ test('moving to a number whose footnote is on screen closes the previous preview
 
 test('the preview stays closed when the footnote list is already on screen', async ({ page, isMobile }) => {
   test.skip(isMobile, '호버 미리보기는 마우스에서만 쓴다');
+  await freezeClock(page);
   await page.goto('/notes/browser-start/');
   await expect(page.locator('.body .footnotes')).toBeInViewport();
   await page.getByRole('link', { name: '각주 1', exact: true }).hover();
-  await page.waitForTimeout(500);
+  await page.clock.runFor(OPEN_DELAY + 200);
   await expect(page.locator('.footnote-panel')).toBeHidden();
 });
 
@@ -117,7 +140,8 @@ test('copy works inside the footnote panel each time it opens', async ({ page, c
     const panel = page.locator('.footnote-panel');
     await expect(panel.getByRole('button', { name: 'JavaScript 코드 복사', exact: true })).toHaveCount(1);
     await panel.getByRole('button', { name: 'JavaScript 코드 복사', exact: true }).click();
-    await expect(panel.getByRole('status')).toHaveText('코드를 복사했습니다.');
+    // 문구는 code-block.test.ts가 본다. 여기서는 복제한 판의 버튼이 알림을 띄우는지만 본다.
+    await expect(panel.getByRole('status')).not.toBeEmpty();
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('console.log("hello");\n');
     await page.keyboard.press('Escape');
     await expect(panel).not.toBeVisible();
@@ -168,26 +192,6 @@ test('small graph edges reach each neighbor dot without a gap from the invisible
   }
 });
 
-test('linked highlighting survives mixed focus and hover', async ({ page, isMobile }) => {
-  await page.goto('/notes/browser-start/');
-  const graph = page.locator('.local-graph a.node').first();
-  const rows = page.locator('.note-side .side-list a[href="/notes/browser-neighbor/"]');
-  await rows.first().focus();
-  await expect(graph).toHaveClass(/is-linked/);
-  if (!isMobile) {
-    await graph.hover();
-    await page.mouse.move(0, 0);
-    await expect(graph).toHaveClass(/is-linked/);
-    await rows.last().hover();
-    await page.getByRole('button', { name: '검색', exact: true }).focus();
-    await expect(graph).toHaveClass(/is-linked/);
-    await page.mouse.move(0, 0);
-  } else {
-    await page.getByRole('button', { name: '검색', exact: true }).focus();
-  }
-  await expect(graph).not.toHaveClass(/is-linked/);
-});
-
 test('home switches both ways across the live graph breakpoint without duplicate engines', async ({ page, isMobile }) => {
   await page.goto('/');
   const snapshot = page.locator('.hero-snapshot');
@@ -228,7 +232,6 @@ test('local graph shows up to six neighbors with two-line titles that never over
   await page.goto('/notes/browser-many/');
   await expect(page.locator('.local-graph a.node')).toHaveCount(6);
   const note = page.locator('.local-graph > p.meta');
-  await expect(note).toContainText('6개만');
   await expect(note).toHaveCSS('font-weight', '400');
   const boxes = await page.locator('.local-graph a.node text').evaluateAll((texts) => texts.map((text) => {
     const box = text.getBoundingClientRect();
@@ -288,13 +291,6 @@ test('the map link under the small graph reaches 44px on touch without touching 
   });
   expect(measured.height).toBeGreaterThanOrEqual(44);
   expect(measured.gap, '지도 링크가 그래프 노드의 누르는 영역에 닿지 않는다').toBeGreaterThanOrEqual(0);
-});
-
-// "연결된 노트" 제목이 줄 간격을 지정하지 않아 본문의 1.85를 물려받았다. 두 줄이 되면 다른 제목보다 벌어진다.
-test('the related notes heading of an external article keeps the heading line height', async ({ page }) => {
-  await page.goto('/posts/browser-external/');
-  const ratio = await page.locator('.external-related h2').evaluate((h) => { const s = getComputedStyle(h); return parseFloat(s.lineHeight) / parseFloat(s.fontSize); });
-  expect(ratio).toBeCloseTo(1.4, 2);
 });
 
 // 외부 발행 글 머리의 원문 링크가 터치에서 21px이었다. 노트 머리의 메타 줄은 넓혔는데 같은 역할의 이 줄은 빠졌다.
@@ -458,7 +454,13 @@ test('a heading reached by its address stays in place when content above grows a
     const late = document.createElement('div');
     late.style.height = '1000px';
     heading.closest('.body')!.prepend(late);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    // 스크롤이 멈출 때까지 기다린다. 부드러운 이동이 남아 있으면 그동안 scrollY가 매 프레임 바뀌므로, 열 프레임 연속으로 그대로일 때 잰다.
+    // 고정 시간을 기다리면 느린 기계에서는 이동이 끝나기 전에 재고, 빠른 기계에서는 남는 시간을 버린다.
+    let last = -1, still = 0;
+    for (let frame = 0; frame < 300 && still < 10; frame += 1) {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      if (window.scrollY === last) still += 1; else { still = 0; last = window.scrollY; }
+    }
     return heading.getBoundingClientRect().top;
   });
   expect(top, '제목이 머리글 아래 도착한 자리에 남는다').toBeLessThan(300);

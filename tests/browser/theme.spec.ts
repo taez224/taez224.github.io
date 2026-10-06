@@ -114,34 +114,31 @@ const countTransitions = async (page: import('@playwright/test').Page) => {
   });
 };
 
-test('pressing the button animates the switch once', async ({ page }) => {
+test('pressing the button animates the switch once, and not at all with reduced motion', async ({ page }) => {
   await countTransitions(page);
   await page.goto('/books/');
   test.skip(!(await page.evaluate(() => typeof document.startViewTransition === 'function')), '이 브라우저는 화면 전환을 지원하지 않는다');
-  const before = await page.locator('html').getAttribute('data-theme');
+  const root = page.locator('html');
+  const transitions = () => page.evaluate(() => (window as unknown as { transitions: number }).transitions);
+  const before = await root.getAttribute('data-theme');
   await page.locator('[data-theme-toggle]').click();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', before === 'dark' ? 'light' : 'dark');
-  expect(await page.evaluate(() => (window as unknown as { transitions: number }).transitions), '누를 때 한 번만 전환한다').toBe(1);
-});
-
-test.describe('with reduced motion', () => {
-  test.use({ reducedMotion: 'reduce' });
-  test('the switch happens without an animation', async ({ page }) => {
-    await countTransitions(page);
-    await page.goto('/books/');
-    const before = await page.locator('html').getAttribute('data-theme');
-    await page.locator('[data-theme-toggle]').click();
-    await expect(page.locator('html')).toHaveAttribute('data-theme', before === 'dark' ? 'light' : 'dark');
-    expect(await page.evaluate(() => (window as unknown as { transitions: number }).transitions), '전환 없이 바로 바꾼다').toBe(0);
-  });
+  await expect(root).toHaveAttribute('data-theme', before === 'dark' ? 'light' : 'dark');
+  expect(await transitions(), '누를 때 한 번만 전환한다').toBe(1);
+  // 움직임을 줄인 독자에게는 전환 없이 바로 바뀐다. 누를 때 설정을 읽으므로 같은 페이지에서 설정만 바꿔 다시 누른다.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.locator('[data-theme-toggle]').click();
+  await expect(root).toHaveAttribute('data-theme', before!);
+  expect(await transitions(), '움직임을 줄이면 전환 없이 바로 바꾼다').toBe(1);
 });
 
 // 전환 콜백이 도는 사이에 한 번 더 누르면, 누른 시점에 계산한 값이 둘 다 같아 한 번만 바뀔 수 있다.
 // 느린 기기에서 일어나는 순서를 확정적으로 만들려고 전환 콜백을 늦춘다.
+// 시작 상태와 끝 상태가 같아서, 콜백이 다 돌기 전에 비교하면 결함이 있어도 통과한다. 콜백이 두 번 돈 것을 확인한 뒤에 비교한다.
 test('two presses during one transition end where they started', async ({ page }) => {
   await page.addInitScript(() => {
+    (window as unknown as { updatesRun: number }).updatesRun = 0;
     document.startViewTransition = ((update: () => void) => {
-      setTimeout(update, 250);
+      setTimeout(() => { update(); (window as unknown as { updatesRun: number }).updatesRun += 1; }, 250);
       return { finished: Promise.resolve(), ready: Promise.resolve(), updateCallbackDone: Promise.resolve(), skipTransition: () => {} };
     }) as typeof document.startViewTransition;
   });
@@ -151,6 +148,6 @@ test('two presses during one transition end where they started', async ({ page }
   const button = page.locator('[data-theme-toggle]');
   await button.click();
   await button.click();
-  await page.waitForTimeout(800);
+  await expect.poll(() => page.evaluate(() => (window as unknown as { updatesRun: number }).updatesRun), '두 번 누른 전환 콜백이 모두 돈다').toBe(2);
   await expect(root, '두 번 누르면 제자리로 돌아온다').toHaveAttribute('data-theme', before!);
 });

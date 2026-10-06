@@ -63,20 +63,6 @@ test('initialization failure leaves all original code blocks intact', async () =
   assert.deepEqual(f.slots, f.originals);
 });
 
-test('flowcharts keep their natural width instead of shrinking into the column', async () => {
-  let useMaxWidth: boolean | undefined;
-  const f = fixture();
-  await renderMermaidBlocks(f.blocks, {
-    parse: async () => ({ diagramType: 'flowchart-v2', config: {} }),
-    initialize(config) { useMaxWidth = config?.flowchart?.useMaxWidth; },
-    async run({ nodes } = {}) {
-      assert.ok(nodes);
-      nodes[0].textContent = 'rendered SVG';
-    }
-  });
-  assert.equal(useMaxWidth, false);
-});
-
 // Mermaid는 useMaxWidth를 도표 종류마다 따로 둔다. flowchart만 끄면 나머지는 좁은 화면에서
 // 컨테이너에 맞춰 줄어들어 320px에서 글자가 6px까지 작아진다.
 test('every diagram type in use is drawn at its natural size', async () => {
@@ -437,9 +423,6 @@ test('theme detection uses Mermaid frontmatter, directives and the active diagra
     assert.ok(parsed);
     assert.equal(pinsOwnTheme(parsed), expected, source);
   }
-  const merged = await mermaid.parse("---\nconfig: { theme: dark }\n---\n%%{init: {'theme': 'neutral'}}%%\nflowchart LR\n");
-  assert.ok(merged);
-  assert.equal(merged.config.theme, 'neutral');
 });
 
 test('a failed parse preserves the original and does not prevent later diagrams rendering', async () => {

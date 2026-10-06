@@ -151,8 +151,11 @@ test('map labels stay apart and clear of the zoom controls on a phone', async ({
     await page.goto('/map/');
     await expect(page.locator('.graph .node').first()).toBeAttached();
     await page.setViewportSize({ width: toWidth, height: toHeight });
-    // resize 처리는 동기지만 이벤트가 오기까지 한 프레임 이상 걸린다. 옛 화면을 재고 통과하지 않도록 잠깐 기다린 뒤 한 번 잰다.
-    await page.waitForTimeout(300);
+    // resize 처리는 동기지만 이벤트가 오기까지 한 프레임 이상 걸린다. 옛 화면을 재고 통과하지 않도록 SVG의 viewBox가 새 무대 크기로 바뀐 것을 기다린 뒤 잰다.
+    await expect.poll(() => page.evaluate(() => {
+      const svg = document.querySelector<SVGSVGElement>('[data-map]')!;
+      return svg.getAttribute('viewBox') === `0 0 ${svg.clientWidth} ${svg.clientHeight}`;
+    }), 'resize 뒤 지도가 새 무대 크기에 맞춰진다').toBe(true);
     expect(await clashes(), `${fromWidth}×${fromHeight}에서 ${toWidth}×${toHeight}로 바꾼 화면`).toEqual([]);
   }
   // 제목과 영역 이름은 지도를 끌 때 자리를 다시 정하지 않는다. 노드를 고르고 시트를 닫은 뒤 고른 제목이 확대 조작 위를 지나가게
@@ -354,7 +357,8 @@ test('the icon control fits the map after zooming and keeps separate button targ
   await page.goto('/map/');
   const fit = page.getByRole('button', { name: '지도 전체 보기', exact: true });
   const zoom = page.getByRole('button', { name: '확대', exact: true });
-  await expect(fit).toHaveAttribute('title', '지도 전체 보기');
+  // 아이콘 버튼은 접근 가능한 이름과 같은 툴팁을 둔다.
+  await expect(fit).toHaveAttribute('title', (await fit.getAttribute('aria-label'))!);
   await expect(fit.locator('svg')).toHaveAttribute('aria-hidden', 'true');
   const transform = () => page.locator('[data-map] > g').getAttribute('transform');
   const initial = await transform();

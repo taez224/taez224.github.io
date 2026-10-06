@@ -712,7 +712,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 확대할 때 노드 원 크기와 선 두께 | `src/graph/engine.ts`, `src/styles/graph.css` | `tests/engine.test.ts`, `tests/browser/map.spec.ts` |
 | 제목과 노드 고리의 간격 | `src/graph/label.ts`, `src/graph/engine.ts`, `src/graph/snapshot.ts` | `tests/graph-label.test.ts`, `tests/layout.test.ts`, `tests/browser/map.spec.ts`, `tests/browser/home.spec.ts` |
 | 표 식별자 줄바꿈과 연재 허브 표시 | `src/styles/body.css`, `src/components/NotePage.astro`, `src/components/NoteSidebar.astro` | `tests/browser/reader.spec.ts` |
-| 책장에서 책 결과를 고를 때 검색창 닫기와 필터 되돌리기 | `src/scripts/in-page-link.ts`, `src/scripts/search.ts`, `src/scripts/books.ts` | `tests/in-page-link.test.ts`, `tests/browser/search.spec.ts`, `tests/browser/books.spec.ts` |
+| 책장에서 책 결과를 고를 때 검색창 닫기와 필터 되돌리기 | `src/scripts/in-page-link.ts`, `src/scripts/search.ts`, `src/scripts/books.ts` | `tests/in-page-link.test.ts`, `tests/browser/books.spec.ts` |
 | 글자를 키웠을 때 책장 라벨 칸이 넓어지는 조건 | `src/pages/books/index.astro` | `tests/browser/books.spec.ts` |
 | 헤더가 두 줄로 나뉘는 경계와 고정 해제 | `src/styles/site.css` | `tests/browser/header.spec.ts` |
 | 첫 화면의 띠와 스크롤에 따라 짙어지는 헤더 판 | `src/styles/site.css`, `src/scripts/header.ts` | `tests/browser/header.spec.ts`(헤더 판만) |

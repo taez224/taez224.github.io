@@ -10,7 +10,8 @@ const read = (path: string) => readFileSync(join(root, path), 'utf8');
 // 규칙은 한 줄에 하나씩 적는 이 저장소의 방식을 따라 선택자로 찾는다.
 const width = (css: string, selector: string) => {
   const rule = css.split('\n').find((line) => line.trimStart().startsWith(`${selector} {`));
-  return Number(rule?.match(/width:\s*(\d+)px/)?.[1]);
+  // max-width나 min-width를 width로 잘못 잡지 않도록 속성 이름 앞에 경계를 둔다.
+  return Number(rule?.match(/(?:^|[;{\s])width:\s*(\d+)px/)?.[1]);
 };
 
 test('every icon grid is square and uses only set and empty cells', () => {
