@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures.ts';
+import { test, expect, BOTH_THEMES } from './fixtures.ts';
 import { PALETTE, DARK_PALETTE } from '../../src/lib/palette.ts';
 import { FEEDBACK_LABEL } from '../../src/lib/feedback.ts';
 
@@ -61,9 +61,9 @@ test('the footer reaches the bottom of the screen even on a short page', async (
 });
 
 // 바닥글 바탕은 호버 판과 같은 색이라, 같은 판을 쓰면 아이콘을 가리켜도 판이 보이지 않았다.
-test('a footer profile icon shows its hover plate against the footer', async ({ page, isMobile }, info) => {
+test('a footer profile icon shows its hover plate against the footer', { tag: BOTH_THEMES }, async ({ page, isMobile, systemDark }) => {
   test.skip(isMobile, '호버는 포인터를 올려 둘 수 있는 기기에서만 준다');
-  const line = info.project.use.colorScheme === 'dark' ? DARK_PALETTE.line : PALETTE.line;
+  const line = systemDark ? DARK_PALETTE.line : PALETTE.line;
   await page.goto('/books/');
   const icon = page.locator('.site-footer .contacts a').first();
   await icon.hover();

@@ -1,11 +1,10 @@
-import { test, expect, gotoWithDefaultFontSize } from './fixtures.ts';
+import { test, expect, gotoWithDefaultFontSize, BOTH_THEMES } from './fixtures.ts';
 import { PALETTE, DARK_PALETTE } from '../../src/lib/palette.ts';
 
 const rgb = (hex: string) => `rgb(${[1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16)).join(', ')})`;
 
 // 형광 표시의 글자색을 비워 두면 브라우저 기본값인 검정이 되어, 어두운 화면의 형광 위에서 2.49:1로 읽기 어려웠다.
-test('highlighted text keeps the ink color on the highlight in both themes', async ({ page }, info) => {
-  const dark = info.project.use.colorScheme === 'dark';
+test('highlighted text keeps the ink color on the highlight in both themes', { tag: BOTH_THEMES }, async ({ page, systemDark: dark }) => {
   await page.goto('/notes/browser-neighbor/');
   const mark = page.locator('.body mark').first();
   await expect(mark).toHaveText('형광으로 칠한 말');
@@ -159,7 +158,7 @@ test('keyboard footnote navigation returns to its reference without heading coll
 });
 
 // 강조할 때 누르는 원(14px)에 판을 깔았더니 이웃 제목을 4~5px 덮었다. 지도처럼 점 테두리만 바꾸고, 칠한 원은 제목에 닿지 않는다.
-test('a linked neighbor in the small graph changes its dot outline without covering its title', async ({ page }) => {
+test('a linked neighbor in the small graph changes its dot outline without covering its title', { tag: BOTH_THEMES }, async ({ page }) => {
   await page.goto('/notes/browser-start/');
   const node = page.locator('.local-graph a.node').first();
   const dotStroke = () => node.evaluate((a) => getComputedStyle(a.querySelectorAll('circle')[1]).stroke);
@@ -179,7 +178,7 @@ test('a linked neighbor in the small graph changes its dot outline without cover
 
 // 누르는 원(14px)이 투명한데도 점과 같은 종이색 테두리를 받아, 그 고리가 간선을 가로질러 점 앞에서 선이 끊겨 보였다.
 // 간선 끝을 떼는 종이색 테두리는 보이는 점에만 둔다.
-test('small graph edges reach each neighbor dot without a gap from the invisible hit circle', async ({ page }) => {
+test('small graph edges reach each neighbor dot without a gap from the invisible hit circle', { tag: BOTH_THEMES }, async ({ page }) => {
   await page.goto('/notes/browser-many/');
   const strokes = await page.locator('.local-graph a.node').evaluateAll((nodes) => nodes.map((a) => {
     const [hit, dot] = a.querySelectorAll('circle');

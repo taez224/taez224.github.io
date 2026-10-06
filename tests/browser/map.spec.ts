@@ -1,4 +1,4 @@
-import { test, expect, pressedBarGaps, textsOnRings } from './fixtures.ts';
+import { test, expect, pressedBarGaps, textsOnRings, BOTH_THEMES } from './fixtures.ts';
 
 type Page = import('@playwright/test').Page;
 type Arrow = 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight';
@@ -358,7 +358,7 @@ test('zooming the map grows node dots by the square root of the zoom and keeps l
 
 // 어두운 화면의 뒤 배경은 검정 반투명이다. 먹색이 밝아지므로 밝은 화면처럼 먹색을 섞으면 지도가 회색으로 뜬다.
 // 전역 스타일 블록에서 :global()로 감싼 선택자는 브라우저가 버려서 이 규칙이 통째로 빠진 적이 있다.
-test('the sheet backdrop darkens the map in the dark theme', async ({ page }) => {
+test('the sheet backdrop darkens the map in the dark theme', { tag: BOTH_THEMES }, async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('theme', 'dark'));
   await page.setViewportSize({ width: 900, height: 900 });
   await page.goto('/map/');
@@ -411,7 +411,7 @@ test('selecting a map node marks it as pressed', async ({ page, isMobile }) => {
 
 // 무대에 숨긴 설명(#map-keys)은 낭독기에만 닿는다. 눈으로 보는 키보드 사용자는 Space와 Enter가 다른 일을 한다는 것을 알 수 없다.
 // 늘 띄우면 마우스로 오는 대다수에게 쓰지 않는 글이 한 줄 남으므로, 키보드가 지도에 닿았을 때만 드러낸다.
-test('the map reveals its key hint to the keyboard and keeps it from the mouse', async ({ page, isMobile }) => {
+test('the map reveals its key hint to the keyboard and keeps it from the mouse', { tag: BOTH_THEMES }, async ({ page, isMobile }) => {
   test.skip(isMobile, '키로 오갈 수 있는 기기에서 볼 안내다');
   await page.goto('/map/');
   const hint = page.locator('.key-hint');
@@ -434,7 +434,7 @@ test('the map reveals its key hint to the keyboard and keeps it from the mouse',
 });
 
 // 키 안내와 확대 버튼이 모두 무대 아래쪽 12px에 놓여, 좁은 화면에서는 안내 끝을 버튼이 가렸다.
-test('the key hint stays clear of the zoom controls on a phone', async ({ page }) => {
+test('the key hint stays clear of the zoom controls on a phone', { tag: BOTH_THEMES }, async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/map/');
   const held = page.locator('.graph .node:focus-visible');

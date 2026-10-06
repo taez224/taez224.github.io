@@ -1,11 +1,9 @@
-import { test, expect, gotoBeforeModules } from './fixtures.ts';
+import { test, expect, gotoBeforeModules, BOTH_THEMES } from './fixtures.ts';
 import { PALETTE, DARK_PALETTE } from '../../src/lib/palette.ts';
 
 const rgb = (hex: string) => `rgb(${[1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16)).join(', ')})`;
-const systemDark = (info: { project: { use: { colorScheme?: string | null } } }) => info.project.use.colorScheme === 'dark';
 
-test('the first visit follows the system setting and the button remembers the reader choice', async ({ page }, info) => {
-  const dark = systemDark(info);
+test('the first visit follows the system setting and the button remembers the reader choice', { tag: BOTH_THEMES }, async ({ page, systemDark: dark }) => {
   await page.goto('/books/');
   await page.evaluate(() => localStorage.clear());
   await page.reload();
@@ -25,8 +23,7 @@ test('the first visit follows the system setting and the button remembers the re
 });
 
 // 버튼의 기호는 누르면 바뀔 화면이 아니라 지금 화면이다. 밝은 화면에서 해, 어두운 화면에서 달을 보인다.
-test('the theme button shows the icon of the current mode', async ({ page }, info) => {
-  const dark = systemDark(info);
+test('the theme button shows the icon of the current mode', { tag: BOTH_THEMES }, async ({ page, systemDark: dark }) => {
   await page.goto('/books/');
   await page.evaluate(() => localStorage.clear());
   await page.reload();
@@ -40,8 +37,7 @@ test('the theme button shows the icon of the current mode', async ({ page }, inf
 
 // 브라우저 UI 색 메타는 시스템 설정에 따라 하나가 뽑힌다. 시스템과 다른 화면을 고른 독자는 모듈 스크립트가 돌 때까지
 // 휴대폰 상단 색이 본문과 달랐다. 모듈 스크립트를 걷어 첫 페인트 전의 부트 스크립트만 돈 상태를 본다.
-test('the browser UI color follows the stored choice before the module script runs', async ({ page }, info) => {
-  const dark = systemDark(info);
+test('the browser UI color follows the stored choice before the module script runs', { tag: BOTH_THEMES }, async ({ page, systemDark: dark }) => {
   await page.addInitScript((theme) => localStorage.setItem('theme', theme), dark ? 'light' : 'dark');
   await gotoBeforeModules(page, '/books/');
   const paper = dark ? PALETTE.paper : DARK_PALETTE.paper;
@@ -49,8 +45,7 @@ test('the browser UI color follows the stored choice before the module script ru
   expect(colors, '두 메타가 고른 화면의 종이색이다').toEqual([paper, paper]);
 });
 
-test('a blocked storage falls back to the system setting instead of failing', async ({ page }, info) => {
-  const dark = systemDark(info);
+test('a blocked storage falls back to the system setting instead of failing', { tag: BOTH_THEMES }, async ({ page, systemDark: dark }) => {
   await page.addInitScript(() => {
     Object.defineProperty(window, 'localStorage', { get() { throw new Error('denied'); } });
   });
@@ -62,8 +57,7 @@ test('a blocked storage falls back to the system setting instead of failing', as
 // 스크립트가 없으면 data-theme이 붙지 않는다. 이때만 CSS의 미디어 쿼리가 시스템 설정을 따른다.
 test.describe('without scripts', () => {
   test.use({ javaScriptEnabled: false });
-  test('the page still follows the system setting', async ({ page }, info) => {
-    const dark = systemDark(info);
+  test('the page still follows the system setting', { tag: BOTH_THEMES }, async ({ page, systemDark: dark }) => {
     await page.goto('/books/');
     await expect(page.locator('html')).not.toHaveAttribute('data-theme', /.*/);
     await expect(page.locator('body')).toHaveCSS('background-color', rgb(dark ? DARK_PALETTE.paper : PALETTE.paper));
@@ -72,7 +66,7 @@ test.describe('without scripts', () => {
 });
 
 // 도표 모듈은 본문보다 늦게 올라온다. 그 전에 들어온 전환을 놓치면 본문만 색이 바뀌고 도표는 옛 색으로 남는다.
-test('a theme change that arrives before the diagram script still reaches the diagrams', async ({ page }, info) => {
+test('a theme change that arrives before the diagram script still reaches the diagrams', { tag: BOTH_THEMES }, async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop-light', '도표 렌더는 한 환경에서만 확인한다');
   const fills = () => [...document.querySelectorAll('.mermaid svg')].map((svg) => {
     const shape = svg.querySelector('rect, polygon, circle');

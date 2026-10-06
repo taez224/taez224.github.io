@@ -1,4 +1,4 @@
-import { test, expect, gotoWithDefaultFontSize } from './fixtures.ts';
+import { test, expect, gotoWithDefaultFontSize, BOTH_THEMES } from './fixtures.ts';
 
 type Page = import('@playwright/test').Page;
 
@@ -147,7 +147,7 @@ test('a wrapped end row keeps the feedback link at the right end with the two ta
 
 // 링크가 글 줄 안에 놓이는 자리(목차 아래, 지도의 끝 줄)에서는 포커스 윤곽선이 글자와 화살표의 상자를 따라 그려진다.
 // 화살표 상자가 줄 높이만큼 크면 글자 상자 위아래로 나가, 윤곽선이 화살표에서 한 단 튀어나온다.
-test('the arrow stays within the text box so the focus outline is one rectangle', async ({ page, isMobile }) => {
+test('the arrow stays within the text box so the focus outline is one rectangle', { tag: BOTH_THEMES }, async ({ page, isMobile }) => {
   test.skip(isMobile, '터치에서는 링크가 상자로 바뀌어 윤곽선이 그 상자를 따른다');
   for (const [width, path, selector] of [[1100, '/notes/browser-sections/', '.rail-feedback .feedback-link'], [900, '/map/', '.map-start-end .feedback-link']] as const) {
     await page.setViewportSize({ width, height: 800 });
