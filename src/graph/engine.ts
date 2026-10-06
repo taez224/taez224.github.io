@@ -10,9 +10,16 @@ import { createGraphGesture } from './gestures.ts';
 import { boxesOverlap, estimateTextWidth, labelIds, mustPlaceLabel, placeLabels, nodeBox, RING_GAP, ringedRadius } from './label.ts';
 import { topicRegions, regionPath, placeRegionLabels, regionLabelBox } from './regions.ts';
 import { heroFadeDefs } from './hero-fade.ts';
+import { nextInDirection } from './keyboard-nav.ts';
+import type { Direction } from './keyboard-nav.ts';
 
 const MIN_SCALE = 0.65;
 const MAX_SCALE = 3.2;
+// 키보드로 옮겨 간 노드가 무대 가장자리에 붙지 않도록 남기는 여백(화면 px). 노드 제목이 옆으로 놓여도 잘리지 않을 만큼이다.
+const KEYBOARD_VIEW_MARGIN = 48;
+// 확대·축소 조작 아래를 피할 때 조작의 가장자리(이미 둘레 8px가 포함된 값)에서 더 띄우는 간격이다.
+const CONTROL_CLEARANCE = 12;
+const ARROW_DIRECTIONS: Record<string, Direction> = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
 // 넓은 화면의 정적 그림(snapshot.ts)과 한 페이지에 있으므로 마스크 id를 나눈다.
 const HERO_FADE_LIVE_ID = 'hero-fade-live';
 const key = (s: string, t: string) => JSON.stringify([s, t]);
@@ -108,6 +115,14 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
   const state: GraphState = { selected: null, hovered: null, topics: null, hubsOnly: false, transform: { x: 0, y: 0, scale: 1 } };
   // 필터는 선택된 노드를 흐리지 않는다. 선택 + 필터는 "이 노드의 연결 중 이 주제"를 뜻한다.
   const outOfFilter = (id: string) => id !== state.selected && isFilteredOut(byId.get(id), state);
+  // 노드 모양(refreshNodeStates), 제목 후보(planLabels), 화살표 후보(moveByArrow)가 같은 흐림 규칙을 쓰도록 한곳에 둔다.
+  // 선택이 있으면 고른 노드와 이웃만 또렷하고, 없으면 필터에 걸린 노드만 흐려진다.
+  const selectedNeighbors = () => {
+    const neighbors = new Set<string>();
+    if (state.selected) for (const e of edges) { if (e.source === state.selected) neighbors.add(e.target); if (e.target === state.selected) neighbors.add(e.source); }
+    return neighbors;
+  };
+  const isDimmed = (id: string, neighbors: ReadonlySet<string> = selectedNeighbors()) => outOfFilter(id) || Boolean(state.selected && id !== state.selected && !neighbors.has(id));
   const minScale = () => Math.min(MIN_SCALE, fitTransform(positions, size()).scale);
   const gesture = createGraphGesture({ getMinScale: minScale, maxScale: MAX_SCALE });
   const listen = <K extends keyof SVGElementEventMap>(type: K, handler: (event: SVGElementEventMap[K]) => void, options?: AddEventListenerOptions) => svg.addEventListener(type, handler, options);
@@ -260,9 +275,8 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
       ? [...new Set([preview, ...nodes.filter((node) => node.type === 'hub' && !outOfFilter(node.id)).map((node) => node.id)])]
       : [...labelIds(nodes, edges, { selected: state.selected, hovered: null })];
     const scale = state.transform.scale || 1;
-    const neighbors = new Set();
-    if (state.selected) for (const e of edges) { if (e.source === state.selected) neighbors.add(e.target); if (e.target === state.selected) neighbors.add(e.source); }
-    const dimmed = (id: string) => outOfFilter(id) || Boolean(state.selected && id !== state.selected && !neighbors.has(id));
+    const neighbors = selectedNeighbors();
+    const dimmed = (id: string) => isDimmed(id, neighbors);
     // 흐려지지 않은 노드 원과 영역 이름, 무대 위 조작은 장애물이다. 제목이 그 위에 얹히지 않게.
     // 노드 원은 따로 넘긴다. 지도의 기본 제목은 빈자리가 없으면 노드 원 위에는 얹을 수 있지만 다른 글자 위에는 얹지 않는다.
     // 조작도 따로 넘긴다. 고른 제목은 영역 이름 위에는 얹을 수 있지만 조작 아래에는 두지 않는다.
@@ -340,25 +354,39 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
     // 호버·선택한 제목은 다른 제목의 테두리에 가리지 않게 맨 위로 올린다.
     for (const id of [state.selected, state.hovered]) { const text = id && labelLayer.querySelector(`[data-for="${CSS.escape(id)}"]`); if (text) labelLayer.append(text); }
   };
+  // 지도의 Tab 정지점은 기준 노드 하나뿐이다. 노드가 수십 개인 지도를 Tab으로 하나씩 지나가게 하지 않고, 안에서는 화살표로 옮긴다.
+  // 마지막으로 포커스한 노드가 우선이라 지도를 나갔다 돌아오면 있던 자리에서 이어진다. 그다음은 고른 노드,
+  // 없으면 입구 노드 가운데 화면 왼쪽 위에 가장 가까운 노드(입구가 모두 흐려졌으면 보이는 노드 전체에서)다.
+  let lastFocused: string | null = null;
+  const anchorId = (neighbors: ReadonlySet<string>) => {
+    if (lastFocused && nodeEls.has(lastFocused) && !isDimmed(lastFocused, neighbors)) return lastFocused;
+    if (state.selected && nodeEls.has(state.selected)) return state.selected;
+    const visible = nodes.filter((node) => positions.has(node.id) && !isDimmed(node.id, neighbors));
+    const entries = visible.filter((node) => node.isEntry);
+    const topLeft = (list: readonly GraphNode[]) => { let best: GraphNode | null = null, bestScore = Infinity; for (const node of list) { const p = positions.get(node.id)!, score = p.x + p.y; if (score < bestScore) { best = node; bestScore = score; } } return best?.id ?? null; };
+    return topLeft(entries.length ? entries : visible);
+  };
+  const refreshTabStops = (neighbors: ReadonlySet<string> = selectedNeighbors()) => {
+    const anchor = focusable ? anchorId(neighbors) : null;
+    // 흐려진 노드는 기준 노드가 될 수 없으므로 늘 -1이다. 남겨 두면 필터를 걸어도 보이지 않는 노드가 정지점이 된다.
+    for (const [id, g] of nodeEls) g.setAttribute('tabindex', id === anchor ? '0' : '-1');
+  };
   const refreshNodeStates = () => {
-    const neighbors = new Set();
-    if (state.selected) for (const e of edges) { if (e.source === state.selected) neighbors.add(e.target); if (e.target === state.selected) neighbors.add(e.source); }
+    const neighbors = selectedNeighbors();
     // 선택이 없을 때 호버는 예고편: 호버한 노드와 이웃만 또렷하고 나머지는 살짝 흐려진다.
     const previewId = !state.selected && mode === 'map' ? state.hovered : null;
     const previewNear = new Set();
     if (previewId) { previewNear.add(previewId); for (const e of edges) { if (e.source === previewId) previewNear.add(e.target); if (e.target === previewId) previewNear.add(e.source); } }
     for (const [id, g] of nodeEls) {
-      const topicOut = outOfFilter(id);
-      const dim = topicOut || (state.selected && id !== state.selected && !neighbors.has(id));
+      const dim = isDimmed(id, neighbors);
       g.classList.toggle('is-faint', Boolean(previewId && !previewNear.has(id)));
       g.classList.toggle('is-dim', Boolean(dim));
-      // 흐려진 노드는 탭 순서에서 뺀다. 남겨 두면 필터를 걸어도 보이지 않는 노드를 수십 번 지나가야 한다.
-      g.setAttribute('tabindex', focusable && !dim ? '0' : '-1');
       g.classList.toggle('is-selected', id === state.selected);
       g.classList.toggle('is-neighbor', neighbors.has(id));
       // 눌린 채로 남는 것은 지도의 선택뿐이다. 홈은 누르면 그 노트로 이동하므로 누름 상태를 말할 것이 없다.
       if (mode === 'map') g.setAttribute('aria-pressed', String(id === state.selected));
     }
+    refreshTabStops(neighbors);
   };
   const render = () => { drawEdges(); refreshNodeStates(); drawLabels(); };
 
@@ -380,13 +408,61 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
     if (!g) return;
     if (event.key === 'Enter') { event.preventDefault(); onOpen(g.dataset.id!); }
     if (event.key === ' ') { event.preventDefault(); onSelect(g.dataset.id!); }
+    const direction = ARROW_DIRECTIONS[event.key];
+    // 알트+화살표는 브라우저의 뒤로 가기라서 건드리지 않는다.
+    if (direction && mode === 'map' && focusable && !event.altKey && !event.ctrlKey && !event.metaKey) { event.preventDefault(); moveByArrow(g.dataset.id!, direction); }
   });
+  // 흐려지지 않은 노드 가운데 그 방향에서 가장 가까운 노드로 포커스를 옮긴다. 없으면 제자리에 둔다.
+  // 선택이 있으면 이웃이 아닌 노드가 흐려져 후보에서 빠지므로 화살표는 고른 노드와 이웃 사이만 오간다.
+  const moveByArrow = (fromId: string, direction: Direction) => {
+    const from = positions.get(fromId);
+    if (!from) return;
+    const neighbors = selectedNeighbors();
+    const candidates = nodes.filter((node) => node.id !== fromId && positions.has(node.id) && !isDimmed(node.id, neighbors)).map((node) => ({ id: node.id, ...positions.get(node.id)! }));
+    const next = nextInDirection(from, direction, candidates);
+    // 화면 밖 노드로 가도 브라우저가 페이지를 스크롤하지 않게 한다. 시점은 focusin이 옮긴다.
+    if (next) nodeEls.get(next)?.focus({ preventScroll: true });
+  };
+  // 키보드로 포커스한 노드가 무대 여백 밖이거나 확대·축소 조작 아래이면, 배율은 두고 그 노드가 들어오도록 최소한만 옮긴다.
+  const revealNode = (id: string) => {
+    const p = positions.get(id);
+    if (!p) return;
+    const { x, y, scale } = state.transform, { width, height } = size();
+    const sx = p.x * scale + x, sy = p.y * scale + y;
+    const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), Math.max(min, max));
+    const m = KEYBOARD_VIEW_MARGIN;
+    const insideStage = (px: number, py: number) => px >= m && px <= width - m && py >= m && py <= height - m;
+    let tx = clamp(sx, m, width - m), ty = clamp(sy, m, height - m);
+    const controls = reserved();
+    const under = (px: number, py: number) => controls.find((b) => px >= b.left && px <= b.right && py >= b.top && py <= b.bottom);
+    const covered = under(tx, ty);
+    if (covered) {
+      // 조작의 네 변 밖으로 나가는 자리 가운데 무대 여백 안이고 다른 조작과도 겹치지 않는 가장 가까운 자리로 간다. 없으면 여백만 지킨다.
+      const c = CONTROL_CLEARANCE;
+      const exits = [{ x: covered.left - c, y: ty }, { x: covered.right + c, y: ty }, { x: tx, y: covered.top - c }, { x: tx, y: covered.bottom + c }]
+        .filter((o) => insideStage(o.x, o.y) && !under(o.x, o.y))
+        .sort((a, b) => Math.hypot(a.x - sx, a.y - sy) - Math.hypot(b.x - sx, b.y - sy));
+      if (exits[0]) { tx = exits[0].x; ty = exits[0].y; }
+    }
+    if (Math.abs(tx - sx) < 0.5 && Math.abs(ty - sy) < 0.5) return;
+    animateTo({ scale, x: x + tx - sx, y: y + ty - sy });
+  };
   // 호버 예고편은 지도에만 있다. 홈에서 다시 그리면 같은 간선과 같은 상태를 만들려고 간선 전체를 버렸다가 새로 만든다.
   const hoverChanged = () => { if (mode === 'map' && !state.selected) { drawEdges(); refreshNodeStates(); } drawLabels(); };
   listen('pointerover', (event) => { const g = (event.target as Element).closest<SVGGElement>('.node'); const id = g ? g.dataset.id! : null; if (id !== state.hovered) { state.hovered = id; hoverChanged(); } });
   listen('pointerleave', () => { if (state.hovered) { state.hovered = null; hoverChanged(); } });
   if (mode === 'map') listen('wheel', (event) => { event.preventDefault(); api.zoom(event.deltaY < 0 ? 1.12 : 1 / 1.12, point(event)); }, { passive: false });
-  listen('focusin', (event) => { const g = (event.target as Element).closest<SVGGElement>('.node'); if (g) { state.hovered = g.dataset.id!; hoverChanged(); } });
+  listen('focusin', (event) => {
+    const g = (event.target as Element).closest<SVGGElement>('.node');
+    if (!g) return;
+    const id = g.dataset.id!;
+    state.hovered = id;
+    lastFocused = id;
+    refreshTabStops();
+    // 시점 이동은 키보드로 닿았을 때만 한다. 마우스로 누른 노드는 이미 눈에 보이는 자리에 있어 움직이면 클릭이 어긋난다.
+    if (mode === 'map' && focusable && g.matches(':focus-visible')) revealNode(id);
+    hoverChanged();
+  });
   listen('focusout', () => { state.hovered = null; hoverChanged(); });
 
   const api = {

@@ -1,24 +1,59 @@
 import { test, expect, pressedBarGaps, textsOnRings } from './fixtures.ts';
 
-// 흐려진 노드는 화면에서 22%로 남고 포커스 링도 함께 흐려진다. 탭 순서에 두면 보이지 않는 대상을 수십 번 지나가게 된다.
-test('selecting a node takes the dimmed nodes out of the tab order', async ({ page, isMobile }) => {
+type Page = import('@playwright/test').Page;
+type Arrow = 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight';
+
+// 지도 노드의 점 중심(화면 좌표)과 흐림 여부. 방향 판정은 배치 좌표로 하지만 화면 좌표와 방향이 같으므로 화면에서 잰다.
+const nodeDots = (page: Page) => page.evaluate(() => Object.fromEntries([...document.querySelectorAll<SVGGElement>('.graph .node')].map((node) => {
+  const box = node.querySelector('.dot')!.getBoundingClientRect();
+  return [node.dataset.id!, { x: box.x + box.width / 2, y: box.y + box.height / 2, dim: node.classList.contains('is-dim') }];
+})));
+const focusedNodeId = (page: Page) => page.locator('.graph .node:focus').getAttribute('data-id');
+// 범례의 마지막 버튼에서 Tab 한 번에 노드에 닿아야 한다. 무대 <svg>가 그 사이에 멈추면 보이지 않는 정지점이 하나 더 생긴다.
+async function tabIntoMap(page: Page) {
+  await page.locator('.legend button').last().focus();
+  await page.keyboard.press('Tab');
+  await expect(page.locator('.graph .node:focus')).toHaveCount(1);
+}
+// 방향마다 진행 거리가 0보다 큰 쪽이 그 방향의 반평면이다.
+const progress: Record<Arrow, (from: { x: number; y: number }, to: { x: number; y: number }) => number> = {
+  ArrowRight: (from, to) => to.x - from.x,
+  ArrowLeft: (from, to) => from.x - to.x,
+  ArrowDown: (from, to) => to.y - from.y,
+  ArrowUp: (from, to) => from.y - to.y
+};
+
+// 흐려진 노드는 화면에서 22%로 남고 포커스 링도 함께 흐려진다. Tab 정지점이나 화살표 후보에 두면 보이지 않는 대상에 포커스가 간다.
+test('selecting a node leaves one tab stop and keeps the dimmed nodes out of the arrow targets', async ({ page, isMobile }) => {
   await page.goto('/map/');
   const target = page.getByRole('button', { name: '이웃 많은 노트', exact: true });
   await expect(target).toHaveCount(1);
   if (isMobile) await target.tap(); else await target.click();
   await expect(page.locator('.graph .node.is-dim').first()).toBeVisible();
-  const tabbable = await page.locator('.graph .node').evaluateAll((nodes) => ({
+  const stops = await page.locator('.graph .node').evaluateAll((nodes) => ({
     dim: nodes.filter((node) => node.classList.contains('is-dim')).length,
-    dimTabbable: nodes.filter((node) => node.classList.contains('is-dim') && node.getAttribute('tabindex') === '0').length,
-    litTabbable: nodes.filter((node) => !node.classList.contains('is-dim') && node.getAttribute('tabindex') === '0').length
+    dimStops: nodes.filter((node) => node.classList.contains('is-dim') && node.getAttribute('tabindex') === '0').length,
+    stops: nodes.filter((node) => node.getAttribute('tabindex') === '0').length
   }));
-  expect(tabbable.dim).toBeGreaterThan(0);
-  expect(tabbable.dimTabbable).toBe(0);
-  expect(tabbable.litTabbable).toBeGreaterThan(0);
+  expect(stops.dim).toBeGreaterThan(0);
+  expect(stops.dimStops).toBe(0);
+  expect(stops.stops).toBe(1);
+  // 키보드가 없는 기기에서는 정지점만 본다. 화살표는 데스크톱에서 누른다.
+  if (isMobile) return;
+  await target.focus();
+  let moved = 0;
+  for (const key of ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowRight', 'ArrowDown', 'ArrowLeft'] as const) {
+    const before = await focusedNodeId(page);
+    await page.keyboard.press(key);
+    const after = await focusedNodeId(page);
+    if (after !== before) moved += 1;
+    expect(await page.locator('.graph .node:focus').evaluate((node) => node.classList.contains('is-dim')), '화살표로 닿은 노드는 흐려지지 않았다').toBe(false);
+  }
+  expect(moved, '화살표가 이웃으로는 옮겨 간다').toBeGreaterThan(0);
 });
 
-// 선택을 풀면 모든 노드가 다시 탭 순서로 돌아와야 한다. 한 번 뺀 뒤 되돌리지 않으면 지도가 키보드로 닫힌다.
-test('clearing the selection puts every node back in the tab order', async ({ page, isMobile }) => {
+// 선택을 풀면 흐려진 노드가 없어야 하고 Tab 정지점은 늘 하나다. 정지점이 둘이 되면 지도를 지나가는 Tab이 다시 늘어난다.
+test('clearing the selection leaves no dimmed node and still one tab stop', async ({ page, isMobile }) => {
   await page.goto('/map/');
   const target = page.getByRole('button', { name: '이웃 많은 노트', exact: true });
   if (isMobile) await target.tap(); else await target.click();
@@ -27,8 +62,127 @@ test('clearing the selection puts every node back in the tab order', async ({ pa
   await page.keyboard.press('Escape');
   if (isMobile) await page.keyboard.press('Escape');
   await expect(page.locator('.graph .node.is-dim')).toHaveCount(0);
+  await expect(page.locator('.graph .node[tabindex="0"]')).toHaveCount(1);
+});
+
+// 지도는 노드의 Tab 정지점이 하나라 범례를 지나면 노드 하나, 다음은 확대 조작이다. 노드를 하나씩 지나가면 수십 번을 눌러야 한다.
+test('tab enters the map at one node and leaves it for the zoom controls', async ({ page, isMobile }) => {
+  test.skip(isMobile, '키로 오갈 수 있는 기기에서 볼 순서다');
+  await page.goto('/map/');
+  await expect(page.locator('.graph .node').first()).toBeAttached();
+  await tabIntoMap(page);
+  const entered = await focusedNodeId(page);
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('button', { name: '축소', exact: true })).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(page.locator('.graph .node:focus')).toHaveCount(1);
+  expect(await focusedNodeId(page), '돌아오면 들어갔던 노드다').toBe(entered);
+});
+
+// 화살표는 그 방향 반평면에서 가까운 노드로 포커스를 옮기고 페이지를 스크롤하지 않는다. 방향에 노드가 없으면 제자리에 둔다.
+test('arrow keys move the focus toward that side without scrolling the page', async ({ page, isMobile }) => {
+  test.skip(isMobile, '키로 오갈 수 있는 기기에서 누르는 키다');
+  await page.goto('/map/');
+  await expect(page.locator('.graph .node').first()).toBeAttached();
+  await tabIntoMap(page);
+  const scrollY = await page.evaluate(() => window.scrollY);
+  const keys: Arrow[] = ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowUp'];
+  let moved = 0;
+  for (const key of keys) {
+    const dots = await nodeDots(page);
+    const from = (await focusedNodeId(page))!;
+    const ahead = Object.entries(dots).filter(([id, dot]) => id !== from && !dot.dim && progress[key](dots[from], dot) > 0);
+    await page.keyboard.press(key);
+    const to = (await focusedNodeId(page))!;
+    if (ahead.length === 0) {
+      expect(to, `${key} 쪽에 노드가 없으면 제자리다`).toBe(from);
+    } else {
+      expect(to, `${key} 쪽에 노드가 있으면 옮겨 간다`).not.toBe(from);
+      expect(progress[key](dots[from], dots[to]), `${key}로 닿은 노드는 그 방향에 있다`).toBeGreaterThan(0);
+      moved += 1;
+    }
+    expect(await page.evaluate(() => window.scrollY), '페이지는 스크롤되지 않는다').toBe(scrollY);
+  }
+  expect(moved).toBeGreaterThan(2);
+  // 한 방향으로 계속 가면 매번 그 방향으로 나아가므로 끝에서 멈춘다(반대편으로 돌아가지 않는다).
   const total = await page.locator('.graph .node').count();
-  expect(await page.locator('.graph .node[tabindex="0"]').count()).toBe(total);
+  let last = await focusedNodeId(page);
+  for (let step = 0; step <= total; step += 1) {
+    await page.keyboard.press('ArrowLeft');
+    const now = await focusedNodeId(page);
+    if (now === last) break;
+    last = now;
+    expect(step, '왼쪽 끝에서 멈춘다').toBeLessThan(total);
+  }
+});
+
+// 노드를 고르면 이웃이 아닌 노드가 흐려지므로, 화살표는 고른 노드와 이웃 사이만 오간다.
+test('after selecting with Space, arrow keys only reach the selected node and its neighbors', async ({ page, isMobile }) => {
+  test.skip(isMobile, '키로 오갈 수 있는 기기에서 누르는 키다');
+  await page.goto('/map/');
+  const target = page.getByRole('button', { name: '이웃 많은 노트', exact: true });
+  await expect(target).toHaveCount(1);
+  await target.focus();
+  await page.keyboard.press(' ');
+  await expect(target).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.graph .node.is-dim').first()).toBeVisible();
+  const keys: Arrow[] = ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp'];
+  let moved = 0;
+  let last = await focusedNodeId(page);
+  for (const key of keys) {
+    await page.keyboard.press(key);
+    const now = await focusedNodeId(page);
+    if (now !== last) moved += 1;
+    last = now;
+    const near = await page.locator('.graph .node:focus').evaluate((node) => node.classList.contains('is-selected') || node.classList.contains('is-neighbor'));
+    expect(near, '화살표로 닿은 노드는 고른 노드이거나 그 이웃이다').toBe(true);
+  }
+  expect(moved).toBeGreaterThan(2);
+});
+
+// 최대로 확대하면 대부분의 노드가 지도 상자 밖이다. 화살표로 닿은 노드로 시점이 따라가야 포커스가 보이지 않는 곳에 가지 않는다.
+test('arrow keys keep the focused node inside the map box at the maximum zoom', async ({ page, isMobile }) => {
+  test.skip(isMobile, '키로 오갈 수 있는 기기에서 누르는 키다');
+  // 움직임 줄이기에서는 시점을 바로 옮기므로 애니메이션을 기다리지 않아도 된다.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/map/');
+  const zoom = page.getByRole('button', { name: '확대', exact: true });
+  const scale = async () => Number(/scale\(([\d.]+)\)/.exec((await page.locator('[data-map] > g').getAttribute('transform'))!)![1]);
+  for (let i = 0; i < 12; i += 1) await zoom.click();
+  const zoomed = await scale();
+  await zoom.click();
+  await expect.poll(scale, '더 확대되지 않는 최대 배율이다').toBe(zoomed);
+  const inside = async () => page.evaluate(() => {
+    const box = document.querySelector('.graph-box')!.getBoundingClientRect();
+    const dot = document.querySelector('.graph .node:focus .dot')!.getBoundingClientRect();
+    const x = dot.x + dot.width / 2, y = dot.y + dot.height / 2;
+    return x >= box.left && x <= box.right && y >= box.top && y <= box.bottom;
+  });
+  await tabIntoMap(page);
+  expect(await inside(), '처음 닿은 노드가 지도 상자 안이다').toBe(true);
+  const keys: Arrow[] = ['ArrowRight', 'ArrowRight', 'ArrowDown', 'ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowDown', 'ArrowRight', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'ArrowDown'];
+  for (const key of keys) {
+    await page.keyboard.press(key);
+    expect(await inside(), `${key} 뒤에도 포커스한 노드가 지도 상자 안이다`).toBe(true);
+  }
+});
+
+// 알트+화살표는 브라우저의 뒤로 가기·앞으로 가기다. 지도가 가로채면 키보드 사용자가 지도에서 돌아갈 수 없다.
+test('alt and arrow keys are left to the browser', async ({ page, isMobile }) => {
+  test.skip(isMobile, '키로 오갈 수 있는 기기에서 누르는 키다');
+  await page.goto('/map/');
+  await expect(page.locator('.graph .node').first()).toBeAttached();
+  await tabIntoMap(page);
+  const from = await focusedNodeId(page);
+  // svg의 처리기가 끝난 뒤 문서까지 올라온 화살표 입력이 기본 동작을 막았는지 기록한다. Alt 키 자체의 입력은 거른다.
+  await page.evaluate(() => {
+    (window as unknown as { prevented: boolean[] }).prevented = [];
+    document.addEventListener('keydown', (event) => { if (event.key.startsWith('Arrow')) (window as unknown as { prevented: boolean[] }).prevented.push(event.defaultPrevented); });
+  });
+  await page.keyboard.press('Alt+ArrowLeft');
+  await page.keyboard.press('Alt+ArrowRight');
+  expect(await focusedNodeId(page), '알트와 함께는 포커스를 옮기지 않는다').toBe(from);
+  expect(await page.evaluate(() => (window as unknown as { prevented: boolean[] }).prevented)).toEqual([false, false]);
 });
 
 // 필터를 눌러 달라진 결과는 제목 옆 한 줄이 전한다. 이 줄이 생중계 영역이 아니면 화면을 보지 않는 사람은 무슨 일이 일어났는지 알 수 없다.
@@ -52,14 +206,15 @@ test('the decorative graph layers stay out of the accessibility tree', async ({ 
   for (const [name, value] of hidden) expect(value, `${name} 층`).toBe('true');
 });
 
-// 노드는 버튼으로 읽히는데 Space와 Enter가 다른 일을 한다. 버튼의 약속과 다르므로 화면에 설명이 있어야 한다.
-test('the map explains its two keys and names its hubs', async ({ page }) => {
+// 노드는 버튼으로 읽히는데 Space와 Enter가 다른 일을 하고, 노드 사이는 화살표로 옮긴다. 버튼의 약속과 다르므로 설명이 있어야 한다.
+test('the map explains its keys and names its hubs', async ({ page }) => {
   await page.goto('/map/');
   const described = await page.locator('[data-map]').getAttribute('aria-describedby');
   expect(described).toBeTruthy();
   const hint = await page.locator(`#${described}`).textContent();
   expect(hint).toMatch(/Enter/);
   expect(hint).toMatch(/Space/);
+  expect(hint).toMatch(/화살표/);
   // 허브는 링으로만 표시해서 화면을 보지 않으면 다른 노드와 구분되지 않는다.
   const hub = page.getByRole('button', { name: /시작 노트/ });
   await expect(hub).toHaveCount(1);
@@ -266,12 +421,14 @@ test('the map reveals its key hint to the keyboard and keeps it from the mouse',
   await page.locator('.graph .node').first().click({ force: true });
   await expect(page.locator('.graph .node:focus')).toHaveCount(1);
   await expect(hint).toHaveCSS('opacity', '0');
-  // 고른 노드를 풀어야 흐려진 노드가 탭 순서로 돌아온다.
+  // 고른 노드를 풀어 지도 전체를 Tab 순서로 돌려놓는다. 정지점이 하나라 범례 다음 Tab이 곧 노드다.
   await page.keyboard.press('Escape');
   await page.locator('.legend button').last().focus();
   for (let step = 0; step < 6 && (await held.count()) === 0; step += 1) await page.keyboard.press('Tab');
   await expect(held).toHaveCount(1);
   await expect(hint).toHaveCSS('opacity', '1');
+  // 안내 줄에는 화살표로 옮길 수 있다는 말이 있다. 문구 전체는 비교하지 않는다.
+  await expect(hint).toContainText('화살표');
   // 숨긴 설명은 그대로 남는다. 보이는 안내는 그 말을 눈으로도 볼 수 있게 할 뿐이다.
   await expect(page.locator('#map-keys')).toHaveCount(1);
 });
