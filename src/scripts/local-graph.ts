@@ -4,6 +4,16 @@ export {};
 // 터치 기기는 탭한 요소에 mouseenter만 오고 mouseleave가 오지 않아 강조가 남으므로, 호버할 수 있을 때만 마우스로 잇는다.
 const graph = document.querySelector('.local-graph');
 if (graph) {
+  const svg = graph.querySelector<SVGSVGElement>('svg');
+  if (svg) {
+    // SVG가 310px보다 좁아지면 r의 px도 함께 줄어든다. 화면의 22px 반지름을 SVG 좌표로 환산한다.
+    const sizeHit = () => {
+      const scale = svg.getScreenCTM()?.a;
+      if (scale && scale > 0) svg.style.setProperty('--local-hit-radius', `${22 / scale}px`);
+    };
+    sizeHit();
+    new ResizeObserver(sizeHit).observe(svg);
+  }
   const rows = [...document.querySelectorAll<HTMLAnchorElement>('.note-side .side-list a')];
   const canHover = matchMedia('(hover: hover)').matches;
   for (const node of graph.querySelectorAll<SVGAElement>('a.node')) {

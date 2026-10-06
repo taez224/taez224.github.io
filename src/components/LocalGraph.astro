@@ -62,7 +62,7 @@ const lines = (edge: { x1: number; y1: number; x2: number; y2: number; direction
   .node .hit { stroke: none; }
   /* 손가락은 지름 28px 점을 정확히 누르기 어렵다. 손가락 기기에서만 44px로 넓힌다. 이웃 사이 간격과 가운데 노드까지의 거리가
      이보다 멀어 다른 노드에 닿지 않는다. r 속성을 읽지 못하는 브라우저는 28px로 남는다. */
-  @media (pointer: coarse) { .node circle.hit { r: 22px; } }
+  @media (pointer: coarse) { .node circle.hit { r: var(--local-hit-radius, 22px); } }
   .node .ring { fill: none; stroke: var(--accent); stroke-width: 1.2; stroke-opacity: .65; }
   /* 작은 그래프의 이름은 SVG 좌표 안에서 px 기준으로 배치하므로 역할 토큰(rem)을 쓰지 않는다. */
   .node text { font-family: var(--sans); font-size: 11px; fill: var(--ink); paint-order: stroke; stroke: var(--paper); stroke-width: 3.5px; stroke-linejoin: round; }
