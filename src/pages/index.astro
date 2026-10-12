@@ -5,7 +5,7 @@ import { getEntry } from 'astro:content';
 import '../styles/graph.css';
 import About from '../components/About.astro';
 import { getGarden } from '../lib/get-garden.ts';
-import { formatDate, withBase, firstSentence, inlineJson, topicColor } from '../lib/format.ts';
+import { formatDate, withBase, inlineJson, topicColor } from '../lib/format.ts';
 import { inlineGraph } from '../lib/graph-data.ts';
 import { parentLink } from '../lib/note-nav.ts';
 import { latestSeries } from '../lib/blog.ts';
@@ -79,7 +79,7 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
     </div>
     <div class:list={['featured-content', { 'has-thumbnail': seriesThumbnail }]}>
       <div class="series-copy"><h3><a href={seriesUrl}>{series.title}</a></h3>
-        {series.summary && <p>{firstSentence(series.summary)}</p>}
+        {series.summary && <p>{series.summary}</p>}
       </div>
       {seriesThumbnail && <a class:list={['featured-image', { 'is-soft': softSeriesThumbnail }]} href={seriesUrl} aria-label={series.title}>
         <Image src={seriesThumbnail} alt="" width={560} widths={[280, 560, 840]} sizes="(max-width: 460px) calc(100vw - 40px), (max-width: 720px) 420px, (max-width: 1000px) 200px, 280px" format="webp" loading="lazy" decoding="async" />
@@ -168,6 +168,8 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
   /* 최근 연재 제목은 목록 제목 크기로 두어 대표 글보다 낮은 위계에 둔다. */
   .latest-series h3 { margin: 0; font-size: var(--t-list); font-weight: 600; line-height: 1.45; }
   .latest-series p { margin: 10px 0 0; color: var(--muted); line-height: 1.7; }
+  /* 연재 요약은 글 목록처럼 전체를 쓰고 세 줄까지 보인다. 메타 줄도 p라 .series-copy로 좁힌다. */
+  .series-copy p { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
   .home-section:last-child { padding-bottom: 96px; }
   @media (min-width: 721px) and (max-width: 1000px) {
     .home-section { grid-template-columns: 100px minmax(0, 1fr); gap: 28px; }
