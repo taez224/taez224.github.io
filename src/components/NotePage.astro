@@ -154,7 +154,7 @@ const feedbackPath = articleMeta(note).path;
     /* 글 끝에서는 고정된 버튼이 바닥글 위에 놓인다. 바닥글이 버튼의 왼쪽 끝에서 20px 앞까지만 쓰게 오른쪽을 비운다.
        비우지 않으면 320px에서는 마지막 링크가, 바닥글이 한 줄이 되는 721px부터는 오른쪽 끝의 링크가 버튼에 가려 누를 수 없다. */
     body:has(.toc-button) .site-footer .wrap { padding-right: calc(80px - var(--s-page-gutter)); }
-    .toc-button :global(svg) { display: block; width: 16px; height: 16px; }
+    .toc-button svg { display: block; width: 16px; height: 16px; }
     /* 막대는 읽은 정도를 대략 알린다. 숫자를 적지 않는 것은 초반·중간·끝 가운데 어디인지만 알면 되기 때문이다. */
     .toc-progress { position: absolute; right: 0; bottom: 0; left: 0; height: 3px; background: var(--line); }
     .toc-progress::after { position: absolute; inset: 0; background: var(--ink); transform: scaleX(var(--progress, 0)); transform-origin: left; content: ""; }
