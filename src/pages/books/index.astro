@@ -49,7 +49,7 @@ const filters = statusFilters(books);
   .books-page .ledger-head h2.unrated { font-size: var(--t-ledger-word); line-height: 1.4; white-space: nowrap; }
   .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px 40px; }
   @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
-  @media (max-width: 480px) { .page-head { gap: 12px; } .book-source { font-size: var(--t-micro); } }
+  @media (max-width: 480px) { .page-head { gap: 12px; } .book-source { font-size: var(--t-meta); } }
   /* 출처 링크는 페이지 끝에 홀로 있어 아래로 넓힐 자리가 있다. 인라인 링크라 위아래 안쪽 여백은 줄 높이를 바꾸지 않고 누르는 영역만 넓힌다. */
   @media (pointer: coarse) { .status-filter button { min-height: 44px; } .book-source a { padding-block: 15px; } }
 </style>

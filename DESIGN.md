@@ -50,7 +50,7 @@ typography:
     letterSpacing: -0.02em
   featured:
     fontFamily: Gowun Batang
-    fontSize: 34px
+    fontSize: 32px
     fontWeight: 700
     lineHeight: 1.3
     letterSpacing: -0.02em
@@ -104,7 +104,7 @@ typography:
     letterSpacing: -0.02em
   lead:
     fontFamily: Gowun Batang
-    fontSize: 18.5px
+    fontSize: 18px
     fontWeight: 400
     lineHeight: 1.65
     letterSpacing: -0.01em
@@ -221,11 +221,6 @@ typography:
     fontSize: 13px
     fontWeight: 400
     lineHeight: 1.6
-  micro:
-    fontFamily: Pretendard Variable
-    fontSize: 12px
-    fontWeight: 400
-    lineHeight: 1.5
   callout-title:
     fontFamily: Pretendard Variable
     fontSize: 13px
@@ -455,7 +450,7 @@ TaeZ's Thinking Garden은 소프트웨어 엔지니어 TaeZ의 개인 사이트�
 
 **먹 한 가지 규칙.** 글자, 링크, 버튼, 선택 표시, 포커스 윤곽선은 모두 먹색이다. 링크는 파랑으로 칠하지 않고 밑줄로 구분한다. 색을 쓰는 곳은 주제(지도·태그 점·목차 위치)와 상태(경고·버그·형광)뿐이다.
 
-**보조색 한 단계 규칙.** 보조 글자색은 `muted` 하나다. 종이색 위에서 4.5:1을 지키는 가장 옅은 회색이 `muted`와 거의 같아서, 개수나 단축키처럼 더 낮은 위계는 색을 옅게 하지 않고 글자 크기로 나눈다.
+**보조색 한 단계 규칙.** 보조 글자색은 `muted` 하나다. 종이색 위에서 4.5:1을 지키는 가장 옅은 회색이 `muted`와 거의 같아서, 개수나 단축키처럼 더 낮은 위계도 색을 옅게 하지 않는다. 크기도 메타 줄과 같은 `meta`로 두고 놓인 자리로 구분한다. 메타보다 1px 작은 단계를 두었더니 화면에서 구분되지 않으면서 쓰는 크기만 늘었다.
 
 ### 역할 색
 
@@ -505,7 +500,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 - **제목:** `title`(글 제목), `hero`(홈 소개), `featured`(대표 글), `page`(목록 페이지), `section`(홈 절·지도 패널), `ledger` 계열(장부 라벨), `wordmark`(헤더 이름), 본문의 `h2`~`h4`.
 - **읽는 글자:** `body`(본문), `lead`(제목 아래 요약, 요약·인용 콜아웃), `summary`(목록 요약, 콜아웃, 각주).
-- **조작과 보조:** `list`·`list-small`(목록 제목, 책·글 카드 제목), `ui`(내비·버튼·검색 결과·표), `side`(사이드바·코드), `meta`, `micro`(단축키·출처).
+- **조작과 보조:** `list`·`list-small`(목록 제목, 책·글 카드 제목), `ui`(내비·버튼·검색 결과·표), `side`(사이드바·코드), `meta`(메타 줄·개수·단축키·출처).
 
 모바일에서는 제목 단계를 함께 줄여, 페이지 제목과 장부 라벨처럼 이웃한 단계가 같은 크기로 겹치지 않게 한다. 본문의 `h2`와 `h3`는 줄이지 않는다. 글 제목이 줄어든 뒤에도 글 제목·`h2`·`h3`·본문이 약 1.24배씩 고르게 내려가고, 더 줄이면 `h3`가 본문 속 굵은 글자보다 약해 보인다. 본문 제목과 글 목록의 제목은 두 줄이 될 때 줄 길이를 맞춰, 한 어절이나 끝 문장부호만 다음 줄로 넘어가지 않게 한다. 본문 줄 간격은 모바일에서 1.75로 좁힌다. 한 줄이 짧으면 눈이 다음 줄을 쉽게 찾아 넓은 줄 간격이 덜 필요하고, 한 화면에 한 줄을 더 담는다.
 
