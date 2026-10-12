@@ -202,6 +202,24 @@ export const ICON_GRIDS = {
     '..............',
     '..............'
   ],
+  // 물뿌리개의 둘째 장면. 행에 마우스를 올리거나 키보드로 들어오면 주둥이 아래로 물방울이 흩어진다.
+  // 몸통은 첫 장면과 같고 물방울만 더했다. 한 줄로 떨어뜨리면 점선처럼 읽혀, 주둥이 기울기를 따라 퍼지게 두었다.
+  tendedPour: [
+    '..............',
+    '..............',
+    '.....#####....',
+    '##..#.....#...',
+    '.##.#######.##',
+    '..#########..#',
+    '#..########..#',
+    '....#######.##',
+    '.#..#######...',
+    '....#######...',
+    '#...#######...',
+    '..#...........',
+    '..............',
+    '..............'
+  ],
   // 한 열 화면의 목차 버튼. 줄 길이를 달리해 글의 차례로 읽히게 했다.
   contents: [
     '................',
@@ -224,7 +242,14 @@ export const ICON_GRIDS = {
 } as const;
 
 // 면으로 칠한 SVG를 만든다. 선으로 그리면 끝 처리와 굵기 때문에 칸 경계가 흐려져 격자가 사라진다.
-export function pixelIcon(name: keyof typeof ICON_GRIDS): string {
+// 둘째 장면을 주면 같은 SVG에 두 경로를 겹쳐 그린다(frame-1, frame-2). 어느 장면을 보일지는 쓰는 자리의 CSS가 정한다.
+// 두 장면의 칸 수가 다르면 한 칸이 1px이라는 전제가 한쪽에서 깨지므로 빌드를 멈춘다.
+export function pixelIcon(name: keyof typeof ICON_GRIDS, next?: keyof typeof ICON_GRIDS): string {
   const grid = ICON_GRIDS[name];
-  return `<svg width="${grid.length}" height="${grid.length}" viewBox="0 0 ${grid.length} ${grid.length}" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true"><path d="${markPath(grid)}"></path></svg>`;
+  const paths = next === undefined ? `<path d="${markPath(grid)}"></path>` : (() => {
+    const second = ICON_GRIDS[next];
+    if (second.length !== grid.length) throw new Error(`${name}과 ${next}의 칸 수가 다르다`);
+    return `<path class="frame-1" d="${markPath(grid)}"></path><path class="frame-2" d="${markPath(second)}"></path>`;
+  })();
+  return `<svg width="${grid.length}" height="${grid.length}" viewBox="0 0 ${grid.length} ${grid.length}" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true">${paths}</svg>`;
 }
