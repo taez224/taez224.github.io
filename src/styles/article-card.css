@@ -9,7 +9,8 @@
 .body .article-card-copy { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .body .article-card-publication { font-size: var(--t-meta); line-height: 1.5; color: var(--muted); }
 .body .article-card-title { font-size: var(--t-list); line-height: 1.45; font-weight: 600; }
-.body .article-card-summary { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; color: var(--muted); font-size: var(--t-side); line-height: 1.7; }
+/* 대상 글의 요약은 글 목록처럼 전체를 쓰고 세 줄까지 보인다. 연결 설명을 적었으면 그 설명이 대신 들어간다. */
+.body .article-card-summary { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; color: var(--muted); font-size: var(--t-side); line-height: 1.7; }
 @media (hover: hover) { .body .article-card-link:hover { border-color: var(--accent); background: var(--accent-soft); } }
 @media (max-width: 720px) {
   .body .article-card-link { gap: 16px; padding: 14px; }

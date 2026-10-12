@@ -18,6 +18,8 @@ const manyTitles = ['AI 시대의 판단력은 맥락을 실행 기준으로 바
   '에이전트 지침은 승인 경계와 능력 보완 절차를 구분해야 한다', 'AI와의 스파링으로 내 생각을 끌어내고 다듬는다'];
 
 // vault 안의 경로와 파일 내용이다.
+// 둘째 문장이 길어 어느 폭에서도 세 줄을 넘는 요약. 목록·카드·홈 연재가 첫 문장으로 자르지 않고 줄 수로 자르는지 본다.
+export const LONG_SUMMARY = `첫 문장은 질문으로 시작하는가? ${'둘째 문장은 글이 다루는 범위를 구체적으로 설명하면서 길게 이어진다. '.repeat(6).trim()}`;
 export const BROWSER_NOTES: Record<string, string> = {
   '30_Resources/Development/Concepts/소개 단락.md': `---
 title: 소개 단락
@@ -188,12 +190,13 @@ tags:
 ---
 # ${title}
 `])),
-  // 연재 허브와 개별 편의 연결 표시, 목차 뒤 시작 카드 간격을 함께 확인한다.
+  // 연재 허브와 개별 편의 연결 표시, 목차 뒤 시작 카드 간격을 함께 확인한다. 편에 발행일이 있어야 홈 최근 연재에 오른다.
   '20_Projects/blog/visual-series.md': `---
 title: 화면 검사 연재
 type: series
 created: 2026-09-01
 slug: browser-series
+summary: ${LONG_SUMMARY}
 ---
 # 화면 검사 연재
 
@@ -209,6 +212,7 @@ slug: browser-series
 title: 화면 검사 첫 편
 status: published
 created: 2026-09-01
+published: 2026-09-01
 slug: browser-series-part
 series: 화면 검사 연재
 series_order: 1
@@ -235,7 +239,24 @@ slug: browser-long-toc
 ---
 # 절이 많은 글
 
-${Array.from({ length: 12 }, (_, index) => `## ${index + 1}번 절\n\n${`${index + 1}번 절의 본문 문단이다.\n\n`.repeat(30)}`).join('')}`
+${Array.from({ length: 12 }, (_, index) => `## ${index + 1}번 절\n\n${`${index + 1}번 절의 본문 문단이다.\n\n`.repeat(30)}`).join('')}
+> [!article]
+> [[summary-card]]
+`,
+  // 요약이 두 문장이고 세 줄을 넘는 글. 글 목록과 연결 설명 없는 글 카드에서 요약 전체를 세 줄까지 보이는지 본다.
+  // 글 목록은 발행일이 있는 글만 싣는다. 홈 최근 기록의 순서를 흔들지 않게 날짜를 가장 이르게 둔다.
+  '20_Projects/blog/summary-card.md': `---
+title: 요약이 긴 글
+status: published
+created: 2025-01-01
+published: 2025-01-01
+slug: browser-summary-card
+summary: ${LONG_SUMMARY}
+---
+# 요약이 긴 글
+
+요약이 긴 글의 본문이다.
+`
 };
 
 // projectRoot에 config.json을, vault에 노트를 쓴다.

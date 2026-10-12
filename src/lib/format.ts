@@ -41,7 +41,7 @@ export function escapeXml(value: unknown): string { return String(value ?? '').r
 // <script type="application/json"> 안에 넣는 JSON. 제목의 '<'가 태그를 닫지 못하게 이스케이프한다.
 export function inlineJson(data: unknown): string { return JSON.stringify(data).replace(/</g, '\\u003c'); }
 export function formatDate(iso: unknown): string { return String(iso ?? '').slice(0, 10).replaceAll('-', '.'); }
-// 목록에서는 작성한 요약의 첫 문장만 사용한다. 원문과 검색 데이터는 그대로 둔다.
+// 개발 노트 목록은 요약의 첫 문장만 보인다. 요약 전체는 제목 아래 리드문에 나가므로 목록에서는 무엇을 다루는지만 알린다.
 export function firstSentence(text = '') { return text.match(/^.*?[.!?](?:\s|$)/)?.[0]?.trim() || text; }
 export function developmentCategoryLabel(category: string | null | undefined): string { return ({ Concepts: '개념·설계', Troubleshooting: '문제 해결', Tools: '도구·워크플로' } as Record<string, string>)[category ?? ''] || '개발 노트'; }
 export function kindLabel(note: { kind?: string; category?: string | null }): string {

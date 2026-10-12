@@ -16,11 +16,11 @@ test('article card renders linked metadata and responsive thumbnail without extr
   assert.equal((html.match(/<a /g) ?? []).length, 1);
 });
 
-test('cards without a connection reason fall back to the first summary sentence', () => {
+test('cards without a connection reason fall back to the whole target summary', () => {
   for (const caption of ['', '   ']) {
     const html = articleCardHtml({ note, caption });
-    assert.match(html, /article-card-summary">첫 문장입니다\.<\/span>/);
-    assert.doesNotMatch(html, /두 번째 문장|article-card-caption/);
+    assert.match(html, /article-card-summary">첫 문장입니다\. 두 번째 문장입니다\.<\/span>/);
+    assert.doesNotMatch(html, /article-card-caption/);
   }
 });
 
