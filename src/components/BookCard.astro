@@ -12,7 +12,7 @@ const credits = [book.author, book.publisher].filter(Boolean).join(' · ');
 <article class="book" id={`book-${book.slug}`} data-status={book.status}>
   <div class="cover">
     {book.coverUrl && <img src={book.coverUrl} alt="" loading="lazy" width="88" height="128" onerror="this.parentElement.classList.add('is-missing')" />}
-    <div class="placeholder">{title}</div>
+    <div class="placeholder"><span>{title}</span></div>
   </div>
   <div class="content">
     <h3>{title}</h3>
@@ -28,8 +28,12 @@ const credits = [book.author, book.publisher].filter(Boolean).join(' · ');
   .book { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 20px; align-items: start; scroll-margin-top: 110px; }
   .cover { width: 88px; height: 128px; }
   .cover img { width: 100%; height: 100%; object-fit: contain; object-position: top; }
-  /* 표지를 불러오지 못하면 표지 크기의 빈 상자에 제목을 적는다. 책등을 흉내 낸 한쪽 막대 대신 사방 테두리로 표지 자리를 보인다. */
-  .placeholder { display: flex; align-items: center; height: 100%; padding: 10px; border: 1px solid var(--line); background: var(--paper-strong); color: var(--muted); font-size: var(--t-meta); line-height: 1.5; }
+  /* 표지를 불러오지 못하면 표지 크기의 빈 상자에 제목을 적는다. 책등을 흉내 낸 한쪽 막대 대신 사방 테두리로 표지 자리를 보인다.
+     가운데 맞춤과 13px·안쪽 10px으로 두었더니 모바일 상자(68×100)에서 긴 제목이 위아래로 넘쳤다. 한 단계 작은 글자와 좁은 여백으로
+     제목을 더 담고, 위에서부터 채워 상자에 들어가는 줄까지만 보인 뒤 말줄임표를 붙인다. 줄 수 제한은 상자가 아니라 안쪽 글자에 건다.
+     높이가 정해진 상자에 걸면 Chromium이 말줄임표 뒤 줄까지 그린다. 글자를 키워 줄이 상자를 넘어도 상자가 잘라 낸다. */
+  .placeholder { display: flex; align-items: flex-start; height: 100%; padding: 6px; overflow: hidden; border: 1px solid var(--line); background: var(--paper-strong); color: var(--muted); font-size: var(--t-micro); line-height: 1.4; }
+  .placeholder > span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 6; overflow: hidden; }
   /* 표지 URL이 있으면 플레이스홀더를 숨기고, 로드에 실패하면(onerror) 다시 보인다. */
   .cover img + .placeholder { display: none; }
   .cover.is-missing img { display: none; }
@@ -42,5 +46,5 @@ const credits = [book.author, book.publisher].filter(Boolean).join(' · ');
   .rating .value { font-size: var(--t-side); font-weight: 600; font-variant-numeric: tabular-nums; }
   .note { margin: 0; font-size: var(--t-summary); line-height: 1.75; }
   .reading { margin-top: 14px; }
-  @media (max-width: 480px) { .book { grid-template-columns: 68px minmax(0, 1fr); gap: 14px; } .cover { width: 68px; height: 100px; } }
+  @media (max-width: 480px) { .book { grid-template-columns: 68px minmax(0, 1fr); gap: 14px; } .cover { width: 68px; height: 100px; } .placeholder > span { -webkit-line-clamp: 5; } }
 </style>
