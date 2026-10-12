@@ -2,7 +2,7 @@
 
 공개할 수 없는 경계 사례만 여기 둔다. **자동 테스트는 이 파일을 읽지 않는다.** `npm test`가 도는 `tests/*.test.ts`는 렌더러 대역으로 동작만 검증하고, 실제 SVG의 배치와 글자 크기는 사람이 화면에서 확인한다.
 
-정상 도표의 표본은 vault의 공개 노트 「Mermaid 12의 바뀐 기본값과 도표 비용」(`/dev/mermaid-12-defaults-and-cost/`)이 겸한다. 그 노트에 흐름도, 시퀀스, 상태도, 유스케이스, 에이전트 흐름이 하나씩 있어서 테마나 배치를 바꿀 때 다섯 종류를 한 화면에서 대조할 수 있다. 긴 한국어 라벨과 중첩 그룹은 「ONLYOFFICE 연동기 1편」의 도표가 담고 있다.
+정상 도표의 표본은 vault의 공개 노트 「Mermaid 12의 변경 사항」(`/dev/mermaid-12-changes/`)이 겸한다. 그 노트에 흐름도, 시퀀스, 상태도, 유스케이스, 에이전트 흐름이 하나씩 있어서 테마나 배치를 바꿀 때 다섯 종류를 한 화면에서 대조할 수 있다. 긴 한국어 라벨과 중첩 그룹은 「ONLYOFFICE 연동기 1편」의 도표가 담고 있다.
 
 | 파일 | 확인하는 것 |
 |---|---|
@@ -16,7 +16,7 @@
 
 ```bash
 VAULT=$(mktemp -d)
-mkdir -p "$VAULT/01_Slipbox" "$VAULT/20_Projects/blog/assets" "$VAULT/_attachments" \
+mkdir -p "$VAULT/01_Slipbox" "$VAULT/20_Projects/blog" \
   "$VAULT/30_Resources/Development/Concepts" \
   "$VAULT/30_Resources/Development/Troubleshooting" \
   "$VAULT/30_Resources/Development/Tools"
@@ -26,14 +26,14 @@ note "$VAULT/01_Slipbox/생각의 정원.md" thinking-garden "표본 vault의 �
 note "$VAULT/01_Slipbox/세컨드 브레인은 퍼스트 브레인의 사고를 보조해야 한다.md" second-brain "표본 vault의 대표 노트이다." "세컨드 브레인"
 printf -- '---\ncreated: 2026-09-14\nslug: ai-team\nstatus: published\nsummary: 표본 vault의 발행 글이다.\n---\n\n# AI로 빨라진 개인\n\n표본이다.\n' \
   > "$VAULT/20_Projects/blog/AI로 빨라진 개인, 소화하지 못하는 팀.md"
-printf '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>' > "$VAULT/_attachments/sse-fanout-instance-mismatch.svg"
-: > "$VAULT/20_Projects/blog/assets/ai-team-absorption.png"
+node -e 'for (const file of require("./config.json").assets ?? []) console.log(file)' |
+  while IFS= read -r file; do mkdir -p "$VAULT/$(dirname "$file")"; : > "$VAULT/$file"; done
 
 cp tests/fixtures/mermaid/invalid-syntax.md "$VAULT/30_Resources/Development/Concepts/"
 echo "$VAULT"
 ```
 
-`entry`와 `home.featured`에 적힌 경로는 `config.json`을 따라간다. 그쪽이 바뀌면 위 명령의 파일 이름도 함께 고친다.
+자산 목록은 `config.json`에서 읽는다. `entry`와 `home.featured`에 적힌 노트는 명령에 직접 적었으므로, 그쪽이 바뀌면 위 명령의 파일 이름도 함께 고친다.
 
 ## 실행과 확인
 
