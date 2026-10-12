@@ -598,3 +598,24 @@ test('a development note whose first public tag is 개발/도구 or missing is r
   assert.ok(messages.some((m) => m.includes('no public tag') && m.includes(`${dev}/Concepts/고립된 개념.md`)), messages.join('\n'));
   assert.ok(garden.notes.some((note) => note.path === `${dev}/Concepts/연결된 개념.md`), '경고만 남기고 노트는 그대로 공개한다');
 });
+
+
+test('configured blog outline folder never enters public output even with publication metadata', async () => {
+  const siteConfig = JSON.parse(await fs.readFile(new URL('../config.json', import.meta.url), 'utf8'));
+  const outlinePaths = [
+    '20_Projects/blog/_outlines/작업 기준.md',
+    '20_Projects/blog/_outlines/nested/관리 허브.md'
+  ];
+  const vaultRoot = await makeVault({ ...files,
+    [outlinePaths[0]]: '---\ncreated: 2026-09-01\nstatus: published\nsummary: OUTLINE_SUMMARY_SENTINEL\n---\n# 작업 기준\nOUTLINE_BODY_SENTINEL',
+    [outlinePaths[1]]: '---\ncreated: 2026-09-01\ntype: series\nstatus: active\n---\n# 관리 허브\nOUTLINE_SERIES_SENTINEL'
+  });
+  try {
+    const garden = await assembleGarden({ vaultRoot, config: { ...config, exclude: siteConfig.exclude } });
+    assert.ok(garden.notes.some((note) => note.path === '20_Projects/blog/공개 글.md'));
+    assert.ok(garden.notes.every((note) => !outlinePaths.includes(note.path)));
+    assert.doesNotMatch(JSON.stringify(garden), /OUTLINE_(SUMMARY|BODY|SERIES)_SENTINEL/);
+  } finally {
+    await fs.rm(vaultRoot, { recursive: true, force: true });
+  }
+});
