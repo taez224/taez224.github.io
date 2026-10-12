@@ -13,11 +13,11 @@
   --sans: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
   /* 글자 역할 토큰. rem이라 브라우저의 기본 글자 크기 설정을 따르며, 주석은 기본값 16px 기준의 px다.
      폭에 따라 달라지는 역할은 아래 미디어 쿼리의 :root에서 값만 바꾸므로 컴포넌트는 역할 이름만 쓴다. DESIGN.md typography와 같은 값이다. */
-  --t-title: 2.875rem; --t-hero: 2rem; --t-featured: 2.125rem; --t-page: 1.75rem; --t-section: 1.5rem; /* 46 32 34 28 24 */
-  --t-h2: 1.625rem; --t-h3: 1.3125rem; --t-h4: 1.0625rem; --t-lead: 1.15625rem; /* 26 21 17 18.5 */
+  --t-title: 2.875rem; --t-hero: 2rem; --t-featured: 2rem; --t-page: 1.75rem; --t-section: 1.5rem; /* 46 32 32 28 24 */
+  --t-h2: 1.625rem; --t-h3: 1.3125rem; --t-h4: 1.0625rem; --t-lead: 1.125rem; /* 26 21 17 18 */
   --t-ledger: 2.5rem; --t-ledger-year: 2rem; --t-ledger-word: 1.125rem; --t-wordmark: 1.375rem; /* 40 32 18 22 */
   --t-base: 1.0625rem; --t-body: 1.0625rem; --t-summary: 1rem; --t-list: 1.25rem; --t-list-small: 1.0625rem; /* 17 17 16 20 17 */
-  --t-ui: .9375rem; --t-side: .875rem; --t-meta: .8125rem; --t-micro: .75rem; /* 15 14 13 12 */
+  --t-ui: .9375rem; --t-side: .875rem; --t-meta: .8125rem; /* 15 14 13 */
   /* 구조 간격 토큰. DESIGN.md spacing과 같은 값이다. 페이지 틀(폭·좌우 여백·열·헤더·페이지 위아래)만 토큰으로 두고,
      컴포넌트 안쪽의 작은 여백은 모양에 맞춘 값이라 묶지 않는다. 페이지 위쪽 여백은 목록형(index)과 읽는 페이지(reading) 두 단계라
      같은 종류의 페이지를 오갈 때 제목이 같은 높이에서 시작한다. */
@@ -122,7 +122,9 @@ h1, h2, h3, p { margin-top: 0; }
    표시가 없는 사이트 안 링크(1편부터 읽기)에만 홀로 선 링크의 밑줄을 준다. 모두에 그으면 목록에 밑줄이 줄줄이 남는다. */
 .ledger-row .meta a:not([target]) { text-decoration: underline; text-decoration-color: var(--link-underline); text-underline-offset: 4px; }
 .ledger-row:first-child { padding-top: 4px; border-top: 0; }
-.ledger-row h3 { margin: 0 0 6px; font-size: var(--t-list); font-weight: 600; line-height: 1.45; }
+/* 두 줄이 되는 제목은 본문 제목처럼 줄 길이를 맞춘다. 맞추지 않으면 "분석해줘~"의 물결표처럼 한 글자만 다음 줄로 떨어진다.
+   한글 음절과 뒤 문장부호 사이는 원래 줄을 바꿀 수 있는 자리라 overflow-wrap이나 word-break를 바꿔도 막지 못했다. */
+.ledger-row h3 { margin: 0 0 6px; font-size: var(--t-list); font-weight: 600; line-height: 1.45; text-wrap: balance; }
 .ledger-row h3 a { color: var(--ink); }
 .ledger-row .meta { display: flex; flex-wrap: wrap; gap: 4px 12px; }
 .ledger-row .summary { display: -webkit-box; margin: 0; overflow: hidden; color: var(--muted); font-size: var(--t-summary); line-height: 1.75; -webkit-box-orient: vertical; -webkit-line-clamp: 3; } /* 목록에서는 세 줄까지. 긴 요약은 노트 안에서 읽는다. */
@@ -293,7 +295,7 @@ main { flex: 1 0 auto; }
 .search-status { margin: 0; padding: 14px 16px 6px; color: var(--muted); font-size: var(--t-meta); line-height: 1.6; }
 .search-retry, .search-more { margin-top: 10px; }
 .search-item { position: relative; display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 12px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--line); }
-.search-kind { color: var(--muted); font-size: var(--t-micro); }
+.search-kind { color: var(--muted); font-size: var(--t-meta); }
 .search-item a { display: block; color: var(--ink); font-size: var(--t-ui); font-weight: 600; }
 /* 제목만 누를 수 있으면 한 줄짜리 결과의 누르는 영역이 27.75px에 그친다. 줄 전체를 같은 링크로 덮어 종류·요약·여백 어디를 눌러도 열린다. */
 .search-item a::after { content: ''; position: absolute; inset: 0; }

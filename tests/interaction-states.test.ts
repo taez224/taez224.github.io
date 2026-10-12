@@ -92,6 +92,19 @@ test('hit areas widened for touch do not overlap the line above', () => {
   assert.ok(gap >= pad * 2, `메타 줄의 줄 간격 ${gap}px이 위아래로 넓힌 ${pad}px의 두 배 이상이다`);
 });
 
+test('the meta line clips the separator of a wrapped item but not the focus outline of the first link', () => {
+  // 구분점은 뒤 항목 앞에 붙어 있어, 그 항목이 다음 줄 맨 앞으로 내려가면 줄이 "·"로 시작했다. 점을 시작선 바깥으로 띄우고 그 바깥을 잘라 낸다.
+  // 메타 줄의 첫 항목은 항상 링크라 시작선에 붙어 있으므로, 잘라 내는 자리가 포커스 윤곽선보다 안쪽이면 윤곽선 왼쪽 변이 사라진다.
+  const css = styleText('src/components/NotePage.astro').replace(/\/\*[\s\S]*?\*\//g, '');
+  const focus = blockFor(read('src/styles/site.css'), ':focus-visible');
+  const outline = Number(focus.match(/outline:\s*(\d+)px/)?.[1]) + Number(focus.match(/outline-offset:\s*(\d+)px/)?.[1]);
+  const clipLeft = -Number(blockFor(css, '.note-meta').match(/clip-path:\s*inset\((?:\S+\s+){3}(-?\d+)px\)/)?.[1]);
+  const dotGap = Number(blockFor(css, '.note-meta > * + *::before').match(/right:\s*calc\(100%\s*\+\s*(\d+)px\)/)?.[1]);
+  assert.ok(outline > 0, `포커스 윤곽선이 시작선 바깥으로 ${outline}px 나간다`);
+  assert.ok(clipLeft >= outline, `시작선 바깥 ${clipLeft}px까지 남겨 윤곽선 ${outline}px을 자르지 않는다`);
+  assert.ok(dotGap > clipLeft, `점의 오른쪽 끝(시작선 바깥 ${dotGap}px)이 남긴 폭 ${clipLeft}px 밖에 있어 잘린다`);
+});
+
 test('widened touch targets stay inside the room their neighbour leaves', () => {
   // 넓힌 영역이 이웃에 닿으면 겹친 자리에서 뒤에 그려지는 쪽이 이겨 엉뚱한 곳으로 간다.
   // 이웃이 물러서 줄 수 있으면 그만큼 물러서게 하고, 그럴 수 없으면 이웃이 남긴 여백까지만 넓힌다.

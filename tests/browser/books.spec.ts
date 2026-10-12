@@ -36,6 +36,23 @@ test('the pressed filter bar sits right under its text on touch', async ({ page,
   expect(Math.abs(bar.stretched - bar.natural), '막대가 버튼 높이와 상관없이 글자 아래 같은 자리에 있다').toBeLessThanOrEqual(0.5);
 });
 
+// 표지를 불러오지 못한 책은 표지 자리 상자에 제목을 적는다. 가운데 맞춘 긴 제목이 모바일 상자(68×100) 위아래로 넘쳐 이웃 책까지 닿았다.
+// 검사용 책에는 표지 주소가 없어 상자가 늘 보인다. 실제 책장에서 가장 긴 제목보다 긴 제목을 넣어 본다.
+test('a long title in the missing-cover box stays inside the box and ends with an ellipsis', async ({ page }) => {
+  await page.goto('/books/');
+  const placeholder = page.locator('.cover .placeholder').first();
+  await expect(placeholder).toBeVisible();
+  const measured = await placeholder.evaluate((box) => {
+    const title = box.querySelector('span')!;
+    title.textContent = '살찌지 않는 몸 평생 가볍게 살아가는 4주 대사 회복 프로젝트와 띠지에 적힌 긴 부제';
+    const outer = box.getBoundingClientRect(), inner = title.getBoundingClientRect();
+    return { outerTop: outer.top, outerBottom: outer.bottom, innerTop: inner.top, innerBottom: inner.bottom, cut: title.scrollHeight > title.clientHeight };
+  });
+  expect(measured.innerTop, '제목이 상자 위로 나가지 않는다').toBeGreaterThanOrEqual(measured.outerTop);
+  expect(measured.innerBottom, '제목이 상자 아래로 나가지 않는다').toBeLessThanOrEqual(measured.outerBottom);
+  expect(measured.cut, '들어가지 않는 줄은 말줄임으로 끝낸다').toBe(true);
+});
+
 // 거르개는 책을 숨길 뿐 주소와 무관해서, 숨긴 책으로 이동하면 주소만 바뀌고 책은 보이지 않았다.
 // 검색 결과를 누른 경우(이때 검색창도 닫힌다)와 뒤로·앞으로 가기로 주소만 바뀐 경우를 모두 본다.
 test('moving to a book the status filter hid reveals it', async ({ page }) => {
