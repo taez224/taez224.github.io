@@ -128,6 +128,25 @@ test('the wide home map fades its edges without fading any text', { tag: BOTH_TH
 
 // 홈 노드는 누르면 그 노트로 이동할 뿐 눌린 채로 남지 않는다.
 // 그런데도 aria-pressed를 달면 낭독기에 눌리지 않는 토글 버튼 수십 개로 읽힌다.
+// 다듬은 노트의 물뿌리개는 행에 마우스를 올리거나 키보드로 들어오면 물방울이 흩어진 둘째 장면으로 바뀐다.
+// 움직임 줄이기를 켠 독자에게는 그림이 바뀌는 것도 움직임이라 바뀌지 않아야 한다.
+test('the tended mark pours on hover and keyboard focus but holds still with reduced motion', async ({ page, isMobile }) => {
+  test.skip(isMobile, '호버는 마우스가 있는 기기에서 본다');
+  await page.goto('/');
+  const row = page.locator('.recent li', { has: page.locator('.tended') }).first();
+  const scenes = () => row.locator('.tended svg path').evaluateAll((paths) => paths.map((path) => getComputedStyle(path).display));
+  await expect.poll(scenes, '평소에는 첫 장면').toEqual(['inline', 'none']);
+  await row.hover();
+  await expect.poll(scenes, '행에 올리면 둘째 장면').toEqual(['none', 'inline']);
+  await page.mouse.move(0, 0);
+  await expect.poll(scenes, '떠나면 첫 장면').toEqual(['inline', 'none']);
+  await row.locator('.recent-title').focus();
+  await expect.poll(scenes, '키보드로 들어와도 둘째 장면').toEqual(['none', 'inline']);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await row.hover();
+  await expect.poll(scenes, '움직임 줄이기에서는 첫 장면에 둔다').toEqual(['inline', 'none']);
+});
+
 test('home map nodes do not claim a pressed state', async ({ page, isMobile }) => {
   test.skip(isMobile, '살아 있는 지도는 마우스가 있는 기기에만 올라온다');
   await page.goto('/');

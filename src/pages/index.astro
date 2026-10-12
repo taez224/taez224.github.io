@@ -68,7 +68,7 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
       <time class="meta recent-date" datetime={when}>{formatDate(when)}</time>
       <a class="meta recent-kind" href={listUrl}>{label}</a>
       {/* 날짜는 쓴 날과 다듬은 날 가운데 늦은 날이다. 다듬은 날이면 제목 뒤에 물뿌리개를 둔다. 글자 대신 기호를 쓴 것은 새 글과 다듬은 글의 구분이 독자에게 가벼운 정보이기 때문이다. */}
-      <span class="recent-main"><a class="recent-title" href={note.url}>{note.title}</a>{tended && <span class="tended" role="img" aria-label="다듬은 노트" title="다듬은 노트" set:html={pixelIcon('tended')} />}</span>
+      <span class="recent-main"><a class="recent-title" href={note.url}>{note.title}</a>{tended && <span class="tended" role="img" aria-label="다듬은 노트" title="다듬은 노트" set:html={pixelIcon('tended', 'tendedPour')} />}</span>
       <span class="meta recent-topic"><i style={`background:${topicColor(note.topic)}`} aria-hidden="true"></i>{note.topicTag || note.topic}</span>
     </li>)}</ol>
   </section>
@@ -154,6 +154,17 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
   /* 물뿌리개는 행 전체를 덮는 제목 링크 위에 올려야 설명(title)이 뜬다. 격자 한 칸이 1px이 되도록 격자 크기 그대로 보인다. */
   .tended { position: relative; z-index: 1; display: inline-block; margin-left: 8px; color: var(--muted); vertical-align: -2px; cursor: help; }
   .tended :global(svg) { display: block; width: 14px; height: 14px; }
+  /* 행에 마우스를 올리거나 키보드로 그 행에 들어오면 물방울이 흩어지는 둘째 장면으로 바꾼다. 서서히 바꾸면 칸 경계가 흐려지므로 끊어서 바꾼다.
+     움직임 줄이기를 켠 독자에게는 그림이 바뀌는 것도 움직임이라 첫 장면에 둔다. 손가락 기기에는 호버가 없어 키보드 초점에서만 바뀐다. */
+  .tended :global(.frame-2) { display: none; }
+  @media (prefers-reduced-motion: no-preference) {
+    li:focus-within .tended :global(.frame-1) { display: none; }
+    li:focus-within .tended :global(.frame-2) { display: inline; }
+  }
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    li:hover .tended :global(.frame-1) { display: none; }
+    li:hover .tended :global(.frame-2) { display: inline; }
+  }
   /* 최근 연재 제목은 목록 제목 크기로 두어 대표 글보다 낮은 위계에 둔다. */
   .latest-series h3 { margin: 0; font-size: var(--t-list); font-weight: 600; line-height: 1.45; }
   .latest-series p { margin: 10px 0 0; color: var(--muted); line-height: 1.7; }

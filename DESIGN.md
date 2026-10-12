@@ -583,7 +583,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 장부는 왼쪽 열에 연도·분류·등급 라벨을 명조로 크게 두고, 오른쪽 행이 다시 제목·메타와 요약을 나눈다. 라벨 칸은 한 글자 등급에 맞춘 폭이고, 세 글자 미분류 묶음만 글자를 키웠을 때 칸이 글자를 따라 넓어진다.
 
-홈의 최근 기록은 새로 쓴 노트와 다듬은 노트를 한 목록에 날짜순으로 싣는다. 노트는 계속 고쳐 쓰는 기록이라, 새로 쓴 것만 보이면 달라진 것의 절반이 빠진다. 날짜는 마지막으로 쓰거나 다듬은 날 하나만 적고, 다듬은 날이면 제목 뒤에 보조색 물뿌리개를 둔다. 글자 라벨을 쓰지 않는 것은 새 글과 다듬은 글의 구분이 독자에게 가벼운 정보이기 때문이다. 다듬은 노트는 두 편까지만 더해 새 글이 밀리지 않게 한다.
+홈의 최근 기록은 새로 쓴 노트와 다듬은 노트를 한 목록에 날짜순으로 싣는다. 노트는 계속 고쳐 쓰는 기록이라, 새로 쓴 것만 보이면 달라진 것의 절반이 빠진다. 날짜는 마지막으로 쓰거나 다듬은 날 하나만 적고, 다듬은 날이면 제목 뒤에 보조색 물뿌리개를 둔다. 글자 라벨을 쓰지 않는 것은 새 글과 다듬은 글의 구분이 독자에게 가벼운 정보이기 때문이다. 그 행에 마우스를 올리거나 키보드로 들어오면 물방울이 흩어지는 둘째 장면으로 바뀐다. 이미 그 줄을 보는 독자에게만 보이는 반응이라 목록 전체의 조용함은 그대로다. 다듬은 노트는 두 편까지만 더해 새 글이 밀리지 않게 한다.
 
 ### 리더
 
@@ -636,7 +636,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 ### 아이콘
 
-화면 가장자리에서 누르는 조작 아이콘과 목록의 작은 표시(홈의 물뿌리개)는 픽셀 격자로, 본문 안에서 뜻을 나르는 아이콘은 선으로 그린다. 1배율 화면에서 가는 선은 획 대부분이 중간색으로 칠해져 대비가 남지 않지만, 격자에 맞춘 면은 또렷하다. 복고 인상은 결과이지 목적이 아니다. 격자 도안은 칸 수와 같은 px로만 보이고, 125%·150% 화면에서 가장자리가 번지는 것은 한계로 두고 고치지 않는다. 본문 안 아이콘은 테두리가 기호를 감싸는 도형이 많아 작은 격자에 담기지 않고, 참조·역참조 화살표는 지도 간선의 실선·점선과 짝이라 선으로 남긴다.
+화면 가장자리에서 누르는 조작 아이콘과 목록의 작은 표시(홈의 물뿌리개)는 픽셀 격자로, 본문 안에서 뜻을 나르는 아이콘은 선으로 그린다. 1배율 화면에서 가는 선은 획 대부분이 중간색으로 칠해져 대비가 남지 않지만, 격자에 맞춘 면은 또렷하다. 복고 인상은 결과이지 목적이 아니다. 격자 도안이 움직일 때는 같은 칸 수의 장면을 끊어서 바꾼다. 서서히 바꾸면 두 장면이 겹치는 동안 칸 경계가 흐려진다. 격자 도안은 칸 수와 같은 px로만 보이고, 125%·150% 화면에서 가장자리가 번지는 것은 한계로 두고 고치지 않는다. 본문 안 아이콘은 테두리가 기호를 감싸는 도형이 많아 작은 격자에 담기지 않고, 참조·역참조 화살표는 지도 간선의 실선·점선과 짝이라 선으로 남긴다.
 
 ### 개인 표식
 
@@ -649,7 +649,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 - **Don't** 의미 없는 장식 요소, 글로우, 장식용 그라디언트를 더하지 않는다. 개인 표식은 바닥글과 파비콘에만 정지한 그림으로 둔다.
 - **Don't** 주제색을 본문 문장이나 메타데이터 장식으로 넓히지 않는다.
 - **Don't** 긴 제목·표·연결 목록을 고정 폭으로 두어 화면 밖으로 밀어내지 않는다.
-- **Don't** 상태 변화나 사용자 조작을 설명하지 않는 장식용 움직임을 더하지 않는다.
+- **Don't** 독자가 부르지 않은 움직임(저절로 재생·반복되거나 화면이 뜰 때 움직이는 것)을 더하지 않는다. 독자가 가리킨 작은 표식이 한 번 반응하는 것은 허용하되, 픽셀 장면을 끊어서 바꾸고 움직임 줄이기에서는 멈춘다.
 
 ## Motion & Accessibility
 
@@ -662,7 +662,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 - 여러 줄로 접히는 덩어리는 넓히는 양을 줄 간격의 절반까지만 둔다. 44px을 채우려고 줄 간격을 벌리면 덩어리 안의 간격이 제목까지의 간격보다 넓어져 둘째 줄이 제목에 붙어 읽힌다.
 - 각주 번호는 위아래로만 넓힌다. 가로로 넓히면 붙어 있는 다른 번호를 덮는다.
 
-키보드 포커스는 전역 2px 윤곽선으로 표시한다. 지도에서 흐려진 노드는 Tab과 화살표가 지나가지 않게 하고, 흐림은 보이는 점에만 걸어 포커스 링이 함께 흐려지지 않게 한다. 상태 변화는 150ms, 지도 시트는 200ms, 그래프의 선택 이동은 320ms다. 움직임 줄이기 설정에서는 전환을 끈다.
+키보드 포커스는 전역 2px 윤곽선으로 표시한다. 지도에서 흐려진 노드는 Tab과 화살표가 지나가지 않게 하고, 흐림은 보이는 점에만 걸어 포커스 링이 함께 흐려지지 않게 한다. 상태 변화는 150ms, 지도 시트는 200ms, 그래프의 선택 이동은 320ms다. 움직임 줄이기 설정에서는 전환을 끄고, 격자 도안의 장면도 바꾸지 않는다.
 
 앵커 이동은 움직임 없이 즉시 한다. 부드럽게 움직이면 출발할 때 계산한 자리로 가서, 그사이 위쪽 도표가 그려져 길어진 만큼 제목이 밀려난다.
 
@@ -690,7 +690,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 본문 안 글 카드의 테두리·여백·강조 | `src/styles/article-card.css` | 없음 |
 | 코드 블록 머리 줄과 복사 버튼 | `src/lib/markdown.ts`, `src/scripts/code-copy.ts`, `src/styles/body.css` | `tests/code-block.test.ts` |
 | 각주 번호·목록·판과 호버 미리보기 | `src/lib/markdown.ts`, `src/scripts/footnotes.ts`, `src/styles/body.css` | `tests/markdown-footnotes.test.ts`, `tests/footnotes.test.ts`, `tests/browser/reader.spec.ts` |
-| 조작 아이콘의 도안과 표시 크기 | `src/lib/pixel-icons.ts`, `site.css`의 `.search-trigger svg`·`.search-close svg`, `map/index.astro`의 `.graph-controls svg`, `body.css`의 `.code-copy-plate svg`, `index.astro`의 `.tended svg`, `NotePage.astro`의 `.toc-button svg` | `tests/pixel-icons.test.ts` |
+| 조작 아이콘의 도안과 표시 크기 | `src/lib/pixel-icons.ts`, `site.css`의 `.search-trigger svg`·`.search-close svg`, `map/index.astro`의 `.graph-controls svg`, `body.css`의 `.code-copy-plate svg`, `index.astro`의 `.tended svg`, `NotePage.astro`의 `.toc-button svg` | `tests/pixel-icons.test.ts`, 물뿌리개 장면 교체는 `tests/browser/home.spec.ts` |
 | 개인 표식의 도안·파비콘·터치 아이콘 | `src/lib/mark.ts`, `src/lib/palette.ts`의 `MARK`, `scripts/make-mark.ts`가 만든 `public/favicon.svg`·`apple-touch-icon.png` | `tests/mark.test.ts` |
 | 사이드바 작은 그래프의 제목과 목록의 함께 강조 | `src/components/local-graph-layout.ts`, `src/components/LocalGraph.astro`, `src/scripts/local-graph.ts`, `src/components/NoteSidebar.astro` | `tests/local-graph.test.ts`, `tests/local-graph-links.test.ts`, `tests/browser/reader.spec.ts` |
 | 폭에 따른 리더·지도 배치 | `src/components/NotePage.astro`, `src/pages/map/index.astro` | `tests/browser/reader.spec.ts`, `tests/browser/map.spec.ts` |

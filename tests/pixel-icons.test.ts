@@ -47,6 +47,26 @@ test('each icon is shown at the size of its own grid so one cell stays one pixel
   assert.equal(width(read('src/pages/index.astro'), '.tended :global(svg)'), ICON_GRIDS.tended.length);
   assert.equal(width(read('src/components/NotePage.astro'), '.toc-button :global(svg)'), ICON_GRIDS.contents.length);
   assert.equal(ICON_GRIDS.copyDone.length, ICON_GRIDS.copy.length);
+  assert.equal(ICON_GRIDS.tendedPour.length, ICON_GRIDS.tended.length);
+});
+
+test('a two-scene icon draws both scenes in one svg of the same grid', () => {
+  const svg = pixelIcon('tended', 'tendedPour');
+  assert.match(svg, /viewBox="0 0 14 14"/);
+  assert.match(svg, /<path class="frame-1" d="[^"]+"><\/path><path class="frame-2" d="[^"]+"><\/path>/);
+  assert.throws(() => pixelIcon('tended', 'search'), /칸 수가 다르다/, '칸 수가 다르면 한쪽 장면은 한 칸이 1px이 아니게 된다');
+});
+
+test('the pouring scene keeps the watering can and only adds drops', () => {
+  // 몸통이 한 칸이라도 달라지면 장면을 바꿀 때 그릇이 흔들려 보인다. 첫 장면의 칸은 모두 남고, 더한 칸은 몸통 왼쪽(주둥이 아래)에만 있다.
+  const added: string[] = [];
+  ICON_GRIDS.tended.forEach((row, y) => [...row].forEach((cell, x) => {
+    const next = ICON_GRIDS.tendedPour[y][x];
+    if (cell === '#') assert.equal(next, '#', `${y}행 ${x}열이 지워졌다`);
+    else if (next === '#') added.push(`${y},${x}`);
+  }));
+  assert.ok(added.length > 0, '물방울이 있다');
+  for (const cell of added) assert.ok(Number(cell.split(',')[1]) < 4, `${cell}: 물방울은 주둥이 아래(0~3열)에 둔다`);
 });
 
 test('the search button paints its icon instead of stroking it', () => {
