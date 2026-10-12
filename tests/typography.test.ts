@@ -83,6 +83,13 @@ test('the related notes heading of an external article sets a heading line heigh
   assert.ok(lineHeight < 1.6, `line-height: ${lineHeight}`);
 });
 
+// 글 목록 제목 "…분석해줘~"의 물결표만 둘째 줄로 떨어졌다. 한글 음절과 뒤 문장부호 사이는 원래 줄을 바꿀 수 있는 자리라
+// overflow-wrap이나 word-break로는 막지 못하고, 두 줄의 길이를 맞춰야 한 글자만 남지 않는다. 본문 제목과 같은 규칙이다.
+test('list titles balance their lines like body headings so a trailing mark does not wrap alone', () => {
+  assert.match(ruleBody(read('src/styles/body.css'), '.body h2'), /text-wrap:\s*balance/, '본문 제목');
+  assert.match(ruleBody(siteCss, '.ledger-row h3'), /text-wrap:\s*balance/, '글 목록 제목');
+});
+
 test('font sizes outside :root use role tokens instead of px', () => {
   // 그래프 SVG 글자는 엔진이 px 폭으로 이름 배치를 계산하므로 px로 둔다.
   const allowed = [/\.graph \[data-labels\]/, /\.node text/];

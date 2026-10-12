@@ -122,7 +122,9 @@ h1, h2, h3, p { margin-top: 0; }
    표시가 없는 사이트 안 링크(1편부터 읽기)에만 홀로 선 링크의 밑줄을 준다. 모두에 그으면 목록에 밑줄이 줄줄이 남는다. */
 .ledger-row .meta a:not([target]) { text-decoration: underline; text-decoration-color: var(--link-underline); text-underline-offset: 4px; }
 .ledger-row:first-child { padding-top: 4px; border-top: 0; }
-.ledger-row h3 { margin: 0 0 6px; font-size: var(--t-list); font-weight: 600; line-height: 1.45; }
+/* 두 줄이 되는 제목은 본문 제목처럼 줄 길이를 맞춘다. 맞추지 않으면 "분석해줘~"의 물결표처럼 한 글자만 다음 줄로 떨어진다.
+   한글 음절과 뒤 문장부호 사이는 원래 줄을 바꿀 수 있는 자리라 overflow-wrap이나 word-break를 바꿔도 막지 못했다. */
+.ledger-row h3 { margin: 0 0 6px; font-size: var(--t-list); font-weight: 600; line-height: 1.45; text-wrap: balance; }
 .ledger-row h3 a { color: var(--ink); }
 .ledger-row .meta { display: flex; flex-wrap: wrap; gap: 4px 12px; }
 .ledger-row .summary { display: -webkit-box; margin: 0; overflow: hidden; color: var(--muted); font-size: var(--t-summary); line-height: 1.75; -webkit-box-orient: vertical; -webkit-line-clamp: 3; } /* 목록에서는 세 줄까지. 긴 요약은 노트 안에서 읽는다. */
