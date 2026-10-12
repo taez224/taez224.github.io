@@ -3,6 +3,23 @@ import { PALETTE, DARK_PALETTE } from '../../src/lib/palette.ts';
 
 const rgb = (hex: string) => `rgb(${[1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16)).join(', ')})`;
 
+test('a development lead has a separator only when the contents move to the sidebar', { tag: BOTH_THEMES }, async ({ page, systemDark }) => {
+  for (const width of [1440, 1001, 1000, 390]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.goto('/dev/browser-lead/');
+    const lead = page.locator('.note-lead');
+    const wide = width > 1000;
+    await expect(lead).toHaveCSS('border-bottom-width', wide ? '1px' : '0px');
+    if (wide) {
+      await expect(lead).toHaveCSS('border-bottom-style', 'solid');
+      await expect(lead).toHaveCSS('border-bottom-color', rgb(systemDark ? DARK_PALETTE.line : PALETTE.line));
+      const gap = await page.evaluate(() => document.querySelector('.body')!.getBoundingClientRect().top - document.querySelector('.note-lead')!.getBoundingClientRect().bottom);
+      expect(gap).toBeGreaterThan(0);
+    }
+    await expect(page.locator('.mobile-toc')).toBeVisible({ visible: !wide });
+  }
+});
+
 // 형광 표시의 글자색을 비워 두면 브라우저 기본값인 검정이 되어, 어두운 화면의 형광 위에서 2.49:1로 읽기 어려웠다.
 test('highlighted text keeps the ink color on the highlight in both themes', { tag: BOTH_THEMES }, async ({ page, systemDark: dark }) => {
   await page.goto('/notes/browser-neighbor/');

@@ -6,7 +6,7 @@ import path from 'node:path';
 
 export const BROWSER_CONFIG = {
   basePath: '', entry: '01_Slipbox/start.md',
-  include: [{ path: '01_Slipbox', mode: 'all', graph: true }, { path: '20_Projects/blog', statuses: ['published'], types: ['series'], graph: false }], exclude: [], assets: [],
+  include: [{ path: '01_Slipbox', mode: 'all', graph: true }, { path: '20_Projects/blog', statuses: ['published'], types: ['series'], graph: false }, { path: '30_Resources/Development/Concepts', mode: 'all', graph: false }], exclude: [], assets: [],
   externalPublications: [{ name: '테스트 발행처', hosts: ['example.com'], publications: ['테스트 발행처'] }],
   home: { about: '어느 소프트웨어 엔지니어의 개인 위키입니다. 개발자로 살아가며 배운 개념과 기술, 그 과정에서 든 생각, 발행한 글과 읽은 책을 모아둡니다.', featured: [],
     contacts: [{ name: 'GitHub', url: 'https://example.com/profile', icon: 'github.svg' }] }
@@ -19,6 +19,26 @@ const manyTitles = ['AI 시대의 판단력은 맥락을 실행 기준으로 바
 
 // vault 안의 경로와 파일 내용이다.
 export const BROWSER_NOTES: Record<string, string> = {
+  '30_Resources/Development/Concepts/소개 단락.md': `---
+title: 소개 단락
+slug: browser-lead
+created: 2026-09-01
+summary: 제목 아래 소개 단락은 읽기 화면에서 본문의 시작과 구분된다.
+tags:
+  - 개발/설계
+---
+# 소개 단락
+
+첫 본문 문단이다.
+
+## 첫 절
+
+첫 절의 설명이다.
+
+## 둘째 절
+
+둘째 절의 설명이다.
+`,
   '20_Projects/blog/external.md': `---
 title: 외부 발행 글
 slug: browser-external
