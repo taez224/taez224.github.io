@@ -52,11 +52,13 @@ summary: 외부에서 읽는 글의 공개 요약이다.
 
 [[start]]와 [[neighbor]]를 참고한다.
 `,
+  // 허브는 성숙도를 쓰지 않는다. status를 일부러 적어 두어 허브에는 성숙도 버튼이 생기지 않는지 본다.
   '01_Slipbox/start.md': `---
 title: 시작 노트
 created: 2026-09-01
 slug: browser-start
 type: hub
+status: evergreen
 tags:
   - AI
 ---
@@ -104,9 +106,11 @@ tags:
 [[start]]
 `,
   // 요약 가운데에서 걸린 말은 앞에서부터 자르면 375px 화면 밖에 남는다. 그 자리를 재려고 긴 요약을 둔다.
+  // 성숙도(status)가 새싹이라 메타 줄에 성숙도 버튼이 생긴다. 새싹은 설명을 열면 장면이 바뀌는 단계다.
   '01_Slipbox/long-summary.md': `---
 title: 요약이 긴 노트
 created: 2026-09-03
+status: seedling
 slug: browser-long-summary
 summary: ${'앞말이 길게 이어진다. '.repeat(6)}여기부터 적재적소라는 말이 나온다. ${'뒷말도 길게 이어진다. '.repeat(6)}
 tags:

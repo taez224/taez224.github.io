@@ -9,6 +9,7 @@ import { formatDate, displayTag, withBase, cleanTitle, topicColor } from '../lib
 import { parentLink, seriesNeighbors } from '../lib/note-nav.ts';
 import { articleMeta } from '../lib/seo.ts';
 import { pixelIcon } from '../lib/pixel-icons.ts';
+import { MATURITY_STAGES, maturityOf } from '../lib/maturity.ts';
 import '../styles/body.css';
 import type { NoteEntry, PublicNote } from '../lib/content-model.ts';
 interface Props { entry: NoteEntry }
@@ -37,12 +38,15 @@ const endLink = note.kind === 'slipbox' ? null : parent.listLabel;
 // 제보 링크는 읽는 도중(넓은 화면은 목차 아래, 한 열 화면은 목차 판의 제목 줄)과 다 읽은 뒤(글 끝 줄)에 닿는다.
 // 세 자리가 같은 주소를 폼에 채운다.
 const feedbackPath = articleMeta(note).path;
+// 생각 노트의 성숙도. 이름은 메타 줄에 늘 보이고, 뜻은 눌러서 여는 설명 상자가 알린다. 휴대폰에는 툴팁이 없어 이름만으로는 뜻을 전할 수 없다.
+const maturity = maturityOf(note);
 ---
 <Shell title={title} description={note.summary} {...articleMeta(note)} updated={note.updated || null} feedback={false} active={note.kind === 'blog' ? 'posts' : note.kind === 'development' ? 'dev' : 'map'}>
   <div class="wrap note-view" style={`--topic:${topicColor(note.topic)}`}>
     <article class="note-article">
       <div class="meta note-meta">
         <a class="kicker" href={parentUrl}>{parent.label}</a>
+        {maturity && <button type="button" class="maturity" aria-expanded="false" aria-controls="maturity-note" aria-label={`노트 성숙도: ${maturity.label}`} data-maturity><Fragment set:html={pixelIcon(maturity.icon, maturity.open)} />{maturity.label}</button>}
         {note.type === 'hub' && <span><i class="hub-mark" aria-hidden="true"></i>허브</span>}
         <span class="note-dates">
           {note.updated && `${note.published ? (note.kind === 'blog' ? '발행' : '공개') : '작성'} `}<time datetime={note.date}>{formatDate(note.date)}</time>
@@ -52,6 +56,10 @@ const feedbackPath = articleMeta(note).path;
         {topics.map((t) => <span><i class="topic-dot" style={`background:${t.color}`} aria-hidden="true"></i>{t.label}</span>)}
         {note.publishedUrl && <a href={note.publishedUrl} target="_blank" rel="noreferrer">{note.publication || '원문'}에서 읽기 ↗</a>}
       </div>
+      {maturity && <div id="maturity-note" class="maturity-note" hidden>
+        <p>노트를 얼마나 다듬었는지 세 단계로 나타냅니다.</p>
+        <ol>{MATURITY_STAGES.map((stage) => <li aria-current={stage === maturity ? 'true' : undefined}><Fragment set:html={pixelIcon(stage.icon)} /><b>{stage.label}</b><span>{stage.meaning}</span></li>)}</ol>
+      </div>}
       <h1 class="display note-title">{title}</h1>
       {note.kind === 'development' && note.summary?.trim() && <p class="note-lead">{note.summary}</p>}
       {mobileToc.length >= 2 && <details class="mobile-toc">
@@ -107,6 +115,26 @@ const feedbackPath = articleMeta(note).path;
   .note-dates { white-space: nowrap; }
   .modified-date::before { content: '·'; margin: 0 8px; }
   .note-meta .kicker { color: var(--accent); }
+  /* 성숙도 버튼은 메타 줄의 다른 항목처럼 보조색 글자로 둔다. 도안은 격자 한 칸이 1px이 되도록 격자 크기 그대로 보인다. */
+  .maturity { display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: none; color: var(--muted); font: inherit; cursor: pointer; }
+  .maturity svg { display: block; width: 14px; height: 14px; flex: none; }
+  .maturity[aria-expanded="true"] { color: var(--ink); }
+  @media (hover: hover) { .maturity:hover { color: var(--ink); } }
+  /* 설명 상자가 열려 있는 동안 새싹은 떡잎이 벌어진 장면으로 끊어서 바뀐다. 독자가 누른 반응이고, 움직임 줄이기에서는 바꾸지 않는다. */
+  .maturity .frame-2 { display: none; }
+  @media (prefers-reduced-motion: no-preference) {
+    .maturity[aria-expanded="true"] .frame-1 { display: none; }
+    .maturity[aria-expanded="true"] .frame-2 { display: inline; }
+  }
+  /* 설명은 메타 줄 아래에 흐름대로 펼쳐 제목을 밀어낸다. 제목 위에 겹쳐 띄우면 바깥을 눌러 닫는 처리와 자리 계산이 필요하다.
+     세 단계를 모두 보여 이 노트가 어디쯤인지 알게 하고, 이 노트의 단계만 먹색으로 둔다. */
+  .maturity-note { max-width: 480px; margin: -4px 0 20px; padding: 12px 14px; border: 1px solid var(--line); background: var(--paper-strong); color: var(--muted); font-size: var(--t-side); line-height: 1.6; }
+  .maturity-note p { margin: 0 0 8px; }
+  .maturity-note ol { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+  .maturity-note li { display: grid; grid-template-columns: 14px auto minmax(0, 1fr); align-items: center; gap: 4px 8px; }
+  .maturity-note li svg { display: block; width: 14px; height: 14px; }
+  .maturity-note b { font-weight: 600; }
+  .maturity-note li[aria-current="true"] { color: var(--ink); }
   /* 제목 아래 요약은 명조로 구분한다. 목차가 옆으로 가는 넓은 화면에서는 아래 선을 더해 본문의 시작을 알린다.
      한 열에서는 목차의 위 선과 겹치지 않도록 요약의 선을 생략한다. */
   .note-lead { margin: -12px 0 36px; color: var(--ink); font-family: var(--display); font-size: var(--t-lead); line-height: 1.65; letter-spacing: -.01em; }
@@ -191,7 +219,7 @@ const feedbackPath = articleMeta(note).path;
        12px씩 넓히면 16px 겹치고, 겹친 자리에서는 뒤 줄이 이겨 앞 줄의 글자를 눌러도 다른 곳으로 간다.
        줄 간격을 24px로 벌려 44px을 채우는 대신 28.8px을 택했다. 그렇게 하면 같은 덩어리 안의 간격이 제목까지의 14px보다 넓어진다.
        페이지 끝 줄은 링크가 하나뿐이라 겹칠 일이 없어 44px을 채운다. */
-    .note-meta a { padding-block: 4px; margin-block: -4px; }
+    .note-meta a, .note-meta .maturity { padding-block: 4px; margin-block: -4px; }
     .note-footer a { padding-block: 12px; margin-block: -12px; }
     /* 글자를 키우거나 폭이 좁으면 제보 링크가 둘째 줄로 내려간다. 두 링크가 12px씩 넓힌 영역이 맞닿기만 하게 줄 사이를 24px로 벌린다.
        10px 그대로면 14px 겹쳐, 목록 링크의 아래쪽을 눌러도 제보 폼이 열린다. */
@@ -204,3 +232,4 @@ const feedbackPath = articleMeta(note).path;
 <script src="../scripts/code-copy.ts"></script>
 <script src="../scripts/footnotes.ts"></script>
 <script src="../scripts/toc-button.ts"></script>
+<script src="../scripts/maturity.ts"></script>
