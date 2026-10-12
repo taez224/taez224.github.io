@@ -28,6 +28,49 @@ test('highlighted text keeps the ink color on the highlight in both themes', { t
   await expect(mark).toHaveCSS('color', rgb(dark ? DARK_PALETTE.ink : PALETTE.ink));
 });
 
+// 생각 노트의 성숙도는 메타 줄에 이름이 늘 보이고, 버튼을 누르면 세 단계의 뜻이 메타 줄 아래에 펼쳐진다.
+// 휴대폰에는 툴팁이 없어 이름만으로는 뜻을 전할 수 없다. 설명은 제목 위에 겹치지 않고 흐름대로 제목을 밀어낸다.
+test('the maturity button unfolds the stage meanings under the meta line and closes with Escape', async ({ page, isMobile }) => {
+  await page.goto('/notes/browser-long-summary/');
+  const button = page.locator('[data-maturity]');
+  const meanings = page.locator('#maturity-note');
+  await expect(button).toHaveText('새싹');
+  await expect(meanings).toBeHidden();
+  if (isMobile) await button.tap(); else await button.click();
+  await expect(button).toHaveAttribute('aria-expanded', 'true');
+  await expect(meanings).toBeVisible();
+  await expect(meanings.locator('li[aria-current="true"]')).toContainText('새싹');
+  const box = (await meanings.boundingBox())!, title = (await page.locator('.note-title').boundingBox())!;
+  expect(title.y, '제목이 설명 아래로 밀려난다').toBeGreaterThanOrEqual(box.y + box.height);
+  await button.focus();
+  await page.keyboard.press('Escape');
+  await expect(meanings).toBeHidden();
+  await expect(button).toBeFocused();
+});
+
+// 새싹은 설명이 열려 있는 동안 떡잎이 벌어진 장면으로 바뀐다. 움직임 줄이기를 켠 독자에게는 바뀌지 않아야 한다.
+test('the seedling opens its leaves while the meanings are shown but holds still with reduced motion', async ({ page, isMobile }) => {
+  await page.goto('/notes/browser-long-summary/');
+  const button = page.locator('[data-maturity]');
+  const press = () => (isMobile ? button.tap() : button.click());
+  const scenes = () => button.locator('svg path').evaluateAll((paths) => paths.map((path) => getComputedStyle(path).display));
+  await expect.poll(scenes, '닫혀 있으면 첫 장면').toEqual(['inline', 'none']);
+  await press();
+  await expect.poll(scenes, '열리면 둘째 장면').toEqual(['none', 'inline']);
+  await press();
+  await expect.poll(scenes, '닫으면 첫 장면').toEqual(['inline', 'none']);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await press();
+  await expect(button).toHaveAttribute('aria-expanded', 'true');
+  await expect.poll(scenes, '움직임 줄이기에서는 첫 장면에 둔다').toEqual(['inline', 'none']);
+});
+
+test('a hub note shows no maturity even when its status is set', async ({ page }) => {
+  await page.goto('/notes/browser-start/');
+  await expect(page.locator('.note-meta .kicker')).toBeVisible();
+  await expect(page.locator('[data-maturity]')).toHaveCount(0);
+});
+
 test('adjacent footnotes have their own space and open the intended note', async ({ page, isMobile }) => {
   await page.goto('/notes/browser-start/');
   const first = page.getByRole('link', { name: '각주 1', exact: true });
