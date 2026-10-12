@@ -36,7 +36,6 @@ npm run mark:build           # 표식 도안을 고쳤을 때만. public/favicon
 - `snapshot:markdown`은 Markdown 렌더러, 본문 정리, 목차, 검색 텍스트, 링크 해석을 고치거나 markdown-it·sanitize-html을 올릴 때 쓰는 회귀 검사다. 고치기 전에 `write`, 고친 뒤에 `verify`를 실행한다. 실제 vault를 읽기 전용으로 읽고, 산출물이 다르면 종료 코드 1, config.json이나 스냅샷 형식이 다르면 종료 코드 2로 끝난다. 원문이 바뀐 노트가 있으면 전체 동일로 판정하지 않는다. 자동 테스트가 아니므로 Markdown 문법은 임시 입력을 쓰는 단위 테스트로 검증한다.
 - 글꼴(Pretendard, Gowun Batang)은 자체 호스팅한다. `scripts/vendor-fonts.ts`가 고정 버전 npm 패키지에서 woff2 조각을 받아 `public/fonts/`에 커밋해 두므로 빌드와 dev에 네트워크가 필요 없다. 글꼴 버전은 스크립트의 패키지 버전으로 올리고, 생성된 `fonts.css`는 직접 고치지 않는다.
 - `sharp`는 Astro가 선택 의존성으로만 가져오지만 썸네일 최적화와 OG 카드가 쓰므로 직접 의존성으로 선언한다.
-- `overrides`의 `lodash-es`는 Mermaid 12가 쓰는 chevrotain이 취약한 4.17.23을 고정하기 때문에 둔 것이다. chevrotain 계열 세 패키지가 4.18 이상을 선언하면 override를 빼고 `npm audit --omit=dev`와 도표 렌더링을 다시 확인한다.
 - 환경 변수: `GARDEN_VAULT_ROOT`(vault 경로), `GARDEN_PROJECT_ROOT`(기본 cwd), `GARDEN_OG_CACHE_DIR`, `GARDEN_DIST_DIR`(check-dist 대상), `CI`(있으면 OG 글꼴을 받지 못했을 때 시스템 글꼴로 대신 그리지 않고 빌드를 멈추며, 브라우저 검사를 한 번 재시도한다).
 
 ## 아키텍처
