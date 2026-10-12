@@ -2,6 +2,7 @@ import { createHighlighter, renderNodesToHtml, renderTokens } from '@tanstack/hi
 import { css } from '@tanstack/highlight/languages/css';
 import { dockerfile } from '@tanstack/highlight/languages/dockerfile';
 import { html } from '@tanstack/highlight/languages/html';
+import { java } from '@tanstack/highlight/languages/java';
 import { js } from '@tanstack/highlight/languages/js';
 import { json } from '@tanstack/highlight/languages/json';
 import { markdown } from '@tanstack/highlight/languages/markdown';
@@ -10,14 +11,12 @@ import { shell } from '@tanstack/highlight/languages/shell';
 import { ts } from '@tanstack/highlight/languages/ts';
 import { tsx } from '@tanstack/highlight/languages/tsx';
 import { yaml } from '@tanstack/highlight/languages/yaml';
-import { java } from './highlight-java.ts';
 
 // 노트에 실제로 쓰는 언어만 등록한다. 강조는 빌드 때만 돌아가 방문자에게 스크립트가 가지 않지만,
 // 쓰지 않는 언어를 미리 불러오지 않는다. HTML 크기는 실제로 강조한 블록의 토큰 수에 따라 늘어난다.
-// 언어 묶음(@tanstack/highlight/languages)을 통째로 가져오면 번들러 없는 테스트·dev에서 30개 모듈이 모두
+// 언어 묶음(@tanstack/highlight/languages)을 통째로 가져오면 번들러 없는 테스트·dev에서 모든 언어 모듈이
 // 평가되므로 언어별 경로로 가져온다.
 // 별칭은 라이브러리가 함께 받는다(javascript→js, typescript→ts, bash→shell, xml→html, yml→yaml, md→markdown).
-// java는 라이브러리에 없어 highlight-java.ts에서 직접 정의한다.
 const highlighter = createHighlighter({
   languages: [java, js, ts, tsx, yaml, shell, json, css, html, markdown, python, dockerfile]
 });
