@@ -84,7 +84,11 @@
   ],
   "assets": [
     "_attachments/sse-fanout-instance-mismatch.svg",
-    "20_Projects/blog/assets/ai-team-absorption.png"
+    "20_Projects/blog/assets/ai-team-absorption.png",
+    "_attachments/blog-issue-toc.png",
+    "_attachments/blog-issue-form.png",
+    "_attachments/blog-issue-labels.png",
+    "_attachments/blog-issue-test.png"
   ],
   "googleSiteVerification": "26KX9ErXoiFtCBk-UMXye2V0FsbCtDVsBi_azBWJsug",
   "naverSiteVerification": "65af15c98ed34c0d3d06bbb83766a68b05b09f63",
