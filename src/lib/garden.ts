@@ -17,6 +17,7 @@ import { createMarkdownRenderer, headingAnchor, headingOutline, type OutlineHead
 import { developmentCategory, externalPublicationFor, pathMatches, publicUrl, isIncluded as includedByPolicy, validatePublicationConfig } from './publication.ts';
 import { readBooks } from './books.ts';
 import { createAssetResolver } from './public-assets.ts';
+import { prepareBodyImages } from './image-loading.ts';
 import { selectGraphNodes } from '../graph/select.ts';
 import { slugFor, kindPrefix, noteUrl, assertUniqueSlugs } from './slug.ts';
 import { analyzeText, readingMinutes, type TextAnalysis } from './text.ts';
@@ -272,6 +273,8 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
         incoming: incomingByPath.get(entry.path) ?? []
       };
     });
+
+  for (const note of notes) note.bodyHtml = await prepareBodyImages(note.bodyHtml, assets.dimensionsFor);
 
   // graphRule "linked" 폴더의 노트는 지도에서 종점이다. 자세한 규칙은 selectGraphNodes에 있다.
   const linkedOnlyRoots = config.include.filter((rule) => rule.graphRule === 'linked').map((rule) => rule.path);

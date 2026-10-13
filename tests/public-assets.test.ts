@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import sharp from 'sharp';
 import { createAssetResolver } from '../src/lib/public-assets.ts';
 
 async function makeVault(files: Record<string, string>) {
@@ -54,4 +55,32 @@ test('only assets resolved for a body are recorded for copying into the build', 
 
 test('a reviewed asset path that is not a file fails the build', async () => {
   await assert.rejects(createAssetResolver({ vaultRoot: await makeVault(files), config: { ...config, assets: ['_attachments'] }, base: '' }), /Reviewed asset is not a file: _attachments/);
+});
+
+test('dimensions are read only for resolved public images and cached for the assembly', async () => {
+  const root = await makeVault({ '01_Slipbox/picture.svg': '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"></svg>' });
+  try {
+    const assets = await createAssetResolver({ vaultRoot: root, config: { ...config, assets: [] }, base: '/obsidian' });
+    assert.equal(await assets.dimensionsFor('https://example.com/image.png'), null);
+    assert.equal(await assets.dimensionsFor('/obsidian/assets/vault/01_Slipbox/picture.svg'), null, '아직 원문에서 참조하지 않은 파일은 읽지 않는다');
+    const image = assets.resolve(note, 'picture.svg')!;
+    const first = assets.dimensionsFor(image.url);
+    assert.equal(assets.dimensionsFor(image.url), first);
+    assert.deepEqual(await first, { width: 600, height: 400 });
+    assert.deepEqual([...assets.copies.keys()], ['01_Slipbox/picture.svg']);
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test('image dimensions follow EXIF orientation and unreadable dimensions do not stop publication', async () => {
+  const root = await makeVault({ '01_Slipbox/broken.png': 'not an image' });
+  try {
+    await sharp({ create: { width: 120, height: 80, channels: 3, background: 'white' } }).jpeg().withMetadata({ orientation: 6 }).toFile(path.join(root, '01_Slipbox/rotated.jpg'));
+    const assets = await createAssetResolver({ vaultRoot: root, config: { ...config, assets: [] }, base: '' });
+    assert.deepEqual(await assets.dimensionsFor(assets.resolve(note, 'rotated.jpg')!.url), { width: 80, height: 120 });
+    assert.equal(await assets.dimensionsFor(assets.resolve(note, 'broken.png')!.url), null);
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
 });

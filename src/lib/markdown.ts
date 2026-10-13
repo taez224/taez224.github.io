@@ -142,8 +142,8 @@ function splitWikiTarget(rawTarget: unknown) {
 
 // Obsidian의 그림 크기 표기다. 위키 임베드는 `![[그림.png|300]]`·`|300x200`이고, Markdown 그림은 대체 텍스트 끝의
 // `|300`이나 숫자만 쓴 `![300](주소)`다. 사이트는 너비만 따르고 높이는 대체 텍스트에서 떼어 내기만 한다.
-// 그림은 원래 비율로 너비에 맞추므로(본문 CSS의 height: auto) 높이 속성을 내보내면 불러오기 전 자리만 그 높이로
-// 잡혔다가 바뀌어 화면이 움직인다.
+// 작성자가 적은 높이는 원본 비율과 다를 수 있어 그대로 내보내지 않는다. 로컬 이미지의 원본 크기를 알면
+// image-loading.ts가 실제 비율에 맞는 높이를 나중에 더해 로딩 전 자리를 확보한다.
 const WIKI_IMAGE_SIZE = /^\s*(\d+)(?:x(\d+))?\s*$/;
 export const MARKDOWN_IMAGE_SIZE = /^(?:([\s\S]*)\|)?\s*(\d+)(?:x(\d+))?\s*$/;
 const sizeAttributes = (width?: string) => (width ? ` width="${width}"` : '');

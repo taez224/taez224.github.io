@@ -22,6 +22,23 @@ const manyTitles = ['AI 시대의 판단력은 맥락을 실행 기준으로 바
 // 둘째 문장이 길어 어느 폭에서도 세 줄을 넘는 요약. 목록·카드·홈 연재가 첫 문장으로 자르지 않고 줄 수로 자르는지 본다.
 export const LONG_SUMMARY = `첫 문장은 질문으로 시작하는가? ${'둘째 문장은 글이 다루는 범위를 구체적으로 설명하면서 길게 이어진다. '.repeat(6).trim()}`;
 export const BROWSER_NOTES: Record<string, string> = {
+  '01_Slipbox/image-loading.md': `---
+title: 이미지 로딩 검사
+slug: browser-image-loading
+created: 2026-09-01
+---
+# 이미지 로딩 검사
+
+![첫 그림|400](reader.png)
+
+${'그림 사이에서 읽는 본문이다.\n\n'.repeat(150)}
+
+![뒤쪽 그림](delayed.png)
+
+## 그림 다음
+
+이미지가 로드돼도 이 절의 위치가 유지된다.
+`,
   '30_Resources/Development/Concepts/소개 단락.md': `---
 title: 소개 단락
 slug: browser-lead
@@ -306,6 +323,7 @@ summary: ${LONG_SUMMARY}
 export async function writeBrowserVault(projectRoot: string, vault: string): Promise<void> {
   await fs.mkdir(path.join(vault, '01_Slipbox'), { recursive: true });
   await sharp({ create: { width: 1800, height: 1000, channels: 3, background: 'white' } }).png().toFile(path.join(vault, '01_Slipbox/reader.png'));
+  await sharp({ create: { width: 1200, height: 800, channels: 3, background: 'white' } }).png().toFile(path.join(vault, '01_Slipbox/delayed.png'));
   await fs.writeFile(path.join(projectRoot, 'config.json'), JSON.stringify(BROWSER_CONFIG));
   for (const [file, content] of Object.entries(BROWSER_NOTES)) {
     await fs.mkdir(path.dirname(path.join(vault, file)), { recursive: true });
