@@ -624,6 +624,33 @@ test('the reader keeps its column width and centers the single column at interme
 });
 
 
+test('foldable callouts announce their action before the title and retain warning icons', { tag: BOTH_THEMES }, async ({ page, isMobile }) => {
+  await page.goto('/notes/browser-neighbor/');
+  const note = page.locator('details.callout-note');
+  const summary = note.locator('summary');
+  const warning = page.locator('details.callout-warning > summary');
+  const state = () => summary.evaluate(e => {
+    const marker = getComputedStyle(e, '::after');
+    return { left: marker.left, width: marker.width, rotation: marker.transform, icon: getComputedStyle(e, '::before').display };
+  });
+  const closed = await state();
+  expect(closed.left).toBe('0px');
+  expect(closed.width).toBe('10px');
+  expect(closed.icon).toBe('none');
+  expect(await warning.evaluate(e => getComputedStyle(e, '::before').display)).not.toBe('none');
+  if (isMobile) expect((await summary.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await summary.focus();
+  await page.keyboard.press('Enter');
+  await expect(note).toHaveAttribute('open', '');
+  await expect.poll(async () => (await state()).rotation).not.toBe(closed.rotation);
+  await page.keyboard.press('Space');
+  await expect(note).not.toHaveAttribute('open');
+  const box = (await summary.boundingBox())!;
+  await summary.click({ position: { x: box.width - 4, y: box.height / 2 } });
+  await expect(note).toHaveAttribute('open', '');
+});
+
+
 test('overflow hints follow both scroll edges and disappear when the table fits', { tag: BOTH_THEMES }, async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/notes/browser-image/');

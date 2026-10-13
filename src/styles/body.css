@@ -163,19 +163,19 @@
    아이콘은 마스크로 찍어 머리표 색을 그대로 따른다. 렌더러가 SVG를 출력하지 않아도 되고, 종류마다 --callout-icon만 바꾸면 된다.
    중첩된 콜아웃은 .callout 규칙이 변수를 다시 정하므로 바깥 종류의 아이콘·색을 물려받지 않는다. */
 .body .callout > :is(.callout-title, summary)::before { display: inline-block; width: 14px; height: 14px; margin-right: 6px; vertical-align: -2px; background: currentColor; -webkit-mask: var(--callout-icon) center / 14px no-repeat; mask: var(--callout-icon) center / 14px no-repeat; content: ""; }
-/* 접히는 콜아웃: 머리표 줄 오른쪽 꺾쇠가 펼칠 수 있음을 알린다. 꺾쇠는 누른 순간부터 움직여야 반응이 빠르게 느껴지므로
-   기본 ease 대신 처음에 빠르고 끝에서 감속하는 ease-out 곡선을 쓴다.
-   summary가 display: block이면 크롬·파이어폭스는 기본 삼각형을 지우지만 사파리는 -webkit 마커를 따로 그린다. */
-.body details.callout > summary { position: relative; padding-right: 24px; cursor: pointer; }
+/* 제목을 읽는 자리에서 펼침 동작을 알 수 있도록 삼각형을 앞에 둔다.
+   일반 안내의 연필은 삼각형으로 대신하고, 의미가 있는 종류 아이콘은 그대로 남긴다. */
+.body details.callout > summary { position: relative; padding-left: 20px; cursor: pointer; }
 .body details.callout > summary::-webkit-details-marker { display: none; }
-.body details.callout > summary::after { position: absolute; top: 5px; right: 4px; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg); transition: transform .15s cubic-bezier(.23, 1, .32, 1); content: ""; }
-.body details.callout[open] > summary::after { transform: translateY(4px) rotate(-135deg); }
-@media (hover: hover) { .body details.callout > summary:hover { color: var(--ink); } }
+.body details.callout.callout-note > summary::before { display: none; }
+.body details.callout > summary::after { position: absolute; top: calc(.75em - 5px + var(--fold-pad, 0px)); left: 0; width: 10px; height: 10px; background: currentColor; clip-path: polygon(20% 0, 90% 50%, 20% 100%); transform: rotate(0deg); transition: transform .15s cubic-bezier(.23, 1, .32, 1); content: ""; }
+.body details.callout[open] > summary::after { transform: rotate(90deg); }
+@media (hover: hover) { .body details.callout > summary:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); } }
 .body details.callout:not([open]) { padding-bottom: 12px; }
 /* 머리표는 콜아웃을 여닫는 유일한 조작이라 손가락 기기에서 44px로 넓힌다. 위는 콜아웃의 12px 안쪽 여백이 받아 주고,
    아래는 펼쳤을 때 본문이 바로 붙으므로 본문을 그만큼 물러서게 한다. 닿은 채로 두면 본문 첫 줄을 눌러도 콜아웃이 접힌다. */
 @media (pointer: coarse) {
-  .body details.callout > summary { padding-block: 12px; margin-block: -12px; }
+  .body details.callout > summary { --fold-pad: 12px; padding-block: 12px; margin-block: -12px; }
   .body details.callout[open] > .callout-body { margin-top: 12px; }
 }
 @media (prefers-reduced-motion: reduce) { .body details.callout > summary::after { transition: none; } }
