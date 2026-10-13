@@ -170,7 +170,7 @@
 .body details.callout.callout-note > summary::before { display: none; }
 .body details.callout > summary::after { position: absolute; top: calc(.75em - 5px + var(--fold-pad, 0px)); left: 0; width: 10px; height: 10px; background: currentColor; clip-path: polygon(20% 0, 90% 50%, 20% 100%); transform: rotate(0deg); transition: transform .15s cubic-bezier(.23, 1, .32, 1); content: ""; }
 .body details.callout[open] > summary::after { transform: rotate(90deg); }
-@media (hover: hover) { .body details.callout > summary:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); } }
+@media (hover: hover) { .body details.callout > summary:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 6%, transparent); } }
 .body details.callout:not([open]) { padding-bottom: 12px; }
 /* 머리표는 콜아웃을 여닫는 유일한 조작이라 손가락 기기에서 44px로 넓힌다. 위는 콜아웃의 12px 안쪽 여백이 받아 주고,
    아래는 펼쳤을 때 본문이 바로 붙으므로 본문을 그만큼 물러서게 한다. 닿은 채로 두면 본문 첫 줄을 눌러도 콜아웃이 접힌다. */

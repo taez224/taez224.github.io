@@ -650,6 +650,43 @@ test('foldable callouts announce their action before the title and retain warnin
   await expect(note).toHaveAttribute('open', '');
 });
 
+test('warning and bug foldable titles keep sufficient contrast before and during hover', { tag: BOTH_THEMES }, async ({ page, isMobile, systemDark }) => {
+  test.skip(isMobile, '터치 화면에는 호버 배경을 적용하지 않는다.');
+  await page.goto('/notes/browser-neighbor/');
+  const colors = systemDark ? DARK_PALETTE : PALETTE;
+  for (const kind of ['warning', 'bug'] as const) {
+    const title = page.locator(`details.callout-${kind} > summary`);
+    const contrast = () => title.evaluate((element) => {
+      // 반투명 호버 판을 콜아웃 바탕에 합성한 색으로 계산한다. color-mix의 계산값도 읽는다.
+      const rgba = (color: string) => {
+        if (!/^(?:rgba?\(|color\(srgb )/.test(color)) throw new Error(`Unsupported computed color: ${color}`);
+        const parts = color.match(/[\d.]+/g)!.map(Number);
+        const scale = color.startsWith('color(') ? 1 : 255;
+        return [parts[0] / scale, parts[1] / scale, parts[2] / scale, parts[3] ?? 1];
+      };
+      const style = getComputedStyle(element);
+      const foreground = rgba(style.color);
+      const overlay = rgba(style.backgroundColor);
+      const base = rgba(getComputedStyle(element.parentElement!).backgroundColor);
+      if (foreground[3] !== 1 || base[3] !== 1) throw new Error('Expected opaque text and callout background');
+      const background = base.slice(0, 3).map((channel, index) => channel * (1 - overlay[3]) + overlay[index] * overlay[3]);
+      const luminance = (color: number[]) => color.slice(0, 3).reduce((sum, channel, index) => {
+        const linear = channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+        return sum + linear * [0.2126, 0.7152, 0.0722][index];
+      }, 0);
+      const [high, low] = [luminance(foreground), luminance(background)].sort((a, b) => b - a);
+      return (high + 0.05) / (low + 0.05);
+    });
+    await expect(title).toHaveCSS('color', rgb(colors[kind]));
+    expect(await contrast(), `${kind} 기본 제목 대비`).toBeGreaterThanOrEqual(4.5);
+    await title.hover();
+    expect(await contrast(), `${kind} 호버 제목 대비`).toBeGreaterThanOrEqual(4.5);
+    await expect(title).toHaveCSS('color', rgb(colors.ink));
+    await page.mouse.move(0, 0);
+    await expect(title).toHaveCSS('color', rgb(colors[kind]));
+  }
+});
+
 
 test('overflow hints follow both scroll edges and disappear when the table fits', { tag: BOTH_THEMES }, async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
