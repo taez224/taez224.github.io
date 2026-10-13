@@ -573,3 +573,38 @@ test('a long word in the first table column widens the column instead of splitti
   expect(measured.lines).toBe(1);
   expect(measured.overflow).toBe(0);
 });
+
+// 인라인 코드의 테두리가 코드 블록으로 번지지 않고, 콜아웃 머리표가 보조색으로 되돌아가지 않는지 본다.
+test('inline code has a boundary and callout titles retain their hierarchy', { tag: BOTH_THEMES }, async ({ page }) => {
+  await page.goto('/notes/browser-neighbor/');
+  const code = page.locator('.body p > code').first();
+  await expect(code).toHaveCSS('border-top-style', 'solid');
+  await expect(code).toHaveCSS('border-top-width', '1px');
+  const title = page.locator('.callout-note .callout-title');
+  const ink = await page.locator('.body').evaluate(e => getComputedStyle(e).color);
+  await expect(title).toHaveCSS('color', ink);
+  await expect(title).toHaveCSS('font-weight', '650');
+  await expect(page.locator('.callout-warning .callout-title')).not.toHaveCSS('color', ink);
+  await page.goto('/notes/browser-start/');
+  await expect(page.locator('.body pre code').first()).toHaveCSS('border-top-width', '0px');
+});
+
+test('prose links keep an underline and table headers separate columns in both themes', { tag: BOTH_THEMES }, async ({ page, systemDark: dark }) => {
+  await page.goto('/notes/browser-neighbor/');
+  const prose = page.getByRole('link', { name: '설명 링크' });
+  const list = page.getByRole('link', { name: '참고 목록' });
+  const colors = dark ? DARK_PALETTE : PALETTE;
+  await expect(prose).toHaveCSS('color', rgb(colors['body-link']));
+  await expect(prose).toHaveCSS('text-decoration-line', 'underline');
+  await expect(list).toHaveCSS('color', rgb(colors.ink));
+  const head = page.locator('.body th').first();
+  await expect(head).toHaveCSS('font-weight', '700');
+  await expect(head).toHaveCSS('border-bottom-width', '2px');
+  const paints = await page.locator('.body table').evaluate(table => {
+    const first = getComputedStyle(table.querySelector('th')!);
+    const second = getComputedStyle(table.querySelectorAll('th')[1]);
+    return { head: first.backgroundColor, body: getComputedStyle(table.querySelector('td')!).backgroundColor, right: first.borderRightColor, left: second.borderLeftColor };
+  });
+  expect(paints.head).not.toBe(paints.body);
+  expect(paints.right).toBe(paints.left);
+});

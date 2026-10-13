@@ -5,6 +5,7 @@ export const PALETTE = {
   paper: '#f7f6f0',
   'paper-strong': '#fdfcf8',
   ink: '#252e29',
+  'body-link': '#24665c',
   // 보조 글자는 muted 한 단계뿐이다. 종이색 위에서 4.5:1을 지키는 가장 옅은 회색이 muted와 거의 같아서
   // 더 낮은 위계도 색을 옅게 하지 않는다(옛 faint #687267은 muted와의 대비가 1.08이었다). 크기도 메타 줄과 같게 두고 놓인 자리로 구분한다.
   muted: '#626d64',
@@ -30,6 +31,7 @@ export const DARK_PALETTE = {
   paper: '#171e1a',
   'paper-strong': '#1e2822',
   ink: '#e1e8e3',
+  'body-link': '#8dcfc1',
   muted: '#9ca99f',
   line: '#36433b',
   'tint-top': '#242f28',
