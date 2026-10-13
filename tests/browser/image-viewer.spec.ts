@@ -182,13 +182,24 @@ test('an older image request stays closed after another image is viewed and clos
 });
 
 test('selecting a cancelled image again during loading reuses the load and opens one viewer', async ({ page }) => {
-  let requests = 0;
   let release!: () => void;
   const gate = new Promise<void>(resolve => { release = resolve; });
-  await page.route('**/delayed.png', async route => { requests++; await gate; await route.continue(); });
+  await page.route('**/delayed.png', async route => { await gate; await route.continue(); });
   try {
     await page.goto('/notes/browser-image-loading/');
     const open = page.getByRole('button', { name: '뒤쪽 그림 크게 보기', exact: true });
+    const image = open.locator('img');
+    // 확대창의 별도 이미지 요청은 캐시·브라우저에 따라 달라진다. 본문 이미지의 실제 로딩 처리가 중복되는지 본다.
+    await image.evaluate((element) => {
+      const image = element as HTMLImageElement;
+      const decode = image.decode.bind(image);
+      let calls = 0;
+      image.dataset.decodeCalls = '0';
+      image.decode = () => {
+        image.dataset.decodeCalls = String(++calls);
+        return decode();
+      };
+    });
     await open.click();
     await expect(open).toHaveAttribute('aria-busy', 'true');
     await page.getByRole('button', { name: '검색', exact: true }).click();
@@ -199,12 +210,13 @@ test('selecting a cancelled image again during loading reuses the load and opens
     await open.click();
     await open.click();
     await expect(open).toHaveAttribute('aria-busy', 'true');
+    await expect(image).toHaveAttribute('data-decode-calls', '1');
     release();
     const dialog = page.getByRole('dialog', { name: '이미지 크게 보기' });
     await expect(dialog).toBeVisible();
     await expect(dialog).toHaveCount(1);
     await expect(open).not.toHaveAttribute('aria-busy');
-    expect(requests).toBe(1);
+    await expect(image).toHaveAttribute('data-decode-calls', '1');
     await dialog.getByRole('button', { name: '닫기', exact: true }).click();
     await expect(open).toBeFocused();
   } finally { release(); }
