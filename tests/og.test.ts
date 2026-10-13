@@ -189,3 +189,10 @@ test('a gif thumbnail reviewed by the note pipeline also renders an OG card', as
   assert.ok(uri, 'gif 썸네일도 데이터 URI로 돌아온다');
   assert.match(uri, /^data:image\/png;base64,/);
 });
+
+
+test('series hub cards omit reading time while individual article cards keep it', () => {
+  const note = { title: '연재 소개', displayTitle: '연재 소개', kind: 'blog' as const, path: 'series.md', url: '/posts/series/', topic: 'AI', readingMinutes: 7 };
+  assert.doesNotMatch(ogSvg({ note: { ...note, type: 'series' }, outgoing: [], incoming: [], siteLabel: 'example.com' }), /7분/);
+  assert.match(ogSvg({ note, outgoing: [], incoming: [], siteLabel: 'example.com' }), /7분/);
+});

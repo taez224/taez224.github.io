@@ -52,7 +52,7 @@ const maturity = maturityOf(note);
           {note.updated && `${note.published ? (note.kind === 'blog' ? '발행' : '공개') : '작성'} `}<time datetime={note.date}>{formatDate(note.date)}</time>
           {note.updated && <span class="modified-date">수정 <time datetime={note.updated}>{formatDate(note.updated)}</time></span>}
         </span>
-        {note.readingMinutes > 0 && <span>{note.readingMinutes}분</span>}
+        {note.type !== 'series' && note.readingMinutes > 0 && <span>{note.readingMinutes}분</span>}
         {topics.map((t) => <span><i class="topic-dot" style={`background:${t.color}`} aria-hidden="true"></i>{t.label}</span>)}
         {note.publishedUrl && <a href={note.publishedUrl} target="_blank" rel="noreferrer">{note.publication || '원문'}에서 읽기 ↗</a>}
       </div>

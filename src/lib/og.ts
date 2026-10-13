@@ -1,7 +1,7 @@
 import type { PublicNote, GardenGraphNode, GraphEdge } from './content-model.ts';
 // 카드가 읽는 값. 지도 그림에 쓰는 path·url·topic·displayTitle은 있어야 하고, 날짜·분량·썸네일은 없을 수 있다.
 type CardNote = Pick<PublicNote, 'path' | 'title' | 'displayTitle' | 'url' | 'topic' | 'kind'>
-  & Partial<Pick<PublicNote, 'category' | 'date' | 'readingMinutes' | 'thumbnail' | 'thumbnailStyle' | 'outgoing' | 'incoming'>>;
+  & Partial<Pick<PublicNote, 'type' | 'category' | 'date' | 'readingMinutes' | 'thumbnail' | 'thumbnailStyle' | 'outgoing' | 'incoming'>>;
 type NoteGarden = { notes: CardNote[] };
 type OgGarden = NoteGarden & { nodes: GardenGraphNode[]; edges: GraphEdge[] };
 type RenderPng = () => Buffer | Promise<Buffer>;
@@ -168,7 +168,7 @@ export function ogSvg({ note, outgoing, incoming, siteLabel, thumbnailDataUri: t
   const lineHeight = Math.round(size * 1.34);
   const blockHeight = lineHeight * lines.length;
   const firstBaseline = Math.round((630 - blockHeight) / 2 + size * 0.92);
-  const meta = [kindLabel(note), note.date ? formatDate(note.date) : '', note.readingMinutes ? `${note.readingMinutes}분` : ''].filter(Boolean).join(' · ');
+  const meta = [kindLabel(note), note.date ? formatDate(note.date) : '', note.type !== 'series' && note.readingMinutes ? `${note.readingMinutes}분` : ''].filter(Boolean).join(' · ');
   const imageWidth = Math.min(400, 400 * thumbnailRatio), imageHeight = Math.min(400, 400 / thumbnailRatio);
   const image = thumbnail ? `<image href="${thumbnail}" x="${740 + (400 - imageWidth) / 2}" y="${115 + (400 - imageHeight) / 2}" width="${imageWidth}" height="${imageHeight}" preserveAspectRatio="xMidYMid meet"/>` : '';
   const softMask = `<defs>

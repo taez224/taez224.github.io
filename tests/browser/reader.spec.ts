@@ -673,3 +673,12 @@ test('overflow hints follow both scroll edges and disappear when the table fits'
   await expect(table).not.toHaveAttribute('data-overflow-right');
   await expect(table).not.toHaveAttribute('tabindex');
 });
+
+
+test('series hubs show the published count without a misleading reading time', async ({ page }) => {
+  await page.goto('/posts/browser-series/');
+  await expect(page.locator('.note-meta')).not.toContainText(/\d+분/);
+  await expect(page.locator('.series-start')).toContainText(/공개된 글 \d+편/);
+  await page.goto('/posts/browser-series-part/');
+  await expect(page.locator('.note-meta')).toContainText(/\d+분/);
+});
