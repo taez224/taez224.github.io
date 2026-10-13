@@ -1,6 +1,6 @@
 ---
 import { pixelIcon } from '../lib/pixel-icons.ts';
-import { noteConnections } from './note-connections.ts';
+import { noteConnections } from '../lib/note-connections.ts';
 import type { PublicNote } from '../lib/content-model.ts';
 import type { seriesNeighbors } from '../lib/note-nav.ts';
 interface Props { title: string; headings: PublicNote['headings']; outgoing: PublicNote[]; incoming: PublicNote[]; mapUrl: string; series: ReturnType<typeof seriesNeighbors>; currentPath: string }
@@ -22,7 +22,7 @@ const label = hasToc && hasConnections ? '목차와 연결' : hasToc ? '목차' 
     </div>
     {hasToc && <nav class="toc-scroll reader-panel" id="reader-toc-panel" role="tabpanel" aria-labelledby="reader-toc-tab"><div class="toc-rail">{headings.map(h => <a class:list={[{ 'level-3': h.level === 3 }]} href={`#${h.id}`} data-toc-target={h.id}>{h.title}</a>)}</div></nav>}
     {hasConnections && <div class="reader-panel reader-connections" id="reader-links-panel" role="tabpanel" aria-labelledby="reader-links-tab" hidden={hasToc}>
-      {seriesPosts.length > 0 && <section class="reader-group"><h3>연재<span>{seriesPosts.length}</span></h3>{series?.url && <a href={series.url}>{series.title}</a>}{seriesPosts.map(post => <a href={post.url} aria-current={post.path === currentPath ? 'page' : undefined}>{post.title}</a>)}</section>}
+      {seriesPosts.length > 0 && <section class="reader-group"><h3>연재<span>{seriesPosts.length}</span></h3>{series?.url && !series.isHub && <a href={series.url}>{series.title}</a>}{seriesPosts.map(post => <a href={post.url} aria-current={post.path === currentPath ? 'page' : undefined}>{post.title}</a>)}</section>}
       {blocks.map(block => <section class="reader-group"><h3>{block.label}<span>{block.items.length}</span></h3>{block.items.map(n => <a href={n.url}>{n.displayTitle}</a>)}</section>)}
       {count === 0 && <p class="reader-empty">아직 연결된 글이 없습니다.</p>}
     </div>}

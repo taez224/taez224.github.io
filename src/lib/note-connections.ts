@@ -1,5 +1,5 @@
-import type { PublicNote } from '../lib/content-model.ts';
-import type { seriesNeighbors } from '../lib/note-nav.ts';
+import type { PublicNote } from './content-model.ts';
+import type { seriesNeighbors } from './note-nav.ts';
 
 // 사이드바와 좁은 화면의 연결 판은 같은 목록을 쓴다. 연재에서 이미 보인 글을 참조 목록에 되풀이하지 않는다.
 export function noteConnections(outgoing: PublicNote[], incoming: PublicNote[], series: ReturnType<typeof seriesNeighbors>) {

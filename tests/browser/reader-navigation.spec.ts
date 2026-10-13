@@ -69,6 +69,22 @@ test('a series connection is listed once instead of repeated as a reference', as
   await expect(links).toBeVisible();
 });
 
+test('a series hub lists its episodes without linking to itself in the connection sheet', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 400 });
+  await page.goto('/posts/browser-series/');
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await page.locator('.toc-button').click();
+  await page.locator('#reader-links-tab').click();
+  const panel = page.locator('#reader-links-panel');
+  await expect(panel).toBeVisible();
+  await expect(panel.locator('a[href="/posts/browser-series/"]')).toHaveCount(0);
+  await expect(panel.locator('a[href="/posts/browser-series-part/"]')).toBeVisible();
+  const episodes = await page.locator('.note-side .series-list a').evaluateAll(links => links.map(link => link.getAttribute('href')));
+  const sheetLinks = await panel.locator('a').evaluateAll(links => links.map(link => link.getAttribute('href')));
+  expect(sheetLinks).toEqual(episodes);
+  await expect(page.locator('.reader-count')).toHaveText(String(episodes.length));
+});
+
 test.describe('without scripts', () => {
   test.use({ javaScriptEnabled: false });
   test('the sidebar connections remain available without the floating control', async ({ page }) => {
