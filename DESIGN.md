@@ -609,6 +609,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 - **각주:** 번호를 누르면 번호에 붙은 떠 있는 판이 열린다. 키보드로 누르거나 판을 띄우지 못하는 브라우저에서는 판 없이 글 끝 목록으로 가서 ↩로 돌아온다. 낭독기와 키보드 사용자가 흐름을 잃지 않기 때문이다.
   - 마우스에서는 번호에 잠시 머물면 같은 판을 미리보기로 띄우고, 포인터가 번호와 판을 모두 떠나면 닫는다. 번호를 누르면 판이 고정된다. 미리보기는 누르는 동작을 대신하지 않고 더할 뿐이라 터치와 마우스의 누르기가 같다. 본문을 읽다 스쳐 지나가는 포인터에는 열리지 않게 기다리고, 이웃 번호로 옮길 때는 기다리지 않는다. 글 끝 목록의 그 항목이 이미 화면에 보이면 같은 내용을 겹쳐 띄우지 않는다.
 - **인라인 코드:** 고정폭 글꼴에 얇은 테두리와 좌우 여백을 더해 문장 속 식별자를 구분한다. 어두운 화면에서는 배경과 테두리의 명도 차이를 더 준다. 여러 줄에 걸쳐도 각 줄에 같은 경계를 그린다.
+- **본문 이미지:** 그림을 눌러 모달로 크게 본다. 먼저 화면에 맞춰 보여 주고 원래 크기로 바꾸면 스크롤로 세부를 읽는다. 닫기 버튼·Esc·배경 누르기로 닫으면 누른 이미지로 포커스를 돌려준다. 링크 이미지와 글 카드의 이동은 가로채지 않는다.
 - **코드 블록:** 문단보다 토큰 종류를 빨리 가려 읽어야 하므로 사이트 톤보다 문법 구분과 대비를 앞세운다. 밝은 화면은 흰 바탕을 쓴다. 가장 흐린 주석이 종이색 위에서 4.5:1에 못 미치기 때문이다. 강조는 빌드 때 끝내 방문자에게 스크립트를 보내지 않는다. 복사 버튼은 스크립트 없이는 동작하지 않으므로 스크립트가 붙인다.
 - **도표:** 노드는 한 가지 면 색으로 두고 색은 묶음이 지게 한다. 노드까지 색을 돌리면 색이 묶음을 뜻하는지 항목을 뜻하는지 가릴 수 없다. 앞머리로 테마를 지정한 도표는 사이트 색을 입히지 않고, 그 테마가 전제한 밝기의 판에 화면 모드와 상관없이 둔다.
 - **글 카드:** 사방 테두리를 쓴다. 위아래 괘선만 두면 절 제목의 밑줄과 다음 절의 구분선으로 읽혀 한 덩어리로 묶이지 않는다. 테두리는 링크에 두어 누르는 자리와 강조되는 영역을 맞춘다.
@@ -644,7 +645,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 **찾은 말 표시 규칙.** 제목과 요약에서 찾은 말에 형광을 얹어 왜 걸렸는지 보인다. 요약은 찾은 말 앞에 단어 하나만 남긴다. 한 줄에 드는 글자 수는 폭과 글자 크기에 따라 달라서, 앞 문맥을 길게 두면 좁은 화면에서 찾은 말이 잘린 줄 아래로 숨는다.
 
-**배경 닫기 규칙.** 검색과 도표 크게 보기는 배경을 눌러도 닫는다. 상자 안에서 눌러 배경에서 손을 뗀 경우는 글자를 고르거나 도표를 끌던 중이므로 닫지 않는다.
+**배경 닫기 규칙.** 검색·도표·이미지 크게 보기는 배경을 눌러도 닫는다. 상자 안에서 눌러 배경에서 손을 뗀 경우는 글자를 고르거나 도표를 끌던 중이므로 닫지 않는다.
 
 **책 결과 규칙.** 책장에서 책 결과를 고르면 페이지를 다시 열지 않으므로 검색창을 닫는다. 필터가 그 책을 숨겼으면 필터를 전체로 되돌린다. 필터는 주소에 남지 않으므로 고른 책을 보이는 것이 먼저다. 새 탭으로 여는 누름은 이 페이지를 바꾸지 않는다.
 
@@ -691,6 +692,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 역할 색(밝은·어두운 화면)과 링크 밑줄의 대비 | `src/lib/palette.ts`, `src/styles/site.css` | `tests/palette.test.ts` |
 | 주제색 | `src/lib/format.ts`(화면에는 `var(--topic-…)`로 나감) | `tests/topic-colors.test.ts` |
 | 코드 강조색 | `src/styles/body.css` | `tests/code-colors.test.ts` |
+| 본문 이미지 확대와 원래 크기·포커스 복귀 | `src/scripts/image-viewer.ts`, `src/styles/body.css` | `tests/browser/image-viewer.spec.ts` |
 | 도표 색과 배치 설정 | `src/scripts/mermaid-config.ts` | `tests/mermaid.test.ts` |
 | 글꼴 조각과 적재 | `scripts/vendor-fonts.ts`가 만든 `src/styles/fonts.css`, `public/fonts` | `tests/fonts.test.ts` |
 | 대체 서체 목록 | `site.css`의 `--display`·`--sans` | 없음 |
@@ -718,7 +720,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 지도와 홈 지도가 나누는 호버 예고편·누름 상태 | `src/graph/engine.ts` | `tests/browser/map.spec.ts`, `tests/browser/home.spec.ts` |
 | 지도 시트로 바뀌는 폭과 그 폭의 대화상자 처리 | `src/components/MapPanel.astro`, `src/scripts/map.ts`, `src/pages/map/index.astro` | `tests/interaction-states.test.ts`, `tests/browser/map.spec.ts` |
 | 검색 결과 줄의 형광과 두 줄 요약 | `src/lib/search-match.ts`, `src/scripts/search.ts`, `src/styles/site.css` | `tests/search-match.test.ts`, `tests/browser/search.spec.ts` |
-| 검색·도표 크게 보기의 배경 닫기와 끌기 보호 | `src/scripts/dialog-backdrop.ts` | `tests/dialog-backdrop.test.ts`, `tests/browser/search.spec.ts` |
+| 검색·도표·이미지 크게 보기의 배경 닫기와 끌기 보호 | `src/scripts/dialog-backdrop.ts` | `tests/dialog-backdrop.test.ts`, `tests/browser/search.spec.ts` |
 | 검색창 닫기와 검색어 보존·포커스 | `src/components/SearchDialog.astro`, `src/scripts/search.ts`, `src/styles/site.css` | `tests/browser/search.spec.ts` |
 | 지도 필터 해제·배치 안정성과 확대 조작 | `src/pages/map/index.astro`, `src/scripts/map.ts` | `tests/browser/map.spec.ts` |
 | 지도 제목 겹침 금지와 확대 조작 피하기 | `src/graph/label.ts`, `src/graph/engine.ts`, `src/scripts/map.ts` | `tests/graph-label.test.ts`, `tests/regions.test.ts`, `tests/browser/map.spec.ts` |

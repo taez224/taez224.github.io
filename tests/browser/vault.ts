@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import sharp from 'sharp';
 
 // 브라우저 검사가 빌드하는 임시 vault의 입력이다. 검사가 여는 노트(slug)와 그 노트에 있어야 할 내용을 여기서 고친다.
 // 임시 폴더, 빌드, 서버는 server.ts가 맡는다.
@@ -55,6 +56,19 @@ summary: 외부에서 읽는 글의 공개 요약이다.
 [[start]]와 [[neighbor]]를 참고한다.
 `,
   // 허브는 성숙도를 쓰지 않는다. status를 일부러 적어 두어 허브에는 성숙도 버튼이 생기지 않는지 본다.
+  '01_Slipbox/image-reader.md': `---
+title: 이미지 확대 검사
+slug: browser-image
+created: 2026-09-01
+---
+# 이미지 확대 검사
+
+![읽기 화면 예시|400](reader.png)
+
+*그림 설명은 본문에 남는다.*
+
+[![연결된 이미지](reader.png)](https://example.com/linked-image)
+`,
   '01_Slipbox/start.md': `---
 title: 시작 노트
 created: 2026-09-01
@@ -106,6 +120,7 @@ tags:
 
 > [!warning] 주의
 > 경고 콜아웃의 본문이다.
+
 
 `,
   // 지도 범례에 주제가 둘 있어야 필터가 실제로 노드를 걸러 낸다. 노드가 셋 미만인 주제는 기타로 접힌다.
@@ -276,6 +291,8 @@ summary: ${LONG_SUMMARY}
 
 // projectRoot에 config.json을, vault에 노트를 쓴다.
 export async function writeBrowserVault(projectRoot: string, vault: string): Promise<void> {
+  await fs.mkdir(path.join(vault, '01_Slipbox'), { recursive: true });
+  await sharp({ create: { width: 1800, height: 1000, channels: 3, background: 'white' } }).png().toFile(path.join(vault, '01_Slipbox/reader.png'));
   await fs.writeFile(path.join(projectRoot, 'config.json'), JSON.stringify(BROWSER_CONFIG));
   for (const [file, content] of Object.entries(BROWSER_NOTES)) {
     await fs.mkdir(path.dirname(path.join(vault, file)), { recursive: true });

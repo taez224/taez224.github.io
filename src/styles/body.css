@@ -273,3 +273,8 @@
 :root[data-theme="dark"] .body { --table-head-fill: 16%; --table-head-rule: 42%; --table-head-divider: color-mix(in srgb, var(--ink) 38%, var(--paper)); }
 .body th + th { border-left-color: var(--table-head-divider, var(--line)); }
 .body th:not(:last-child) { border-right-color: var(--table-head-divider, var(--line)); }
+
+/* 이미지 자체를 버튼으로 감싸되 본문에서 판이나 테두리를 더하지 않는다. */
+.body .image-zoom { display: block; width: fit-content; max-width: 100%; margin: 18px auto; padding: 0; border: 0; background: transparent; cursor: zoom-in; }
+.body .image-zoom img, .body figure .image-zoom { margin: 0 auto; }
+.image-viewer .diagram-viewer-stage > img { flex: none; max-width: none; margin: auto; object-fit: contain; }
