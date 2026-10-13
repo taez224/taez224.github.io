@@ -36,7 +36,7 @@ test('each feedback link fills the form with the page it sits on', async ({ page
 // 창을 줄이거나 넓혀도 둘이 함께 보이거나 함께 사라지지 않아야 한다.
 test('crossing the one-column width swaps the reading-time link without losing or doubling it', async ({ page, isMobile }) => {
   test.skip(isMobile, '창 폭을 바꾸는 검사라 데스크톱에서만 본다');
-  await page.setViewportSize({ width: 1100, height: 800 });
+  await page.setViewportSize({ width: 1121, height: 800 });
   await page.goto('/notes/browser-sections/');
   expect(await shownPlaces(page)).toEqual(['rail-feedback', 'note-footer']);
 
@@ -48,7 +48,7 @@ test('crossing the one-column width swaps the reading-time link without losing o
   await expect(page.locator('#toc-sheet')).toBeVisible();
   expect(await shownPlaces(page)).toEqual(['note-footer', 'toc-head']);
 
-  await page.setViewportSize({ width: 1100, height: 800 });
+  await page.setViewportSize({ width: 1121, height: 800 });
   await expect(page.locator('#toc-sheet')).toBeHidden();
   expect(await shownPlaces(page), '판을 연 채로 넓혀도 판의 링크가 남지 않는다').toEqual(['rail-feedback', 'note-footer']);
 });

@@ -51,7 +51,7 @@ const hasNeighbors = outgoing.length + incoming.length > 0;
   .rail-feedback :global(.feedback-link) { color: var(--muted); }
   @media (hover: hover) { .rail-feedback :global(.feedback-link:hover) { color: var(--accent); } }
   /* 한 열 화면에서는 목차와 함께 숨긴다. 그 폭에서는 목차 판의 제목 줄이 같은 링크를 보인다. */
-  @media (max-width: 1000px) { .rail-feedback { display: none; } }
+  @media (max-width: 1120px) { .rail-feedback { display: none; } }
   .note-side .list-block { padding: 20px 0; border-bottom: 0; }
   .map-link { padding: 20px 0; font-size: var(--t-meta); }
   /* 왼쪽 선은 줄마다 자기 테두리로 그린다. 목차 상자에 선을 두고 현재 줄의 막대를 그 위에 겹치면, 긴 목차에서는 상자가 스크롤 상자라

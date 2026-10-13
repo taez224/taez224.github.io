@@ -4,11 +4,11 @@ import { PALETTE, DARK_PALETTE } from '../../src/lib/palette.ts';
 const rgb = (hex: string) => `rgb(${[1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16)).join(', ')})`;
 
 test('a development lead has a separator only when the contents move to the sidebar', { tag: BOTH_THEMES }, async ({ page, systemDark }) => {
-  for (const width of [1440, 1001, 1000, 390]) {
+  for (const width of [1440, 1121, 1120, 1000, 390]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto('/dev/browser-lead/');
     const lead = page.locator('.note-lead');
-    const wide = width > 1000;
+    const wide = width > 1120;
     await expect(lead).toHaveCSS('border-bottom-width', wide ? '1px' : '0px');
     if (wide) {
       await expect(lead).toHaveCSS('border-bottom-style', 'solid');
@@ -607,4 +607,18 @@ test('prose links keep an underline and table headers separate columns in both t
   });
   expect(paints.head).not.toBe(paints.body);
   expect(paints.right).toBe(paints.left);
+});
+
+// 사이드바가 붙는 순간 본문이 좁아지지 않으며, 한 열의 여백은 좌우가 같아야 한다.
+test('the reader keeps its column width and centers the single column at intermediate widths', async ({ page }) => {
+  await page.goto('/notes/browser-sections/');
+  for (const width of [900, 1000, 1100, 1120, 1121, 1280]) {
+    await page.setViewportSize({ width, height: 1000 });
+    const box = await page.locator('.note-article').boundingBox();
+    expect(box).not.toBeNull();
+    expect(Math.abs(box!.width - 720), `${width}px에서 본문 폭 유지`).toBeLessThan(1);
+    if (width <= 1120) expect(Math.abs(box!.x - (width - box!.x - box!.width)), '한 열의 좌우 여백').toBeLessThan(1);
+    await expect(page.locator('.mobile-toc')).toBeVisible({ visible: width <= 1120 });
+    await expect(page.locator('.note-side .rail')).toBeVisible({ visible: width > 1120 });
+  }
 });
