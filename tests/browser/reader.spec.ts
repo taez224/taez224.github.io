@@ -622,3 +622,27 @@ test('the reader keeps its column width and centers the single column at interme
     await expect(page.locator('.note-side .rail')).toBeVisible({ visible: width > 1120 });
   }
 });
+
+
+test('overflow hints follow both scroll edges and disappear when the table fits', { tag: BOTH_THEMES }, async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/notes/browser-image/');
+  for (const selector of ['.body table', '.body pre']) {
+    const region = page.locator(selector);
+    await expect(region).toHaveAttribute('data-overflow-right', '');
+    await expect(region).not.toHaveAttribute('data-overflow-left');
+    await expect(region).toHaveAttribute('tabindex', '0');
+    expect(await region.evaluate(e => getComputedStyle(e).maskImage)).not.toBe('none');
+    await region.evaluate(e => { e.scrollLeft = e.scrollWidth; });
+    await expect(region).not.toHaveAttribute('data-overflow-right');
+    await expect(region).toHaveAttribute('data-overflow-left', '');
+    await region.focus();
+    await page.keyboard.press('ArrowLeft');
+    await expect.poll(() => region.evaluate(e => e.scrollWidth - e.clientWidth - e.scrollLeft)).toBeGreaterThan(1);
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const table = page.locator('.body table');
+  await expect(table).not.toHaveAttribute('data-overflow-left');
+  await expect(table).not.toHaveAttribute('data-overflow-right');
+  await expect(table).not.toHaveAttribute('tabindex');
+});

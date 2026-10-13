@@ -278,3 +278,11 @@
 .body .image-zoom { display: block; width: fit-content; max-width: 100%; margin: 18px auto; padding: 0; border: 0; background: transparent; cursor: zoom-in; }
 .body .image-zoom img, .body figure .image-zoom { margin: 0 auto; }
 .image-viewer .diagram-viewer-stage > img { flex: none; max-width: none; margin: auto; object-fit: contain; }
+
+/* 남은 내용이 있는 쪽만 옅게 한다. 키보드 포커스에서는 윤곽선이 잘리지 않게 마스크를 푼다. */
+.body :is(table, pre)[data-overflow-left] { --overflow-start: transparent; }
+.body :is(table, pre)[data-overflow-right] { --overflow-end: transparent; }
+.body :is(table, pre):is([data-overflow-left], [data-overflow-right]):not(:focus-visible) {
+  mask-image: linear-gradient(to right, var(--overflow-start, black), black 24px, black calc(100% - 24px), var(--overflow-end, black));
+  -webkit-mask-image: linear-gradient(to right, var(--overflow-start, black), black 24px, black calc(100% - 24px), var(--overflow-end, black));
+}

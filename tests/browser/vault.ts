@@ -67,6 +67,14 @@ created: 2026-09-01
 
 *그림 설명은 본문에 남는다.*
 
+\`\`\`js
+const longValue = '${'word'.repeat(100)}';
+\`\`\`
+
+| 이름 | 긴 설명 | 상태 |
+| --- | --- | --- |
+| 표본 | 가로로 스크롤해 읽는 표 | 완료 |
+
 [![연결된 이미지](reader.png)](https://example.com/linked-image)
 `,
   '01_Slipbox/start.md': `---
