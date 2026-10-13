@@ -275,7 +275,7 @@ test('home switches both ways across the live graph breakpoint without duplicate
 
 test('the back link below an external article does not overlap its related notes', async ({ page }) => {
   await page.goto('/posts/browser-external/');
-  const back = page.getByRole('link', { name: '글 목록', exact: true });
+  const back = page.getByRole('link', { name: '블로그 목록으로', exact: true });
   await back.scrollIntoViewIfNeeded();
   const measured = await back.evaluate((link) => {
     const box = link.getBoundingClientRect();
