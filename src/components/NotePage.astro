@@ -1,6 +1,7 @@
 ---
 import { render } from 'astro:content';
 import Shell from '../layouts/Shell.astro';
+import ReaderNavigation from './ReaderNavigation.astro';
 import NoteSidebar from './NoteSidebar.astro';
 import ArticleBody from './ArticleBody.astro';
 import FeedbackLink from './FeedbackLink.astro';
@@ -35,8 +36,7 @@ const hasSeriesNav = series && (series.prev || series.next);
 // 노트(Slipbox)는 사이드바의 "생각 지도에서 보기"가 같은 곳으로 가므로 페이지 끝에 목록 링크를 두지 않는다.
 // 사이드바는 모바일에서도 보이므로 여기서 한 번 더 두면 같은 링크가 두 개가 된다.
 const endLink = note.kind === 'slipbox' ? null : parent.listLabel;
-// 제보 링크는 읽는 도중(넓은 화면은 목차 아래, 한 열 화면은 목차 판의 제목 줄)과 다 읽은 뒤(글 끝 줄)에 닿는다.
-// 세 자리가 같은 주소를 폼에 채운다.
+// 제보 링크는 넓은 화면의 목차 아래와 글 끝 줄에서 같은 페이지 주소를 폼에 채운다.
 const feedbackPath = articleMeta(note).path;
 // 생각 노트의 성숙도. 이름은 메타 줄에 늘 보이고, 뜻은 눌러서 여는 설명 상자가 알린다. 휴대폰에는 툴팁이 없어 이름만으로는 뜻을 전할 수 없다.
 const maturity = maturityOf(note);
@@ -83,15 +83,7 @@ const maturity = maturityOf(note);
        목록 링크가 없는 생각 노트는 제보 링크만 왼쪽에 둔다. */}
     <footer class="note-footer">{endLink && <a href={parentUrl}><span aria-hidden="true">←</span> {endLink}</a>}<FeedbackLink path={feedbackPath} /></footer>
   </div>
-  {/* 한 열 화면에서는 목차가 글 맨 위에 접혀 있어, 읽는 도중 다른 절로 가려면 맨 위까지 올라가야 한다. 접힌 목차가 화면을 벗어나면
-     이 버튼이 나타나 탭 두 번으로 절을 옮긴다. 아래 막대는 본문을 읽은 만큼 찬다. 스크립트(toc-button.ts)가 hidden을 푼다. */}
-  {mobileToc.length >= 2 && <>
-    <button type="button" class="toc-button" popovertarget="toc-sheet" aria-label="목차" title="목차" data-toc-button hidden><Fragment set:html={pixelIcon('contents')} /><span class="toc-progress" aria-hidden="true"></span></button>
-    <div id="toc-sheet" class="toc-sheet" popover>
-      <div class="toc-head"><span class="meta">목차</span><FeedbackLink path={feedbackPath} /></div>
-      <nav class="toc-scroll" aria-label="목차"><div class="toc-rail">{mobileToc.map((heading) => <a class:list={[{ 'level-3': heading.level === 3 }]} href={`#${heading.id}`} data-toc-target={heading.id}>{heading.title}</a>)}</div></nav>
-    </div>
-  </>}
+  <ReaderNavigation title={title} headings={mobileToc} outgoing={outgoing} incoming={incoming} mapUrl={mapUrl} series={series} currentPath={note.path} />
 </Shell>
 <style is:global>
   /* 사이드바는 본문 옆 100px에 둔다. 오른쪽 끝을 헤더에 맞추면 본문과 150px 떨어져 따로 놓인 것처럼 보였다.
@@ -187,17 +179,7 @@ const maturity = maturityOf(note);
     /* 막대는 읽은 정도를 대략 알린다. 숫자를 적지 않는 것은 초반·중간·끝 가운데 어디인지만 알면 되기 때문이다. */
     .toc-progress { position: absolute; right: 0; bottom: 0; left: 0; height: 3px; background: var(--line); }
     .toc-progress::after { position: absolute; inset: 0; background: var(--ink); transform: scaleX(var(--progress, 0)); transform-origin: left; content: ""; }
-    .toc-sheet { position: fixed; inset: auto 16px calc(70px + env(safe-area-inset-bottom)) auto; width: min(320px, calc(100vw - 32px)); max-height: min(60vh, 420px); margin: 0; overflow: hidden; padding: 12px 16px 14px; border: 1px solid var(--overlay-line); border-radius: 6px; background: var(--paper-strong); color: var(--ink); }
-    /* 제목 줄은 판에 남기고 목록만 스크롤한다. 판 전체를 스크롤하면 글 후반에서 열었을 때 현재 절까지 내려가면서 제목과 제보 링크가 위로 가려진다. */
-    .toc-sheet:popover-open { display: flex; flex-direction: column; }
-    .toc-head { display: flex; flex: none; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 8px; }
-    .toc-head .feedback-link { font-size: var(--t-meta); white-space: nowrap; }
-    /* 스크롤은 레일의 바깥 상자가 맡는다. 레일에 직접 걸면 현재 절의 막대가 레일의 왼쪽 선 위로 나가 있어 잘린다. */
-    .toc-scroll { min-height: 0; overflow-y: auto; }
-    .toc-sheet .toc-rail { display: flex; flex-direction: column; border-left: 2px solid var(--line); }
-    .toc-sheet .toc-rail a { margin-left: -2px; padding: 7px 0 7px 14px; border-left: 2px solid transparent; color: var(--muted); font-size: var(--t-side); line-height: 1.5; }
-    .toc-sheet .toc-rail a.level-3 { padding-left: 26px; font-size: var(--t-meta); }
-    .toc-sheet .toc-rail a[aria-current="location"] { border-left-color: var(--topic, var(--accent)); color: var(--ink); font-weight: 600; }
+
   }
   @media (max-width: 720px) {
     /* 목차를 누르는 영역은 유지하고 제목·본문과의 바깥 여백만 줄인다. */

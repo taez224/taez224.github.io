@@ -580,12 +580,12 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 오류나 의견을 받는 링크는 GitHub 이슈 폼을 열고, 독자가 보던 페이지의 주소를 폼에 채운다. 제목은 채우지 않아 독자가 한 줄로 증상을 적게 한다. 글 제목을 채우면 같은 글의 제보가 모두 같은 제목이 된다. 문구는 폼의 이름과 같다. 눌러서 도착한 페이지의 이름이 링크와 같아야 독자가 제대로 왔다고 안다. 밖으로 나가는 링크라 ↗를 달고 밑줄은 긋지 않는다. 바닥글에서만 그 줄의 다른 링크처럼 글자에 밑줄을 긋는다.
 
-**읽는 도중과 읽은 뒤 규칙.** 글 페이지에는 두 시점에 하나씩 둔다. 오탈자는 읽다가 발견하는데, 글 끝까지 내려가야 닿는 링크는 그때 멀다.
+**글 페이지의 제보 위치.** 넓은 화면에서는 목차 아래와 글 끝에 두고, 한 열 화면에서는 글 끝에 둔다. 좁은 화면의 탐색 판은 목차와 연결에 집중한다.
 
-- **읽는 도중:** 두 열 화면은 목차 바로 아래, 한 열 화면은 목차 판의 제목 줄이다. 지금 읽는 절을 보려고 목차를 볼 때 함께 보인다. 목차 아래의 링크는 목차와 한 덩어리로 읽히게 위 선 없이 보조색으로 둔다. 사이드바 맨 위에 두면 어느 블록에도 속하지 않고, 참조 목록 아래에 두면 사이드바를 스크롤해야 보인다.
+- **읽는 도중:** 두 열 화면의 목차 바로 아래에 둔다. 지금 읽는 절을 보려고 목차를 볼 때 함께 보인다. 목차 아래의 링크는 목차와 한 덩어리로 읽히게 위 선 없이 보조색으로 둔다. 사이드바 맨 위에 두면 어느 블록에도 속하지 않고, 참조 목록 아래에 두면 사이드바를 스크롤해야 보인다.
 - **읽은 뒤:** 글 끝 줄에서 목록으로 돌아가는 링크의 반대쪽 끝에 둔다. 목록 링크가 없는 생각 노트는 이 링크만 왼쪽에 둔다. 본문 바로 아래에 안내 문장을 두지 않는 것은 글마다 읽는 흐름 끝에 덩어리가 생기기 때문이다.
 - 목차가 없는 짧은 글은 글 끝 줄이 가까워 그 줄에만 둔다.
-- 목차 판은 제목 줄을 남기고 목록만 스크롤한다. 판 전체를 스크롤하면 글 후반에서 열었을 때 현재 절까지 내려가면서 제목과 링크가 가려진다.
+- 목차 판은 제목 줄을 남기고 목록만 스크롤한다. 판 전체를 스크롤하면 글 후반에서 열었을 때 현재 절까지 내려가면서 제목과 닫기가 가려진다.
 
 **바닥글 중복 제외 규칙.** 글이 아닌 페이지는 바닥글에 두고, 글 페이지의 바닥글에서는 뺀다. 글 끝 줄 바로 아래에 같은 링크가 한 번 더 보이기 때문이다. 읽는 도중의 링크와 글 끝 줄의 링크는 역할이 달라 한 화면에 함께 보일 수 있다. 폭에 따라 자리가 바뀌는 링크는 한쪽만 보인다.
 
@@ -617,7 +617,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 - **글 카드:** 사방 테두리를 쓴다. 위아래 괘선만 두면 절 제목의 밑줄과 다음 절의 구분선으로 읽혀 한 덩어리로 묶이지 않는다. 테두리는 링크에 두어 누르는 자리와 강조되는 영역을 맞춘다.
 - **연결 탐색:** 참조는 실선, 역참조는 점선이고, 전체 연결은 목록으로도 읽는다.
   - 지도 노드는 버튼으로 읽히지만 Enter는 노트를 열고 Space는 지도에서 고르며, 노드 사이는 화살표로 옮겨 다닌다. 버튼의 약속과 달라 숨긴 한 줄로 설명하고, 키보드가 지도에 닿았을 때만(`:focus-visible`) 같은 말을 드러낸다. 늘 띄우면 마우스로 오는 대다수에게 쓰지 않는 글이 남는다. 허브는 화면에서 링으로만 구분되므로 접근 가능한 이름에 "허브"를 붙인다.
-  - 한 열 화면에서는 목차가 글 맨 위에 접혀 있어, 읽는 도중 다른 절로 가려면 맨 위까지 올라가야 한다. 접힌 목차가 화면을 벗어나면 오른쪽 아래의 목차 버튼이 그 이동을 탭 두 번으로 줄인다. 버튼의 아래 막대는 본문을 읽은 만큼 차고 숫자는 적지 않는다. 초반·중간·끝 가운데 어디인지만 알리고, 정확한 위치는 판을 열었을 때 강조되는 현재 절이 알린다. 막대는 본문만 세고 마지막 문단이 화면에 들어오면 다 찬다. 글 끝에서는 버튼이 바닥글 위에 놓이므로 바닥글이 버튼의 폭만큼 오른쪽을 비운다. 바닥글에서 버튼을 숨기면 바닥글이 보이는 동안 목차를 쓸 수 없다. 두 열 화면에는 두지 않는다. 사이드바의 목차가 현재 절을 늘 보인다.
+  - 한 열 화면에서는 목차가 글 맨 위에 접혀 있어, 읽는 도중 다른 절로 가려면 맨 위까지 올라가야 한다. 접힌 목차가 화면을 벗어나면 오른쪽 아래의 목차 버튼이 그 이동을 탭 두 번으로 줄인다. 버튼의 아래 막대는 본문을 읽은 만큼 차고 숫자는 적지 않는다. 초반·중간·끝 가운데 어디인지만 알리고, 정확한 위치는 판을 열었을 때 강조되는 현재 절이 알린다. 막대는 본문만 세고 마지막 문단이 화면에 들어오면 다 찬다. 글 끝에서는 버튼이 바닥글 위에 놓이므로 바닥글이 버튼의 폭만큼 오른쪽을 비운다. 바닥글에서 버튼을 숨기면 바닥글이 보이는 동안 목차를 쓸 수 없다. 탐색 판은 목차와 연결 탭으로 나누고, 목차가 없는 글도 연결을 열 수 있게 한다. 없는 탭은 숨기며 참조·역참조와 연재는 사이드바와 같은 규칙으로 보여 준다. 탭을 바꿀 때 판의 높이와 본문 위치를 유지한다. 연결 아래에는 생각 지도에서 보기 링크를 둔다. 두 열 화면에는 버튼을 두지 않고 사이드바를 쓴다.
   - 목차는 화면 위 30% 선을 지난 마지막 제목을 가리킨다. 목차에서 누르거나 주소로 가리킨 절은 다시 스크롤할 때까지 먼저 가리킨다. 페이지 끝의 짧은 절은 제목이 선에 닿지 못해 누른 항목 대신 앞 절이 강조되기 때문이다.
   - 사이드바의 작은 그래프는 이웃 제목을 단어 경계에서 두 줄까지 적고, 제목이 읽히도록 이웃은 여섯까지만 그린다. 목록의 같은 줄과 함께 강조할 때는 지도처럼 점 테두리만 바꾼다. 누르는 영역에 판을 깔면 이웃 제목을 덮는다. 이웃은 점과 제목을 모두 누를 수 있다. 점만 누르게 하면 지름 28px 원을 정확히 눌러야 한다. 손가락 기기에서는 점의 누르는 원과 그래프 아래의 지도 링크를 44px로 넓히고, 마우스에서는 넓히지 않는다.
 
@@ -694,6 +694,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 역할 색(밝은·어두운 화면)과 링크 밑줄의 대비 | `src/lib/palette.ts`, `src/styles/site.css` | `tests/palette.test.ts` |
 | 주제색 | `src/lib/format.ts`(화면에는 `var(--topic-…)`로 나감) | `tests/topic-colors.test.ts` |
 | 코드 강조색 | `src/styles/body.css` | `tests/code-colors.test.ts` |
+| 읽기 탐색 판의 탭·진행 막대·연결 목록 | `src/components/ReaderNavigation.astro`, `src/components/note-connections.ts`, `src/scripts/toc-button.ts` | `tests/browser/reader-navigation.spec.ts`, `tests/browser/reader.spec.ts` |
 | 본문 이미지 확대와 원래 크기·포커스 복귀 | `src/scripts/image-viewer.ts`, `src/styles/body.css` | `tests/browser/image-viewer.spec.ts` |
 | 도표 색과 배치 설정 | `src/scripts/mermaid-config.ts` | `tests/mermaid.test.ts` |
 | 글꼴 조각과 적재 | `scripts/vendor-fonts.ts`가 만든 `src/styles/fonts.css`, `public/fonts` | `tests/fonts.test.ts` |
@@ -736,7 +737,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 화면 모드의 선택·기억과 첫 페인트 | `src/lib/theme.ts`, `src/scripts/theme.ts`, `src/layouts/Shell.astro` | `tests/theme.test.ts`, `tests/browser/theme.spec.ts` |
 | 바닥글의 구성(프로필·사이트 소개·RSS·제보 링크), 손가락 영역, 호버 판, 짧은 페이지에서의 위치 | `src/layouts/Shell.astro`, `src/components/Contacts.astro`, `src/styles/site.css` | `tests/browser/footer.spec.ts` |
 | 제보 링크의 문구·주소와 이슈 폼의 일치 | `src/lib/feedback.ts`, `.github/ISSUE_TEMPLATE/feedback.yml` | `tests/feedback.test.ts` |
-| 제보 링크의 자리, 폭에 따른 교체, 목차 판의 제목 줄 고정 | `src/components/FeedbackLink.astro`, `src/components/NotePage.astro`, `src/components/NoteSidebar.astro`, `src/components/ExternalArticle.astro`, `src/pages/map/index.astro`, `src/layouts/Shell.astro` | `tests/browser/feedback.spec.ts`, `tests/browser/footer.spec.ts` |
+| 제보 링크의 자리와 탐색 판의 제목 줄 고정 | `src/components/FeedbackLink.astro`, `src/components/NotePage.astro`, `src/components/NoteSidebar.astro`, `src/components/ExternalArticle.astro`, `src/pages/map/index.astro`, `src/layouts/Shell.astro` | `tests/browser/feedback.spec.ts`, `tests/browser/footer.spec.ts` |
 | 홈 첫 화면과 최근 기록의 누르는 영역 | `src/components/About.astro`, `src/pages/index.astro` | `tests/browser/home.spec.ts` |
 | 홈 최근 기록에 싣는 노트와 다듬은 표시 | `src/lib/home.ts`, `src/pages/index.astro` | `tests/home.test.ts` |
 

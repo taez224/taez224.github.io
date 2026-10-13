@@ -1,0 +1,64 @@
+---
+import { pixelIcon } from '../lib/pixel-icons.ts';
+import { noteConnections } from './note-connections.ts';
+import type { PublicNote } from '../lib/content-model.ts';
+import type { seriesNeighbors } from '../lib/note-nav.ts';
+interface Props { title: string; headings: PublicNote['headings']; outgoing: PublicNote[]; incoming: PublicNote[]; mapUrl: string; series: ReturnType<typeof seriesNeighbors>; currentPath: string }
+const { title, headings, outgoing, incoming, mapUrl, series, currentPath } = Astro.props;
+const hasToc = headings.length >= 2;
+const blocks = noteConnections(outgoing, incoming, series);
+const seriesPosts = series && series.total > 0 ? series.posts : [];
+const count = new Set([...blocks.flatMap(b => b.items.map(n => n.url)), ...seriesPosts.filter(n => n.path !== currentPath).map(n => n.url), ...(series?.url && !series.isHub ? [series.url] : [])]).size;
+const hasConnections = count > 0 || !!mapUrl;
+const label = hasToc && hasConnections ? '목차와 연결' : hasToc ? '목차' : '연결된 글';
+---
+{(hasToc || hasConnections) && <>
+  <button type="button" class="toc-button" popovertarget="toc-sheet" aria-label={label} title={label} data-toc-button hidden><Fragment set:html={pixelIcon('contents')} /><span class="toc-progress" aria-hidden="true"></span></button>
+  <div id="toc-sheet" class="toc-sheet" popover aria-label="글 탐색">
+    <div class="toc-head"><span class="reader-context" title={title}>{title}</span><button type="button" class="reader-close" data-reader-close>닫기</button></div>
+    <div class="reader-tabs" role="tablist" aria-label="글 탐색">
+      {hasToc && <button type="button" role="tab" id="reader-toc-tab" aria-controls="reader-toc-panel" aria-selected="true" data-reader-tab>목차</button>}
+      {hasConnections && <button type="button" role="tab" id="reader-links-tab" aria-controls="reader-links-panel" aria-selected={hasToc ? 'false' : 'true'} tabindex={hasToc ? -1 : 0} data-reader-tab>연결{count > 0 && <span class="reader-count">{count}</span>}</button>}
+    </div>
+    {hasToc && <nav class="toc-scroll reader-panel" id="reader-toc-panel" role="tabpanel" aria-labelledby="reader-toc-tab"><div class="toc-rail">{headings.map(h => <a class:list={[{ 'level-3': h.level === 3 }]} href={`#${h.id}`} data-toc-target={h.id}>{h.title}</a>)}</div></nav>}
+    {hasConnections && <div class="reader-panel reader-connections" id="reader-links-panel" role="tabpanel" aria-labelledby="reader-links-tab" hidden={hasToc}>
+      {seriesPosts.length > 0 && <section class="reader-group"><h3>연재<span>{seriesPosts.length}</span></h3>{series?.url && <a href={series.url}>{series.title}</a>}{seriesPosts.map(post => <a href={post.url} aria-current={post.path === currentPath ? 'page' : undefined}>{post.title}</a>)}</section>}
+      {blocks.map(block => <section class="reader-group"><h3>{block.label}<span>{block.items.length}</span></h3>{block.items.map(n => <a href={n.url}>{n.displayTitle}</a>)}</section>)}
+      {count === 0 && <p class="reader-empty">아직 연결된 글이 없습니다.</p>}
+    </div>}
+    {mapUrl && <div class="reader-map" data-reader-map hidden={hasToc}><a href={mapUrl}>생각 지도에서 보기</a></div>}
+  </div>
+</>}
+<style>
+  .toc-sheet { display: none; }
+  @media (max-width: 1120px) {
+    .toc-sheet { position: fixed; inset: auto 16px calc(72px + env(safe-area-inset-bottom)) auto; width: min(380px, calc(100vw - 32px)); height: min(360px, 65dvh); max-height: none; margin: 0; overflow: hidden; padding: 0; border: 1px solid var(--overlay-line); border-radius: 6px; background: var(--paper-strong); color: var(--ink); }
+    .toc-sheet:popover-open { display: flex; flex-direction: column; }
+    .toc-head { display: flex; align-items: center; gap: 12px; padding: 4px 12px 0 18px; flex: none; }
+    .reader-context { min-width: 0; flex: 1; font-size: var(--t-meta); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .reader-close { width: 44px; height: 44px; flex: none; border: 0; background: transparent; color: var(--muted); font-size: var(--t-meta); cursor: pointer; }
+    .reader-tabs { display: flex; gap: 24px; padding: 0 18px; border-bottom: 1px solid var(--line); flex: none; }
+    .reader-tabs button { position: relative; min-height: 44px; border: 0; padding: 0; background: transparent; font-size: var(--t-ui); font-weight: 600; color: var(--muted); cursor: pointer; }
+    .reader-tabs button[aria-selected="true"] { color: var(--ink); }
+    .reader-tabs button[aria-selected="true"]::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--ink); }
+    .reader-count { margin-left: 7px; font-size: var(--t-meta); font-weight: 400; color: var(--muted); }
+    .reader-panel { min-height: 0; flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 12px 18px; scrollbar-width: thin; }
+    .reader-connections { padding-top: 20px; }
+    .reader-panel a { display: block; min-height: 44px; padding: 10px 8px; color: var(--ink); font-size: var(--t-ui); line-height: 1.55; text-decoration: none; word-break: keep-all; overflow-wrap: anywhere; border-radius: 4px; }
+    .reader-panel a[aria-current] { background: var(--accent-soft); font-weight: 600; }
+    .reader-panel a.level-3 { padding-left: 22px; font-size: var(--t-side); color: var(--muted); }
+    .reader-group + .reader-group { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+    .reader-group h3 { margin: 0 0 4px; padding: 0 8px; font-size: var(--t-meta); font-weight: 600; color: var(--muted); }
+    .reader-group h3 span { margin-left: 8px; font-weight: 400; }
+    .reader-map { flex: none; padding: 6px 18px; border-top: 1px solid var(--line); }
+    .reader-map a { display: flex; align-items: center; min-height: 44px; font-size: var(--t-side); text-decoration: underline; text-underline-offset: 3px; }
+    .reader-empty { padding: 14px 8px; color: var(--muted); font-size: var(--t-side); }
+  }
+  @media (max-width: 480px) {
+    .toc-sheet { right: 12px; width: calc(100vw - 24px); height: min(400px, 65dvh); }
+    .reader-panel { padding-inline: 12px; }
+    .reader-tabs { padding-inline: 20px; }
+    .toc-head { padding-left: 20px; }
+  }
+  @media (hover: hover) { .reader-panel a:hover { background: var(--accent-soft); } }
+</style>
