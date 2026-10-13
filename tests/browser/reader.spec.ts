@@ -682,3 +682,21 @@ test('series hubs show the published count without a misleading reading time', a
   await page.goto('/posts/browser-series-part/');
   await expect(page.locator('.note-meta')).toContainText(/\d+분/);
 });
+
+
+test('the sidebar marks remaining content without blocking links and clears at the bottom or in one column', { tag: BOTH_THEMES }, async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 600 });
+  await page.goto('/notes/browser-many/');
+  const side = page.locator('.note-side');
+  await expect(side).toHaveAttribute('data-sidebar-overflow', '');
+  const paint = () => side.evaluate(e => { const s = getComputedStyle(e, '::after'); return { height: s.height, position: s.position, pointer: s.pointerEvents, opacity: s.opacity }; });
+  expect(await paint()).toMatchObject({ height: '24px', position: 'sticky', pointer: 'none' });
+  await side.locator('a').first().focus();
+  await expect.poll(async () => (await paint()).opacity).toBe('0');
+  await side.evaluate(e => { e.scrollTop = e.scrollHeight; });
+  await expect(side).not.toHaveAttribute('data-sidebar-overflow');
+  await side.evaluate(e => { e.scrollTop = 0; });
+  await expect(side).toHaveAttribute('data-sidebar-overflow', '');
+  await page.setViewportSize({ width: 1000, height: 600 });
+  await expect(side).not.toHaveAttribute('data-sidebar-overflow');
+});
