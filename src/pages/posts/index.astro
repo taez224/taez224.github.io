@@ -11,9 +11,9 @@ const years = blogLedger(blog);
 // 연재 행에는 붙이지 않는다. 허브 한 페이지의 분량이 연재 전체의 분량처럼 읽힌다.
 const readingMinutes = new Map(notes.map((note) => [note.path, note.readingMinutes]));
 ---
-<Shell title="글" description="TaeZ가 발행한 글과 연재." path="/posts/" active="posts">
+<Shell title="블로그" description="TaeZ가 발행한 글과 연재." path="/posts/" active="posts">
   <div class="wrap posts-page">
-    <div class="page-head"><h1 class="display">글</h1><span class="meta">{blog.stats.posts}편 · 연재 {blog.stats.series}개</span></div>
+    <div class="page-head"><h1 class="display">블로그</h1><span class="meta">{blog.stats.posts}편 · 연재 {blog.stats.series}개</span></div>
     {years.map(({ year, rows }) => <section class="ledger-group is-year" aria-label={`${year}년`}>
       <div class="ledger-head"><h2 class="display">{year}</h2></div>
       <div class="ledger-rows">{rows.map((row) => row.kind === 'post'

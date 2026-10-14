@@ -60,8 +60,14 @@
   .body .code-copy:hover .code-copy-plate { background: var(--accent-soft); }
 }
 .body .code-copy-status { color: var(--muted); font-size: var(--t-meta); line-height: 1.4; text-align: right; }
-.body code { padding: 1px 4px; background: color-mix(in srgb, var(--ink) 8%, transparent); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .88em; }
+.body code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .88em; }
+/* 글꼴만으로는 문장 속 코드를 찾기 어려워 배경과 얇은 테두리를 함께 쓴다. 코드 블록에는 적용하지 않는다. */
+.body :not(pre) > code { padding: 2px 6px; background: color-mix(in srgb, var(--ink) var(--inline-fill, 6%), var(--paper)); border: 1px solid color-mix(in srgb, var(--ink) var(--inline-line, 18%), var(--paper)); font-weight: 500; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
 .body pre code { padding: 0; background: transparent; font-size: inherit; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .body { --inline-fill: 12%; --inline-line: 23%; --callout-bg: color-mix(in srgb, var(--ink) 7%, var(--paper)); }
+}
+:root[data-theme="dark"] .body { --inline-fill: 12%; --inline-line: 23%; --callout-bg: color-mix(in srgb, var(--ink) 7%, var(--paper)); }
 /* 코드 상자는 사이트 톤보다 문법 구분을 앞세워 @tanstack/highlight에 든 GitHub Light 테마의 배경·글자·토큰 색을 그대로 쓰며, 이곳에서만 관리한다.
    배경도 테마의 흰색이다. 가장 흐린 주석(#6e7781)이 흰색에서는 4.55:1이지만 종이색(--paper-strong)에서는 4.46:1로 4.5:1에 못 미친다.
    흰 배경에서 문자열은 4.96:1, 함수 5.05:1, 링크 5.19:1, 키워드 5.36:1이고 나머지는 6:1 이상이다. inserted(5.08:1)는 등록하지 않은 diff 언어만 낸다.
@@ -111,7 +117,6 @@
 .body th, .body td { min-width: 100px; padding: 7px 10px; border: 1px solid var(--line); overflow-wrap: break-word; text-align: left; vertical-align: top; }
 /* 표의 코드 식별자를 글자 중간에서 나누지 않는다. 긴 값은 표 자체의 가로 스크롤로 읽는다. */
 .body :is(th, td) code { white-space: nowrap; overflow-wrap: normal; word-break: normal; }
-.body th { background: var(--paper-strong); font-weight: 600; }
 .body hr { margin: 30px 0; border: 0; border-top: 1px solid var(--line); }
 /* 글자색을 따로 주지 않으면 브라우저 기본값인 검정이 된다. 어두운 화면의 형광 위에서 검정은 2.49:1이라 먹색으로 둔다. */
 .body mark { padding: 0 3px; background: var(--highlight); color: var(--ink); }
@@ -148,29 +153,29 @@
 .body figcaption { margin-top: 8px; color: var(--muted); font-size: var(--t-meta); line-height: 1.6; text-align: center; }
 /* 콜아웃은 인쇄물의 박스 주석처럼 본문에서 떼어 낸다. 가는 선 두 줄만으로는 본문의 일부처럼 읽혀서 세 단서를 겹친다.
    페이지보다 한 단계 밝은 판(표 머리·도표와 같은 paper-strong), 시작을 알리는 2px 위 괘선, 본문보다 작은 활자와 좁은 줄 폭이다.
-   사방 테두리나 한쪽 막대는 두지 않는다. 판을 더 짙게 칠하면 muted 머리표가 4.5:1을 넘기 어려워 판 색은 옅게 둔다.
+   가는 사방 테두리와 먹색 머리표로 경계를 분명히 하고, 위 괘선은 머리표보다 옅게 둔다.
    종류는 머리표 앞 아이콘으로, 경고·버그는 위 괘선과 머리표의 색으로 구분한다. 요약·인용은 본문을 명조로 흘린다. */
-.body .callout { --callout-color: var(--muted); --callout-rule: var(--ink); margin: 26px 0; padding: 12px 18px 16px; border-top: 2px solid var(--callout-rule); border-bottom: 1px solid var(--line); background: var(--paper-strong); }
+.body .callout { --callout-color: var(--ink); --callout-rule: color-mix(in srgb, var(--ink) 42%, var(--paper)); margin: 26px 0; padding: 12px 18px 16px; border: 1px solid color-mix(in srgb, var(--ink) 20%, var(--paper)); border-top: 2px solid var(--callout-rule); background: var(--callout-bg, var(--paper-strong)); }
 .body .callout + .callout { margin-top: 16px; }
-.body .callout > :is(.callout-title, summary) { display: block; color: var(--callout-color); font-size: var(--t-meta); font-weight: 600; letter-spacing: .04em; line-height: 1.5; }
+.body .callout > :is(.callout-title, summary) { display: block; color: var(--callout-color); font-size: var(--t-ui); font-weight: 650; letter-spacing: 0; line-height: 1.5; }
 /* 머리표 아이콘은 조작 아이콘처럼 픽셀 격자로 그리지 않고 선으로 그린다. 테두리가 기호를 감싸는 도형은 14칸 격자에서
    테두리와 안쪽 간격을 빼면 8칸이 남아 점과 획을 넣을 여유가 없다.
    아이콘은 마스크로 찍어 머리표 색을 그대로 따른다. 렌더러가 SVG를 출력하지 않아도 되고, 종류마다 --callout-icon만 바꾸면 된다.
    중첩된 콜아웃은 .callout 규칙이 변수를 다시 정하므로 바깥 종류의 아이콘·색을 물려받지 않는다. */
 .body .callout > :is(.callout-title, summary)::before { display: inline-block; width: 14px; height: 14px; margin-right: 6px; vertical-align: -2px; background: currentColor; -webkit-mask: var(--callout-icon) center / 14px no-repeat; mask: var(--callout-icon) center / 14px no-repeat; content: ""; }
-/* 접히는 콜아웃: 머리표 줄 오른쪽 꺾쇠가 펼칠 수 있음을 알린다. 꺾쇠는 누른 순간부터 움직여야 반응이 빠르게 느껴지므로
-   기본 ease 대신 처음에 빠르고 끝에서 감속하는 ease-out 곡선을 쓴다.
-   summary가 display: block이면 크롬·파이어폭스는 기본 삼각형을 지우지만 사파리는 -webkit 마커를 따로 그린다. */
-.body details.callout > summary { position: relative; padding-right: 24px; cursor: pointer; }
+/* 제목을 읽는 자리에서 펼침 동작을 알 수 있도록 삼각형을 앞에 둔다.
+   일반 안내의 연필은 삼각형으로 대신하고, 의미가 있는 종류 아이콘은 그대로 남긴다. */
+.body details.callout > summary { position: relative; padding-left: 20px; cursor: pointer; }
 .body details.callout > summary::-webkit-details-marker { display: none; }
-.body details.callout > summary::after { position: absolute; top: 5px; right: 4px; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg); transition: transform .15s cubic-bezier(.23, 1, .32, 1); content: ""; }
-.body details.callout[open] > summary::after { transform: translateY(4px) rotate(-135deg); }
-@media (hover: hover) { .body details.callout > summary:hover { color: var(--ink); } }
+.body details.callout.callout-note > summary::before { display: none; }
+.body details.callout > summary::after { position: absolute; top: calc(.75em - 5px + var(--fold-pad, 0px)); left: 0; width: 10px; height: 10px; background: currentColor; clip-path: polygon(20% 0, 90% 50%, 20% 100%); transform: rotate(0deg); transition: transform .15s cubic-bezier(.23, 1, .32, 1); content: ""; }
+.body details.callout[open] > summary::after { transform: rotate(90deg); }
+@media (hover: hover) { .body details.callout > summary:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 6%, transparent); } }
 .body details.callout:not([open]) { padding-bottom: 12px; }
 /* 머리표는 콜아웃을 여닫는 유일한 조작이라 손가락 기기에서 44px로 넓힌다. 위는 콜아웃의 12px 안쪽 여백이 받아 주고,
    아래는 펼쳤을 때 본문이 바로 붙으므로 본문을 그만큼 물러서게 한다. 닿은 채로 두면 본문 첫 줄을 눌러도 콜아웃이 접힌다. */
 @media (pointer: coarse) {
-  .body details.callout > summary { padding-block: 12px; margin-block: -12px; }
+  .body details.callout > summary { --fold-pad: 12px; padding-block: 12px; margin-block: -12px; }
   .body details.callout[open] > .callout-body { margin-top: 12px; }
 }
 @media (prefers-reduced-motion: reduce) { .body details.callout > summary::after { transition: none; } }
@@ -251,3 +256,37 @@
 .body.footnote-panel:popover-open { transition: opacity .15s cubic-bezier(.23, 1, .32, 1), scale .15s cubic-bezier(.23, 1, .32, 1); }
 @starting-style { .body.footnote-panel:popover-open { opacity: 0; scale: .97; } }
 .body.footnote-panel[data-instant] { transition-duration: 0s; }
+
+/* 의미색 제목의 대비를 지키도록 경고·버그 판은 기존 밝기를 유지한다. */
+.body :is(.callout-warning, .callout-danger, .callout-failure, .callout-bug) { background: var(--paper-strong); }
+
+/* 문장 속 링크만 청록색으로 구분한다. 목록·표·각주 번호는 기존 먹색을 유지하고, 색을 구별하지 못해도 밑줄이 남는다. */
+.body p a:not(:where(li, td, th, .footnote-ref) a) { color: var(--body-link); text-decoration-color: color-mix(in srgb, var(--body-link) 75%, transparent); }
+@media (hover: hover) {
+  .body p a:not(:where(li, td, th, .footnote-ref) a):hover { text-decoration-color: currentColor; }
+}
+/* 열 이름은 판과 굵기로 구분한다. 접힌 테두리는 양쪽 셀이 경쟁하므로 내부 열 경계는 좌우 모두 같은 색을 준다. */
+.body th { background: color-mix(in srgb, var(--ink) var(--table-head-fill, 8%), var(--paper)); font-weight: 700; border-bottom: 2px solid color-mix(in srgb, var(--ink) var(--table-head-rule, 35%), var(--paper)); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .body { --table-head-fill: 16%; --table-head-rule: 42%; --table-head-divider: color-mix(in srgb, var(--ink) 38%, var(--paper)); }
+}
+:root[data-theme="dark"] .body { --table-head-fill: 16%; --table-head-rule: 42%; --table-head-divider: color-mix(in srgb, var(--ink) 38%, var(--paper)); }
+.body th + th { border-left-color: var(--table-head-divider, var(--line)); }
+.body th:not(:last-child) { border-right-color: var(--table-head-divider, var(--line)); }
+
+/* 이미지 자체를 버튼으로 감싸되 본문에서 판이나 테두리를 더하지 않는다. */
+.body .image-zoom { display: block; width: fit-content; max-width: 100%; margin: 18px auto; padding: 0; border: 0; background: transparent; cursor: zoom-in; }
+.body .image-zoom img, .body figure .image-zoom { margin: 0 auto; }
+.image-viewer .diagram-viewer-stage > img { flex: none; max-width: none; margin: auto; object-fit: contain; }
+
+/* 남은 내용이 있는 쪽만 옅게 한다. 키보드 포커스에서는 윤곽선이 잘리지 않게 마스크를 푼다. */
+.body :is(table, pre)[data-overflow-left] { --overflow-start: transparent; }
+.body :is(table, pre)[data-overflow-right] { --overflow-end: transparent; }
+.body :is(table, pre):is([data-overflow-left], [data-overflow-right]):not(:focus-visible) {
+  mask-image: linear-gradient(to right, var(--overflow-start, black), black 24px, black calc(100% - 24px), var(--overflow-end, black));
+  -webkit-mask-image: linear-gradient(to right, var(--overflow-start, black), black 24px, black calc(100% - 24px), var(--overflow-end, black));
+}
+
+/* 오류는 어느 그림의 문제인지 알 수 있게 그림 바로 아래 보조 글자로 남긴다. */
+.body .image-load-state { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px 12px; color: var(--muted); font-size: var(--t-meta); line-height: 1.5; }
+.body .image-load-state button { min-height: 44px; min-width: 44px; padding: 0 8px; border: 0; background: transparent; color: var(--ink); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }

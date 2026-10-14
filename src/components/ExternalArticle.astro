@@ -4,6 +4,7 @@ import { Image } from 'astro:assets';
 import { getGarden } from '../lib/get-garden.ts';
 import { cleanTitle, formatDate, kindLabel, withBase } from '../lib/format.ts';
 import { articleMeta } from '../lib/seo.ts';
+import { KINDS } from '../lib/kinds.ts';
 import FeedbackLink from './FeedbackLink.astro';
 
 import type { NoteEntry, PublicNote } from '../lib/content-model.ts';
@@ -33,7 +34,7 @@ const related = [...new Set([...note.outgoing, ...note.incoming])].filter((path)
       <ul>{related.map((item) => <li><a href={item.url}>{item.type === 'hub' && <i class="hub-mark" aria-hidden="true"></i>}{cleanTitle(item.displayTitle || item.title)}</a><span class="meta">{kindLabel(item)}</span></li>)}</ul>
     </section>}
     {/* 글 끝 줄은 리더와 같다. 목록으로 돌아가는 링크가 왼쪽, 제보 링크가 오른쪽이다. */}
-    <div class="article-end"><a class="back-to-posts" href={withBase('/posts/')}><span aria-hidden="true">←</span> 글 목록</a><FeedbackLink path={articleMeta(note).path} /></div>
+    <div class="article-end"><a class="back-to-posts" href={withBase(KINDS.blog.listPath)}><span aria-hidden="true">←</span> {KINDS.blog.listLabel}</a><FeedbackLink path={articleMeta(note).path} /></div>
   </article>
 </Shell>
 <style>

@@ -1,8 +1,10 @@
 import type { PublicationConfig } from './publication.ts';
 export interface ResolvedAsset { url: string; sourcePath?: string }
+export interface ImageDimensions { width: number; height: number }
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import sharp from 'sharp';
 import { BOOKS_PATH } from './books.ts';
 import { isImagePath } from './image-types.ts';
 import { indexByBasename } from './links.ts';
@@ -29,6 +31,30 @@ export async function createAssetResolver({ vaultRoot, config, base }: { vaultRo
   }
   const byBasename = indexByBasename(publicPaths);
   const copies = new Map<string, string>();
+  const pathsByUrl = new Map<string, string>();
+  const dimensions = new Map<string, Promise<ImageDimensions | null>>();
+
+  // 본문에 쓰는 공개 이미지의 크기만 읽는다. 같은 그림이 여러 글에 있어도 조립 한 번당 한 번만 읽는다.
+  function dimensionsFor(url: string): Promise<ImageDimensions | null> {
+    const assetPath = pathsByUrl.get(url);
+    if (!assetPath) return Promise.resolve(null);
+    let pending = dimensions.get(assetPath);
+    if (!pending) {
+      pending = (async () => {
+        try {
+          const metadata = await sharp(path.join(vaultRoot, assetPath)).metadata();
+          const width = metadata.autoOrient?.width ?? metadata.width;
+          const height = metadata.autoOrient?.height ?? metadata.height;
+          return width > 0 && height > 0 ? { width, height } : null;
+        } catch {
+          // 크기를 읽지 못하는 그림은 기존처럼 표시한다. 외부 주소나 알 수 없는 파일을 새로 읽지는 않는다.
+          return null;
+        }
+      })();
+      dimensions.set(assetPath, pending);
+    }
+    return pending;
+  }
 
   function resolve(sourcePath: string, rawTarget: unknown, { copy = true } = {}): ResolvedAsset | null {
     const target = String(rawTarget ?? '').split('#')[0].trim();
@@ -47,8 +73,10 @@ export async function createAssetResolver({ vaultRoot, config, base }: { vaultRo
     if (!assetPath) return null;
     const destination = `assets/vault/${assetPath.split('/').map(encodeURIComponent).join('/')}`;
     if (copy) copies.set(assetPath, destination);
-    return { url: `${base}/${destination}`, sourcePath: assetPath };
+    const url = `${base}/${destination}`;
+    pathsByUrl.set(url, assetPath);
+    return { url, sourcePath: assetPath };
   }
 
-  return { resolve, copies };
+  return { resolve, copies, dimensionsFor };
 }

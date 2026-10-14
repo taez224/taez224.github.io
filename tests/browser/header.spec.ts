@@ -37,9 +37,9 @@ test('the header fits the screen when the reader doubles the default text size',
   }
 });
 
-// 두 줄로 나누는 것은 넘칠 때만이다. 글자 100%에서 한 줄에 필요한 폭은 346px이고 경계는 354px이므로, 흔한 좁은 휴대폰(360px)은 한 줄로 붙어 있어야 한다.
+// 블로그 메뉴를 포함해 390px에서는 한 줄을 유지하고 더 좁은 폭은 두 줄로 나눈다.
 test('the header keeps one sticky row at the default text size on a common narrow phone', async ({ page }) => {
-  await page.setViewportSize({ width: 360, height: 640 });
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/books/');
   await expect(page.locator('.site-header')).toHaveCSS('position', 'sticky');
   const row = await page.evaluate(() => ({
@@ -213,4 +213,15 @@ test.describe('without scripts', () => {
       expect(edges.margin, `${width}px에서 검색 버튼이 제 음수 여백을 유지한다`).toBeLessThan(0);
     }
   });
+});
+
+test('the blog menu moves to a second row on a 360px screen without covering controls', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 640 });
+  await page.goto('/posts/');
+  const nav = (await page.locator('.site-nav').boundingBox())!;
+  const brand = (await page.locator('.wordmark').boundingBox())!;
+  expect(nav.y).toBeGreaterThanOrEqual(brand.y + brand.height);
+  expect(nav.x + nav.width).toBeLessThanOrEqual(360);
+  await expect(page.locator('.site-nav').getByRole('link', { name: '블로그', exact: true })).toHaveAttribute('aria-current', 'page');
+  await expect(page.locator('.site-header')).not.toHaveCSS('position', 'sticky');
 });

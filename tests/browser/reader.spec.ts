@@ -4,11 +4,11 @@ import { PALETTE, DARK_PALETTE } from '../../src/lib/palette.ts';
 const rgb = (hex: string) => `rgb(${[1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16)).join(', ')})`;
 
 test('a development lead has a separator only when the contents move to the sidebar', { tag: BOTH_THEMES }, async ({ page, systemDark }) => {
-  for (const width of [1440, 1001, 1000, 390]) {
+  for (const width of [1440, 1121, 1120, 1000, 390]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto('/dev/browser-lead/');
     const lead = page.locator('.note-lead');
-    const wide = width > 1000;
+    const wide = width > 1120;
     await expect(lead).toHaveCSS('border-bottom-width', wide ? '1px' : '0px');
     if (wide) {
       await expect(lead).toHaveCSS('border-bottom-style', 'solid');
@@ -275,7 +275,7 @@ test('home switches both ways across the live graph breakpoint without duplicate
 
 test('the back link below an external article does not overlap its related notes', async ({ page }) => {
   await page.goto('/posts/browser-external/');
-  const back = page.getByRole('link', { name: '글 목록', exact: true });
+  const back = page.getByRole('link', { name: '블로그 목록으로', exact: true });
   await back.scrollIntoViewIfNeeded();
   const measured = await back.evaluate((link) => {
     const box = link.getBoundingClientRect();
@@ -572,4 +572,168 @@ test('a long word in the first table column widens the column instead of splitti
   });
   expect(measured.lines).toBe(1);
   expect(measured.overflow).toBe(0);
+});
+
+// 인라인 코드의 테두리가 코드 블록으로 번지지 않고, 콜아웃 머리표가 보조색으로 되돌아가지 않는지 본다.
+test('inline code has a boundary and callout titles retain their hierarchy', { tag: BOTH_THEMES }, async ({ page }) => {
+  await page.goto('/notes/browser-neighbor/');
+  const code = page.locator('.body p > code').first();
+  await expect(code).toHaveCSS('border-top-style', 'solid');
+  await expect(code).toHaveCSS('border-top-width', '1px');
+  const title = page.locator('.callout-note .callout-title');
+  const ink = await page.locator('.body').evaluate(e => getComputedStyle(e).color);
+  await expect(title).toHaveCSS('color', ink);
+  await expect(title).toHaveCSS('font-weight', '650');
+  await expect(page.locator('.callout-warning .callout-title')).not.toHaveCSS('color', ink);
+  await page.goto('/notes/browser-start/');
+  await expect(page.locator('.body pre code').first()).toHaveCSS('border-top-width', '0px');
+});
+
+test('prose links keep an underline and table headers separate columns in both themes', { tag: BOTH_THEMES }, async ({ page, systemDark: dark }) => {
+  await page.goto('/notes/browser-neighbor/');
+  const prose = page.getByRole('link', { name: '설명 링크' });
+  const list = page.getByRole('link', { name: '참고 목록' });
+  const colors = dark ? DARK_PALETTE : PALETTE;
+  await expect(prose).toHaveCSS('color', rgb(colors['body-link']));
+  await expect(prose).toHaveCSS('text-decoration-line', 'underline');
+  await expect(list).toHaveCSS('color', rgb(colors.ink));
+  const head = page.locator('.body th').first();
+  await expect(head).toHaveCSS('font-weight', '700');
+  await expect(head).toHaveCSS('border-bottom-width', '2px');
+  const paints = await page.locator('.body table').evaluate(table => {
+    const first = getComputedStyle(table.querySelector('th')!);
+    const second = getComputedStyle(table.querySelectorAll('th')[1]);
+    return { head: first.backgroundColor, body: getComputedStyle(table.querySelector('td')!).backgroundColor, right: first.borderRightColor, left: second.borderLeftColor };
+  });
+  expect(paints.head).not.toBe(paints.body);
+  expect(paints.right).toBe(paints.left);
+});
+
+// 사이드바가 붙는 순간 본문이 좁아지지 않으며, 한 열의 여백은 좌우가 같아야 한다.
+test('the reader keeps its column width and centers the single column at intermediate widths', async ({ page }) => {
+  await page.goto('/notes/browser-sections/');
+  for (const width of [900, 1000, 1100, 1120, 1121, 1280]) {
+    await page.setViewportSize({ width, height: 1000 });
+    const box = await page.locator('.note-article').boundingBox();
+    expect(box).not.toBeNull();
+    expect(Math.abs(box!.width - 720), `${width}px에서 본문 폭 유지`).toBeLessThan(1);
+    if (width <= 1120) expect(Math.abs(box!.x - (width - box!.x - box!.width)), '한 열의 좌우 여백').toBeLessThan(1);
+    await expect(page.locator('.mobile-toc')).toBeVisible({ visible: width <= 1120 });
+    await expect(page.locator('.note-side .rail')).toBeVisible({ visible: width > 1120 });
+  }
+});
+
+
+test('foldable callouts announce their action before the title and retain warning icons', { tag: BOTH_THEMES }, async ({ page, isMobile }) => {
+  await page.goto('/notes/browser-neighbor/');
+  const note = page.locator('details.callout-note');
+  const summary = note.locator('summary');
+  const warning = page.locator('details.callout-warning > summary');
+  const state = () => summary.evaluate(e => {
+    const marker = getComputedStyle(e, '::after');
+    return { left: marker.left, width: marker.width, rotation: marker.transform, icon: getComputedStyle(e, '::before').display };
+  });
+  const closed = await state();
+  expect(closed.left).toBe('0px');
+  expect(closed.width).toBe('10px');
+  expect(closed.icon).toBe('none');
+  expect(await warning.evaluate(e => getComputedStyle(e, '::before').display)).not.toBe('none');
+  if (isMobile) expect((await summary.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await summary.focus();
+  await page.keyboard.press('Enter');
+  await expect(note).toHaveAttribute('open', '');
+  await expect.poll(async () => (await state()).rotation).not.toBe(closed.rotation);
+  await page.keyboard.press('Space');
+  await expect(note).not.toHaveAttribute('open');
+  const box = (await summary.boundingBox())!;
+  await summary.click({ position: { x: box.width - 4, y: box.height / 2 } });
+  await expect(note).toHaveAttribute('open', '');
+});
+
+test('warning and bug foldable titles keep sufficient contrast before and during hover', { tag: BOTH_THEMES }, async ({ page, isMobile, systemDark }) => {
+  test.skip(isMobile, '터치 화면에는 호버 배경을 적용하지 않는다.');
+  await page.goto('/notes/browser-neighbor/');
+  const colors = systemDark ? DARK_PALETTE : PALETTE;
+  for (const kind of ['warning', 'bug'] as const) {
+    const title = page.locator(`details.callout-${kind} > summary`);
+    const contrast = () => title.evaluate((element) => {
+      // 반투명 호버 판을 콜아웃 바탕에 합성한 색으로 계산한다. color-mix의 계산값도 읽는다.
+      const rgba = (color: string) => {
+        if (!/^(?:rgba?\(|color\(srgb )/.test(color)) throw new Error(`Unsupported computed color: ${color}`);
+        const parts = color.match(/[\d.]+/g)!.map(Number);
+        const scale = color.startsWith('color(') ? 1 : 255;
+        return [parts[0] / scale, parts[1] / scale, parts[2] / scale, parts[3] ?? 1];
+      };
+      const style = getComputedStyle(element);
+      const foreground = rgba(style.color);
+      const overlay = rgba(style.backgroundColor);
+      const base = rgba(getComputedStyle(element.parentElement!).backgroundColor);
+      if (foreground[3] !== 1 || base[3] !== 1) throw new Error('Expected opaque text and callout background');
+      const background = base.slice(0, 3).map((channel, index) => channel * (1 - overlay[3]) + overlay[index] * overlay[3]);
+      const luminance = (color: number[]) => color.slice(0, 3).reduce((sum, channel, index) => {
+        const linear = channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+        return sum + linear * [0.2126, 0.7152, 0.0722][index];
+      }, 0);
+      const [high, low] = [luminance(foreground), luminance(background)].sort((a, b) => b - a);
+      return (high + 0.05) / (low + 0.05);
+    });
+    await expect(title).toHaveCSS('color', rgb(colors[kind]));
+    expect(await contrast(), `${kind} 기본 제목 대비`).toBeGreaterThanOrEqual(4.5);
+    await title.hover();
+    expect(await contrast(), `${kind} 호버 제목 대비`).toBeGreaterThanOrEqual(4.5);
+    await expect(title).toHaveCSS('color', rgb(colors.ink));
+    await page.mouse.move(0, 0);
+    await expect(title).toHaveCSS('color', rgb(colors[kind]));
+  }
+});
+
+
+test('overflow hints follow both scroll edges and disappear when the table fits', { tag: BOTH_THEMES }, async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/notes/browser-image/');
+  for (const selector of ['.body table', '.body pre']) {
+    const region = page.locator(selector);
+    await expect(region).toHaveAttribute('data-overflow-right', '');
+    await expect(region).not.toHaveAttribute('data-overflow-left');
+    await expect(region).toHaveAttribute('tabindex', '0');
+    expect(await region.evaluate(e => getComputedStyle(e).maskImage)).not.toBe('none');
+    await region.evaluate(e => { e.scrollLeft = e.scrollWidth; });
+    await expect(region).not.toHaveAttribute('data-overflow-right');
+    await expect(region).toHaveAttribute('data-overflow-left', '');
+    await region.focus();
+    await page.keyboard.press('ArrowLeft');
+    await expect.poll(() => region.evaluate(e => e.scrollWidth - e.clientWidth - e.scrollLeft)).toBeGreaterThan(1);
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const table = page.locator('.body table');
+  await expect(table).not.toHaveAttribute('data-overflow-left');
+  await expect(table).not.toHaveAttribute('data-overflow-right');
+  await expect(table).not.toHaveAttribute('tabindex');
+});
+
+
+test('series hubs show the published count without a misleading reading time', async ({ page }) => {
+  await page.goto('/posts/browser-series/');
+  await expect(page.locator('.note-meta')).not.toContainText(/\d+분/);
+  await expect(page.locator('.series-start')).toContainText(/공개된 글 \d+편/);
+  await page.goto('/posts/browser-series-part/');
+  await expect(page.locator('.note-meta')).toContainText(/\d+분/);
+});
+
+
+test('the sidebar marks remaining content without blocking links and clears at the bottom or in one column', { tag: BOTH_THEMES }, async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 600 });
+  await page.goto('/notes/browser-many/');
+  const side = page.locator('.note-side');
+  await expect(side).toHaveAttribute('data-sidebar-overflow', '');
+  const paint = () => side.evaluate(e => { const s = getComputedStyle(e, '::after'); return { height: s.height, position: s.position, pointer: s.pointerEvents, opacity: s.opacity }; });
+  expect(await paint()).toMatchObject({ height: '24px', position: 'sticky', pointer: 'none' });
+  await side.locator('a').first().focus();
+  await expect.poll(async () => (await paint()).opacity).toBe('0');
+  await side.evaluate(e => { e.scrollTop = e.scrollHeight; });
+  await expect(side).not.toHaveAttribute('data-sidebar-overflow');
+  await side.evaluate(e => { e.scrollTop = 0; });
+  await expect(side).toHaveAttribute('data-sidebar-overflow', '');
+  await page.setViewportSize({ width: 1000, height: 600 });
+  await expect(side).not.toHaveAttribute('data-sidebar-overflow');
 });
