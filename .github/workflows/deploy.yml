@@ -42,7 +42,7 @@ jobs:
           path: vault
 
       - name: Set up Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: '.nvmrc'
           cache: npm
@@ -92,7 +92,7 @@ jobs:
       # 브라우저 검사 단계가 실패했을 때만 올려, 로컬에서 같은 실패를 재현하려고 검사를 되풀이하지 않게 한다.
       - name: Upload browser test results
         if: failure() && steps.browser-tests.outcome == 'failure'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: playwright-results
           path: test-results/
