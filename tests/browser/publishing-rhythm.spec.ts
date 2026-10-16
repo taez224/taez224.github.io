@@ -13,6 +13,9 @@ test('the publishing rhythm shows the period total, inspects months and restores
   const points = root.locator('[data-month]');
   const monthCount = await points.count();
   expect(monthCount).toBeGreaterThan(12);
+  const months = await points.first().getAttribute('data-month');
+  const lastMonth = await points.last().getAttribute('data-month');
+  await expect(chart).toHaveAttribute('aria-label', `${months!.replace('-', '.')}부터 ${lastMonth!.replace('-', '.')}까지 월별 발행 흐름. ${summary} 방향키로 월을 살펴봅니다.`);
   // 날짜가 바뀌어도 최근 발행 기록이 있는 연재 편을 임시 vault에 둔다. 소개 페이지는 세지 않는다.
   expect(Number(await points.last().getAttribute('data-count'))).toBeGreaterThanOrEqual(1);
   await expect(chart.locator('polyline')).toHaveCSS('stroke', rgb((systemDark ? DARK_PALETTE : PALETTE).ink));

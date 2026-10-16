@@ -34,7 +34,7 @@ for (const root of document.querySelectorAll<HTMLElement>('[data-publishing-rhyt
   };
   chart.setAttribute('tabindex', '0');
   chart.setAttribute('role', 'group');
-  chart.setAttribute('aria-label', '월별 발행 흐름. 방향키로 월을 살펴봅니다.');
+  chart.setAttribute('aria-label', `${chart.getAttribute('aria-label') ?? '월별 발행 흐름.'} 방향키로 월을 살펴봅니다.`);
   chart.addEventListener('pointermove', inspectPointer);
   chart.addEventListener('pointerdown', event => { chart.focus({ preventScroll: true }); inspectPointer(event); });
   chart.addEventListener('pointerleave', () => { if (document.activeElement !== chart) reset(); });
