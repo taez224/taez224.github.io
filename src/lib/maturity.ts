@@ -5,9 +5,9 @@ import type { PixelIconName } from './pixel-icons.ts';
 export interface MaturityStage { status: string; label: string; icon: PixelIconName; open?: PixelIconName; meaning: string }
 
 export const MATURITY_STAGES: readonly MaturityStage[] = [
-  { status: 'seedling', label: '새싹', icon: 'seedling', open: 'seedlingOpen', meaning: '생각을 세웠지만 아직 거친 노트' },
-  { status: 'growing', label: '묘목', icon: 'growing', meaning: '다시 읽고 다듬었지만 고칠 데가 남은 노트' },
-  { status: 'evergreen', label: '나무', icon: 'evergreen', meaning: '다시 읽어도 주장을 바꿀 데가 없는 노트' }
+  { status: 'seedling', label: '새싹', icon: 'seedling', open: 'seedlingOpen', meaning: '생각을 처음 정리한 노트' },
+  { status: 'growing', label: '묘목', icon: 'growing', meaning: '다시 읽고 설명과 근거를 다듬은 노트' },
+  { status: 'evergreen', label: '나무', icon: 'evergreen', meaning: '핵심 생각과 설명이 비교적 안정된 노트' }
 ];
 
 // 허브는 주장 노트가 아니라 성숙도를 쓰지 않는다. 블로그·개발 노트의 status는 발행 상태라 성숙도로 읽지 않는다.

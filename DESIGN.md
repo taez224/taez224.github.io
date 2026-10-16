@@ -602,7 +602,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 표 머리행은 본문 행보다 굵은 글자와 별도 배경, 아래 2px 선으로 구분한다. 어두운 화면에서는 머리행 배경과 내부 열 경계도 함께 밝힌다. 표의 글자는 본문보다 한 단계 작은 `ui`이고, 칸의 글이 짧은 조각이라 줄 간격을 문단보다 좁혀 행이 벌어지지 않게 한다. 칸의 영어 단어와 코드 식별자는 글자 중간에서 나누지 않는다. 열이 그 단어만큼 넓어지고, 넘치는 표는 표 안에서 가로로 스크롤한다. 표와 코드 블록은 화면 밖에 내용이 남은 방향의 끝을 옅게 표시하며 끝까지 이동하면 표시를 없앤다. 넘칠 때만 키보드로 들어가 스크롤할 수 있고, 포커스 윤곽선이 잘리지 않도록 키보드 조작 중에는 마스크를 풀어 둔다. 모바일에서 접힌 목차와 연재 시작 카드는 테두리가 붙지 않게 간격을 둔다. 연재 허브는 편 목록이 관계를 보여 주므로 로컬 그래프를 생략하며, 개별 편과 일반 노트의 그래프는 유지한다.
 
 - **메타 줄:** 구분점은 뒤 항목에 붙여, 줄이 바뀔 때 점만 앞줄 끝에 남지 않게 한다. 다음 줄 맨 앞으로 내려간 항목의 점은 잘라 내, 줄이 점으로 시작하지 않게 한다.
-- **성숙도:** 생각 노트는 메타 줄의 노트 종류 다음에 성숙도(새싹·묘목·나무)를 도안과 이름으로 둔다. 휴대폰에는 툴팁이 없어 도안만으로는 뜻을 전할 수 없으므로 이름을 늘 보이고, 누르면 메타 줄 아래에 세 단계의 뜻을 펼친다. 설명은 제목 위에 겹쳐 띄우지 않고 흐름대로 제목을 밀어낸다. 겹쳐 띄우면 바깥을 눌러 닫는 처리와 자리 계산이 따로 필요하다. 세 도안은 잎 수가 아니라 모양(떡잎, 작은 활엽수, 침엽수)으로 갈라 14px에서도 구분된다.
+- **성숙도:** 생각 노트는 메타 줄의 노트 종류 다음에 성숙도(새싹·묘목·나무)를 도안과 이름으로 둔다. 휴대폰에는 툴팁이 없어 도안만으로는 뜻을 전할 수 없으므로 이름을 늘 보인다. 누르면 제목 위치를 유지한 채 버튼에 붙은 팝오버로 세 단계의 뜻을 보여 준다. 같은 버튼·바깥 누르기·Esc로 닫으며, 공간이 부족하면 화면 안으로 배치를 바꾸고 판 안에서 스크롤한다. 앵커 배치를 지원하지 않는 브라우저에서는 화면 가운데에 둔다. 세 도안은 잎 수가 아니라 모양(떡잎, 작은 활엽수, 침엽수)으로 갈라 14px에서도 구분된다.
 - **제목 아래 요약:** 개발 노트의 요약은 명조로 본문과 구분한다. 목차가 사이드바로 가는 넓은 화면에서는 아래에 가는 선을 더하고, 한 열에서는 목차의 선과 겹치지 않게 생략한다.
 - **콜아웃:** 밝은 판과 가는 사방 테두리로 본문에서 구분한다. 머리표는 먹색과 ui 크기로 읽히게 하고, 위쪽 2px 괘선은 머리표보다 옅게 둔다. 어두운 화면은 판의 명도 차이를 보강하며 경고·버그는 의미색 제목의 대비를 지키도록 기존 판 밝기를 유지한다.
 - **인용문:** 글자는 본문과 같은 먹색이고, 왼쪽 3px 선을 링크 밑줄과 같은 농도로 그어 인용을 알린다. 글자를 보조색으로 두면 여러 줄을 읽는 인용이 사이트에서 가장 낮은 대비를 받는다. 글자 색이 같아지면 선이 유일한 단서라 구분선 색으로는 본문과 구분되지 않는다.
@@ -695,7 +695,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 역할 색(밝은·어두운 화면)과 링크 밑줄의 대비 | `src/lib/palette.ts`, `src/styles/site.css` | `tests/palette.test.ts` |
 | 주제색 | `src/lib/format.ts`(화면에는 `var(--topic-…)`로 나감) | `tests/topic-colors.test.ts` |
 | 코드 강조색 | `src/styles/body.css` | `tests/code-colors.test.ts` |
-| 읽기 탐색 판의 탭·진행 막대·연결 목록 | `src/components/ReaderNavigation.astro`, `src/components/note-connections.ts`, `src/scripts/toc-button.ts` | `tests/browser/reader-navigation.spec.ts`, `tests/browser/reader.spec.ts` |
+| 읽기 탐색 판의 탭·진행 막대·연결 목록 | `src/components/ReaderNavigation.astro`, `src/lib/note-connections.ts`, `src/scripts/toc-button.ts` | `tests/browser/reader-navigation.spec.ts`, `tests/browser/reader.spec.ts` |
 | 본문 이미지 확대와 원래 크기·포커스 복귀 | `src/scripts/image-viewer.ts`, `src/styles/body.css` | `tests/browser/image-viewer.spec.ts` |
 | 도표 색과 배치 설정 | `src/scripts/mermaid-config.ts` | `tests/mermaid.test.ts` |
 | 글꼴 조각과 적재 | `scripts/vendor-fonts.ts`가 만든 `src/styles/fonts.css`, `public/fonts` | `tests/fonts.test.ts` |
