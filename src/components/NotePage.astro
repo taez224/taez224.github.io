@@ -46,7 +46,7 @@ const maturity = maturityOf(note);
     <article class="note-article">
       <div class="meta note-meta">
         <a class="kicker" href={parentUrl}>{parent.label}</a>
-        {maturity && <button type="button" class="maturity" aria-expanded="false" aria-controls="maturity-note" aria-label={`노트 성숙도: ${maturity.label}`} data-maturity><Fragment set:html={pixelIcon(maturity.icon, maturity.open)} />{maturity.label}</button>}
+        {maturity && <button type="button" class="maturity" popovertarget="maturity-note" aria-controls="maturity-note" aria-label={`노트 성숙도: ${maturity.label}`} data-maturity><Fragment set:html={pixelIcon(maturity.icon, maturity.open)} />{maturity.label}</button>}
         {note.type === 'hub' && <span><i class="hub-mark" aria-hidden="true"></i>허브</span>}
         <span class="note-dates">
           {note.updated && `${note.published ? (note.kind === 'blog' ? '발행' : '공개') : '작성'} `}<time datetime={note.date}>{formatDate(note.date)}</time>
@@ -56,9 +56,10 @@ const maturity = maturityOf(note);
         {topics.map((t) => <span><i class="topic-dot" style={`background:${t.color}`} aria-hidden="true"></i>{t.label}</span>)}
         {note.publishedUrl && <a href={note.publishedUrl} target="_blank" rel="noreferrer">{note.publication || '원문'}에서 읽기 ↗</a>}
       </div>
-      {maturity && <div id="maturity-note" class="maturity-note" hidden>
-        <p>노트를 얼마나 다듬었는지 세 단계로 나타냅니다.</p>
+      {maturity && <div id="maturity-note" class="maturity-note" popover>
+        <p>노트를 얼마나 다듬었는지 나타냅니다.</p>
         <ol>{MATURITY_STAGES.map((stage) => <li aria-current={stage === maturity ? 'true' : undefined}><Fragment set:html={pixelIcon(stage.icon)} /><b>{stage.label}</b><span>{stage.meaning}</span></li>)}</ol>
+        <p>어느 단계든 새로운 생각이나 근거에 따라 내용이 달라질 수 있습니다.</p>
       </div>}
       <h1 class="display note-title">{title}</h1>
       {note.kind === 'development' && note.summary?.trim() && <p class="note-lead">{note.summary}</p>}
@@ -108,7 +109,7 @@ const maturity = maturityOf(note);
   .modified-date::before { content: '·'; margin: 0 8px; }
   .note-meta .kicker { color: var(--accent); }
   /* 성숙도 버튼은 메타 줄의 다른 항목처럼 보조색 글자로 둔다. 도안은 격자 한 칸이 1px이 되도록 격자 크기 그대로 보인다. */
-  .maturity { display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: none; color: var(--muted); font: inherit; cursor: pointer; }
+  .maturity { display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: none; color: var(--muted); font: inherit; cursor: pointer; anchor-name: --maturity; }
   .maturity svg { display: block; width: 14px; height: 14px; flex: none; }
   .maturity[aria-expanded="true"] { color: var(--ink); }
   @media (hover: hover) { .maturity:hover { color: var(--ink); } }
@@ -118,10 +119,17 @@ const maturity = maturityOf(note);
     .maturity[aria-expanded="true"] .frame-1 { display: none; }
     .maturity[aria-expanded="true"] .frame-2 { display: inline; }
   }
-  /* 설명은 메타 줄 아래에 흐름대로 펼쳐 제목을 밀어낸다. 제목 위에 겹쳐 띄우면 바깥을 눌러 닫는 처리와 자리 계산이 필요하다.
-     세 단계를 모두 보여 이 노트가 어디쯤인지 알게 하고, 이 노트의 단계만 먹색으로 둔다. */
-  .maturity-note { max-width: 480px; margin: -4px 0 20px; padding: 12px 14px; border: 1px solid var(--line); background: var(--paper-strong); color: var(--muted); font-size: var(--t-side); line-height: 1.6; }
+  /* 제목을 밀어내지 않는 설명 판이다. 앵커 배치를 지원하면 버튼 아래에 붙이고, 공간이 모자라면 위로 뒤집는다.
+     지원하지 않는 브라우저에서는 기본 팝오버처럼 화면 가운데에 둔다. 세 단계 중 현재 단계만 먹색으로 읽힌다. */
+  .maturity-note { display: none; position: fixed; inset: 0; width: min(480px, calc(100vw - 32px)); height: fit-content; max-height: min(65dvh, 320px); margin: auto; overflow-y: auto; padding: 12px 14px; border: 1px solid var(--overlay-line); border-radius: 6px; background: var(--paper-strong); color: var(--muted); font-size: var(--t-side); line-height: 1.6; }
+  .maturity-note:popover-open { display: block; }
+  @supports (position-area: bottom span-all) and (justify-self: anchor-center) {
+    .maturity-note { position-anchor: --maturity; position-area: bottom span-all; justify-self: anchor-center; position-try-fallbacks: flip-block, --maturity-center; inset: auto; margin: 6px 16px; }
+  }
+  /* 큰 글자·낮은 화면에서 위아래 어느 쪽에도 들어가지 않으면 화면 안에 두고 판 안에서 스크롤한다. */
+  @position-try --maturity-center { position-area: none; inset: 16px; margin: auto; }
   .maturity-note p { margin: 0 0 8px; }
+  .maturity-note p:last-child { margin: 10px 0 0; }
   .maturity-note ol { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
   .maturity-note li { display: grid; grid-template-columns: 14px auto minmax(0, 1fr); align-items: center; gap: 4px 8px; }
   .maturity-note li svg { display: block; width: 14px; height: 14px; }

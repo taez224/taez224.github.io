@@ -28,24 +28,76 @@ test('highlighted text keeps the ink color on the highlight in both themes', { t
   await expect(mark).toHaveCSS('color', rgb(dark ? DARK_PALETTE.ink : PALETTE.ink));
 });
 
-// 생각 노트의 성숙도는 메타 줄에 이름이 늘 보이고, 버튼을 누르면 세 단계의 뜻이 메타 줄 아래에 펼쳐진다.
-// 휴대폰에는 툴팁이 없어 이름만으로는 뜻을 전할 수 없다. 설명은 제목 위에 겹치지 않고 흐름대로 제목을 밀어낸다.
-test('the maturity button unfolds the stage meanings under the meta line and closes with Escape', async ({ page, isMobile }) => {
+// 성숙도 설명은 본문 배치를 바꾸지 않는 팝오버다. 판의 모양과 닫힌 뒤의 버튼 상태를 두 테마에서 확인한다.
+test('the maturity button opens a popover without moving the title and closes with Escape', { tag: BOTH_THEMES }, async ({ page, isMobile, systemDark }) => {
   await page.goto('/notes/browser-long-summary/');
   const button = page.locator('[data-maturity]');
   const meanings = page.locator('#maturity-note');
+  const title = page.locator('.note-title');
+  const before = (await title.boundingBox())!;
   await expect(button).toHaveText('새싹');
   await expect(meanings).toBeHidden();
   if (isMobile) await button.tap(); else await button.click();
   await expect(button).toHaveAttribute('aria-expanded', 'true');
   await expect(meanings).toBeVisible();
+  expect(await meanings.evaluate(element => element.matches(':popover-open'))).toBe(true);
   await expect(meanings.locator('li[aria-current="true"]')).toContainText('새싹');
-  const box = (await meanings.boundingBox())!, title = (await page.locator('.note-title').boundingBox())!;
-  expect(title.y, '제목이 설명 아래로 밀려난다').toBeGreaterThanOrEqual(box.y + box.height);
+  const box = (await meanings.boundingBox())!;
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+  expect((await title.boundingBox())!.y, '열어도 제목 위치를 유지한다').toBeCloseTo(before.y, 1);
+  const colors = systemDark ? DARK_PALETTE : PALETTE;
+  await expect(meanings).toHaveCSS('background-color', rgb(colors['paper-strong']));
+  await expect(meanings).toHaveCSS('border-top-style', 'solid');
+  await expect(meanings.locator('li[aria-current="true"]')).toHaveCSS('color', rgb(colors.ink));
   await button.focus();
   await page.keyboard.press('Escape');
   await expect(meanings).toBeHidden();
+  await expect(button).toHaveAttribute('aria-expanded', 'false');
   await expect(button).toBeFocused();
+});
+
+test('the maturity popover closes from its button or an outside click and reopens by keyboard', async ({ page, isMobile }) => {
+  await page.goto('/notes/browser-long-summary/');
+  const button = page.locator('[data-maturity]');
+  const meanings = page.locator('#maturity-note');
+  const press = () => isMobile ? button.tap() : button.click();
+  await press();
+  await expect(meanings).toBeVisible();
+  await press();
+  await expect(meanings).toBeHidden();
+  await expect(button).toHaveAttribute('aria-expanded', 'false');
+  await press();
+  await expect(meanings).toBeVisible();
+  const viewport = page.viewportSize()!;
+  if (isMobile) await page.touchscreen.tap(viewport.width - 4, viewport.height - 4);
+  else await page.mouse.click(viewport.width - 4, viewport.height - 4);
+  await expect(meanings).toBeHidden();
+  await expect(button).toHaveAttribute('aria-expanded', 'false');
+  await button.focus();
+  await page.keyboard.press('Enter');
+  await expect(meanings).toBeVisible();
+});
+
+test('the maturity popover remains within a short narrow viewport with enlarged text', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await gotoWithDefaultFontSize(page, '/notes/browser-long-summary/', 32);
+  await page.locator('[data-maturity]').click();
+  const meanings = page.locator('#maturity-note');
+  await expect(meanings).toBeVisible();
+  for (const size of [{ width: 320, height: 568 }, { width: 390, height: 300 }]) {
+    await page.setViewportSize(size);
+    const box = (await meanings.boundingBox())!;
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(size.width);
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.y + box.height).toBeLessThanOrEqual(size.height);
+    // 낮은 화면에서는 판 안에서 스크롤해 마지막 단계까지 읽는다.
+    await meanings.locator('li').last().scrollIntoViewIfNeeded();
+    await expect(meanings.locator('li').last()).toBeInViewport();
+    await meanings.locator('p').last().scrollIntoViewIfNeeded();
+    await expect(meanings.locator('p').last()).toBeInViewport();
+  }
 });
 
 // 새싹은 설명이 열려 있는 동안 떡잎이 벌어진 장면으로 바뀐다. 움직임 줄이기를 켠 독자에게는 바뀌지 않아야 한다.
