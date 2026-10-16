@@ -128,8 +128,8 @@ function select(id: string | null, pushUrl: boolean, { open = true } = {}) {
     window.history.replaceState(null, '', `${window.location.pathname}${params.size ? `?${params}` : ''}`);
   }
   syncSheet();
+  panel.scrollTop = 0;
   if (node && open && narrow.matches) {
-    panel.scrollTop = 0;
     panel.querySelector<HTMLButtonElement>('[data-panel-close]')?.focus({ preventScroll: true });
   }
   if (node && open) keepNodeAboveSheet(node.id);

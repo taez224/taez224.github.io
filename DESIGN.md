@@ -533,7 +533,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 ### 페이지별 배치
 
-- **지도:** 1000px 이하에서는 패널을 모달 하단 시트로 띄운다. 흐름에 두면 무대 아래로 내려가 노드를 골라도 화면에서 바뀌는 것이 없다. 경계는 입력 방식이 아니라 한 열로 접히는 폭으로 정한다. 모달은 시트에 가려진 노드로 포커스가 들어가는 것을 막는다. 시트가 고른 노드를 덮으면 지도를 위로 밀고, 시트를 닫으면 민 만큼 되돌린다. 밀린 채 두면 휴대폰 지도의 아래쪽이 빈다.
+- **지도:** 1000px 이하에서는 패널을 모달 하단 시트로 띄운다. 흐름에 두면 무대 아래로 내려가 노드를 골라도 화면에서 바뀌는 것이 없다. 경계는 입력 방식이 아니라 한 열로 접히는 폭으로 정한다. 모달은 시트에 가려진 노드로 포커스가 들어가는 것을 막는다. 시트가 고른 노드를 덮으면 지도를 위로 밀고, 시트를 닫으면 민 만큼 되돌린다. 밀린 채 두면 휴대폰 지도의 아래쪽이 빈다. 패널 요약은 줄 수로 자르지 않고 전부 보여 준다. 요약과 참조 목록이 길면 패널 전체에서 스크롤하며, 다른 노트를 고르면 맨 위에서 설명을 시작한다.
 - **홈 첫 화면:** 첫 화면의 높이는 기준이지 한계가 아니다. 넘치는 부분을 잘라 내면 글자를 키워 쓰는 독자가 링크와 연락처를 잃는다. 1000px 이하와 손가락으로 쓰는 기기는 살아 있는 지도 대신 빌드 때 그린 그림을 받는다. 살아 있는 지도는 세로 스와이프를 가져가고, 그 대가인 호버 미리보기는 손가락에 없다. 한 열로 접히면 지도 상자가 낮아져 엔진의 영역 이름이 허브 제목과 겹치므로, 마우스를 쓰더라도 그 상자에 맞춰 그린 그림을 쓴다. 넓은 화면의 지도는 네 가장자리를 옅게 하되 색면·간선·노드에만 씌운다. 상자 전체를 옅게 하면 가장자리 가까이 놓인 영역 이름이 배경에 묻힌다. 720px 이하의 그림은 허브 제목 대신 영역 이름만 크게 둔다. 낮은 휴대폰에서는 화면 높이에 맞춰 그림을 이어서 줄여 대표 글 제목이 첫 화면에 들어오게 한다. 홈이 권하는 일은 한 편을 읽는 것이라, 지도가 첫 화면을 다 차지하면 그 글을 찾으려고 스크롤해야 한다. 그림은 150px 아래로 줄이지 않으므로 320×568처럼 아주 작은 화면에서는 제목이 첫 화면 밖에 남는다. 넓은 터치 화면은 허브 제목이 있는 정적 그림을 쓰고, 두 그림 모두 전체가 지도 링크다. 소개문 아래의 보조 링크 둘은 넓은 화면에서 그림이 살아 있는 지도로 바뀌어 지도로 가는 길이 사라지기 때문에 둔다.
 - **찾을 수 없는 페이지:** 끊긴 참조를 그린 격자 그림을 둔다. 장식이 아니라 상태 설명이므로 보조색으로 두어 제목과 세 갈래 길(지도, 검색, 홈)이 먼저 읽히게 한다.
 
@@ -730,6 +730,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 한 열 화면의 목차 버튼과 읽은 정도 막대 | `src/components/NotePage.astro`, `src/scripts/toc-button.ts`, `src/scripts/reading-progress.ts` | `tests/reading-progress.test.ts`, `tests/browser/reader.spec.ts` |
 | 앵커 이동의 즉시 이동 | `src/styles/site.css` | `tests/browser/reader.spec.ts` |
 | 지도와 홈 지도가 나누는 호버 예고편·누름 상태 | `src/graph/engine.ts` | `tests/browser/map.spec.ts`, `tests/browser/home.spec.ts` |
+| 지도 요약 전체 표시와 패널 스크롤 | `src/components/MapPanel.astro`, `src/scripts/map.ts` | `tests/browser/map-panel.spec.ts` |
 | 지도 시트로 바뀌는 폭과 그 폭의 대화상자 처리 | `src/components/MapPanel.astro`, `src/scripts/map.ts`, `src/pages/map/index.astro` | `tests/interaction-states.test.ts`, `tests/browser/map.spec.ts` |
 | 검색 결과 줄의 형광과 두 줄 요약 | `src/lib/search-match.ts`, `src/scripts/search.ts`, `src/styles/site.css` | `tests/search-match.test.ts`, `tests/browser/search.spec.ts` |
 | 검색·도표·이미지 크게 보기의 배경 닫기와 끌기 보호 | `src/scripts/dialog-backdrop.ts` | `tests/dialog-backdrop.test.ts`, `tests/browser/search.spec.ts` |

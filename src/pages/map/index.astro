@@ -104,8 +104,6 @@ const topics = [...topicCounts].map(([name, count]) => ({ name, color: topicColo
   @media (max-width: 1000px) {
     .map-layout { grid-template-columns: 1fr; gap: 24px; }
     .graph-box { height: 60vh; min-height: 360px; }
-    .map-panel .scroll-list.is-long .side-list { max-height: none; }
-    .map-panel .scroll-list.is-long::after { display: none; }
     /* 이 폭부터 패널은 노드를 고른 뒤에 올라오는 시트라 처음 화면에 들어갈 곳이 없다.
        패널의 처음 내용과 같은 목록을 무대 아래에 두고, 어디서 열리는지 한 줄로 알린다. */
     .map-start { display: block; padding-top: 14px; }
