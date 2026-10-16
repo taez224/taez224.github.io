@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import sharp from 'sharp';
+import { kstDate } from '../../src/lib/dates.ts';
 
 // 브라우저 검사가 빌드하는 임시 vault의 입력이다. 검사가 여는 노트(slug)와 그 노트에 있어야 할 내용을 여기서 고친다.
 // 임시 폴더, 빌드, 서버는 server.ts가 맡는다.
@@ -271,11 +272,12 @@ summary: ${LONG_SUMMARY}
 
 [[visual-part]]
 `,
+  // 발행 흐름에 최근 편이 남도록 발행일만 빌드한 날로 맞춘다. 실제 vault의 날짜는 읽지 않는다.
   '20_Projects/blog/visual-part.md': `---
 title: 화면 검사 첫 편
 status: published
 created: 2026-09-01
-published: 2026-09-01
+published: ${kstDate()}
 slug: browser-series-part
 series: 화면 검사 연재
 series_order: 1

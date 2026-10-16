@@ -1,0 +1,39 @@
+---
+import type { Blog } from '../lib/blog.ts';
+import { publishingRhythm, RHYTHM_WIDTH, RHYTHM_HEIGHT } from '../lib/publishing-rhythm.ts';
+import { kstDate } from '../lib/dates.ts';
+interface Props { blog: Blog }
+const { blog } = Astro.props;
+const posts = [...blog.publications.flatMap(group => group.posts), ...blog.series.flatMap(series => series.posts)];
+const { months, total } = publishingRhythm(posts, kstDate());
+const first = months[0]?.month.replace('-', '.');
+const last = months.at(-1)?.month.replace('-', '.');
+const summary = `전체 기간 · ${total}편`;
+---
+{total > 0 && <figure class="publishing-rhythm" data-publishing-rhythm>
+  <figcaption class="meta">발행 흐름</figcaption>
+  <svg class="rhythm-chart" viewBox={`0 0 ${RHYTHM_WIDTH} ${RHYTHM_HEIGHT}`} role="img" aria-label={`${first}부터 ${last}까지 월별 발행 흐름. ${summary}`} data-rhythm-chart>
+    <line class="rhythm-baseline" x1="5" x2={RHYTHM_WIDTH - 5} y1={RHYTHM_HEIGHT - 7} y2={RHYTHM_HEIGHT - 7} />
+    <polyline points={months.map(month => `${month.x.toFixed(2)},${month.y.toFixed(2)}`).join(' ')} />
+    {months.length === 1 && <circle cx={months[0].x} cy={months[0].y} r="2.5" fill="var(--ink)" />}
+    <line class="rhythm-guide" y1="4" y2={RHYTHM_HEIGHT - 4} data-rhythm-guide />
+    {months.map(month => <circle class="rhythm-point" cx={month.x.toFixed(2)} cy={month.y.toFixed(2)} r="2.5" data-month={month.month} data-count={month.count} />)}
+  </svg>
+  <p class="rhythm-reading meta" data-rhythm-reading data-summary={summary}>{summary}</p>
+  <div class="rhythm-range meta" aria-hidden="true"><span>{first}</span><span>{last}</span></div>
+  <span class="visually-hidden" aria-live="polite" data-rhythm-announcement></span>
+</figure>}
+<style>
+  .publishing-rhythm { width: 13rem; max-width: 100%; min-width: min(10rem, 100%); margin: 0 0 0 auto; }
+  figcaption { color: var(--muted); }
+  .rhythm-chart { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; }
+  .rhythm-chart polyline { fill: none; stroke: var(--ink); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+  .rhythm-baseline { stroke: var(--line); stroke-width: 1; }
+  .rhythm-guide { stroke: var(--muted); stroke-width: 1; opacity: .5; }
+  .rhythm-point { fill: var(--ink); }
+  .rhythm-guide, .rhythm-point { display: none; }
+  .rhythm-guide[data-active], .rhythm-point[data-active] { display: inline; }
+  .rhythm-reading { min-height: 1.6em; margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+  .rhythm-range { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+</style>
+<script src="../scripts/publishing-rhythm.ts"></script>

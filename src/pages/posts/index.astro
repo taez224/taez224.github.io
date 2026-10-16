@@ -3,6 +3,7 @@ import Shell from '../../layouts/Shell.astro';
 import { getGarden } from '../../lib/get-garden.ts';
 import { formatDate } from '../../lib/format.ts';
 import { blogLedger } from '../../lib/blog.ts';
+import PublishingRhythm from '../../components/PublishingRhythm.astro';
 const { blog, notes } = await getGarden();
 // 연재는 링 표시가 붙은 한 행이다. 장부를 짜는 규칙은 blogLedger에 있다.
 const finished = (series: { ended: string }) => Boolean(series.ended);
@@ -13,7 +14,7 @@ const readingMinutes = new Map(notes.map((note) => [note.path, note.readingMinut
 ---
 <Shell title="블로그" description="TaeZ가 발행한 글과 연재." path="/posts/" active="posts">
   <div class="wrap posts-page">
-    <div class="page-head"><h1 class="display">블로그</h1><span class="meta">{blog.stats.posts}편 · 연재 {blog.stats.series}개</span></div>
+    <div class="page-head"><div class="posts-heading"><h1 class="display">블로그</h1><span class="meta">{blog.stats.posts}편 · 연재 {blog.stats.series}개</span></div><PublishingRhythm blog={blog} /></div>
     {years.map(({ year, rows }) => <section class="ledger-group is-year" aria-label={`${year}년`}>
       <div class="ledger-head"><h2 class="display">{year}</h2></div>
       <div class="ledger-rows">{rows.map((row) => row.kind === 'post'
@@ -37,4 +38,6 @@ const readingMinutes = new Map(notes.map((note) => [note.path, note.readingMinut
 </Shell>
 <style>
   .posts-page { padding: var(--s-page-top-index) 0 var(--s-page-bottom); }
+  .page-head { flex-wrap: wrap; align-items: center; gap: 20px 16px; }
+  .posts-heading { display: flex; flex: 1 1 7.5rem; flex-direction: column; align-items: flex-start; gap: 4px; }
 </style>

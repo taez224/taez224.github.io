@@ -595,6 +595,8 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 장부는 왼쪽 열에 연도·분류·등급 라벨을 명조로 크게 두고, 오른쪽 행이 다시 제목·메타와 요약을 나눈다. 라벨 칸은 한 글자 등급에 맞춘 폭이고, 세 글자 미분류 묶음만 글자를 키웠을 때 칸이 글자를 따라 넓어진다.
 
+블로그 제목 옆에는 첫 발행 월부터 이번 달까지의 월별 발행 흐름을 작은 먹색 선으로 둔다. 평소에는 전체 기간의 합계를 보이고, 마우스·터치·방향키로 살펴볼 때 해당 월의 편수를 보인다. 글이 없는 달도 같은 간격으로 남겨 시간의 길이를 유지하며, 기간 안에 발행한 글이 없으면 그래프를 생략한다. 창이 좁거나 글자를 키우면 제목 아래로 내려 배치한다. 집계에 쓰는 날짜는 `AUTHORING.md`의 「날짜와 수정일」에 있다.
+
 홈의 최근 기록은 새로 쓴 노트와 다듬은 노트를 한 목록에 날짜순으로 싣는다. 노트는 계속 고쳐 쓰는 기록이라, 새로 쓴 것만 보이면 달라진 것의 절반이 빠진다. 날짜는 마지막으로 쓰거나 다듬은 날 하나만 적고, 다듬은 날이면 제목 뒤에 보조색 물뿌리개를 둔다. 글자 라벨을 쓰지 않는 것은 새 글과 다듬은 글의 구분이 독자에게 가벼운 정보이기 때문이다. 그 행에 마우스를 올리거나 키보드로 들어오면 물방울이 흩어지는 둘째 장면으로 바뀐다. 이미 그 줄을 보는 독자에게만 보이는 반응이라 목록 전체의 조용함은 그대로다. 다듬은 노트는 두 편까지만 더해 새 글이 밀리지 않게 한다.
 
 ### 리더
@@ -696,6 +698,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 주제색 | `src/lib/format.ts`(화면에는 `var(--topic-…)`로 나감) | `tests/topic-colors.test.ts` |
 | 코드 강조색 | `src/styles/body.css` | `tests/code-colors.test.ts` |
 | 읽기 탐색 판의 탭·진행 막대·연결 목록 | `src/components/ReaderNavigation.astro`, `src/lib/note-connections.ts`, `src/scripts/toc-button.ts` | `tests/browser/reader-navigation.spec.ts`, `tests/browser/reader.spec.ts` |
+| 블로그 목록의 발행 흐름 | `src/lib/publishing-rhythm.ts`, `src/components/PublishingRhythm.astro`, `src/scripts/publishing-rhythm.ts` | `tests/publishing-rhythm.test.ts`, `tests/browser/publishing-rhythm.spec.ts` |
 | 본문 이미지 확대와 원래 크기·포커스 복귀 | `src/scripts/image-viewer.ts`, `src/styles/body.css` | `tests/browser/image-viewer.spec.ts` |
 | 도표 색과 배치 설정 | `src/scripts/mermaid-config.ts` | `tests/mermaid.test.ts` |
 | 글꼴 조각과 적재 | `scripts/vendor-fonts.ts`가 만든 `src/styles/fonts.css`, `public/fonts` | `tests/fonts.test.ts` |
