@@ -8,32 +8,41 @@ const posts = [...blog.publications.flatMap(group => group.posts), ...blog.serie
 const { months, total } = publishingRhythm(posts, kstDate());
 const first = months[0]?.month.replace('-', '.');
 const last = months.at(-1)?.month.replace('-', '.');
-const summary = `전체 기간 · ${total}편`;
 ---
-{total > 0 && <figure class="publishing-rhythm" data-publishing-rhythm>
-  <figcaption class="meta">발행 흐름</figcaption>
-  <svg class="rhythm-chart" viewBox={`0 0 ${RHYTHM_WIDTH} ${RHYTHM_HEIGHT}`} role="img" aria-label={`${first}부터 ${last}까지 월별 발행 흐름. ${summary}`} data-rhythm-chart>
-    <line class="rhythm-baseline" x1="5" x2={RHYTHM_WIDTH - 5} y1={RHYTHM_HEIGHT - 7} y2={RHYTHM_HEIGHT - 7} />
-    <polyline points={months.map(month => `${month.x.toFixed(2)},${month.y.toFixed(2)}`).join(' ')} />
-    {months.length === 1 && <circle cx={months[0].x} cy={months[0].y} r="2.5" fill="var(--ink)" />}
-    <line class="rhythm-guide" y1="4" y2={RHYTHM_HEIGHT - 4} data-rhythm-guide />
-    {months.map(month => <circle class="rhythm-point" cx={month.x.toFixed(2)} cy={month.y.toFixed(2)} r="2.5" data-month={month.month} data-count={month.count} />)}
-  </svg>
-  <p class="rhythm-reading meta" data-rhythm-reading data-summary={summary}>{summary}</p>
-  <div class="rhythm-range meta" aria-hidden="true"><span>{first}</span><span>{last}</span></div>
+{/* 살펴보는 달의 날짜와 편수는 선 위에 띄워, 글자 길이가 바뀌어도 머리의 줄바꿈과 높이가 움직이지 않게 한다. */}
+{total > 0 && <><span class="rhythm-sep"> · </span><span class="publishing-rhythm" data-publishing-rhythm>
+  <span class="rhythm-label">발행 흐름</span>
+  <span class="rhythm-plot">
+    <svg class="rhythm-chart" viewBox={`0 0 ${RHYTHM_WIDTH} ${RHYTHM_HEIGHT}`} role="img" aria-label={`${first}부터 ${last}까지 월별 발행 흐름. 모두 ${total}편.`} data-rhythm-chart>
+      <line class="rhythm-baseline" x1="5" x2={RHYTHM_WIDTH - 5} y1={RHYTHM_HEIGHT - 7} y2={RHYTHM_HEIGHT - 7} />
+      <polyline points={months.map(month => `${month.x.toFixed(2)},${month.y.toFixed(2)}`).join(' ')} />
+      {months.length === 1 && <circle cx={months[0].x} cy={months[0].y} r="5" fill="var(--ink)" />}
+      <line class="rhythm-guide" y1="4" y2={RHYTHM_HEIGHT - 4} data-rhythm-guide />
+      {months.map(month => <circle class="rhythm-point" cx={month.x.toFixed(2)} cy={month.y.toFixed(2)} r="5" data-month={month.month} data-count={month.count} />)}
+    </svg>
+    <span class="rhythm-reading" data-rhythm-reading data-summary=""></span>
+  </span>
   <span class="visually-hidden" aria-live="polite" data-rhythm-announcement></span>
-</figure>}
+</span></>}
 <style>
-  .publishing-rhythm { width: 13rem; max-width: 100%; min-width: min(10rem, 100%); margin: 0 0 0 auto; }
-  figcaption { color: var(--muted); }
-  .rhythm-chart { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; }
+  /* 편수와 이름은 글자 기준선을 맞추고, 선 그래프만 이름의 가운데에 놓는다. */
+  .publishing-rhythm { display: inline-flex; align-items: center; gap: 8px; width: max-content; max-width: 100%; vertical-align: baseline; white-space: nowrap; }
+  .rhythm-label { flex: none; }
+  /* 이름과 선은 한 줄을 유지한다. 좁은 화면에서 글자를 키우면 선의 폭을 줄인다. */
+  .rhythm-plot { position: relative; display: block; flex: 0 0 96px; min-width: 40px; }
+  /* 선은 편수 글자 높이에 맞춘다. 원래 크기의 절반 가까이 줄이므로 고른 달의 점은 viewBox 단위로 두 배로 둔다. */
+  .rhythm-chart { display: block; width: 100%; height: 24px; overflow: visible; touch-action: pan-y; }
   .rhythm-chart polyline { fill: none; stroke: var(--ink); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
-  .rhythm-baseline { stroke: var(--line); stroke-width: 1; }
-  .rhythm-guide { stroke: var(--muted); stroke-width: 1; opacity: .5; }
+  .rhythm-baseline { stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; }
+  .rhythm-guide { stroke: var(--muted); stroke-width: 1; opacity: .5; vector-effect: non-scaling-stroke; }
   .rhythm-point { fill: var(--ink); }
   .rhythm-guide, .rhythm-point { display: none; }
   .rhythm-guide[data-active], .rhythm-point[data-active] { display: inline; }
-  .rhythm-reading { min-height: 1.6em; margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
-  .rhythm-range { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  /* 좁은 화면에서는 선이 편수 아래 줄로 내려가 위쪽에 글자가 있다. 바탕을 깔아 윗줄을 덮는 말풍선으로 띄운다.
+     선 아래에 두면 누르는 손가락에 가린다. */
+  .rhythm-reading { position: absolute; bottom: calc(100% + 4px); left: 50%; z-index: 1; padding: 1px 6px; border-radius: 4px; background: var(--ink); color: var(--paper); line-height: 1.5; font-variant-numeric: tabular-nums; pointer-events: none; transform: translateX(-50%); }
+  .rhythm-reading:empty { display: none; }
+  /* 편수 뒤에 들어가지 않는 폭에서는 다음 줄로 내린다. 가운데 점이 줄 끝에 매달리지 않게 점은 숨긴다. */
+  @media (max-width: 480px) { .publishing-rhythm { display: flex; margin-top: 2px; } .rhythm-plot { flex-shrink: 1; } .rhythm-sep { display: none; } }
 </style>
 <script src="../scripts/publishing-rhythm.ts"></script>

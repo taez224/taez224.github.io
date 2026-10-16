@@ -14,7 +14,8 @@ const readingMinutes = new Map(notes.map((note) => [note.path, note.readingMinut
 ---
 <Shell title="블로그" description="TaeZ가 발행한 글과 연재." path="/posts/" active="posts">
   <div class="wrap posts-page">
-    <div class="page-head"><div class="posts-heading"><h1 class="display">블로그</h1><span class="meta">{blog.stats.posts}편 · 연재 {blog.stats.series}개</span></div><PublishingRhythm blog={blog} /></div>
+    {/* 편수 뒤에 월별 발행 흐름을 이어 붙여, 다른 목록 머리와 같은 한 줄에 둔다. */}
+    <div class="page-head"><h1 class="display">블로그</h1><span class="meta">{blog.stats.posts}편 · 연재 {blog.stats.series}개<PublishingRhythm blog={blog} /></span></div>
     {years.map(({ year, rows }) => <section class="ledger-group is-year" aria-label={`${year}년`}>
       <div class="ledger-head"><h2 class="display">{year}</h2></div>
       <div class="ledger-rows">{rows.map((row) => row.kind === 'post'
@@ -38,6 +39,7 @@ const readingMinutes = new Map(notes.map((note) => [note.path, note.readingMinut
 </Shell>
 <style>
   .posts-page { padding: var(--s-page-top-index) 0 var(--s-page-bottom); }
-  .page-head { flex-wrap: wrap; align-items: center; gap: 20px 16px; }
-  .posts-heading { display: flex; flex: 1 1 7.5rem; flex-direction: column; align-items: flex-start; gap: 4px; }
+  /* 편수와 흐름이 제목 옆에 들어가지 않으면 제목 아래 줄로 내려간다. */
+  .page-head { flex-wrap: wrap; row-gap: 4px; }
+  .page-head > .meta { min-width: 0; max-width: 100%; }
 </style>
