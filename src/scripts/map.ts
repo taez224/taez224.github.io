@@ -102,7 +102,7 @@ graph = createGraph(svg, {
 // 가로 위치와 배율은 바뀌지 않는다. 시트 안에서 다른 노드를 연달아 골라도 처음 자리로 돌아간다.
 let sheetOrigin: number | null = null;
 function keepNodeAboveSheet(id: string) {
-  const p = positions.get(id);
+  const p = graph.position(id);
   if (!p || !narrow.matches) return;
   const view = graph.view();
   const svgTop = svg.getBoundingClientRect().top;
@@ -181,7 +181,7 @@ for (const list of [panel, document.querySelector('[data-map-start]')]) list?.ad
 });
 document.querySelector('[data-graph-zoom="in"]')!.addEventListener('click', () => graph.zoom(1.25));
 document.querySelector('[data-graph-zoom="out"]')!.addEventListener('click', () => graph.zoom(1 / 1.25));
-document.querySelector('[data-graph-zoom="fit"]')!.addEventListener('click', () => graph.fit(true));
+document.querySelector('[data-graph-zoom="fit"]')!.addEventListener('click', () => { graph.resetLayout(); graph.fit(true); });
 document.querySelector('[data-panel-close]')?.addEventListener('click', closeSheet);
 backdrop?.addEventListener('click', closeSheet);
 narrow.addEventListener('change', syncSheet);
