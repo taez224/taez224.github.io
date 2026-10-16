@@ -1,11 +1,11 @@
-import { test, expect, BOTH_THEMES } from './fixtures.ts';
+import { test, expect } from './fixtures.ts';
 
 const points = (page: import('@playwright/test').Page) => page.locator('.graph .node').evaluateAll(nodes => Object.fromEntries(nodes.map(node => {
   const dot = node.querySelector('circle.dot')!;
   return [(node as SVGGElement).dataset.id!, { x: Number(dot.getAttribute('cx')), y: Number(dot.getAttribute('cy')) }];
 })));
 
-test('dragging a node moves its neighbors without panning or selecting and then settles', { tag: BOTH_THEMES }, async ({ page }) => {
+test('dragging a node moves its neighbors without panning or selecting and then settles', async ({ page }) => {
   await page.goto('/map/');
   const target = page.getByRole('button', { name: '이웃 많은 노트', exact: true });
   const id = (await target.getAttribute('data-id'))!;
@@ -104,6 +104,64 @@ test('whole map restores the first layout, stops motion and preserves filters an
   expect(page.url()).toBe(selectedUrl);
   expect(await points(page)).toEqual(original);
 });
+
+for (const reducedMotion of ['no-preference', 'reduce'] as const) {
+  test.describe(`restoring titles with ${reducedMotion} motion`, () => {
+    test.use({ reducedMotion });
+    test('whole map restores resting titles after dragging and panning', async ({ page }) => {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.goto('/map/');
+      const scene = page.locator('[data-map] > g').first();
+      const originalView = await scene.getAttribute('transform');
+      const labels = () => page.locator('[data-labels] text').evaluateAll(labels => labels.map(label => [label.getAttribute('data-for'), label.getAttribute('x'), label.getAttribute('y')]));
+      const originalLabels = await labels();
+      const dot = page.getByRole('button', { name: '이웃 많은 노트', exact: true }).locator('.dot');
+      const box = (await dot.boundingBox())!;
+      const x = box.x + box.width / 2, y = box.y + box.height / 2;
+      await page.mouse.move(x, y);
+      await page.mouse.down();
+      await page.mouse.move(x + 50, y + 20, { steps: 10 });
+      await page.mouse.up();
+      await expect(page.locator('[data-map]')).not.toHaveAttribute('data-node-motion', { timeout: 1500 });
+      const stage = (await page.locator('[data-map]').boundingBox())!;
+      await page.mouse.move(stage.x + 4, stage.y + 60);
+      await page.mouse.down();
+      await page.mouse.move(stage.x + 164, stage.y + 140, { steps: 10 });
+      await page.mouse.up();
+      await page.mouse.move(0, 0);
+      expect(await scene.getAttribute('transform')).not.toBe(originalView);
+      await page.getByRole('button', { name: '처음 배치로 돌아가 전체 보기', exact: true }).click();
+      await expect(scene).toHaveAttribute('transform', originalView!);
+      await expect.poll(labels).toEqual(originalLabels);
+    });
+  });
+}
+
+for (const change of ['scroll', 'resize'] as const) {
+  test(`a held node follows the pointer after a page ${change}`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 600 });
+    await page.goto('/map/');
+    const dot = page.getByRole('button', { name: '이웃 많은 노트', exact: true }).locator('.dot');
+    const box = (await dot.boundingBox())!;
+    const x = box.x + box.width / 2, y = box.y + box.height / 2;
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x + 40, y + 20, { steps: 6 });
+    await expect(page.locator('[data-map]')).toHaveAttribute('data-node-motion', 'dragging');
+    if (change === 'scroll') {
+      const scroll = await page.evaluate(() => { window.scrollBy(0, 50); return scrollY; });
+      expect(scroll).toBeGreaterThanOrEqual(40);
+    } else {
+      await page.setViewportSize({ width: 1280, height: 700 });
+    }
+    await page.mouse.move(x + 60, y + 30, { steps: 3 });
+    await expect.poll(async () => {
+      const at = (await dot.boundingBox())!;
+      return Math.hypot(at.x + at.width / 2 - x - 60, at.y + at.height / 2 - y - 30);
+    }, { timeout: 1500 }).toBeLessThan(2);
+    await page.mouse.up();
+  });
+}
 
 test('touch drags from node centers pan the map at phone and tablet sizes', async ({ page, isMobile }) => {
   test.skip(!isMobile, '터치 입력이 있는 화면에서 확인한다');
@@ -251,4 +309,40 @@ test('hover resumes after release when the pointer still rests on a node', async
   await page.mouse.move(clear.x, clear.y, { steps: 12 }); await page.mouse.up();
   await expect(page.locator('[data-map]')).not.toHaveAttribute('data-node-motion', { timeout: 1500 });
   await expect(page.locator('.graph .label.is-hovered')).toHaveAttribute('data-for', id);
+});
+
+// 영역 이름은 맞춤 배율에서 자리를 정해야 확대·축소해도 새로 겹치지 않는다. 확대한 채 끌어 놓아도 같은 기준을 써야 한다.
+test('region names placed after a zoomed drag match the placement the whole-map fit would choose', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/map/');
+  // 영역 맨 위 노드를 아래로 끌어, 이름이 무대 위쪽 끝으로 밀려 들어가지 않고 영역 위에 놓이게 한다.
+  const topNode = await page.locator('[data-map]').evaluate(svg => {
+    const { nodes } = JSON.parse(document.querySelector('[data-map-data]')!.textContent!);
+    const topic = svg.querySelector('.region-label')!.textContent;
+    const ids = new Set(nodes.filter((node: { topic: string }) => node.topic === topic).map((node: { id: string }) => node.id));
+    const dots = [...svg.querySelectorAll<SVGGElement>('.node')].filter(node => ids.has(node.dataset.id!));
+    return dots.sort((a, b) => a.querySelector<SVGCircleElement>('.dot')!.cy.baseVal.value - b.querySelector<SVGCircleElement>('.dot')!.cy.baseVal.value)[0].dataset.id!;
+  });
+  const target = page.locator(`.graph .node[data-id=${JSON.stringify(topNode)}] .dot`);
+  const start = (await target.boundingBox())!;
+  const x = start.x + start.width / 2, y = start.y + start.height / 2;
+  const scene = page.locator('.graph > g').first();
+  await page.mouse.move(x, y);
+  for (let i = 0; i < 6; i++) {
+    const before = await scene.getAttribute('transform');
+    await page.mouse.wheel(0, -100);
+    await expect(scene).not.toHaveAttribute('transform', before!);
+  }
+  const zoomed = (await target.boundingBox())!;
+  const zx = zoomed.x + zoomed.width / 2, zy = zoomed.y + zoomed.height / 2;
+  await page.mouse.move(zx, zy); await page.mouse.down();
+  await page.mouse.move(zx, zy + 260, { steps: 12 }); await page.mouse.up();
+  await expect(page.locator('[data-map]')).not.toHaveAttribute('data-node-motion', { timeout: 1500 });
+  const regionNames = () => page.locator('.graph .region-label').evaluateAll(labels => labels.map(label => [label.textContent, label.getAttribute('x'), label.getAttribute('y'), label.getAttribute('text-anchor')]));
+  const afterDrag = await regionNames();
+  // 무대 폭이 바뀌면 지도는 맞춤 배율로 영역 이름을 다시 정한다. 원래 폭으로 돌아오면 같은 배치에서 맞춤 기준의 자리가 나온다.
+  await page.setViewportSize({ width: 980, height: 900 });
+  await page.waitForTimeout(300);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await expect.poll(regionNames).toEqual(afterDrag);
 });

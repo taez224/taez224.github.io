@@ -1,6 +1,6 @@
-import { test, expect, BOTH_THEMES, gotoWithDefaultFontSize } from './fixtures.ts';
+import { test, expect, gotoWithDefaultFontSize } from './fixtures.ts';
 
-test('the full map summary scrolls with its panel and keeps the read link reachable', { tag: BOTH_THEMES }, async ({ page }) => {
+test('the full map summary scrolls with its panel and keeps the read link reachable', async ({ page }) => {
   for (const [width, height, font] of [[1440, 540, 16], [390, 844, 16], [844, 390, 16], [390, 844, 32]]) {
     await page.setViewportSize({ width, height });
     await gotoWithDefaultFontSize(page, '/map/?node=notes/browser-long-summary', font);
