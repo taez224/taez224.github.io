@@ -137,6 +137,53 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
   });
 }
 
+test('interrupting whole-map movement lays out titles at the stopped view', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/map/');
+  const scene = page.locator('[data-map] > g').first();
+  const originalView = await scene.getAttribute('transform');
+  const stage = (await page.locator('[data-map]').boundingBox())!;
+  await page.mouse.move(stage.x + 4, stage.y + 60);
+  await page.mouse.down();
+  await page.mouse.move(stage.x + 164, stage.y + 140, { steps: 10 });
+  await page.mouse.up();
+  const panned = await scene.getAttribute('transform');
+  await page.getByRole('button', { name: '처음 배치로 돌아가 전체 보기', exact: true }).click();
+  await expect(scene).not.toHaveAttribute('transform', panned!);
+  await page.mouse.move(stage.x + 4, stage.y + 60);
+  await page.mouse.down();
+  const stopped = await scene.getAttribute('transform');
+  expect(stopped).not.toBe(originalView);
+  const labels = () => page.locator('[data-labels] text').evaluateAll(labels => labels.map(label => [label.getAttribute('data-for'), label.getAttribute('x'), label.getAttribute('y')]));
+  const atStop = await labels();
+  await page.mouse.up();
+  await expect(scene).toHaveAttribute('transform', stopped!);
+  // 손을 떼며 일어나는 빈 곳 선택은 같은 시점에서 제목을 다시 그린다. 그때까지 옛 배치가 남아 있으면 안 된다.
+  expect(await labels()).toEqual(atStop);
+});
+
+test('keyboard node preview survives the end of drag settling', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/map/');
+  const target = page.getByRole('button', { name: '이웃 많은 노트', exact: true });
+  const box = (await target.locator('.dot').boundingBox())!;
+  const x = box.x + box.width / 2, y = box.y + box.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x + 65, y + 25, { steps: 10 });
+  await page.mouse.up();
+  await page.mouse.move(0, 0);
+  await page.getByRole('button', { name: '축소', exact: true }).focus();
+  await page.keyboard.press('Shift+Tab');
+  await expect(page.locator('[data-map]')).toHaveAttribute('data-node-motion', 'settling');
+  const focused = page.locator('.graph .node:focus-visible');
+  await expect(focused).toHaveCount(1);
+  const id = await focused.getAttribute('data-id');
+  await expect(page.locator('[data-map]')).not.toHaveAttribute('data-node-motion', { timeout: 1500 });
+  await expect(focused).toHaveAttribute('data-id', id!);
+  await expect(page.locator('.graph .label.is-hovered')).toHaveAttribute('data-for', id!);
+});
+
 for (const change of ['scroll', 'resize'] as const) {
   test(`a held node follows the pointer after a page ${change}`, async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 600 });

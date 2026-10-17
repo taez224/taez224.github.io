@@ -217,17 +217,26 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
 
   // 선택한 노드로 부드럽게 이동·확대. 드래그가 시작되면 애니메이션을 끊는다.
   let animation: number | null = null;
-  const stopAnimation = () => { if (animation) cancelAnimationFrame(animation); animation = null; };
+  let animationFinish: (() => void) | null = null;
+  // 중간에 멈춰도 현재 시점의 제목을 정리한다. 먼저 비워 재진입해도 같은 완료 처리를 두 번 부르지 않는다.
+  const stopAnimation = () => {
+    if (animation !== null) cancelAnimationFrame(animation);
+    animation = null;
+    const finish = animationFinish;
+    animationFinish = null;
+    finish?.();
+  };
   const animateTo = (target: Transform, duration = 320, onComplete?: () => void) => {
     stopAnimation();
     if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { state.transform = target; applyTransform(); onComplete?.(); return; }
+    animationFinish = onComplete ?? null;
     const from = { ...state.transform }, start = performance.now();
     const step = (now: number) => {
       const k = Math.min(1, (now - start) / duration), e = 1 - (1 - k) ** 3;
       state.transform = { x: from.x + (target.x - from.x) * e, y: from.y + (target.y - from.y) * e, scale: from.scale + (target.scale - from.scale) * e };
       applyTransform();
-      animation = k < 1 ? requestAnimationFrame(step) : null;
-      if (k === 1) onComplete?.();
+      if (k < 1) animation = requestAnimationFrame(step);
+      else stopAnimation();
     };
     animation = requestAnimationFrame(step);
   };
@@ -439,7 +448,8 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
     }
     regionList = topicRegions(nodes, positions);
     if (finished) {
-      state.hovered = hoveredUnderPointer();
+      // 감쇠 중 키보드로 들어온 노드는 포인터가 멀리 있어도 미리보기를 유지한다.
+      state.hovered = svg.querySelector<SVGGElement>('.node:focus-visible')?.dataset.id ?? hoveredUnderPointer();
       regionObstacles = nodes.filter(node => positions.has(node.id)).map(node => ({ ...positions.get(node.id)!, r: baseRadius(node) + 4 }));
       // 영역 이름은 처음 배치·전체 보기와 같이 맞춤 배율에서 자리를 정한다. 지금 배율로 정하면 확대한 채 놓은 뒤 축소할 때 이름이 커지며 노드와 겹친다.
       regionLabelU = 0;
