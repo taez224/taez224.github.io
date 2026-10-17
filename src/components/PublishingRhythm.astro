@@ -11,7 +11,7 @@ const last = months.at(-1)?.month.replace('-', '.');
 ---
 {/* 살펴보는 달의 날짜와 편수는 선 위에 띄워, 글자 길이가 바뀌어도 머리의 줄바꿈과 높이가 움직이지 않게 한다. */}
 {total > 0 && <><span class="rhythm-sep"> · </span><span class="publishing-rhythm" data-publishing-rhythm>
-  <span class="rhythm-label">발행 흐름</span>
+  <span class="rhythm-label" aria-hidden="true">발행 흐름</span>
   <span class="rhythm-plot">
     <svg class="rhythm-chart" viewBox={`0 0 ${RHYTHM_WIDTH} ${RHYTHM_HEIGHT}`} role="img" aria-label={`${first}부터 ${last}까지 월별 발행 흐름. 모두 ${total}편.`} data-rhythm-chart>
       <line class="rhythm-baseline" x1="5" x2={RHYTHM_WIDTH - 5} y1={RHYTHM_HEIGHT - 7} y2={RHYTHM_HEIGHT - 7} />
@@ -32,6 +32,7 @@ const last = months.at(-1)?.month.replace('-', '.');
   .rhythm-plot { position: relative; display: block; flex: 0 0 96px; min-width: 40px; }
   /* 선은 편수 글자 높이에 맞춘다. 원래 크기의 절반 가까이 줄이므로 고른 달의 점은 viewBox 단위로 두 배로 둔다. */
   .rhythm-chart { display: block; width: 100%; height: 24px; overflow: visible; touch-action: pan-y; }
+  .rhythm-chart[data-pointer-focus]:focus-visible { outline: none; }
   .rhythm-chart polyline { fill: none; stroke: var(--ink); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
   .rhythm-baseline { stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; }
   .rhythm-guide { stroke: var(--muted); stroke-width: 1; opacity: .5; vector-effect: non-scaling-stroke; }

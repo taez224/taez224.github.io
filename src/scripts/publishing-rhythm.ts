@@ -36,11 +36,13 @@ for (const root of document.querySelectorAll<HTMLElement>('[data-publishing-rhyt
   chart.setAttribute('role', 'group');
   chart.setAttribute('aria-label', `${chart.getAttribute('aria-label') ?? '월별 발행 흐름.'} 방향키로 월을 살펴봅니다.`);
   chart.addEventListener('pointermove', inspectPointer);
-  chart.addEventListener('pointerdown', event => { chart.focus({ preventScroll: true }); inspectPointer(event); });
+  // 포커스는 유지해 바로 방향키로 이어 볼 수 있게 하되, 포인터로 누른 동안에는 키보드 윤곽선을 보이지 않는다.
+  chart.addEventListener('pointerdown', event => { chart.dataset.pointerFocus = ''; chart.focus({ preventScroll: true }); inspectPointer(event); });
   chart.addEventListener('pointerleave', () => { if (document.activeElement !== chart) reset(); });
   chart.addEventListener('focus', () => inspect(selected, true));
-  chart.addEventListener('blur', reset);
+  chart.addEventListener('blur', () => { delete chart.dataset.pointerFocus; reset(); });
   chart.addEventListener('keydown', event => {
+    delete chart.dataset.pointerFocus;
     const direction = new Map([['ArrowLeft', -1], ['ArrowDown', -1], ['ArrowRight', 1], ['ArrowUp', 1]]).get(event.key);
     if (direction === undefined && event.key !== 'Home' && event.key !== 'End' && event.key !== 'Escape') return;
     event.preventDefault();

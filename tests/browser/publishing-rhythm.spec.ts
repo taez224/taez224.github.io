@@ -1,5 +1,6 @@
 import { test, expect, BOTH_THEMES, gotoWithDefaultFontSize } from './fixtures.ts';
 import { PALETTE, DARK_PALETTE } from '../../src/lib/palette.ts';
+import { BROWSER_SERIES_PUBLISHED } from './vault.ts';
 
 const rgb = (hex: string) => `rgb(${[1, 3, 5].map(at => parseInt(hex.slice(at, at + 2), 16)).join(', ')})`;
 
@@ -19,10 +20,11 @@ test('the publishing rhythm follows the post count, inspects months above the li
   await expect(page.locator('.page-head .meta')).toContainText(`편 · 연재`);
   await expect(root.locator('.rhythm-label')).toHaveText('발행 흐름');
   await expect(root).toHaveText('발행 흐름');
+  expect((await root.ariaSnapshot()).match(/발행 흐름/g)).toHaveLength(1);
   await expect(chart).toHaveAttribute('aria-label', `${months}부터 ${lastMonth}까지 월별 발행 흐름. 모두 ${total}편. 방향키로 월을 살펴봅니다.`);
   await expect(reading).toBeHidden();
   // 연재의 편은 발행일이 있는 달에 세고, 소개 페이지는 세지 않는다. 검사용 vault의 날짜는 고정이라 실행한 날과 상관없다.
-  expect(Number(await root.locator('[data-month="2026-09"]').getAttribute('data-count'))).toBeGreaterThanOrEqual(1);
+  await expect(root.locator(`[data-month="${BROWSER_SERIES_PUBLISHED.slice(0, 7)}"]`)).toHaveAttribute('data-count', '1');
   await expect(chart.locator('polyline')).toHaveCSS('stroke', rgb((systemDark ? DARK_PALETTE : PALETTE).ink));
   await chart.focus();
   await page.keyboard.press('Home');
@@ -46,6 +48,20 @@ test('the publishing rhythm follows the post count, inspects months above the li
   if (isMobile) await page.getByRole('heading', { name: '블로그', exact: true }).tap();
   else await page.mouse.move(box.x, box.y + box.height + 15);
   await expect(reading).toBeHidden();
+});
+
+test('pointer inspection hides the keyboard ring and keyboard inspection restores it', { tag: BOTH_THEMES }, async ({ page, isMobile }) => {
+  await page.goto('/posts/');
+  const chart = page.locator('[data-rhythm-chart]');
+  if (isMobile) await chart.tap(); else await chart.click();
+  await expect(page.locator('[data-rhythm-reading]')).toBeVisible();
+  await expect(chart).toHaveCSS('outline-style', 'none');
+  await chart.press('ArrowLeft');
+  await expect(chart).toHaveCSS('outline-style', 'solid');
+  await chart.press('Tab');
+  await page.keyboard.press('Shift+Tab');
+  await expect(chart).toBeFocused();
+  await expect(chart).toHaveCSS('outline-style', 'solid');
 });
 
 test('the blog header and rhythm fit narrow and enlarged-text screens', async ({ page }) => {
