@@ -4,6 +4,7 @@ export interface GraphFilter { topics?: ReadonlySet<string> | null; hubsOnly?: b
 interface GraphOptions { nodes: readonly GraphNode[]; edges: readonly GraphEdge[]; positions: ReadonlyMap<string, Point>; mode?: 'map' | 'hero'; nodeScale?: number; focusable?: boolean; layoutSize?: Size | null; reserved?: () => readonly Box[]; onSelect?: (id: string | null) => void; onOpen?: (id: string) => void }
 interface GraphState { selected: string | null; hovered: string | null; topics: ReadonlySet<string> | null; hubsOnly: boolean; transform: Transform }
 
+import { createNodeMotion } from './node-motion.ts';
 import { nodeRadius } from './layout.ts';
 import { topicColor, topicLabelColor, cleanTitle } from '../lib/format.ts';
 import { createGraphGesture } from './gestures.ts';
@@ -104,10 +105,12 @@ const LABEL_REVEAL_SCALE = 1.2;
 const RESTING_LABEL_LIMIT = 6;
 
 // layoutSize: 좌표가 놓인 무대 크기. 홈 히어로처럼 좌표 공간(1000×640)과 상자 픽셀 크기가 다를 때 준다. 지도는 상자 크기로 배치하므로 생략한다.
-export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode = 'map', nodeScale = 1, focusable = true, layoutSize = null, reserved = () => [], onSelect = () => {}, onOpen = () => {} }: GraphOptions) {
+export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initialPositions, mode = 'map', nodeScale = 1, focusable = true, layoutSize = null, reserved = () => [], onSelect = () => {}, onOpen = () => {} }: GraphOptions) {
   // nodeScale: 노드 원 크기 배율. 지도는 무대가 좁아 0.7, 홈 히어로는 0.9로 그려 밀도를 맞춘다.
   // baseRadius는 맞춤 배율의 반지름이다. 지도를 맞춤보다 확대하면 원을 nodeZoom(zoomedNodeScale)만큼 줄여 그리고, 제목도 줄인 원을 기준으로 놓는다.
   const baseRadius = (node: GraphNode) => nodeRadius(node.degree ?? 0, nodeScale);
+  const nodeMotion = mode === 'map' ? createNodeMotion(initialPositions, edges, new Map(nodes.map(node => [node.id, baseRadius(node)]))) : null;
+  const positions = nodeMotion?.positions ?? initialPositions;
   let nodeZoom = 1, fitScale = 1;
   const el = <K extends keyof SVGElementTagNameMap>(name: K, attrs: Record<string, string | number> = {}) => { const node = document.createElementNS(SVG_NS, name); for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, String(v)); return node; };
   const size = () => ({ width: svg.clientWidth || LAYOUT.width, height: svg.clientHeight || LAYOUT.height });
@@ -141,12 +144,12 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
     scene.append(regionLayer, edgeLayer, nodeLayer);
     textScene.append(regionLabelLayer, labelLayer);
   } else scene.append(regionLayer, regionLabelLayer, edgeLayer, nodeLayer, labelLayer);
-  // 주제 영역은 배치가 정해지면 고정이다. 색면은 장면 좌표(확대하면 같이 커짐), 이름은 제목처럼 화면 크기 고정.
-  const regionList = topicRegions(nodes, positions);
+  // 주제 영역은 배치가 정해지면 고정이고, 노드를 직접 끌 때만 윤곽을 갱신한다. 색면은 장면 좌표(확대하면 같이 커짐), 이름은 제목처럼 화면 크기 고정.
+  let regionList = topicRegions(nodes, positions);
   // 영역 이름은 노드 원을 피하고 무대 안에 둔다. 노드 제목은 planLabels가 영역 이름을 장애물로 보고 피한다.
   // 이름은 화면 크기로 그리므로 자리도 화면 배율(u)로 잰다. 배율은 맞춤(fit) 때 정해지므로 그때 자리를 다시 정하고,
-  // 확대·이동 중에는 다시 계산하지 않아 이름이 튀지 않는다. 확대하면 이름이 장면 대비 작아지므로 새로 겹치지 않는다.
-  const regionObstacles = nodes.filter((node) => positions.has(node.id)).map((node) => ({ ...positions.get(node.id)!, r: baseRadius(node) + 4 }));
+  // 확대·이동과 노드 끌기 중에는 다시 계산하지 않아 이름이 튀지 않는다. 노드를 놓고 안정되면 한 번 정리한다. 확대하면 이름이 장면 대비 작아지므로 새로 겹치지 않는다.
+  let regionObstacles = nodes.filter((node) => positions.has(node.id)).map((node) => ({ ...positions.get(node.id)!, r: baseRadius(node) + 4 }));
   let regionLabelAt: ReturnType<typeof placeRegionLabels> = new Map(), regionLabelU = 0, regionLabelStage = '';
   // 무대 위 조작(확대·축소)도 피한다. 맞춤 배율의 자리로 옮겨 재므로 맞춤 상태에서 이름이 조작 아래로 들어가지 않는다.
   // 전에는 휴대폰 폭에서 오른쪽 아래 영역 이름("조직", "지식관리")이 조작에 가려졌다.
@@ -176,6 +179,18 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
       }
     }
   };
+  const topicCenters = () => {
+    const totals = new Map<string, { x: number; y: number; count: number }>();
+    for (const node of nodes) {
+      const point = positions.get(node.id);
+      if (!point) continue;
+      const total = totals.get(node.topic) ?? { x: 0, y: 0, count: 0 };
+      total.x += point.x; total.y += point.y; total.count++;
+      totals.set(node.topic, total);
+    }
+    return new Map([...totals].map(([topic, total]) => [topic, { x: total.x / total.count, y: total.y / total.count }]));
+  };
+  let regionNameCenters = new Map<string, Point>();
   const drawRegions = () => {
     regionLayer.replaceChildren();
     regionLabelLayer.replaceChildren();
@@ -190,6 +205,7 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
       regionLabelLayer.append(label);
       regionEls.set(region.topic, [shape, label]);
     }
+    regionNameCenters = topicCenters();
     refreshRegionStates();
   };
   if (mode === 'hero') {
@@ -201,16 +217,26 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
 
   // 선택한 노드로 부드럽게 이동·확대. 드래그가 시작되면 애니메이션을 끊는다.
   let animation: number | null = null;
-  const stopAnimation = () => { if (animation) cancelAnimationFrame(animation); animation = null; };
-  const animateTo = (target: Transform, duration = 320) => {
+  let animationFinish: (() => void) | null = null;
+  // 중간에 멈춰도 현재 시점의 제목을 정리한다. 먼저 비워 재진입해도 같은 완료 처리를 두 번 부르지 않는다.
+  const stopAnimation = () => {
+    if (animation !== null) cancelAnimationFrame(animation);
+    animation = null;
+    const finish = animationFinish;
+    animationFinish = null;
+    finish?.();
+  };
+  const animateTo = (target: Transform, duration = 320, onComplete?: () => void) => {
     stopAnimation();
-    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { state.transform = target; applyTransform(); return; }
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { state.transform = target; applyTransform(); onComplete?.(); return; }
+    animationFinish = onComplete ?? null;
     const from = { ...state.transform }, start = performance.now();
     const step = (now: number) => {
       const k = Math.min(1, (now - start) / duration), e = 1 - (1 - k) ** 3;
       state.transform = { x: from.x + (target.x - from.x) * e, y: from.y + (target.y - from.y) * e, scale: from.scale + (target.scale - from.scale) * e };
       applyTransform();
-      animation = k < 1 ? requestAnimationFrame(step) : null;
+      if (k < 1) animation = requestAnimationFrame(step);
+      else stopAnimation();
     };
     animation = requestAnimationFrame(step);
   };
@@ -231,8 +257,9 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
     nodeZoom = next;
     for (const [circle, base] of nodeCircles) circle.setAttribute('r', (base * nodeZoom).toFixed(2));
   };
+  const drawnEdges: { line: SVGLineElement; source: string; target: string; offset: number }[] = [];
   const drawEdges = () => {
-    edgeLayer.replaceChildren();
+    edgeLayer.replaceChildren(); drawnEdges.length = 0;
     // 선택이 없으면 호버가 예고편이다. 호버한 노드의 간선만 방향 있게 켜고 나머지는 흐리지 않는다.
     // 호버 예고편(간선 방향 + 나머지 흐림)은 지도에서만. 홈 히어로는 호버해도 제목만 보인다.
     const hoverRef = mode === 'map' ? state.hovered : null;
@@ -243,7 +270,9 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
       if (!a || !b) continue;
       const line = edge.offset ? offsetLine(a, b, edge.offset) : { x1: a.x, y1: a.y, x2: b.x, y2: b.y };
       const topicDim = outOfFilter(edge.source) || outOfFilter(edge.target);
-      edgeLayer.append(el('line', { class: `edge is-${edge.state}${topicDim ? ' is-topic-dim' : ''}`, x1: line.x1.toFixed(1), y1: line.y1.toFixed(1), x2: line.x2.toFixed(1), y2: line.y2.toFixed(1) }));
+      const element = el('line', { class: `edge is-${edge.state}${topicDim ? ' is-topic-dim' : ''}`, x1: line.x1.toFixed(1), y1: line.y1.toFixed(1), x2: line.x2.toFixed(1), y2: line.y2.toFixed(1) });
+      edgeLayer.append(element);
+      drawnEdges.push({ line: element, source: edge.source, target: edge.target, offset: edge.offset });
     }
   };
   // 노드 원과 그 원의 맞춤 배율 반지름. 확대하면 원을 다시 만들지 않고 반지름만 고친다(resizeNodes).
@@ -311,6 +340,7 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
   // 조작의 자리는 제목을 배치할 때 잰 값을 쓴다. 끄는 동안 매 프레임 레이아웃을 읽지 않으려는 것이다.
   let reservedBoxes: readonly Box[] = [];
   let drawnLabels: { text: SVGElement; box: Box }[] = [];
+  let labelNodePositions = new Map<string, Point>();
   const hideUnderControls = () => {
     const covered = reservedBoxes.map((box) => screenBoxToScene(box, state.transform));
     const under = (box: Box | null) => box !== null && covered.some((b) => boxesOverlap(b, box));
@@ -345,6 +375,10 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
       labelLayer.append(text);
       drawnLabels.push({ text, box: g.box });
     }
+    labelNodePositions = new Map(drawnLabels.map(({ text }) => {
+      const id = text.getAttribute('data-for')!;
+      return [id, { ...positions.get(id)! }];
+    }));
     hideUnderControls();
     // 무관한 허브는 위치를 알려주는 제목만 남기고 노드와 같은 농도로 낮춘다.
     for (const text of labelLayer.querySelectorAll<SVGTextElement>('[data-for]')) {
@@ -392,17 +426,178 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
 
   const point = (event: MouseEvent) => { const rect = svg.getBoundingClientRect(); return { x: event.clientX - rect.left, y: event.clientY - rect.top }; };
   const pointer = (event: PointerEvent) => ({ id: event.pointerId, ...point(event), touch: event.pointerType === 'touch', onNode: Boolean((event.target as Element).closest<SVGGElement>('.node')) });
-  listen('pointerdown', (event) => { stopAnimation(); if (gesture.down(pointer(event), state.transform)) { svg.setPointerCapture?.(event.pointerId); svg.classList.add('is-panning'); } });
-  listen('pointermove', (event) => { const next = gesture.move(pointer(event)); if (next) { state.transform = next; applyTransform(); } });
-  const endPointer = (event: PointerEvent) => { gesture.end(event.pointerId); if (!gesture.active()) svg.classList.remove('is-panning'); };
+  // 매 이동마다 레이아웃을 읽지 않고, 스크롤이나 크기 변경으로 무대가 달라졌을 때만 다시 잰다.
+  let nodeDrag: { id: string; pointer: ReturnType<typeof pointer>; start: Point; offset: Point; moved: boolean; frame: DOMRect; bounds: Size; geometryDirty: boolean } | null = null;
+  let suppressNodeClick = false;
+  let motionFrame: number | null = null;
+  let motionTime = 0;
+  // 처음 배치에서 노드를 옮긴 적이 있는지. 전체 보기는 옮긴 적이 있을 때만 배치를 되돌린다.
+  let layoutMoved = false;
+  let pointerAt: Point | null = null;
+  // 놓은 뒤 포인터 아래 노드를 다시 찾으려고 마지막 마우스·펜 위치를 둔다. 손가락에는 호버가 없다.
+  const trackPointer = (event: PointerEvent) => { if (event.pointerType !== 'touch') pointerAt = { x: event.clientX, y: event.clientY }; };
+  const hoveredUnderPointer = () => {
+    if (!pointerAt) return null;
+    const hit = document.elementFromPoint(pointerAt.x, pointerAt.y)?.closest<SVGGElement>('.node');
+    return hit?.closest('svg') === svg ? hit.dataset.id! : null;
+  };
+  const paintNodeMotion = (finished = false) => {
+    for (const [id, g] of nodeEls) {
+      const at = positions.get(id)!;
+      for (const circle of g.querySelectorAll('circle')) { circle.setAttribute('cx', String(at.x)); circle.setAttribute('cy', String(at.y)); }
+    }
+    regionList = topicRegions(nodes, positions);
+    if (finished) {
+      // 감쇠 중 키보드로 들어온 노드는 포인터가 멀리 있어도 미리보기를 유지한다.
+      state.hovered = svg.querySelector<SVGGElement>('.node:focus-visible')?.dataset.id ?? hoveredUnderPointer();
+      regionObstacles = nodes.filter(node => positions.has(node.id)).map(node => ({ ...positions.get(node.id)!, r: baseRadius(node) + 4 }));
+      // 영역 이름은 처음 배치·전체 보기와 같이 맞춤 배율에서 자리를 정한다. 지금 배율로 정하면 확대한 채 놓은 뒤 축소할 때 이름이 커지며 노드와 겹친다.
+      regionLabelU = 0;
+      placeRegionNames(fitTransform(positions, size()));
+      drawRegions(); render();
+      return;
+    }
+    // 끄는 동안 선과 글자를 새로 만들지 않는다. 제목의 방향·줄바꿈은 유지하고 노드 변위만 더한다.
+    for (const edge of drawnEdges) {
+      const a = positions.get(edge.source)!, b = positions.get(edge.target)!;
+      const at = edge.offset ? offsetLine(a, b, edge.offset) : { x1: a.x, y1: a.y, x2: b.x, y2: b.y };
+      for (const [name, value] of Object.entries(at)) edge.line.setAttribute(name, value.toFixed(1));
+    }
+    for (const region of regionList) regionEls.get(region.topic)?.[0]?.setAttribute('d', regionPath(region.hull));
+    const centers = topicCenters();
+    for (const [topic, center] of centers) {
+      const previous = regionNameCenters.get(topic), at = regionLabelAt.get(topic);
+      if (!previous || !at) continue;
+      at.x += center.x - previous.x; at.y += center.y - previous.y;
+      const name = regionEls.get(topic)?.[1];
+      name?.setAttribute('x', String(at.x)); name?.setAttribute('y', String(at.y));
+    }
+    regionNameCenters = centers;
+    for (const label of drawnLabels) {
+      const id = label.text.getAttribute('data-for')!;
+      const at = positions.get(id)!, previous = labelNodePositions.get(id)!;
+      const dx = at.x - previous.x, dy = at.y - previous.y;
+      const x = Number(label.text.getAttribute('x')) + dx, y = Number(label.text.getAttribute('y')) + dy;
+      label.text.setAttribute('x', String(x)); label.text.setAttribute('y', String(y));
+      for (const line of label.text.children) line.setAttribute('x', String(x));
+      label.box = { left: label.box.left + dx, right: label.box.right + dx, top: label.box.top + dy, bottom: label.box.bottom + dy };
+      labelNodePositions.set(id, { ...at });
+    }
+    const u = 1 / (state.transform.scale || 1);
+    for (const region of regionList) {
+      const box = regionLabelBoxFor(region.topic, u);
+      regionEls.get(region.topic)?.[1]?.classList.toggle('is-under-label', box !== null && drawnLabels.some(label => boxesOverlap(label.box, box)));
+    }
+    hideUnderControls();
+  };
+  const runNodeMotion = () => {
+    if (!nodeMotion) return;
+    svg.dataset.nodeMotion = nodeDrag?.moved ? 'dragging' : 'settling';
+    // 포인터 이벤트마다 수백 단계를 돌리지 않고, 따라가기만 조금 계산한 뒤 놓으면 즉시 멈춘다.
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      if (motionFrame !== null) cancelAnimationFrame(motionFrame);
+      motionFrame = null;
+      if (nodeDrag?.moved) for (let i = 0; i < 6; i++) nodeMotion.step();
+      else nodeMotion.stop();
+      paintNodeMotion(!nodeDrag?.moved);
+      if (!nodeDrag?.moved) delete svg.dataset.nodeMotion;
+      return;
+    }
+    if (motionFrame !== null) return;
+    motionTime = performance.now();
+    const tick = (now: number) => {
+      const moving = nodeMotion.step(now - motionTime);
+      motionTime = now;
+      paintNodeMotion(!moving);
+      if (moving) motionFrame = requestAnimationFrame(tick);
+      else { motionFrame = null; delete svg.dataset.nodeMotion; }
+    };
+    motionFrame = requestAnimationFrame(tick);
+  };
+  const releaseNode = () => {
+    const moved = nodeDrag?.moved;
+    nodeDrag = null;
+    svg.classList.remove('is-node-dragging');
+    if (moved) { nodeMotion!.release(); runNodeMotion(); }
+  };
+  listen('pointerdown', event => {
+    stopAnimation();
+    const input = pointer(event);
+    trackPointer(event);
+    // 마우스·펜으로 잡은 중에 터치가 시작되면 노드를 놓고 터치 조작으로 넘긴다.
+    if (nodeDrag && input.id !== nodeDrag.pointer.id && input.touch) {
+      gesture.end(nodeDrag.pointer.id);
+      releaseNode();
+      suppressNodeClick = true;
+    } else if (!gesture.active()) {
+      suppressNodeClick = false;
+      const node = (event.target as Element).closest<SVGGElement>('.node');
+      const at = node ? positions.get(node.dataset.id!) : null;
+      const t = state.transform;
+      const canDragNode = event.pointerType === 'mouse' || event.pointerType === 'pen';
+      if (nodeMotion && node && at && event.button === 0 && canDragNode) {
+        nodeDrag = { id: node.dataset.id!, pointer: input, start: { x: event.clientX, y: event.clientY }, offset: { x: at.x - (input.x - t.x) / t.scale, y: at.y - (input.y - t.y) / t.scale }, moved: false, frame: svg.getBoundingClientRect(), bounds: size(), geometryDirty: false };
+        gesture.down(input, state.transform);
+        return;
+      }
+    }
+    if (gesture.down(input, state.transform)) { svg.setPointerCapture?.(event.pointerId); svg.classList.add('is-panning'); }
+  });
+  listen('pointermove', event => {
+    trackPointer(event);
+    if (nodeDrag?.pointer.id === event.pointerId) {
+      if (nodeDrag.geometryDirty) {
+        nodeDrag.frame = svg.getBoundingClientRect();
+        nodeDrag.bounds = size();
+        nodeDrag.geometryDirty = false;
+      }
+      const input = { ...nodeDrag.pointer, x: event.clientX - nodeDrag.frame.left, y: event.clientY - nodeDrag.frame.top };
+      nodeDrag.pointer = input;
+      if (!nodeDrag.moved && Math.hypot(event.clientX - nodeDrag.start.x, event.clientY - nodeDrag.start.y) <= 6) return;
+      if (!nodeDrag.moved) {
+        nodeDrag.moved = true; suppressNodeClick = true; layoutMoved = true;
+        gesture.end(input.id);
+        svg.setPointerCapture?.(event.pointerId);
+        svg.classList.add('is-node-dragging');
+        state.hovered = nodeDrag.id;
+        render();
+      }
+      const t = state.transform, bounds = nodeDrag.bounds;
+      const clamp = (value: number, maximum: number) => Math.max(28, Math.min(maximum - 28, value));
+      nodeMotion!.hold(nodeDrag.id, { x: (clamp(input.x, bounds.width) - t.x) / t.scale + nodeDrag.offset.x, y: (clamp(input.y, bounds.height) - t.y) / t.scale + nodeDrag.offset.y });
+      runNodeMotion();
+      return;
+    }
+    const next = gesture.move(pointer(event));
+    if (next) { state.transform = next; applyTransform(); }
+  });
+  const endPointer = (event: PointerEvent) => {
+    if (event.type !== 'lostpointercapture') trackPointer(event);
+    if (nodeDrag?.pointer.id === event.pointerId) releaseNode();
+    gesture.end(event.pointerId);
+    if (!gesture.active()) svg.classList.remove('is-panning');
+  };
   listen('pointerup', endPointer);
   listen('pointercancel', endPointer);
+  listen('lostpointercapture', event => { if (event.target === svg) endPointer(event); });
+  if (nodeMotion) {
+    const invalidateDragGeometry = () => { if (nodeDrag) nodeDrag.geometryDirty = true; };
+    // 상위 스크롤 상자의 이동도 포착한다. 크기는 창 외의 레이아웃 변경으로도 달라질 수 있다.
+    window.addEventListener('scroll', invalidateDragGeometry, { capture: true, passive: true });
+    window.addEventListener('resize', invalidateDragGeometry);
+    new ResizeObserver(invalidateDragGeometry).observe(svg);
+    // 임계 거리를 넘기 전에는 포인터를 잡지 않으므로 무대 밖에서 놓아도 후보를 해제한다.
+    const endOutside = (event: PointerEvent) => { if (nodeDrag?.pointer.id === event.pointerId) endPointer(event); };
+    window.addEventListener('pointerup', endOutside);
+    window.addEventListener('pointercancel', endOutside);
+    window.addEventListener('blur', () => { if (nodeDrag) { gesture.end(nodeDrag.pointer.id); pointerAt = null; releaseNode(); } });
+  }
   listen('click', (event) => {
-    if (gesture.shouldSuppressClick()) return;
+    if (suppressNodeClick || gesture.shouldSuppressClick()) return;
     const g = (event.target as Element).closest<SVGGElement>('.node');
     if (g) onSelect(g.dataset.id!); else if (mode === 'map') onSelect(null);
   });
-  listen('dblclick', (event) => { const g = (event.target as Element).closest<SVGGElement>('.node'); if (g) onOpen(g.dataset.id!); });
+  listen('dblclick', (event) => { if (suppressNodeClick) return; const g = (event.target as Element).closest<SVGGElement>('.node'); if (g) onOpen(g.dataset.id!); });
   listen('keydown', (event) => {
     const g = (event.target as Element).closest<SVGGElement>('.node');
     if (!g) return;
@@ -448,10 +643,10 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
     animateTo({ scale, x: x + tx - sx, y: y + ty - sy });
   };
   // 호버 예고편은 지도에만 있다. 홈에서 다시 그리면 같은 간선과 같은 상태를 만들려고 간선 전체를 버렸다가 새로 만든다.
-  const hoverChanged = () => { if (mode === 'map' && !state.selected) { drawEdges(); refreshNodeStates(); } drawLabels(); };
-  listen('pointerover', (event) => { const g = (event.target as Element).closest<SVGGElement>('.node'); const id = g ? g.dataset.id! : null; if (id !== state.hovered) { state.hovered = id; hoverChanged(); } });
-  listen('pointerleave', () => { if (state.hovered) { state.hovered = null; hoverChanged(); } });
-  if (mode === 'map') listen('wheel', (event) => { event.preventDefault(); api.zoom(event.deltaY < 0 ? 1.12 : 1 / 1.12, point(event)); }, { passive: false });
+  const hoverChanged = () => { if (nodeDrag?.moved || motionFrame !== null) return; if (mode === 'map' && !state.selected) { drawEdges(); refreshNodeStates(); } drawLabels(); };
+  listen('pointerover', (event) => { trackPointer(event); if (nodeDrag?.moved) return; const g = (event.target as Element).closest<SVGGElement>('.node'); const id = g ? g.dataset.id! : null; if (id !== state.hovered) { state.hovered = id; hoverChanged(); } });
+  listen('pointerleave', () => { pointerAt = null; if (nodeDrag?.moved) return; if (state.hovered) { state.hovered = null; hoverChanged(); } });
+  if (mode === 'map') listen('wheel', (event) => { event.preventDefault(); if (nodeDrag) return; api.zoom(event.deltaY < 0 ? 1.12 : 1 / 1.12, point(event)); }, { passive: false });
   listen('focusin', (event) => {
     const g = (event.target as Element).closest<SVGGElement>('.node');
     if (!g) return;
@@ -466,6 +661,23 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
   listen('focusout', () => { state.hovered = null; hoverChanged(); });
 
   const api = {
+    resetLayout() {
+      if (!nodeMotion) return;
+      stopAnimation();
+      if (motionFrame !== null) cancelAnimationFrame(motionFrame);
+      motionFrame = null;
+      if (nodeDrag) gesture.end(nodeDrag.pointer.id);
+      nodeDrag = null;
+      svg.classList.remove('is-node-dragging', 'is-panning');
+      delete svg.dataset.nodeMotion;
+      // 옮긴 적이 없으면 처음 배치 그대로라 다시 그릴 것이 없다. 되돌릴 때 영역 이름은 맞춤 배율로 정하므로, 이어지는 fit이 같은 계산을 반복하지 않는다.
+      if (!layoutMoved) return;
+      layoutMoved = false;
+      nodeMotion.reset();
+      pointerAt = null;
+      state.hovered = null;
+      paintNodeMotion(true);
+    },
     select(id: string | null) { state.selected = id && byId.has(id) ? id : null; render(); },
     setFilter({ topics = state.topics, hubsOnly = state.hubsOnly }: GraphFilter = {}) { state.topics = topics; state.hubsOnly = hubsOnly; refreshRegionStates(); drawEdges(); refreshNodeStates(); drawLabels(); },
     view: () => ({ ...state.transform }),
@@ -475,7 +687,9 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
       fitScale = target.scale;
       // 상자 크기가 바뀌어 맞춤 배율이 달라졌으면 영역 이름 자리를 새 배율로 다시 정하고, 노드 제목도 새 자리를 피해 다시 그린다.
       if (placeRegionNames(target)) { drawRegions(); labelScale = -1; }
-      if (animate) animateTo(target); else { stopAnimation(); state.transform = target; applyTransform(); }
+      // 같은 배율로 시점만 돌아와도 제목 후보는 달라진다. 이동 중에는 자리를 유지하고 도착한 화면에서 한 번 정리한다.
+      const finish = () => { labelScale = state.transform.scale; resizeNodes(); drawLabels(); };
+      if (animate) animateTo(target, 320, finish); else { stopAnimation(); state.transform = target; applyTransform(); finish(); }
     },
     zoom(factor: number, center?: Point) {
       const { width, height } = size();
@@ -486,6 +700,7 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions, mode 
       state.transform = { scale, x: c.x - (c.x - t.x) * ratio, y: c.y - (c.y - t.y) * ratio };
       applyTransform();
     },
+    position: (id: string) => { const at = positions.get(id); return at ? { ...at } : null; },
     selected: () => state.selected
   };
   placeRegionNames(fitTransform(positions, size()));

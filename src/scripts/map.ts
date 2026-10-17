@@ -8,7 +8,6 @@ type DecoratedPanel = Omit<PanelModel, 'outgoing' | 'incoming'> & { outgoing: Pa
 import { createGraph, isFilteredOut } from '../graph/engine.ts';
 import { layoutGraph, ATLAS_LAYOUT } from '../graph/layout.ts';
 import { panelModel } from '../lib/panel.ts';
-import { setupScrollFades } from './scroll-fades.ts';
 import { escapeHtml as escape } from '../lib/format.ts';
 import { REF_ICONS } from '../lib/ref-icons.ts';
 import { loopTabFocus } from './focus-loop.ts';
@@ -23,11 +22,10 @@ const totalCount = countEl?.textContent ?? '';
 const { out: OUT, in: IN } = REF_ICONS;
 
 // 그래프 노드인 항목은 data-node를 달아 지도 안에서 선택되게 한다(그래프 밖 노트만 페이지로 이동).
-const list = (icon: string, label: string, items: PanelReference[]) => items.length ? `<section class="list-block"><div class="meta">${icon}${label}<span class="count">${items.length}</span></div><div class="scroll-list${items.length > 6 ? ' is-long' : ''}"><ul class="side-list">${items.map((i) => `<li><a href="${escape(i.url)}"${i.nodeId ? ` data-node="${escape(i.nodeId)}"` : ''}>${i.isHub ? '<i class="hub-mark" aria-hidden="true"></i>' : ''}${escape(i.title)}</a></li>`).join('')}</ul></div></section>` : '';
+const list = (icon: string, label: string, items: PanelReference[]) => items.length ? `<section class="list-block"><div class="meta">${icon}${label}<span class="count">${items.length}</span></div><ul class="side-list">${items.map((i) => `<li><a href="${escape(i.url)}"${i.nodeId ? ` data-node="${escape(i.nodeId)}"` : ''}>${i.isHub ? '<i class="hub-mark" aria-hidden="true"></i>' : ''}${escape(i.title)}</a></li>`).join('')}</ul></section>` : '';
 
-let cleanupScrollFades = () => {};
+// 긴 참조 목록도 따로 스크롤하지 않고 패널 전체 스크롤로 읽으므로 목록마다 높이 제한과 흐림을 두지 않는다.
 function renderPanel(model: DecoratedPanel) {
-  cleanupScrollFades();
   body.innerHTML = `<div class="panel-head">
     <div class="meta">${escape(model.kind)}${model.isHub ? ' · <i class="hub-mark" aria-hidden="true"></i>허브' : ''}${model.date ? ` · ${model.date}` : ''}</div>
     <h2 class="display">${escape(model.title)}</h2>
@@ -35,7 +33,6 @@ function renderPanel(model: DecoratedPanel) {
     ${model.summary ? `<p class="panel-summary">${escape(model.summary)}</p>` : ''}
     <a class="btn small" href="${escape(model.url)}" style="align-self:flex-start;margin-top:4px">노트 읽기</a>
   </div><div class="panel-lists">${list(OUT, '참조', model.outgoing)}${list(IN, '역참조', model.incoming)}</div>`;
-  cleanupScrollFades = setupScrollFades(body);
 }
 
 try {
@@ -102,7 +99,7 @@ graph = createGraph(svg, {
 // 가로 위치와 배율은 바뀌지 않는다. 시트 안에서 다른 노드를 연달아 골라도 처음 자리로 돌아간다.
 let sheetOrigin: number | null = null;
 function keepNodeAboveSheet(id: string) {
-  const p = positions.get(id);
+  const p = graph.position(id);
   if (!p || !narrow.matches) return;
   const view = graph.view();
   const svgTop = svg.getBoundingClientRect().top;
@@ -121,15 +118,15 @@ function select(id: string | null, pushUrl: boolean, { open = true } = {}) {
   const node = nodes.find((n) => n.id === id);
   // 공개 노트 레코드에는 type이 없어 허브 여부는 그래프 노드에서 가져온다.
   if (node) { renderPanel({ ...withNodeIds(panelModel(notesByPath.get(node.path) ?? node, notesByPath, noteEdges, topicFold)), isHub: node.type === 'hub' }); if (open) panel.dataset.open = ''; }
-  else { cleanupScrollFades(); body.innerHTML = emptyPanel; delete panel.dataset.open; }
+  else { body.innerHTML = emptyPanel; delete panel.dataset.open; }
   if (pushUrl) {
     const params = new URLSearchParams();
     if (node) params.set('node', node.mapKey);
     window.history.replaceState(null, '', `${window.location.pathname}${params.size ? `?${params}` : ''}`);
   }
   syncSheet();
+  panel.scrollTop = 0;
   if (node && open && narrow.matches) {
-    panel.scrollTop = 0;
     panel.querySelector<HTMLButtonElement>('[data-panel-close]')?.focus({ preventScroll: true });
   }
   if (node && open) keepNodeAboveSheet(node.id);
@@ -181,7 +178,7 @@ for (const list of [panel, document.querySelector('[data-map-start]')]) list?.ad
 });
 document.querySelector('[data-graph-zoom="in"]')!.addEventListener('click', () => graph.zoom(1.25));
 document.querySelector('[data-graph-zoom="out"]')!.addEventListener('click', () => graph.zoom(1 / 1.25));
-document.querySelector('[data-graph-zoom="fit"]')!.addEventListener('click', () => graph.fit(true));
+document.querySelector('[data-graph-zoom="fit"]')!.addEventListener('click', () => { graph.resetLayout(); graph.fit(true); });
 document.querySelector('[data-panel-close]')?.addEventListener('click', closeSheet);
 backdrop?.addEventListener('click', closeSheet);
 narrow.addEventListener('change', syncSheet);

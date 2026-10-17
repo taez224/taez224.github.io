@@ -352,7 +352,7 @@ test('zooming the map grows node dots by the square root of the zoom and keeps l
   expect(zoomed.r / fitted.r).toBeCloseTo(Math.sqrt(zoomed.scale / fitted.scale), 1);
   await expect(page.locator('.graph .edge').first()).toHaveCSS('vector-effect', 'non-scaling-stroke');
   await expect(page.locator('.graph .node .hub-ring').first()).toHaveCSS('vector-effect', 'non-scaling-stroke');
-  await page.getByRole('button', { name: '지도 전체 보기' }).click();
+  await page.getByRole('button', { name: '처음 배치로 돌아가 전체 보기' }).click();
   await expect.poll(async () => (await measure()).r).toBeCloseTo(fitted.r, 1);
 });
 
@@ -512,9 +512,9 @@ test('toggling filters keeps the toolbar and graph in place', async ({ page, isM
 // 전체 보기는 전체 화면 전환이 아니라 확대·이동한 지도를 원래 맞춤으로 되돌린다.
 test('the icon control fits the map after zooming and keeps separate button targets', async ({ page, isMobile }) => {
   await page.goto('/map/');
-  const fit = page.getByRole('button', { name: '지도 전체 보기', exact: true });
+  const fit = page.getByRole('button', { name: '처음 배치로 돌아가 전체 보기', exact: true });
   const zoom = page.getByRole('button', { name: '확대', exact: true });
-  // 아이콘 버튼은 접근 가능한 이름과 같은 툴팁을 둔다.
+  // 아이콘의 접근 가능한 이름과 툴팁이 같은 동작을 알린다.
   await expect(fit).toHaveAttribute('title', (await fit.getAttribute('aria-label'))!);
   await expect(fit.locator('svg')).toHaveAttribute('aria-hidden', 'true');
   const transform = () => page.locator('[data-map] > g').getAttribute('transform');

@@ -2,6 +2,9 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import sharp from 'sharp';
 
+// 이 달의 발행 글은 아래 연재 편 하나뿐이다. 연재 집계 검사와 같은 날짜를 쓴다.
+export const BROWSER_SERIES_PUBLISHED = '2026-09-01';
+
 // 브라우저 검사가 빌드하는 임시 vault의 입력이다. 검사가 여는 노트(slug)와 그 노트에 있어야 할 내용을 여기서 고친다.
 // 임시 폴더, 빌드, 서버는 server.ts가 맡는다.
 
@@ -275,7 +278,7 @@ summary: ${LONG_SUMMARY}
 title: 화면 검사 첫 편
 status: published
 created: 2026-09-01
-published: 2026-09-01
+published: ${BROWSER_SERIES_PUBLISHED}
 slug: browser-series-part
 series: 화면 검사 연재
 series_order: 1

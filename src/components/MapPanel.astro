@@ -13,7 +13,9 @@ const { startpoints, hubs = [] } = Astro.props;
   </div>
 </aside>
 <style is:global>
-  .map-panel { display: flex; flex-direction: column; min-height: 0; }
+  .map-panel { display: flex; flex-direction: column; min-height: 0; padding-inline: 4px; overflow-y: auto; overscroll-behavior-y: contain; }
+  /* 긴 요약과 참조를 한 스크롤로 읽고, 안쪽 여백에는 링크의 포커스 선이 들어간다. */
+  .map-panel [data-panel-body] { flex: 0 0 auto; }
   .map-panel > .panel-close { display: none; }
   .sheet-grip { display: none; }
   .panel-head { display: flex; flex-direction: column; gap: 12px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
@@ -21,7 +23,7 @@ const { startpoints, hubs = [] } = Astro.props;
   .panel-topics { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: var(--t-meta); color: var(--muted); }
   .panel-topics span { display: inline-flex; align-items: center; gap: 6px; }
   .panel-topics i { width: 10px; height: 10px; border-radius: 50%; }
-  .panel-summary { display: -webkit-box; margin: 0; overflow: hidden; color: var(--muted); font-size: var(--t-side); line-height: 1.6; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+  .panel-summary { margin: 0; color: var(--muted); font-size: var(--t-side); line-height: 1.6; }
   .panel-lists { display: flex; flex-direction: column; min-height: 0; }
   .panel-lists .list-block { display: flex; flex-direction: column; min-height: 0; flex: 0 1 auto; }
   .sheet-backdrop { display: none; }
@@ -38,8 +40,6 @@ const { startpoints, hubs = [] } = Astro.props;
     .sheet-grip { display: block; flex: 0 0 auto; margin: -4px 0 0; padding: 8px 0 6px; touch-action: none; cursor: grab; }
     .sheet-grip::before { display: block; width: 36px; height: 4px; margin: 0 auto; border-radius: 2px; background: var(--line); content: ""; }
     .map-panel > .panel-close { display: inline-flex; align-self: flex-end; margin-top: -14px; }
-    /* 본문 전체를 한 번에 스크롤해 긴 참조 목록에서도 역참조까지 이동할 수 있게 한다. */
-    .map-panel [data-panel-body] { flex: 0 0 auto; }
     .map-panel[data-panel] { max-height: 55dvh; overscroll-behavior-y: contain; }
     .map-panel .side-list a { display: block; padding-block: 10px; }
   }

@@ -58,3 +58,6 @@
 .graph .label.is-selected, .graph .label.is-hovered { fill: var(--accent); font-weight: 600; }
 .graph .label.is-topic-dim { opacity: .22; }
 .graph .label.is-faint:not(.is-topic-dim) { opacity: .45; }
+
+.graph.map .node { cursor: grab; }
+.graph.is-node-dragging, .graph.is-node-dragging .node { cursor: grabbing; }
