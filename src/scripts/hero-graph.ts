@@ -5,8 +5,8 @@ interface HeroData { nodes: GraphNode[]; edges: GraphEdge[]; positions: [string,
 export interface HeroGraph { fit(): void }
 
 // 살아 있는 지도를 쓰는 폭이다. index.astro에서 엔진을 보이고 정적 그림을 가리는 미디어 쿼리와 같아야 한다.
-// 한 열로 접히는 폭(1000px 이하)에서는 지도 상자가 낮아져 엔진의 영역 이름이 허브 제목과 겹치므로, 그 상자에 맞춰 그린 정적 그림을 쓴다.
-export const LIVE_HERO_QUERY = '(min-width: 1001px) and (hover: hover) and (pointer: fine)';
+// 좁은 화면에서는 제목 수를 줄인 정적 그림을 쓴다. 터치 기기에는 세로 스와이프를 가로채는 엔진을 올리지 않는다.
+export const LIVE_HERO_QUERY = '(min-width: 721px) and (hover: hover) and (pointer: fine)';
 
 // 데이터와 좌표는 페이지에 인라인돼 있다(index.astro의 data-hero-data). fetch와 배치 계산이 없어 첫 화면 전에 그래프가 올라간다.
 export function drawHeroGraph(box: HTMLElement): HeroGraph {
@@ -16,7 +16,7 @@ export function drawHeroGraph(box: HTMLElement): HeroGraph {
     interactiveGraph = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     interactiveGraph.setAttribute('role', 'group');
     interactiveGraph.setAttribute('aria-label', `생각 지도. 노드 ${nodes.length}개와 연결 ${edges.length}개. 노드를 누르면 그 노트를 엽니다.`);
-    // 호버로 제목을 보고 누르는 것이라 지도를 거치지 않고 노트를 바로 연다. 지도 입구는 소개문 아래 링크와 헤더 메뉴가 맡는다.
+    // 호버로 제목을 보고 누르는 것이라 지도를 거치지 않고 노트를 바로 연다. 지도 입구는 소개의 링크와 헤더 메뉴가 맡는다.
     const open = (id: string) => { const node = nodes.find((n) => n.id === id); if (node) window.location.href = node.url; };
     box.append(interactiveGraph);
     // 홈에서는 노드를 탭 순서에서 뺀다(36개를 지나야 대표 글에 닿는다). 키보드 탐색은 지도 페이지가 맡는다.
