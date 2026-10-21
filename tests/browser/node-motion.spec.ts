@@ -233,7 +233,7 @@ test('touch drags from node centers pan the map at phone and tablet sizes', asyn
   await cdp.detach();
 });
 
-test('a cancelled touch pan preserves the next tap and two-finger zoom', async ({ page, isMobile }) => {
+test('a cancelled touch pan leaves the next node tap available', async ({ page, isMobile }) => {
   test.skip(!isMobile, '터치 입력이 있는 화면에서 확인한다');
   await page.goto('/map/');
   const cdp = await page.context().newCDPSession(page);
@@ -248,17 +248,33 @@ test('a cancelled touch pan preserves the next tap and two-finger zoom', async (
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] });
   await expect(page.locator('[data-map]')).not.toHaveAttribute('data-node-motion', { timeout: 1500 });
   await expect(page.locator('.graph .node.is-selected')).toHaveCount(0);
+  await expect(page.locator('[data-map]')).not.toHaveClass(/is-panning/);
+  await target.tap();
+  await expect(target).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('dialog', { name: '노트 정보', exact: true })).toBeVisible();
+  await cdp.detach();
+});
+
+test('two-finger zoom increases the scale and leaves the next node tap available', async ({ page, isMobile }) => {
+  test.skip(!isMobile, '터치 입력이 있는 화면에서 확인한다');
+  await page.goto('/map/');
+  const cdp = await page.context().newCDPSession(page);
+  const target = page.getByRole('button', { name: '이웃 많은 노트', exact: true });
   const at = (await target.locator('.dot').boundingBox())!;
   const a = { x: at.x + at.width / 2, y: at.y + at.height / 2, id: 1 };
   const scene = page.locator('.graph > g').first();
-  const before = await scene.getAttribute('transform');
+  const scale = () => scene.evaluate(element => (element as SVGGElement).transform.baseVal.consolidate()!.matrix.a);
+  const before = await scale();
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [a] });
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [a, { x: a.x + 40, y: a.y, id: 2 }] });
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [a, { x: a.x + 90, y: a.y, id: 2 }] });
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-  expect(await scene.getAttribute('transform')).not.toBe(before);
+  await expect.poll(scale).toBeGreaterThan(before);
+  await expect(page.locator('[data-map]')).not.toHaveClass(/is-panning/);
+  await expect(page.locator('.graph .node.is-selected')).toHaveCount(0);
   await target.tap();
   await expect(target).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('dialog', { name: '노트 정보', exact: true })).toBeVisible();
   await cdp.detach();
 });
 

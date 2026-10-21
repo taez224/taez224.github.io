@@ -1,5 +1,24 @@
 import { test, expect, gotoWithDefaultFontSize, gotoBeforeModules, textsOnRings, BOTH_THEMES } from './fixtures.ts';
 
+test('home keeps the same top tint and footer surface as the other pages', { tag: BOTH_THEMES }, async ({ page }) => {
+  const surfaces = async (url: string) => {
+    await page.goto(url);
+    return page.evaluate(() => {
+      const tint = getComputedStyle(document.body, '::before');
+      return {
+        tintDisplay: tint.display,
+        tintImage: tint.backgroundImage,
+        footer: getComputedStyle(document.querySelector('.site-footer')!).backgroundColor,
+        footerBorder: getComputedStyle(document.querySelector('.site-footer .wrap')!).borderTopWidth
+      };
+    });
+  };
+  const reference = await surfaces('/books/');
+  expect(reference.tintDisplay).not.toBe('none');
+  expect(reference.tintImage).toContain('linear-gradient');
+  expect(await surfaces('/')).toEqual(reference);
+});
+
 // 위아래로 넓힌 누르는 영역이 아래 그림까지 내려오면, 그림을 눌렀는데 소개 페이지가 열린다.
 test('the hero links stay out of the map image below them', async ({ page, isMobile }) => {
   test.skip(!isMobile, '누르는 영역은 터치 기기에서만 넓힌다');
@@ -8,14 +27,24 @@ test('the hero links stay out of the map image below them', async ({ page, isMob
     const snapshot = document.querySelector('.hero-snapshot');
     if (!snapshot) return null;
     const box = snapshot.getBoundingClientRect();
-    // 그림의 맨 윗변을 가로로 훑는다. 어느 지점에서도 지도 말고 다른 곳으로 가면 안 된다.
+    // 그림의 맨 윗변을 가로로 훑는다. 그림 자체의 지도 링크 외에 소개 링크가 덮이면 안 된다.
     return Array.from({ length: 19 }, (_, i) => {
       const element = document.elementFromPoint(box.left + (box.width * (i + 1)) / 20, box.top + 2);
       return element?.closest('a')?.getAttribute('href') ?? null;
     });
   });
   expect(hits).not.toBeNull();
-  expect(hits!.filter((href) => href !== '/map/')).toEqual([]);
+  expect(hits!.every((href) => href === '/map/')).toBe(true);
+});
+
+test('the static home map opens the full map on a touch device', async ({ page, isMobile }) => {
+  test.skip(!isMobile, '마우스 화면에서는 노드를 눌러 노트로 간다');
+  for (const width of [390, 834]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.goto('/');
+    await page.locator('.hero-snapshot').tap();
+    await expect(page).toHaveURL(/\/map\/$/);
+  }
 });
 
 // 행 전체가 제목 링크인데 그 위에 올린 분류 링크가 열을 가득 채우면, 빈 곳을 눌러도 노트가 열리지 않는다.
@@ -84,24 +113,77 @@ test('the hero intro stays inside the viewport on screens narrower than the cont
   expect(left).toBeGreaterThanOrEqual(0);
 });
 
-// 높이가 낮은 휴대폰에서 지도가 첫 화면을 다 차지해, 홈이 권하는 대표 글을 보려면 스크롤해야 했다. 화면 높이에 맞춰 지도를
-// 이어서 줄이고, 키가 큰 휴대폰은 지도를 그대로 둔다. 높이 경계에서 한 번에 줄였더니 1px 차이로 지도가 120px 바뀌었다.
-// 검사 vault에는 대표 글이 없어 지도 다음 절의 제목이 첫 화면에 드는지로 본다.
-test('a short phone shrinks the home map smoothly so the next section starts on the first screen', async ({ page }) => {
+// 소개와 지도를 겹치지 않는 흐름으로 두고, 낮은 휴대폰에서도 지도의 영역 이름을 읽을 공간을 남긴다.
+test('the home intro and map keep separate space side by side or stacked on narrow screens', async ({ page }) => {
+  for (const [width, height] of [[1440, 900], [1121, 800], [1120, 800], [1001, 800], [1000, 800], [721, 800], [720, 800], [390, 844], [320, 568]]) {
+    await page.setViewportSize({ width, height });
+    await page.goto('/');
+    const boxes = await page.evaluate(() => {
+      const rect = (selector: string) => document.querySelector(selector)!.getBoundingClientRect();
+      const intro = rect('.hero-about'), graph = rect('.hero-graph'), hero = rect('.hero');
+      return { introBottom: intro.bottom, introRight: intro.right, graphLeft: graph.left, graphTop: graph.top,
+        graphWidth: graph.width, heroWidth: hero.width, graphHeight: graph.height,
+        overflow: document.documentElement.scrollWidth > window.innerWidth };
+    });
+    if (width > 1120) {
+      expect(boxes.graphLeft, `${width}px: 소개 오른쪽에 지도를 둔다`).toBeGreaterThan(boxes.introRight);
+      expect(boxes.graphTop).toBeLessThan(boxes.introBottom);
+    } else {
+      expect(boxes.graphTop, `${width}px: 소개 링크와 그림이 겹치지 않는다`).toBeGreaterThanOrEqual(boxes.introBottom);
+      expect(boxes.graphWidth).toBeCloseTo(boxes.heroWidth, 0);
+    }
+    expect(boxes.graphHeight, `${width}px: 지도를 최소 높이보다 줄이지 않는다`).toBeGreaterThanOrEqual(width <= 720 ? 149.5 : 374.5);
+    expect(boxes.overflow, `${width}px: 가로 넘침이 없다`).toBe(false);
+    if (width > 720) await expect(page.locator('.hero-about .contacts')).toBeVisible();
+    else await expect(page.locator('.hero-about .contacts')).toBeHidden();
+  }
+});
+
+// 구역명만 재면 그 아래 실제 글 제목이 화면 밖으로 밀려도 통과한다. 기본 글자 크기에서는 제목 첫 줄 전체를 확보한다.
+test('a phone leaves the first line of the featured article on the first screen', async ({ page }) => {
   const measure = async (width: number, height: number) => {
     await page.setViewportSize({ width, height });
     await page.goto('/');
-    return page.evaluate(() => ({
-      map: document.querySelector('.hero-graph')!.getBoundingClientRect().height,
-      next: document.querySelector('.home-section .section-title')!.getBoundingClientRect().top
-    }));
+    await page.evaluate(() => document.fonts.ready);
+    return page.evaluate(() => {
+      const title = document.querySelector('.featured-copy h3')!;
+      return { firstLineBottom: title.getBoundingClientRect().top + parseFloat(getComputedStyle(title).lineHeight),
+        map: document.querySelector('.hero-graph')!.getBoundingClientRect().height };
+    });
   };
-  const short = await measure(375, 667);
-  expect(short.next, '지도 다음 절의 제목이 첫 화면에 든다').toBeLessThan(667 - 40);
+  for (const [width, height] of [[360, 740], [375, 667], [375, 812], [390, 844], [430, 932]]) {
+    expect((await measure(width, height)).firstLineBottom, `${width}×${height}: 대표 글 첫 줄`).toBeLessThanOrEqual(height);
+  }
   const [below, above] = [await measure(375, 760), await measure(375, 761)];
-  expect(Math.abs(above.map - below.map), '화면 높이 1px 차이로 지도 높이가 크게 바뀌지 않는다').toBeLessThanOrEqual(2);
-  expect((await measure(320, 568)).map, '지도는 150px 아래로 줄이지 않는다').toBeGreaterThanOrEqual(149.5);
-  expect((await measure(390, 844)).map, '키가 큰 휴대폰은 지도를 그대로 둔다').toBeGreaterThan(280);
+  expect(Math.abs(above.map - below.map), '화면 높이 경계에서도 연속해서 변한다').toBeLessThanOrEqual(2);
+  expect((await measure(320, 568)).map, '아주 작은 화면에서는 지도의 최소 크기를 지킨다').toBeGreaterThanOrEqual(149.5);
+});
+
+test('the short phone map keeps its region names inside the picture', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 667 });
+  await page.goto('/');
+  const outside = await page.locator('.hero-snapshot svg.is-mobile').evaluate((svg) => {
+    const frame = svg.getBoundingClientRect();
+    return [...svg.querySelectorAll('.snap-regions-compact text')].filter((text) => {
+      const b = text.getBoundingClientRect();
+      return b.top < frame.top || b.bottom > frame.bottom || b.left < frame.left || b.right > frame.right;
+    }).map((text) => text.textContent);
+  });
+  expect(outside).toEqual([]);
+});
+
+test('the mobile intro stays readable when the reader doubles the text size', async ({ page }) => {
+  for (const width of [320, 390]) {
+    await page.setViewportSize({ width, height: 844 });
+    await gotoWithDefaultFontSize(page, '/', 32);
+    const result = await page.evaluate(() => {
+      const intro = document.querySelector('.hero-about')!.getBoundingClientRect();
+      const graph = document.querySelector('.hero-graph')!.getBoundingClientRect();
+      return { overflow: document.documentElement.scrollWidth > window.innerWidth, gap: graph.top - intro.bottom };
+    });
+    expect(result.overflow).toBe(false);
+    expect(result.gap).toBeGreaterThanOrEqual(0);
+  }
 });
 
 // 가장자리를 옅게 하는 마스크를 상자 전체에 걸었더니, 가장자리 가까이 놓인 영역 이름이 배경에 묻혔다(1280px에서 1.68:1).
@@ -171,6 +253,79 @@ test('hovering a node on the home map only moves the titles', async ({ page, isM
   expect(hovered).toEqual([id]);
   // 간선을 다시 만들었다면 표시해 둔 선이 사라진다.
   await expect(graph.locator('line[data-kept]')).toHaveCount(1);
+});
+
+test('home nodes show their inline titles and open the note at intermediate mouse widths', async ({ page, isMobile }) => {
+  test.skip(isMobile, '터치 기기는 스크롤을 위해 정적 그림을 쓴다');
+  for (const width of [721, 918, 1000, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/');
+    const graph = page.locator('.hero-graph > .graph');
+    const title = graph.locator('[data-labels] text.is-hovered');
+    await expect(graph).toBeVisible();
+    const node = graph.locator('.node').first();
+    await node.hover();
+    await expect(title).toBeVisible();
+    await expect(title).toHaveAttribute('data-for', (await node.getAttribute('data-id'))!);
+    expect((await title.textContent())!.replace(/\s/g, '')).toBe((await node.getAttribute('aria-label'))!.replace(/\. 허브$/, '').replace(/\s/g, ''));
+    await page.mouse.move(0, 0);
+    await expect(title).toHaveCount(0);
+    await graph.click({ position: { x: 2, y: 2 } });
+    await expect(page).toHaveURL(/\/$/);
+    await node.hover();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(graph).toBeHidden();
+    await expect(page.locator('.hero-snapshot')).toBeVisible();
+    // 숨긴 동안 포인터가 떠났다면, 다시 넓혀도 전에 가리킨 제목이 남아 있으면 안 된다.
+    await page.mouse.move(0, 0);
+    await page.setViewportSize({ width, height: 900 });
+    await expect(title).toHaveCount(0);
+    const id = await node.getAttribute('data-id');
+    const href = await page.locator('[data-hero-data]').evaluate((el, selected) => JSON.parse(el.textContent!).nodes.find((n: { id: string; url: string }) => n.id === selected).url, id);
+    await node.click();
+    await expect(page).toHaveURL(new RegExp(`${href}$`));
+  }
+});
+
+test('home region names stay clear of resting node titles at intermediate mouse widths', async ({ page, isMobile }) => {
+  test.skip(isMobile, '터치 기기는 정적 그림을 쓴다');
+  for (const width of [721, 918, 1000, 1121, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/');
+    const graph = page.locator('.hero-graph > .graph');
+    await expect(graph).toBeVisible();
+    const overlaps = await graph.evaluate((svg) => {
+      const regions = [...svg.querySelectorAll('[data-region-labels] text')];
+      const titles = [...svg.querySelectorAll('[data-labels] text')];
+      return regions.flatMap((region) => titles.flatMap((title) => {
+        const a = region.getBoundingClientRect(), b = title.getBoundingClientRect();
+        return a.width && b.width && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
+          ? [`${region.textContent} × ${title.textContent}`] : [];
+      }));
+    });
+    expect(overlaps, `${width}px: 영역 이름과 노드 제목`).toEqual([]);
+  }
+});
+
+test('recent records wrap long titles and move metadata below them when space is narrow', async ({ page }) => {
+  for (const width of [320, 390, 720, 918, 1120, 1121, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/');
+    const row = page.locator('.recent li').first();
+    await row.locator('.recent-title').evaluate((el) => { el.textContent = '제목이 길어져도 날짜와 분류와 주제를 밀어내지 않고 자연스럽게 다음 줄로 이어져야 한다. '.repeat(3); });
+    const boxes = await row.evaluate((el) => {
+      const row = el.getBoundingClientRect(), title = el.querySelector('.recent-main')!.getBoundingClientRect(), meta = el.querySelector('.recent-meta')!.getBoundingClientRect();
+      return { rowWidth: row.width, titleWidth: title.width, titleRight: title.right, titleBottom: title.bottom, metaLeft: meta.left, metaTop: meta.top, overflow: el.scrollWidth > el.clientWidth };
+    });
+    if (width > 1120) {
+      expect(boxes.metaLeft).toBeGreaterThan(boxes.titleRight);
+      expect(boxes.metaTop).toBeLessThan(boxes.titleBottom);
+    } else {
+      expect(boxes.titleWidth).toBeCloseTo(boxes.rowWidth, 0);
+      expect(boxes.metaTop).toBeGreaterThan(boxes.titleBottom);
+    }
+    expect(boxes.overflow).toBe(false);
+  }
 });
 
 // 제목을 점 아래에 두었더니 허브 고리와 입구 노드 후광이 제목 윗부분에 걸렸다. 홈 지도는 정적 그림과 살아 있는 지도가

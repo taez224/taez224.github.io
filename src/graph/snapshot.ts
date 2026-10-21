@@ -1,5 +1,5 @@
 import type { GraphNode, GraphEdge, Point, Size, Box } from './types.ts';
-interface SnapshotOptions extends Size { preset?: string; pixelHeight?: number; font?: number; regionFont?: number; compactRegionFont?: number; strokeWidth?: number; label?: string }
+interface SnapshotOptions extends Size { preset?: 'mobile' | 'tablet' | 'desktop'; pixelHeight?: number; font?: number; regionFont?: number; compactRegionFont?: number; strokeWidth?: number; label?: string }
 
 import { nodeRadius } from './layout.ts';
 import { topicColor, topicLabelColor, cleanTitle, escapeHtml as escape } from '../lib/format.ts';
@@ -13,9 +13,9 @@ const HERO_FADE_SNAPSHOT_ID = 'hero-fade-snapshot';
 const n = (value: number) => +value.toFixed(2);
 
 // 홈의 정적 지도. 페이지에 인라인되므로 서체·색은 페이지 토큰(--display, --sans, --paper, --accent)을 쓴다.
-// preset 'mobile': 높이 280px 상자용. viewBox 배율이 작아 글자를 크게 두고 허브 제목은 아래에만 놓는다(데스크톱 미만에서 그대로 보이는 그림).
+// preset 'mobile'·'tablet': 작은 무대용. viewBox 배율에 맞춰 글자 크기를 받고 허브 제목은 아래에만 놓는다.
 // preset 'desktop': 높이 pixelHeight 상자용. hero-graph.ts가 올리는 살아 있는 그래프와 같은 크기·자리로 그려, 교체가 눈에 띄지 않게 한다.
-// 휴대폰 폭 영역 이름 층이 그림 위로 넘어갈 수 있는 높이(장면 단위). 홈 CSS의 모바일 그림 상자 높이가 이 여백을 포함한다.
+// 휴대폰 폭 영역 이름 층이 그림 위로 넘어갈 수 있는 높이(장면 단위). viewBox에도 포함해 낮은 화면에서 글자가 잘리지 않게 한다.
 export const COMPACT_TOP_MARGIN = 56;
 
 export function renderSnapshotSvg(nodes: readonly GraphNode[], edges: readonly GraphEdge[], positions: ReadonlyMap<string, Point>, { width, height, preset = 'mobile', pixelHeight = 500, font = 14, regionFont = 16, compactRegionFont = 0, strokeWidth = 1.1, label = '생각 지도' }: SnapshotOptions): string {
@@ -40,11 +40,12 @@ export function renderSnapshotSvg(nodes: readonly GraphNode[], edges: readonly G
   // 휴대폰 폭에서는 그림이 약 1/3로 줄어 허브 제목이 7px 남짓이 되므로 그 층으로 바꾼다. 제목이 없으니 노드만 피해서 다시 놓는다.
   const regionLayer = (fontSize: number, placement: ReturnType<typeof placeRegionLabels>, cls: string) => `<g class="${cls}" font-family="var(--display)" font-weight="700" font-size="${fontSize}" letter-spacing="${(fontSize * 0.16).toFixed(1)}" text-anchor="middle" paint-order="stroke" stroke="var(--paper)" stroke-width="${(fontSize * 0.25).toFixed(1)}" stroke-linejoin="round">`
     + regions.map((r) => { const a = placement.get(r.topic); if (!a) return ''; return `<text x="${a.x.toFixed(1)}" y="${a.y.toFixed(1)}" text-anchor="${a.anchor}" fill="${topicLabelColor(r.topic)}">${escape(r.topic)}</text>`; }).join('') + '</g>';
-  let out = `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" class="snap is-mobile" role="img" aria-label="${escape(label)}">`;
+  const topMargin = compactRegionFont ? COMPACT_TOP_MARGIN : 0;
+  let out = `<svg viewBox="0 ${-topMargin} ${width} ${height + topMargin}" xmlns="http://www.w3.org/2000/svg" class="snap is-${preset}" role="img" aria-label="${escape(label)}">`;
   out += `<g data-regions="" opacity=".06">${regions.map((r) => `<path d="${regionPath(r.hull)}" fill="${topicColor(r.topic)}" stroke="${topicColor(r.topic)}" stroke-width="64" stroke-linejoin="round"></path>`).join('')}</g>`;
   out += regionLayer(regionFont, regionLabelAt, 'snap-regions');
   // 큰 이름은 맨 위 영역에서 그림 안에 자리가 없어 그래프 한가운데로 밀려난다. 그림 위쪽 여백(COMPACT_TOP_MARGIN)까지 자리로 쓰고,
-  // 페이지 CSS가 그 여백만큼 그림 상자를 키우고 SVG 밖 그리기를 허용한다.
+  // viewBox에 그 여백을 포함하므로 화면 높이에 맞춰 줄여도 제목은 SVG 안에 남는다.
   if (compactRegionFont) out += regionLayer(compactRegionFont, placeRegionLabels(regions, nodeObstacles, { fontSize: compactRegionFont, pad: compactRegionFont * 1.2, measure: estimateTextWidth, bounds: { top: -COMPACT_TOP_MARGIN, width, height } }), 'snap-regions-compact');
   out += `<g stroke="var(--edge)" stroke-width="${strokeWidth}" stroke-opacity=".22">`;
   for (const edge of edges) { const a = at(edge.source), b = at(edge.target); if (a && b) out += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"></line>`; }

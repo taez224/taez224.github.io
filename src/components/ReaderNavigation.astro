@@ -1,5 +1,5 @@
 ---
-import { pixelIcon } from '../lib/pixel-icons.ts';
+import { uiIcon } from '../lib/ui-icons.ts';
 import { noteConnections } from '../lib/note-connections.ts';
 import type { PublicNote } from '../lib/content-model.ts';
 import type { seriesNeighbors } from '../lib/note-nav.ts';
@@ -13,7 +13,7 @@ const hasConnections = count > 0 || !!mapUrl;
 const label = hasToc && hasConnections ? '목차와 연결' : hasToc ? '목차' : '연결된 글';
 ---
 {(hasToc || hasConnections) && <>
-  <button type="button" class="toc-button" popovertarget="toc-sheet" aria-label={label} title={label} data-toc-button hidden><Fragment set:html={pixelIcon('contents')} /><span class="toc-progress" aria-hidden="true"></span></button>
+  <button type="button" class="toc-button" popovertarget="toc-sheet" aria-label={label} title={label} data-toc-button hidden><Fragment set:html={uiIcon('contents')} /><span class="toc-progress" aria-hidden="true"></span></button>
   <div id="toc-sheet" class="toc-sheet" popover aria-label="글 탐색">
     <div class="toc-head"><span class="reader-context" title={title}>{title}</span><button type="button" class="reader-close" data-reader-close>닫기</button></div>
     <div class="reader-tabs" role="tablist" aria-label="글 탐색">

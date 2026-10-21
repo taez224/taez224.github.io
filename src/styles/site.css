@@ -180,7 +180,7 @@ h1, h2, h3, p { margin-top: 0; }
 .site-nav a[aria-current="page"]:last-child::after { right: 0; }
 .search-trigger { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin-left: 12px; margin-right: -13px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); transition: background-color .15s ease, color .15s ease, transform .15s cubic-bezier(.23, 1, .32, 1); }
 @media (hover: hover) { .search-trigger:hover { background: var(--accent-soft); color: var(--accent); } }
-.search-trigger svg { width: 18px; height: 18px; fill: currentColor; }
+.search-trigger svg { width: 18px; height: 18px; fill: none; }
 /* 테마 버튼은 검색 버튼과 같은 상자다. 두 기호를 겹쳐 두지 않고 지금 화면에 맞는 하나만 그린다.
    두 상자는 붙인다. 18px 기호가 44px 상자 안에서 이미 양옆 13px씩 비어 있어, 상자 사이를 더 띄우면 두 기호가
    메뉴 글자 사이(28px)보다 멀어져 헤더에서 가장 가까워야 할 둘이 가장 떨어져 보인다. 붙이면 기호 사이는 26px이다. */
@@ -188,7 +188,7 @@ h1, h2, h3, p { margin-top: 0; }
 .theme-toggle:active { transform: scale(.97); }
 @media (hover: hover) { .theme-toggle:hover { background: var(--accent-soft); color: var(--accent); } }
 /* 아이콘은 테마마다 span으로 한 번 더 감싼다. svg가 글자처럼 줄 안에 놓이면 기준선에 앉아 돋보기보다 3px 높아지므로 블록으로 둔다. */
-.theme-toggle svg { display: block; width: 18px; height: 18px; fill: currentColor; }
+.theme-toggle svg { display: block; width: 18px; height: 18px; fill: none; }
 .theme-toggle .is-moon, :root[data-theme="dark"] .theme-toggle .is-sun { display: none; }
 :root[data-theme="dark"] .theme-toggle .is-moon { display: inline-flex; }
 /* 테마 버튼은 스크립트가 없으면 동작하지 않으므로 숨긴다. data-js는 부트 스크립트가 첫 페인트 전에 단다. */
@@ -210,6 +210,8 @@ main { flex: 1 0 auto; }
 .site-footer .site-name { display: flex; align-items: center; gap: 8px; margin-right: auto; }
 .site-footer .site-name .seal { color: var(--ink); }
 .site-footer nav { display: flex; flex-wrap: wrap; gap: 4px 20px; }
+.site-footer .rss-link { display: inline-flex; align-items: center; gap: 8px; }
+.site-footer .rss-link svg { width: 14px; height: 14px; }
 .site-footer nav a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--link-underline); text-underline-offset: 4px; }
 @media (hover: hover) { .site-footer nav a:hover { text-decoration-color: var(--ink); } }
 /* 제보 링크는 밑줄을 글자에만 긋는다. 링크에 그으면 터치에서 flex 항목이 된 ↗까지 밑줄이 이어진다. */
@@ -229,7 +231,7 @@ main { flex: 1 0 auto; }
      더 줄이면 h3와 본문이 1.1배 차이로 붙어 굵은 본문 글자보다 약해 보인다.
      페이지 기본 글자는 16px로 줄이되 본문(--t-body)은 17px을 유지한다. */
   :root {
-    --t-title: 2rem; --t-featured: 1.5rem; --t-section: 1.25rem; /* 32 24 20 */
+    --t-title: 2rem; --t-featured: 1.625rem; --t-section: 1.25rem; /* 32 26 20 */
     --t-ledger: 1.875rem; --t-ledger-year: 1.5rem; --t-ledger-word: 1.0625rem; --t-wordmark: 1.25rem; /* 30 24 17 20 */
     --t-base: 1rem; --t-summary: .9375rem; --t-list: 1.125rem; /* 16 15 18 */
     --s-page-gutter: 20px; --s-header-height: 56px; --s-page-top-index: 24px; --s-page-top-reading: 32px; --s-page-bottom: 64px; --s-title-gap: 28px;
@@ -286,7 +288,7 @@ main { flex: 1 0 auto; }
 .search-head input::placeholder { color: var(--muted); }
 .search-head input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; }
 .search-close { flex: 0 0 44px; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--muted); }
-.search-close svg { width: 18px; height: 18px; fill: currentColor; }
+.search-close svg { width: 18px; height: 18px; fill: none; }
 @media (hover: hover) { .search-close:hover { background: var(--accent-soft); color: var(--ink); } }
 .search-results { max-height: 55vh; overflow-y: auto; padding: 0 16px 14px; }
 /* 입력 안내·불러오는 중·결과 개수·결과 없음·실패를 한 줄이 맡는다. 결과를 스크롤해도 개수가 남도록 결과 영역 밖에 둔다. */

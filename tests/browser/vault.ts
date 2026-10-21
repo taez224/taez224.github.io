@@ -12,7 +12,7 @@ export const BROWSER_CONFIG = {
   basePath: '', entry: '01_Slipbox/start.md',
   include: [{ path: '01_Slipbox', mode: 'all', graph: true }, { path: '20_Projects/blog', statuses: ['published'], types: ['series'], graph: false }, { path: '30_Resources/Development/Concepts', mode: 'all', graph: false }], exclude: [], assets: [],
   externalPublications: [{ name: '테스트 발행처', hosts: ['example.com'], publications: ['테스트 발행처'] }],
-  home: { about: '어느 소프트웨어 엔지니어의 개인 위키입니다. 개발자로 살아가며 배운 개념과 기술, 그 과정에서 든 생각, 발행한 글과 읽은 책을 모아둡니다.', featured: [],
+  home: { about: '어느 소프트웨어 엔지니어의 개인 위키입니다. AI 시대에 개발자로 살아가며 배운 개념과 기술, 그 과정에서 든 생각, 발행한 글과 읽은 책을 모아둡니다.', featured: ['20_Projects/blog/external.md'],
     contacts: [{ name: 'GitHub', url: 'https://example.com/profile', icon: 'github.svg' }] }
 };
 

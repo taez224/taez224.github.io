@@ -23,39 +23,24 @@ test('every icon grid is square and uses only set and empty cells', () => {
   }
 });
 
-test('an icon is a filled shape whose coordinates are its own grid', () => {
-  const svg = pixelIcon('search');
-  assert.match(svg, /viewBox="0 0 18 18"/);
+test('a status mark is filled on its own pixel grid', () => {
+  const svg = pixelIcon('tended');
+  assert.match(svg, /viewBox="0 0 14 14"/);
   assert.match(svg, /fill="currentColor"/);
   assert.match(svg, /shape-rendering="crispEdges"/);
   assert.doesNotMatch(svg, /stroke/, '선으로 그리면 칸 경계가 흐려진다');
-  assert.match(pixelIcon('copy'), /viewBox="0 0 16 16"/);
 });
 
-test('the buttons draw the grids instead of keeping their own line icons', () => {
-  for (const path of ['src/components/Header.astro', 'src/scripts/code-copy.ts']) {
-    assert.doesNotMatch(read(path), /stroke-width/, path);
-    assert.match(read(path), /pixelIcon/, path);
-  }
-});
-
-test('each icon is shown at the size of its own grid so one cell stays one pixel', () => {
-  assert.equal(width(read('src/pages/map/index.astro'), '.graph-controls svg'), ICON_GRIDS.fit.length);
-  assert.equal(width(read('src/styles/site.css'), '.search-close svg'), ICON_GRIDS.close.length);
-  assert.equal(width(read('src/styles/site.css'), '.search-trigger svg'), ICON_GRIDS.search.length);
-  assert.equal(width(read('src/styles/body.css'), '.body .code-copy-plate svg'), ICON_GRIDS.copy.length);
+test('status marks are shown at their grid size so one cell stays one pixel', () => {
   assert.equal(width(read('src/pages/index.astro'), '.tended :global(svg)'), ICON_GRIDS.tended.length);
-  assert.equal(width(read('src/components/NotePage.astro'), '.toc-button svg'), ICON_GRIDS.contents.length);
-  assert.equal(ICON_GRIDS.copyDone.length, ICON_GRIDS.copy.length);
   assert.equal(ICON_GRIDS.tendedPour.length, ICON_GRIDS.tended.length);
   assert.equal(width(read('src/components/NotePage.astro'), '.maturity svg'), ICON_GRIDS.seedling.length);
 });
 
-test('a two-scene icon draws both scenes in one svg of the same grid', () => {
+test('a two-scene status mark draws both scenes in one svg', () => {
   const svg = pixelIcon('tended', 'tendedPour');
   assert.match(svg, /viewBox="0 0 14 14"/);
   assert.match(svg, /<path class="frame-1" d="[^"]+"><\/path><path class="frame-2" d="[^"]+"><\/path>/);
-  assert.throws(() => pixelIcon('tended', 'search'), /칸 수가 다르다/, '칸 수가 다르면 한쪽 장면은 한 칸이 1px이 아니게 된다');
 });
 
 test('the pouring scene keeps the watering can and only adds drops', () => {
@@ -68,10 +53,4 @@ test('the pouring scene keeps the watering can and only adds drops', () => {
   }));
   assert.ok(added.length > 0, '물방울이 있다');
   for (const cell of added) assert.ok(Number(cell.split(',')[1]) < 4, `${cell}: 물방울은 주둥이 아래(0~3열)에 둔다`);
-});
-
-test('the search button paints its icon instead of stroking it', () => {
-  const rule = read('src/styles/site.css').split('\n').find((line) => line.trimStart().startsWith('.search-trigger svg {')) ?? '';
-  assert.doesNotMatch(rule, /stroke|fill:\s*none/, '선 설정이 남으면 면으로 그린 도안이 보이지 않는다');
-  assert.match(rule, /fill:\s*currentColor/);
 });
