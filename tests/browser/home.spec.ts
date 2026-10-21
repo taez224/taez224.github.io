@@ -1,5 +1,24 @@
 import { test, expect, gotoWithDefaultFontSize, gotoBeforeModules, textsOnRings, BOTH_THEMES } from './fixtures.ts';
 
+test('home keeps the same top tint and footer surface as the other pages', { tag: BOTH_THEMES }, async ({ page }) => {
+  const surfaces = async (url: string) => {
+    await page.goto(url);
+    return page.evaluate(() => {
+      const tint = getComputedStyle(document.body, '::before');
+      return {
+        tintDisplay: tint.display,
+        tintImage: tint.backgroundImage,
+        footer: getComputedStyle(document.querySelector('.site-footer')!).backgroundColor,
+        footerBorder: getComputedStyle(document.querySelector('.site-footer .wrap')!).borderTopWidth
+      };
+    });
+  };
+  const reference = await surfaces('/books/');
+  expect(reference.tintDisplay).not.toBe('none');
+  expect(reference.tintImage).toContain('linear-gradient');
+  expect(await surfaces('/')).toEqual(reference);
+});
+
 // 위아래로 넓힌 누르는 영역이 아래 그림까지 내려오면, 그림을 눌렀는데 소개 페이지가 열린다.
 test('the hero links stay out of the map image below them', async ({ page, isMobile }) => {
   test.skip(!isMobile, '누르는 영역은 터치 기기에서만 넓힌다');

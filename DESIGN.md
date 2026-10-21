@@ -475,7 +475,7 @@ TaeZ's Thinking Garden은 소프트웨어 엔지니어 TaeZ의 개인 사이트�
 
 ### 첫 화면의 띠
 
-홈을 제외한 첫 화면 위쪽에는 옅은 띠(`tint-top` → `tint-mid` → `paper`)를 깔아 헤더와 본문이 같은 바탕 위에 이어지게 한다. 띠는 본문 쪽으로 내려오며 종이색으로 풀리므로 어디서 끝나는지 보이지 않는다. 이 바탕 위에 놓이는 것들은 종이색을 따로 칠하지 않는다. 지도 무대가 종이색을 칠하면 띠 위에 사각형이 얹혀 경계가 드러난다.
+첫 화면 위쪽에는 옅은 띠(`tint-top` → `tint-mid` → `paper`)를 깔아 헤더와 본문이 같은 바탕 위에 이어지게 한다. 띠는 본문 쪽으로 내려오며 종이색으로 풀리므로 어디서 끝나는지 보이지 않는다. 이 바탕 위에 놓이는 것들은 종이색을 따로 칠하지 않는다. 지도 무대가 종이색을 칠하면 띠 위에 사각형이 얹혀 경계가 드러난다.
 
 ### 링크와 선택
 
@@ -575,7 +575,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 ### 바닥글
 
-지도를 뺀 모든 페이지 끝에 같은 바닥글을 둔다. 인장과 이름, 다른 곳의 프로필, 사이트 소개, RSS, 제보 링크 순서다. 글 페이지의 바닥글에는 제보 링크를 두지 않는다. 이유는 「제보 링크」에 있다. 홈에서는 본문과 같은 바탕에 가는 구분선을 두고, 나머지 페이지에서는 옅은 판의 바탕색으로 나눈다. 짧은 페이지에서도 바닥글은 화면 바닥에 붙인다. 옅은 판이 화면 중간에 뜨면 그 아래 빈 종이가 드러나 페이지가 덜 끝난 것처럼 읽힌다. 프로필은 홈 소개와 같은 회색조 아이콘 줄이다. 바닥글 바탕이 호버 판과 같은 색이라, 바닥글 안의 아이콘 호버는 한 단계 짙은 구분선 색으로 둔다. 소개 페이지 본문에는 두지 않는다. 바로 아래 바닥글과 같은 줄이 연달아 보인다. 글자 링크로 늘어놓으면 이름마다 ↗ 표시가 붙어 줄이 길고 어수선하다. 지도는 화면 높이에 맞춰 그리므로 바닥글을 붙이면 페이지 스크롤이 생긴다.
+지도를 뺀 모든 페이지 끝에 같은 바닥글을 둔다. 인장과 이름, 다른 곳의 프로필, 사이트 소개, RSS, 제보 링크 순서다. 글 페이지의 바닥글에는 제보 링크를 두지 않는다. 이유는 「제보 링크」에 있다. 본문과는 옅은 판의 바탕색으로 나누고 구분선은 긋지 않는다. 짧은 페이지에서도 바닥글은 화면 바닥에 붙인다. 옅은 판이 화면 중간에 뜨면 그 아래 빈 종이가 드러나 페이지가 덜 끝난 것처럼 읽힌다. 프로필은 홈 소개와 같은 회색조 아이콘 줄이다. 바닥글 바탕이 호버 판과 같은 색이라, 바닥글 안의 아이콘 호버는 한 단계 짙은 구분선 색으로 둔다. 소개 페이지 본문에는 두지 않는다. 바로 아래 바닥글과 같은 줄이 연달아 보인다. 글자 링크로 늘어놓으면 이름마다 ↗ 표시가 붙어 줄이 길고 어수선하다. 지도는 화면 높이에 맞춰 그리므로 바닥글을 붙이면 페이지 스크롤이 생긴다.
 
 ### 제보 링크
 
@@ -747,9 +747,9 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 책장에서 책 결과를 고를 때 검색창 닫기와 필터 되돌리기 | `src/scripts/in-page-link.ts`, `src/scripts/search.ts`, `src/scripts/books.ts` | `tests/in-page-link.test.ts`, `tests/browser/books.spec.ts` |
 | 글자를 키웠을 때 책장 라벨 칸이 넓어지는 조건 | `src/pages/books/index.astro` | `tests/browser/books.spec.ts` |
 | 헤더가 두 줄로 나뉘는 경계와 고정 해제 | `src/styles/site.css` | `tests/browser/header.spec.ts` |
-| 첫 화면의 띠와 스크롤에 따라 짙어지는 헤더 판 | `src/styles/site.css`, `src/scripts/header.ts` | `tests/browser/header.spec.ts`(헤더 판만) |
+| 첫 화면의 띠와 스크롤에 따라 짙어지는 헤더 판 | `src/styles/site.css`, `src/scripts/header.ts` | `tests/browser/home.spec.ts`(첫 화면의 띠), `tests/browser/header.spec.ts`(헤더 판) |
 | 화면 모드의 선택·기억과 첫 페인트 | `src/lib/theme.ts`, `src/scripts/theme.ts`, `src/layouts/Shell.astro` | `tests/theme.test.ts`, `tests/browser/theme.spec.ts` |
-| 바닥글의 구성(프로필·사이트 소개·RSS·제보 링크), 손가락 영역, 호버 판, 짧은 페이지에서의 위치 | `src/layouts/Shell.astro`, `src/components/Contacts.astro`, `src/styles/site.css` | `tests/browser/footer.spec.ts` |
+| 바닥글의 배경·구성(프로필·사이트 소개·RSS·제보 링크), 손가락 영역, 호버 판, 짧은 페이지에서의 위치 | `src/layouts/Shell.astro`, `src/components/Contacts.astro`, `src/styles/site.css` | `tests/browser/home.spec.ts`(홈 배경), `tests/browser/footer.spec.ts` |
 | 제보 링크의 문구·주소와 이슈 폼의 일치 | `src/lib/feedback.ts`, `.github/ISSUE_TEMPLATE/feedback.yml` | `tests/feedback.test.ts` |
 | 제보 링크의 자리와 탐색 판의 제목 줄 고정 | `src/components/FeedbackLink.astro`, `src/components/NotePage.astro`, `src/components/NoteSidebar.astro`, `src/components/ExternalArticle.astro`, `src/pages/map/index.astro`, `src/layouts/Shell.astro` | `tests/browser/feedback.spec.ts`, `tests/browser/footer.spec.ts` |
 | 홈 첫 화면과 최근 기록의 누르는 영역 | `src/components/About.astro`, `src/pages/index.astro` | `tests/browser/home.spec.ts` |
