@@ -23,7 +23,7 @@
     "@resvg/resvg-js": "^2.6.2",
     "@tanstack/highlight": "^1.1.0",
     "astro": "^7.3.8",
-    "markdown-it": "^15.0.2",
+    "markdown-it": "^15.0.3",
     "markdown-it-footnote": "^4.0.0",
     "mermaid": "^12.1.0",
     "sanitize-html": "^2.18.0",
