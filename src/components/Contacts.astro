@@ -15,13 +15,21 @@ const shown = contacts.filter((contact) => contact.name !== 'Velog' && contact.i
 </div>}
 <style>
   .contacts { display: flex; align-items: center; gap: 4px; margin: 0 -8px; }
-  .contacts a { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 4px; transition: background .15s ease, transform .15s cubic-bezier(.23, 1, .32, 1); }
+  /* 블렌드하는 Brunch 판이 투명한 조상 대신 실제 바탕과 섞이도록 링크에 같은 바탕을 둔다. */
+  .contacts a { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 4px; background: var(--paper); transition: background .15s ease, transform .15s cubic-bezier(.23, 1, .32, 1); }
+  :global(.site-footer) .contacts a { background: var(--accent-soft); }
+  :global(.home-page .site-footer) .contacts a { background: var(--paper); }
   .contacts a:active { transform: scale(.97); }
   .contacts img { width: 20px; height: 20px; object-fit: contain; filter: grayscale(1); opacity: .7; transition: opacity .15s ease; }
   .contacts a:focus-visible img { opacity: 1; }
-  /* GitHub·Brunch 로고는 검은 글리프라 어두운 바탕에서 사라진다. 뒤집어 밝은 글리프로 둔다. LinkedIn은 사각형 안의 흰 글자라 그대로 읽힌다. */
-  @media (prefers-color-scheme: dark) { :global(:root:not([data-theme])) .contacts img:is([src$="/github.svg"], [src$="/brunch.png"]) { filter: grayscale(1) invert(1); } }
-  :global(:root[data-theme="dark"]) .contacts img:is([src$="/github.svg"], [src$="/brunch.png"]) { filter: grayscale(1) invert(1); }
+  /* Brunch 원본은 짙은 판 안의 흰 글자다. 판을 바탕에 섞고 글리프만 남겨 다른 로고와 무게를 맞춘다. */
+  .contacts img[src$="/brunch.png"] { width: 28px; height: 28px; filter: grayscale(1) contrast(10) invert(1); mix-blend-mode: multiply; }
+  @media (prefers-color-scheme: dark) {
+    :global(:root:not([data-theme])) .contacts img[src$="/github.svg"] { filter: grayscale(1) invert(1); }
+    :global(:root:not([data-theme])) .contacts img[src$="/brunch.png"] { filter: grayscale(1) contrast(10); mix-blend-mode: screen; }
+  }
+  :global(:root[data-theme="dark"]) .contacts img[src$="/github.svg"] { filter: grayscale(1) invert(1); }
+  :global(:root[data-theme="dark"]) .contacts img[src$="/brunch.png"] { filter: grayscale(1) contrast(10); mix-blend-mode: screen; }
   @media (hover: hover) { .contacts a:hover { background: var(--accent-soft); } .contacts a:hover img { opacity: 1; } }
   /* 바닥글 바탕이 호버 판과 같은 색(accent-soft)이라 거기서는 판이 보이지 않는다. 바닥글 안에서는 한 단계 짙은 구분선 색을 쓴다.
      밝은 화면에서는 더 어둡게, 어두운 화면에서는 더 밝게 올라와 다른 호버와 방향이 같다. 키보드 포커스는 전역 윤곽선 그대로다. */

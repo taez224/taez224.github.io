@@ -3,8 +3,8 @@
 // 복사하면 2초 동안 체크를, 실패하면 5초 동안 안내를 보인다.
 // 복사하는 값은 code의 글자 그대로다. 강조용 span은 textContent에 섞이지 않는다.
 // 아이콘은 호버 판을 그리는 작은 상자(code-copy-plate) 안에 둔다. 판을 44px 버튼 전체에 깔면 머리 줄 밖으로 넘친다.
-import { pixelIcon } from '../lib/pixel-icons.ts';
-const plate = (name: 'copy' | 'copyDone') => `<span class="code-copy-plate">${pixelIcon(name)}</span>`;
+import { uiIcon } from '../lib/ui-icons.ts';
+const plate = (name: 'copy' | 'copyDone') => `<span class="code-copy-plate">${uiIcon(name)}</span>`;
 const COPY_ICON = plate('copy');
 const DONE_ICON = plate('copyDone');
 const HIDDEN_STATUS = 'code-copy-status visually-hidden';

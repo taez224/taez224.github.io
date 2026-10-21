@@ -1,6 +1,6 @@
 ---
 import Shell from '../../layouts/Shell.astro';
-import { pixelIcon } from '../../lib/pixel-icons.ts';
+import { uiIcon } from '../../lib/ui-icons.ts';
 import FeedbackLink from '../../components/FeedbackLink.astro';
 import MapPanel from '../../components/MapPanel.astro';
 import { getGarden } from '../../lib/get-garden.ts';
@@ -39,9 +39,9 @@ const topics = [...topicCounts].map(([name, count]) => ({ name, color: topicColo
           {/* 위 설명과 같은 말을 눈으로도 볼 수 있게 둔다. 낭독기에는 #map-keys가 이미 전하므로 여기서는 뺀다. */}
           <p class="key-hint" aria-hidden="true">화살표로 이동 · Enter로 노트 열기 · Space로 정보 보기</p>
           <div class="graph-controls" aria-label="확대·축소">
-            <button type="button" data-graph-zoom="out" aria-label="축소" title="축소"><Fragment set:html={pixelIcon('zoomOut')} /></button>
-            <button type="button" data-graph-zoom="fit" aria-label="처음 배치로 돌아가 전체 보기" title="처음 배치로 돌아가 전체 보기"><Fragment set:html={pixelIcon('fit')} /></button>
-            <button type="button" data-graph-zoom="in" aria-label="확대" title="확대"><Fragment set:html={pixelIcon('zoomIn')} /></button>
+            <button type="button" data-graph-zoom="out" aria-label="축소" title="축소"><Fragment set:html={uiIcon('zoomOut')} /></button>
+            <button type="button" data-graph-zoom="fit" aria-label="처음 배치로 돌아가 전체 보기" title="처음 배치로 돌아가 전체 보기"><Fragment set:html={uiIcon('fit')} /></button>
+            <button type="button" data-graph-zoom="in" aria-label="확대" title="확대"><Fragment set:html={uiIcon('zoomIn')} /></button>
           </div>
         </div>
         {/* 한 열로 바뀌는 폭부터 패널이 노드를 고른 뒤에 올라오는 시트라 처음 화면에 들어갈 곳이 없다. 데스크톱 패널의 처음 내용과 같은 목록을 그래프 아래에 둔다. */}
@@ -97,7 +97,7 @@ const topics = [...topicCounts].map(([name, count]) => ({ name, color: topicColo
   .graph-controls button:last-child { border-radius: 0 4px 4px 0; }
   /* 포커스 선은 각 칸 안에 두어 이웃 칸과 겹치거나 외곽선에 잘리지 않게 한다. */
   .graph-controls button:focus-visible { outline-offset: -3px; }
-  .graph-controls svg { width: 16px; height: 16px; fill: currentColor; }
+  .graph-controls svg { width: 16px; height: 16px; fill: none; }
   .graph-controls button:active { background: var(--accent-soft); }
   /* 확대 버튼도 범례·필터와 같은 투명 버튼이라 호버 때 같은 옅은 판을 깐다. */
   @media (hover: hover) { .graph-controls button:hover { background: var(--accent-soft); color: var(--accent); } }

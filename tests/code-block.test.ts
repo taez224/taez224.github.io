@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { stripTypeScriptTypes } from 'node:module';
 import { codeLanguageLabel } from '../src/lib/highlight.ts';
-import { pixelIcon } from '../src/lib/pixel-icons.ts';
+import { uiIcon } from '../src/lib/ui-icons.ts';
 import { render } from './helpers/markdown.ts';
 
 test('codeLanguageLabel turns fence languages into the names readers know', () => {
@@ -89,7 +89,7 @@ function setup(blocks: FakeElement[], clipboard?: { writeText: (text: string) =>
   const timers = new Map<number, { fn: () => void; delay: number }>();
   let next = 0;
   const context = vm.createContext({
-    pixelIcon,
+    uiIcon,
     navigator: { clipboard },
     document: { querySelectorAll: () => blocks, createElement: (tag: string) => new FakeElement(tag) },
     window: {

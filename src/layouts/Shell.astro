@@ -15,6 +15,7 @@ import siteConfig from '../../config.json';
 import { PALETTE, DARK_PALETTE } from '../lib/palette.ts';
 import { getGarden } from '../lib/get-garden.ts';
 import { THEME_BOOT } from '../lib/theme.ts';
+import { uiIcon } from '../lib/ui-icons.ts';
 interface Props { title: string; description: string; path: string; active?: string; ogType?: string; ogImage?: string | null; kind?: string | null; pageType?: string | null; published?: string | null; updated?: string | null; footer?: boolean; feedback?: boolean; feedbackPath?: string | null }
 const umami = siteConfig.analytics?.umami?.websiteId ? siteConfig.analytics.umami : null;
 // Search Console 소유권 확인 토큰. 공개되는 값이고, 지우면 소유권이 풀리므로 확인 뒤에도 남긴다.
@@ -83,7 +84,7 @@ const jsonLd = inlineJson(structuredData({ ogType, kind, pageType, title: path =
       <div class="wrap">
         <span class="site-name"><Seal label={sealLabel} />{restOfTitle.join(' ')}</span>
         <Contacts contacts={contacts} />
-        <nav aria-label="사이트 정보"><a href={withBase('/about/')}>이 위키에 대해</a><a href={withBase('/rss.xml')}>RSS</a>{feedback && <FeedbackLink path={feedbackPath} />}</nav>
+        <nav aria-label="사이트 정보"><a href={withBase('/about/')}>이 위키에 대해</a><a class="rss-link" href={withBase('/rss.xml')}><Fragment set:html={uiIcon('rss')} /><span>RSS</span></a>{feedback && <FeedbackLink path={feedbackPath} />}</nav>
       </div>
     </footer>}
   </body>

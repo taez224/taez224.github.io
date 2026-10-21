@@ -637,7 +637,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 **노드 끌기 규칙.** 실제 입력이 마우스나 펜일 때만 노드를 끌 수 있다. 노드를 끌면 연결된 이웃과 주제 영역이 따라 움직이고, 놓으면 움직임이 잦아들어 멈춘다. 빈 곳을 끌면 기존처럼 지도 전체를 옮긴다. 누르기는 노트 선택으로 유지하며, 두 손가락이 닿으면 확대·축소로 전환한다. 끄는 동안에는 제목의 방향과 줄바꿈, 주제 이름의 상대 위치를 유지한 채 노드와 영역의 이동량만 따라가고, 안정된 뒤 한 번만 겹침을 정리한다. 터치는 화면 크기와 무관하게 노드 위에서도 지도 이동으로 받으며, 탭 선택과 두 손가락 확대·축소를 유지한다. 멈출 때 겹친 원은 추가로 분리한다. 전체 보기는 잔여 움직임을 멈추고 처음 배치와 맞춤 시점으로 돌아간다. 움직임을 줄이는 설정에서는 놓은 뒤의 흔들림을 생략한다.
 
-**확대 조작 규칙.** 확대·축소와 전체 보기는 같은 16칸 격자와 두 칸 획을 쓴다. 외곽선 하나 안에서 세 칸으로 나누고 가는 구분선으로 경계를 보인다. 전체 보기는 전체 화면 전환과 혼동하지 않게 화살표 없는 네 모서리 아이콘으로 표시한다. 각 버튼의 접근 가능한 이름과 툴팁은 같은 문구로 두고, 호버와 포커스는 해당 칸에만 표시한다.
+**확대 조작 규칙.** 확대·축소와 전체 보기는 다른 조작 버튼과 같은 선 아이콘을 쓴다. 외곽선 하나 안에서 세 칸으로 나누고 가는 구분선으로 경계를 보인다. 전체 보기는 전체 화면 전환과 혼동하지 않게 화살표 없는 네 모서리 아이콘으로 표시한다. 각 버튼의 접근 가능한 이름과 툴팁은 같은 문구로 두고, 호버와 포커스는 해당 칸에만 표시한다.
 
 **키보드 이동 규칙.** 지도는 Tab 정지점 하나다. 노드마다 Tab에 멈추면 확대 조작과 옆 목록에 닿기까지 노트 수만큼 눌러야 하고, 노트가 늘면 그만큼 길어진다. Tab이 멈추는 노드는 마지막으로 포커스한 노드, 고른 노드, 왼쪽 위의 입구 노드 순으로 정한다. 안에서는 화살표가 그 방향 ±45° 안의 가장 가까운 노드로 옮기고, 그 안에 없으면 그 방향 반쪽 전체에서 찾으며, 그래도 없으면 움직이지 않는다. 반대편으로 돌아가면 지도의 어디쯤에 있는지 잃는다. 흐려진 노드는 화살표가 지나가지 않으므로, 노드를 고르면 화살표는 그 노드와 이웃 사이만 오간다. 연결을 따라가는 모드를 따로 두지 않는 것은 모드가 둘이면 지금 어느 쪽인지 알려야 하기 때문이다. 포커스한 노드가 확대·이동으로 지도 상자 밖에 있으면 배율은 그대로 두고 상자 안으로 시점을 옮긴다. 확대한 지도는 브라우저가 포커스한 요소로 스크롤해 주지 않는다.
 
@@ -645,7 +645,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 ### 검색
 
-입력칸과 닫기는 검색창의 같은 머리 줄에 두고 각각 포커스 윤곽선을 표시한다. 닫기는 44px 영역의 픽셀 × 버튼으로 입력 윤곽선 밖에 두어 검색어 지우기와 구분한다. 닫기는 머리 줄 오른쪽에 붙이고, 버튼 안쪽 여백에 바깥 여백을 중복해서 더하지 않는다. 접근 가능한 이름은 “검색 닫기”, 툴팁은 “검색 닫기 (Esc)”다. Escape는 검색어를 지우지 않고 창을 닫되 입력기 조합 중에는 가로채지 않는다. 검색을 여는 단축키는 헤더 버튼의 툴팁에 둔다. 닫아도 검색어는 유지하며 다시 열면 전체 선택한다.
+입력칸과 닫기는 검색창의 같은 머리 줄에 두고 각각 포커스 윤곽선을 표시한다. 닫기는 44px 영역의 × 버튼으로 입력 윤곽선 밖에 두어 검색어 지우기와 구분한다. 닫기는 머리 줄 오른쪽에 붙이고, 버튼 안쪽 여백에 바깥 여백을 중복해서 더하지 않는다. 접근 가능한 이름은 “검색 닫기”, 툴팁은 “검색 닫기 (Esc)”다. Escape는 검색어를 지우지 않고 창을 닫되 입력기 조합 중에는 가로채지 않는다. 검색을 여는 단축키는 헤더 버튼의 툴팁에 둔다. 닫아도 검색어는 유지하며 다시 열면 전체 선택한다.
 
 입력·로딩·결과·빈 상태·실패는 결과 위의 한 줄이 같은 모양으로 맡고 문구로 구분한다.
 
@@ -659,7 +659,9 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 
 ### 아이콘
 
-화면 가장자리에서 누르는 조작 아이콘과 작은 표시(홈의 물뿌리개, 노트 메타 줄의 성숙도)는 픽셀 격자로, 본문 안에서 뜻을 나르는 아이콘은 선으로 그린다. 1배율 화면에서 가는 선은 획 대부분이 중간색으로 칠해져 대비가 남지 않지만, 격자에 맞춘 면은 또렷하다. 복고 인상은 결과이지 목적이 아니다. 격자 도안이 움직일 때는 같은 칸 수의 장면을 끊어서 바꾼다. 서서히 바꾸면 두 장면이 겹치는 동안 칸 경계가 흐려진다. 격자 도안은 칸 수와 같은 px로만 보이고, 125%·150% 화면에서 가장자리가 번지는 것은 한계로 두고 고치지 않는다. 본문 안 아이콘은 테두리가 기호를 감싸는 도형이 많아 작은 격자에 담기지 않고, 참조·역참조 화살표는 지도 간선의 실선·점선과 짝이라 선으로 남긴다.
+검색·화면 모드·닫기·복사·목차·지도 조작·RSS는 직접 그린 선 아이콘으로 통일한다. 모양은 관례로 굳은 것을 따라 바로 알아보게 하고, 획은 2px에 끝과 이음을 각지게 둔다. 한 칸이 1px인 격자에 획의 중심을 정수 좌표로 두므로 1배율 화면에서도 곧은 선이 번지지 않는다. 24칸 도안을 줄여 쓰면 획이 1px 남짓으로 가늘어져 메뉴 글자보다 약하고, 칸 사이에 걸려 회색으로 번진다. 격자 크기가 곧 표시 크기(18px·16px·14px)다. 버튼의 이름과 누르는 영역은 아이콘과 따로 둔다.
+
+홈의 물뿌리개와 노트 성숙도는 개인적인 상태 표식이므로 픽셀 격자를 유지한다. 한 칸을 1px로 보이고, 상태가 바뀔 때 같은 칸 수의 장면을 끊어서 교체한다. 본문의 참조·역참조 화살표는 지도 간선의 실선·점선과 짝을 유지한다.
 
 ### 개인 표식
 
@@ -719,7 +721,8 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 본문 안 글 카드의 테두리·여백·강조 | `src/styles/article-card.css` | 없음 |
 | 코드 블록 머리 줄과 복사 버튼 | `src/lib/markdown.ts`, `src/scripts/code-copy.ts`, `src/styles/body.css` | `tests/code-block.test.ts` |
 | 각주 번호·목록·판과 호버 미리보기 | `src/lib/markdown.ts`, `src/scripts/footnotes.ts`, `src/styles/body.css` | `tests/markdown-footnotes.test.ts`, `tests/footnotes.test.ts`, `tests/browser/reader.spec.ts` |
-| 조작 아이콘의 도안과 표시 크기 | `src/lib/pixel-icons.ts`, `site.css`의 `.search-trigger svg`·`.search-close svg`, `map/index.astro`의 `.graph-controls svg`, `body.css`의 `.code-copy-plate svg`, `index.astro`의 `.tended svg`, `NotePage.astro`의 `.toc-button svg`·`.maturity svg` | `tests/pixel-icons.test.ts`, 물뿌리개 장면 교체는 `tests/browser/home.spec.ts` |
+| 조작 아이콘의 도안과 이름 | `src/lib/ui-icons.ts`, `Header.astro`, `SearchDialog.astro`, `ReaderNavigation.astro`, `code-copy.ts`, `map/index.astro` | `tests/ui-icons.test.ts`, `tests/browser/header.spec.ts`, `tests/browser/search.spec.ts`, `tests/browser/reader.spec.ts`, `tests/browser/map.spec.ts` |
+| 픽셀 상태 표식의 도안과 표시 크기 | `src/lib/pixel-icons.ts`, `index.astro`의 `.tended svg`, `NotePage.astro`의 `.maturity svg` | `tests/pixel-icons.test.ts`, 물뿌리개 장면 교체는 `tests/browser/home.spec.ts` |
 | 노트 성숙도의 이름·도안·설명 상자 | `src/lib/maturity.ts`, `src/components/NotePage.astro`, `src/scripts/maturity.ts` | `tests/maturity.test.ts`, `tests/browser/reader.spec.ts` |
 | 개인 표식의 도안·파비콘·터치 아이콘 | `src/lib/mark.ts`, `src/lib/palette.ts`의 `MARK`, `scripts/make-mark.ts`가 만든 `public/favicon.svg`·`apple-touch-icon.png` | `tests/mark.test.ts` |
 | 사이드바 작은 그래프의 제목과 목록의 함께 강조 | `src/components/local-graph-layout.ts`, `src/components/LocalGraph.astro`, `src/scripts/local-graph.ts`, `src/components/NoteSidebar.astro` | `tests/local-graph.test.ts`, `tests/local-graph-links.test.ts`, `tests/browser/reader.spec.ts` |
