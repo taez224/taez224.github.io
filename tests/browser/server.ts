@@ -6,7 +6,7 @@ import { build } from 'astro';
 import { writeBrowserVault } from './vault.ts';
 
 // 실제 페이지·컴포넌트를 빌드하되 개인 vault와 평소 dist·캐시에는 접근하지 않는다. 임시 vault에 넣는 노트는 vault.ts에 있다.
-// Astro 루트의 중간 산출물과 같은 파일시스템에 둬서 outDir 정리 중 EXDEV를 피한다.
+// Astro는 .prerender의 파일을 outDir로 rename한다. CI의 /tmp는 프로젝트와 장치가 달라 EXDEV가 날 수 있어 프로젝트 안에 둔다.
 const temporary = await fs.mkdtemp(path.join(process.cwd(), '.garden-browser-'));
 // 빌드 도구가 예외로 프로세스를 종료해도 테스트 입력과 산출물은 남기지 않는다.
 process.once('exit', () => rmSync(temporary, { recursive: true, force: true }));

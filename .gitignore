@@ -16,5 +16,6 @@ codex_result/
 .claude/worktrees/
 
 # 브라우저 회귀 검사 산출물
+.garden-browser-*/
 test-results/
 playwright-report/
