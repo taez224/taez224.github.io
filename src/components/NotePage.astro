@@ -66,6 +66,13 @@ const maturity = maturityOf(note);
       {mobileToc.length >= 2 && <details class="mobile-toc">
         <summary>목차</summary>
         <nav aria-label="목차">{mobileToc.map((heading) => <a class:list={[{ 'level-3': heading.level === 3 }]} href={`#${heading.id}`}>{heading.title}</a>)}</nav>
+        <script is:inline>
+          // 첫 페인트 전에 초기 상태만 정한다. 이후에는 창 크기가 바뀌어도 독자가 고른 상태를 유지한다.
+          {
+            const toc = document.currentScript.parentElement;
+            toc.open = !matchMedia('(max-width: 720px)').matches;
+          }
+        </script>
       </details>}
       {series?.isHub && series.first && <nav class="series-start" aria-label="연재 시작">
         <div><span class="meta">공개된 글 {series.total}편</span><p>{series.first.title}</p></div>
