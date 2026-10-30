@@ -258,6 +258,13 @@ test('a cancelled touch pan leaves the next node tap available', async ({ page, 
 test('two-finger zoom increases the scale and leaves the next node tap available', async ({ page, isMobile }) => {
   test.skip(!isMobile, '터치 입력이 있는 화면에서 확인한다');
   await page.goto('/map/');
+  await page.evaluate(() => {
+    const events: unknown[] = [];
+    (window as unknown as { touchEvents: unknown[] }).touchEvents = events;
+    for (const type of ['pointerdown', 'pointerup', 'pointercancel', 'gotpointercapture', 'lostpointercapture', 'touchstart', 'touchend', 'click']) {
+      document.addEventListener(type, event => events.push({ type, time: performance.now(), target: (event.target as Element).tagName, node: (event.target as Element).closest('.node')?.getAttribute('aria-label'), id: (event as PointerEvent).pointerId, primary: (event as PointerEvent).isPrimary }), true);
+    }
+  });
   const cdp = await page.context().newCDPSession(page);
   const target = page.getByRole('button', { name: '이웃 많은 노트', exact: true });
   const at = (await target.locator('.dot').boundingBox())!;
@@ -273,7 +280,14 @@ test('two-finger zoom increases the scale and leaves the next node tap available
   await expect(page.locator('[data-map]')).not.toHaveClass(/is-panning/);
   await expect(page.locator('.graph .node.is-selected')).toHaveCount(0);
   await target.tap();
-  await expect(target).toHaveAttribute('aria-pressed', 'true');
+  try {
+    await expect(target).toHaveAttribute('aria-pressed', 'true');
+  } catch (error) {
+    console.log('PINCH_EVENTS', await page.evaluate(() => (window as unknown as { touchEvents: unknown[] }).touchEvents));
+    await target.tap();
+    console.log('SECOND_TAP', await target.getAttribute('aria-pressed'));
+    throw error;
+  }
   await expect(page.getByRole('dialog', { name: '노트 정보', exact: true })).toBeVisible();
   await cdp.detach();
 });
