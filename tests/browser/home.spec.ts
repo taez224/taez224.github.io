@@ -307,7 +307,7 @@ test('home region names stay clear of resting node titles at intermediate mouse 
   }
 });
 
-test('recent records wrap long titles and move metadata below them when space is narrow', async ({ page }) => {
+test('recent metadata shares columns and wraps below long titles on narrower screens', async ({ page }) => {
   for (const width of [320, 390, 720, 918, 1120, 1121, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/');
@@ -325,6 +325,27 @@ test('recent records wrap long titles and move metadata below them when space is
       expect(boxes.metaTop).toBeGreaterThan(boxes.titleBottom);
     }
     expect(boxes.overflow).toBe(false);
+    if (width > 1120) {
+      for (const selector of ['.recent-date', '.recent-kind', '.recent-topic']) {
+        const starts = await page.locator(selector).evaluateAll((items) => items.map((item) => item.getBoundingClientRect().left));
+        expect(starts.length).toBeGreaterThan(1);
+        expect(Math.max(...starts) - Math.min(...starts), selector).toBeLessThan(1);
+      }
+    }
+  }
+});
+
+test('recent metadata stays readable with double size browser text', async ({ page }) => {
+  for (const width of [320, 720, 1121, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await gotoWithDefaultFontSize(page, '/', 32);
+    const rows = await page.locator('.recent li').evaluateAll((items) => items.map((item) => {
+      const title = item.querySelector('.recent-main')!.getBoundingClientRect();
+      const meta = item.querySelector('.recent-meta')!.getBoundingClientRect();
+      const fields = [...item.querySelectorAll('.recent-meta > *')].map((field) => field.getBoundingClientRect());
+      return { below: meta.top > title.bottom, fits: fields.every((field) => field.left >= meta.left && field.right <= meta.right + 1), overflow: item.scrollWidth > item.clientWidth };
+    }));
+    for (const row of rows) expect(row).toEqual({ below: true, fits: true, overflow: false });
   }
 });
 

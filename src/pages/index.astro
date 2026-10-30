@@ -77,8 +77,8 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
       <span class="recent-main"><a class="recent-title" href={note.url}>{note.title}</a>{tended && <span class="tended" role="img" aria-label="다듬은 노트" title="다듬은 노트" set:html={pixelIcon('tended', 'tendedPour')} />}</span>
       <div class="meta recent-meta">
         <time class="recent-date" datetime={when}>{formatDate(when)}</time>
-        <span aria-hidden="true">·</span><a class="recent-kind" href={listUrl}>{label}</a>
-        <span aria-hidden="true">·</span><span class="recent-topic"><i style={`background:${topicColor(note.topic)}`} aria-hidden="true"></i>{note.topicTag || note.topic}</span>
+        <a class="recent-kind" href={listUrl}>{label}</a>
+        <span class="recent-topic"><i style={`background:${topicColor(note.topic)}`} aria-hidden="true"></i>{note.topicTag || note.topic}</span>
       </div>
     </li>)}</ol>
   </section>
@@ -144,7 +144,8 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
   .recent ol { list-style: none; margin: 0; padding: 0; }
   .recent li { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: 7px; padding: 20px 0; border-bottom: 1px solid var(--line); }
   .recent-main { min-width: 0; overflow-wrap: anywhere; }
-  .recent-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 9px; }
+  .recent-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
+  .recent-date { font-variant-numeric: tabular-nums; }
   .recent-date, .recent-kind, .recent-topic { white-space: nowrap; }
   /* 최근 기록은 행 어디를 눌러도 글로 간다. 분류 링크는 위에 올려 따로 누른다. */
   .recent-title::after { position: absolute; inset: 0; content: ""; }
@@ -155,7 +156,7 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
   .recent li:last-child { border-bottom: 0; padding-bottom: 0; }
   .recent-title { color: var(--ink); font-size: var(--t-list); font-weight: 600; line-height: 1.45; }
   .recent-kind { color: var(--muted); }
-  .recent-topic { display: inline-flex; align-items: center; gap: 6px; white-space: normal; }
+  .recent-topic { display: inline-flex; align-items: center; gap: 6px; }
   .recent-topic i { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; }
   /* 물뿌리개는 행 전체를 덮는 제목 링크 위에 올려야 설명(title)이 뜬다. 격자 한 칸이 1px이 되도록 격자 크기 그대로 보인다. */
   .tended { position: relative; z-index: 1; display: inline-block; margin-left: 8px; color: var(--muted); vertical-align: -2px; cursor: help; }
@@ -177,9 +178,13 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
   /* 연재 요약은 글 목록처럼 전체를 쓰고 세 줄까지 보인다. 메타 줄도 p라 .series-copy로 좁힌다. */
   .series-copy p { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
   .home-section:last-child { padding-bottom: 48px; }
-  @media (min-width: 1121px) {
-    .recent li { grid-template-columns: minmax(0, 1fr) auto; column-gap: 28px; align-items: baseline; }
-    .recent-meta { max-width: 18rem; justify-content: flex-end; }
+  /* 열 너비를 목록 전체에서 공유해 분류와 주제 길이가 달라도 날짜가 움직이지 않는다.
+     em 경계는 브라우저 기본 글자를 키웠을 때도 제목 아래 배치로 전환한다. */
+  @media (min-width: 70.0625em) {
+    .recent ol { display: grid; grid-template-columns: minmax(0, 1fr) max-content max-content max-content; column-gap: 20px; }
+    .recent li { grid-column: 1 / -1; grid-template-columns: subgrid; align-items: baseline; column-gap: inherit; }
+    .recent-meta { display: grid; grid-column: 2 / -1; grid-template-columns: subgrid; column-gap: inherit; }
+    .recent-date { text-align: right; }
   }
   @media (max-width: 1120px) {
     .hero { grid-template-columns: minmax(0, 1fr); gap: 0; padding: 0 0 20px; }
