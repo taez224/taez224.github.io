@@ -1,4 +1,4 @@
-import { test, expect, gotoWithDefaultFontSize, BOTH_THEMES } from './fixtures.ts';
+import { test, expect, gotoWithDefaultFontSize, gotoBeforeModules, BOTH_THEMES } from './fixtures.ts';
 import { PALETTE, DARK_PALETTE } from '../../src/lib/palette.ts';
 
 const rgb = (hex: string) => `rgb(${[1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16)).join(', ')})`;
@@ -425,7 +425,7 @@ test('the original link above an external article reaches 44px on touch without 
   expect(measured.gap, '넓힌 영역이 제목에 닿지 않는다').toBeGreaterThanOrEqual(0);
 });
 
-// 한 열 화면에서는 목차가 글 맨 위에 접혀 있어, 읽는 도중 다른 절로 가려면 맨 위까지 올라가 목차를 펴야 했다.
+// 휴대폰에서는 목차가 글 맨 위에 접혀 있어, 읽는 도중 다른 절로 가려면 맨 위까지 올라가 목차를 펴야 했다.
 // 목차 버튼은 이 이동을 탭 두 번으로 줄인다. 채택 근거가 이 편의이므로 그 조작 자체를 검사한다.
 test('from the middle of a note the contents button reaches another section in two taps', async ({ page, isMobile }) => {
   test.skip(!isMobile, '목차 버튼은 한 열로 접힌 화면에만 있다');
@@ -788,4 +788,32 @@ test('the sidebar marks remaining content without blocking links and clears at t
   await expect(side).toHaveAttribute('data-sidebar-overflow', '');
   await page.setViewportSize({ width: 1000, height: 600 });
   await expect(side).not.toHaveAttribute('data-sidebar-overflow');
+});
+
+// 처음 그릴 때 폭에 맞는 상태를 정하되, 이후 크기 변경으로 독자가 고른 상태를 덮어쓰지 않는다.
+test('the inline contents start open on tablets and closed on phones before modules load', async ({ page }) => {
+  for (const width of [320, 390, 720, 721, 820, 1000, 1120, 1121, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await gotoBeforeModules(page, '/notes/browser-sections/');
+    const toc = page.locator('.mobile-toc');
+    await expect(toc).toHaveJSProperty('open', width > 720);
+    await expect(toc).toBeVisible({ visible: width <= 1120 });
+    if (width > 1120) continue;
+    await toc.locator('summary').click();
+    await expect(toc).toHaveJSProperty('open', width <= 720);
+    await page.setViewportSize({ width: width <= 720 ? 820 : 390, height: 1000 });
+    await expect(toc).toHaveJSProperty('open', width <= 720);
+  }
+});
+
+test('tablet contents stay usable at a 200 percent default font size', async ({ page }) => {
+  await page.setViewportSize({ width: 820, height: 1180 });
+  await gotoWithDefaultFontSize(page, '/notes/browser-sections/', 32);
+  const toc = page.locator('.mobile-toc');
+  await expect(toc).toHaveJSProperty('open', true);
+  const link = toc.locator('a').first();
+  const target = await link.getAttribute('href');
+  await link.click();
+  await expect.poll(() => decodeURIComponent(new URL(page.url()).hash)).toBe(target);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });

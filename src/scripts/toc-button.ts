@@ -1,5 +1,5 @@
 import { readingProgress } from './reading-progress.ts';
-// 한 열 화면의 목차·연결 버튼(ReaderNavigation.astro). 접힌 목차를 지나면 나타나며, 목차가 없으면 연결을 바로 열 수 있다.
+// 한 열 화면의 목차·연결 버튼(ReaderNavigation.astro). 본문 위 목차를 지나면 나타나며, 목차가 없으면 연결을 바로 열 수 있다.
 // 판을 맨 위 층에 올리고 바깥 누르기와 Escape로 닫는 일은 popover가 맡는다. popover가 없는 브라우저에서는 버튼을 보이지 않는다.
 // 두 열 화면에서는 CSS가 버튼을 그리지 않으므로 여기서는 폭을 따지지 않는다.
 const button = document.querySelector<HTMLButtonElement>('[data-toc-button]');
@@ -15,7 +15,7 @@ if (button && sheet && body && typeof sheet.showPopover === 'function') {
   let queued = false;
   const update = () => {
     queued = false;
-    // 접힌 목차가 보이는 동안은 같은 목차를 두 곳에 두지 않는다.
+    // 본문 위 목차가 보이는 동안은 같은 목차를 두 곳에 두지 않는다.
     button.hidden = foldedOnScreen || !narrow.matches;
     if (button.hidden) { if (sheet.matches(':popover-open')) sheet.hidePopover(); return; }
     const last = body.lastElementChild ?? body;
