@@ -431,6 +431,11 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
   let suppressNodeClick = false;
   let touchTap: { pointerId: number; nodeId: string | null } | null = null;
   let completedTouchTap: { nodeId: string | null } | null = null;
+  let lastTouchTap: { nodeId: string; time: number } | null = null;
+  // 정보 판 닫기나 확대 버튼을 사이에 누른 것은 같은 노드의 연속 탭이 아니다.
+  if (mode === 'map') document.addEventListener('pointerdown', event => {
+    if (!svg.contains(event.target as Node)) lastTouchTap = null;
+  });
   let motionFrame: number | null = null;
   let motionTime = 0;
   // 처음 배치에서 노드를 옮긴 적이 있는지. 전체 보기는 옮긴 적이 있을 때만 배치를 되돌린다.
@@ -530,6 +535,7 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
       touchTap = !gesture.active() && !nodeDrag
         ? { pointerId: event.pointerId, nodeId: (event.target as Element).closest<SVGGElement>('.node')?.dataset.id ?? null }
         : null;
+      if (!touchTap) lastTouchTap = null;
     }
     trackPointer(event);
     // 마우스·펜으로 잡은 중에 터치가 시작되면 노드를 놓고 터치 조작으로 넘긴다.
@@ -593,6 +599,7 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
       const nodeId = hit?.closest<SVGGElement>('.node')?.dataset.id ?? null;
       if (hit?.closest('svg') === svg && nodeId === tap.nodeId) completedTouchTap = { nodeId };
     }
+    if (tap && !completedTouchTap) lastTouchTap = null;
   };
   listen('pointerup', endPointer);
   listen('pointercancel', endPointer);
@@ -603,7 +610,15 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
     completedTouchTap = null;
     // 시트를 연 뒤 호환 click이 새 배경으로 가면 곧바로 닫힌다. 기본 click을 막고 한 번만 선택한다.
     event.preventDefault();
-    onSelect(nodeId);
+    // 넓은 터치 화면에서는 정보 판을 띄운 뒤에도 지도를 누를 수 있으므로 기존 두 번 탭 열기를 유지한다.
+    const time = performance.now();
+    if (nodeId && lastTouchTap?.nodeId === nodeId && time - lastTouchTap.time <= 400) {
+      lastTouchTap = null;
+      onOpen(nodeId);
+    } else {
+      lastTouchTap = nodeId ? { nodeId, time } : null;
+      onSelect(nodeId);
+    }
   }, { passive: false });
   if (nodeMotion) {
     const invalidateDragGeometry = () => { if (nodeDrag) nodeDrag.geometryDirty = true; };

@@ -437,3 +437,39 @@ test('a compatibility click after a touch tap cannot clear its selection', async
   await expect(target).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('dialog', { name: '노트 정보', exact: true })).toBeVisible();
 });
+
+test('two touch taps open a note when the wide layout keeps the map interactive', async ({ page, isMobile }) => {
+  test.skip(!isMobile, '터치 입력으로 두 번 탭을 확인한다');
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/map/');
+  const cdp = await page.context().newCDPSession(page);
+  const node = page.getByRole('button', { name: '이웃 많은 노트', exact: true });
+  const box = (await node.locator('.dot').boundingBox())!;
+  await cdp.send('Input.synthesizeTapGesture', { x: box.x + box.width / 2, y: box.y + box.height / 2, gestureSourceType: 'touch', tapCount: 2, duration: 100 });
+  await expect(page).not.toHaveURL(/\/map\//);
+  await cdp.detach();
+});
+
+test('a blank touch tap clears selection without a compatibility click', async ({ page, isMobile }) => {
+  test.skip(!isMobile, '실제 터치 입력으로 확인한다');
+  await page.goto('/map/');
+  await page.evaluate(() => {
+    document.addEventListener('click', event => {
+      if ((event as PointerEvent).pointerType === 'touch') event.stopImmediatePropagation();
+    }, true);
+  });
+  const target = page.getByRole('button', { name: '이웃 많은 노트', exact: true });
+  await target.tap();
+  await expect(target).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('[data-panel-close]').click();
+  const blank = await page.locator('[data-map]').evaluate(svg => {
+    const rect = svg.getBoundingClientRect();
+    const point = { x: rect.left + 8, y: rect.top + 8 };
+    const hit = document.elementFromPoint(point.x, point.y);
+    return hit?.closest('svg') === svg && !hit.closest('.node') ? point : null;
+  });
+  expect(blank, '다른 노드를 누르지 않는 빈 위치').not.toBeNull();
+  await page.touchscreen.tap(blank!.x, blank!.y);
+  await expect(page.locator('.graph .node.is-selected')).toHaveCount(0);
+  await expect(page.locator('.graph .node.is-dim')).toHaveCount(0);
+});
