@@ -429,6 +429,8 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
   // 매 이동마다 레이아웃을 읽지 않고, 스크롤이나 크기 변경으로 무대가 달라졌을 때만 다시 잰다.
   let nodeDrag: { id: string; pointer: ReturnType<typeof pointer>; start: Point; offset: Point; moved: boolean; frame: DOMRect; bounds: Size; geometryDirty: boolean } | null = null;
   let suppressNodeClick = false;
+  let touchTap: { pointerId: number; nodeId: string | null } | null = null;
+  let completedTouchTap: { nodeId: string | null } | null = null;
   let motionFrame: number | null = null;
   let motionTime = 0;
   // 처음 배치에서 노드를 옮긴 적이 있는지. 전체 보기는 옮긴 적이 있을 때만 배치를 되돌린다.
@@ -523,6 +525,12 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
   listen('pointerdown', event => {
     stopAnimation();
     const input = pointer(event);
+    if (mode === 'map' && input.touch) {
+      completedTouchTap = null;
+      touchTap = !gesture.active() && !nodeDrag
+        ? { pointerId: event.pointerId, nodeId: (event.target as Element).closest<SVGGElement>('.node')?.dataset.id ?? null }
+        : null;
+    }
     trackPointer(event);
     // 마우스·펜으로 잡은 중에 터치가 시작되면 노드를 놓고 터치 조작으로 넘긴다.
     if (nodeDrag && input.id !== nodeDrag.pointer.id && input.touch) {
@@ -572,14 +580,31 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
     if (next) { state.transform = next; applyTransform(); }
   });
   const endPointer = (event: PointerEvent) => {
+    const tap = touchTap?.pointerId === event.pointerId ? touchTap : null;
+    if (tap) touchTap = null;
     if (event.type !== 'lostpointercapture') trackPointer(event);
     if (nodeDrag?.pointer.id === event.pointerId) releaseNode();
     gesture.end(event.pointerId);
     if (!gesture.active()) svg.classList.remove('is-panning');
+    // 확대 뒤에는 Chromium이 호환 click을 생략할 수 있어 터치 탭은 놓는 순간 처리한다.
+    // 취소·드래그·다중 터치는 제외하고, 처음 누른 노드 안에서 놓았을 때만 선택한다.
+    if (tap && event.type === 'pointerup' && !gesture.active() && !gesture.shouldSuppressClick() && !suppressNodeClick) {
+      const hit = document.elementFromPoint(event.clientX, event.clientY);
+      const nodeId = hit?.closest<SVGGElement>('.node')?.dataset.id ?? null;
+      if (hit?.closest('svg') === svg && nodeId === tap.nodeId) completedTouchTap = { nodeId };
+    }
   };
   listen('pointerup', endPointer);
   listen('pointercancel', endPointer);
   listen('lostpointercapture', event => { if (event.target === svg) endPointer(event); });
+  listen('touchend', event => {
+    if (!completedTouchTap) return;
+    const { nodeId } = completedTouchTap;
+    completedTouchTap = null;
+    // 시트를 연 뒤 호환 click이 새 배경으로 가면 곧바로 닫힌다. 기본 click을 막고 한 번만 선택한다.
+    event.preventDefault();
+    onSelect(nodeId);
+  }, { passive: false });
   if (nodeMotion) {
     const invalidateDragGeometry = () => { if (nodeDrag) nodeDrag.geometryDirty = true; };
     // 상위 스크롤 상자의 이동도 포착한다. 크기는 창 외의 레이아웃 변경으로도 달라질 수 있다.
@@ -593,6 +618,7 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
     window.addEventListener('blur', () => { if (nodeDrag) { gesture.end(nodeDrag.pointer.id); pointerAt = null; releaseNode(); } });
   }
   listen('click', (event) => {
+    if (mode === 'map' && (event as PointerEvent).pointerType === 'touch') return;
     if (suppressNodeClick || gesture.shouldSuppressClick()) return;
     const g = (event.target as Element).closest<SVGGElement>('.node');
     if (g) onSelect(g.dataset.id!); else if (mode === 'map') onSelect(null);

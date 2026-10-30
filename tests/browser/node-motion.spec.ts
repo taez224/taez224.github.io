@@ -261,18 +261,18 @@ test('two-finger zoom increases the scale and leaves the next node tap available
   const cdp = await page.context().newCDPSession(page);
   const target = page.getByRole('button', { name: '이웃 많은 노트', exact: true });
   const at = (await target.locator('.dot').boundingBox())!;
-  const center = { x: at.x + at.width / 2, y: at.y + at.height / 2 };
+  const a = { x: at.x + at.width / 2, y: at.y + at.height / 2, id: 1 };
   const scene = page.locator('.graph > g').first();
   const scale = () => scene.evaluate(element => (element as SVGGElement).transform.baseVal.consolidate()!.matrix.a);
   const before = await scale();
-  // 좌표를 한 번에 옮긴 확대 직후 Linux Chromium이 다음 즉시 탭의 click을 만들지 않는 경우가 있다.
-  // 브라우저가 손가락 이동부터 떼기까지 생성하게 해 실제 제스처의 순서를 지킨다.
-  await cdp.send('Input.synthesizePinchGesture', { ...center, scaleFactor: 1.5, gestureSourceType: 'touch' });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [a] });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [a, { x: a.x + 40, y: a.y, id: 2 }] });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [a, { x: a.x + 90, y: a.y, id: 2 }] });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   await expect.poll(scale).toBeGreaterThan(before);
   await expect(page.locator('[data-map]')).not.toHaveClass(/is-panning/);
   await expect(page.locator('.graph .node.is-selected')).toHaveCount(0);
-  const tapAt = (await target.locator('.dot').boundingBox())!;
-  await cdp.send('Input.synthesizeTapGesture', { x: tapAt.x + tapAt.width / 2, y: tapAt.y + tapAt.height / 2, gestureSourceType: 'touch', duration: 100 });
+  await target.tap();
   await expect(target).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('dialog', { name: '노트 정보', exact: true })).toBeVisible();
   await cdp.detach();
@@ -408,4 +408,32 @@ test('region names placed after a zoomed drag match the placement the whole-map 
   await page.waitForTimeout(300);
   await page.setViewportSize({ width: 1440, height: 900 });
   await expect.poll(regionNames).toEqual(afterDrag);
+});
+
+// CI에서 확대 뒤 pointerdown/up은 왔지만 Chromium이 click을 생략했다. 실제 터치와
+// 호환 click을 따로 검사해 click 누락과 뒤늦은 클릭 처리를 모두 잡는다.
+test('a touch tap selects even without a compatibility click', async ({ page, isMobile }) => {
+  test.skip(!isMobile, '실제 터치 입력으로 확인한다');
+  await page.goto('/map/');
+  await page.evaluate(() => {
+    document.addEventListener('click', event => {
+      if ((event as PointerEvent).pointerType === 'touch') event.stopImmediatePropagation();
+    }, true);
+  });
+  const target = page.getByRole('button', { name: '이웃 많은 노트', exact: true });
+  await target.tap();
+  await expect(target).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('dialog', { name: '노트 정보', exact: true })).toBeVisible();
+});
+
+test('a compatibility click after a touch tap cannot clear its selection', async ({ page, isMobile }) => {
+  test.skip(!isMobile, '실제 터치 입력으로 확인한다');
+  await page.goto('/map/');
+  const target = page.getByRole('button', { name: '이웃 많은 노트', exact: true });
+  await target.tap();
+  await expect(target).toHaveAttribute('aria-pressed', 'true');
+  // 포인터를 잡았던 SVG로 호환 click이 와도 이미 처리한 탭을 빈 곳 선택으로 바꾸지 않는다.
+  await page.locator('[data-map]').evaluate(svg => svg.dispatchEvent(new PointerEvent('click', { pointerType: 'touch', bubbles: true })));
+  await expect(target).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('dialog', { name: '노트 정보', exact: true })).toBeVisible();
 });
