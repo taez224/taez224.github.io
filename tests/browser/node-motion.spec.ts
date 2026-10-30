@@ -257,6 +257,7 @@ test('a cancelled touch pan leaves the next node tap available', async ({ page, 
 
 test('two-finger zoom increases the scale and leaves the next node tap available', async ({ page, isMobile }) => {
   test.skip(!isMobile, '터치 입력이 있는 화면에서 확인한다');
+  for (let attempt = 0; attempt < 20; attempt++) {
   await page.goto('/map/');
   await page.evaluate(() => {
     const events: unknown[] = [];
@@ -290,6 +291,7 @@ test('two-finger zoom increases the scale and leaves the next node tap available
   }
   await expect(page.getByRole('dialog', { name: '노트 정보', exact: true })).toBeVisible();
   await cdp.detach();
+  }
 });
 
 test('pen input can drag a node even in a touch-capable browser', async ({ page }) => {
