@@ -134,6 +134,7 @@ Codex는 이 절만 읽고, Claude Code는 output-style 전문까지 읽는다.
 
 - `AGENTS.md`, `DESIGN.md`, `AUTHORING.md`를 점검하거나 최신화할 때는 `doc-audit` 스킬의 절차를 따른다. 문장을 다듬기 전에 서술을 코드와 대조한다.
 - 새 표시 문법이나 조건을 추가하면 `AUTHORING.md`와 관련 테스트를 고친다. 공개 범위나 배포 산출물의 필수 조건이 바뀔 때만 `check-dist.ts`를 고친다. frontmatter 속성을 바꾸면 vault의 속성 스키마도 고친다.
+- 같은 체크아웃에서 다른 세션이 작업할 수 있다. 소스를 고치거나 시안을 만들기 전에 현재 브랜치와 작업 트리를 확인하고, 다른 세션의 변경이 있으면 `git worktree add`로 저장소 옆에 별도 작업 트리를 만든다. 저장소 옆에 두어야 `../obsidian`을 그대로 찾고, 의존성은 그 트리에서 `npm ci`로 설치한다.
 - 생성물인 `dist/`와 `.astro/`는 편집하지 않는다.
 - `docs/`는 설계 문서, 계획서, 비교 기록을 두는 로컬 전용 폴더다(`.git/info/exclude`). `git add` 하지 않는다.
 - 독자에게 `published`·`slipbox`·`blog`·`프로젝트/*`·`status` 같은 내부 메타데이터 값을 보이지 않는다. 문구와 배치 변경은 화면에서 검토한다.
