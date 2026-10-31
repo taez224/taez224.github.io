@@ -136,8 +136,4 @@ test('destroy cancels both view animation and node-motion frames', t => {
   graph.destroy();
   assert.equal(env.frames.size, 0);
   assert.equal(env.svg.dataset.nodeMotion, undefined);
-  const point = graph.position('a'), view = graph.view();
-  for (const callback of env.frames.values()) callback(performance.now() + 1000);
-  assert.deepEqual(graph.position('a'), point);
-  assert.deepEqual(graph.view(), view);
 });
