@@ -42,6 +42,27 @@ test('the search dialog closes on a backdrop click but survives a drag that ends
   await expect(dialog).toHaveJSProperty('open', false);
 });
 
+// 좁은 종류 열에서는 '생각 노트'처럼 두 어절인 종류가 두 줄로 갈라졌다. 좁은 화면은 종류를 요약 앞에 한 줄로 붙인다.
+test('the result kind stays on one line in its column on wide screens and before the summary on narrow ones', async ({ page }) => {
+  for (const width of [1440, 390, 320]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto('/');
+    await page.locator('[data-search-open]').first().click();
+    await page.locator('#search-input').fill('적재적소');
+    const item = page.locator('.search-item').first();
+    await expect(item.locator('a')).toHaveText('요약이 긴 노트');
+    const kind = await item.evaluate((element) => {
+      const shown = [...element.querySelectorAll<HTMLElement>('.search-kind, .search-kind-inline')].filter((e) => e.getClientRects().length > 0);
+      // 블록 요소의 상자는 줄 수와 무관하게 하나라서 글자 범위로 줄을 센다.
+      const range = document.createRange();
+      range.selectNodeContents(shown[0]);
+      const tops = new Set([...range.getClientRects()].map((r) => Math.round(r.top)));
+      return { count: shown.length, text: shown[0].textContent, lines: tops.size, inSummary: shown[0].closest('small') !== null };
+    });
+    expect(kind, `${width}px`).toEqual({ count: 1, text: '생각 노트', lines: 1, inSummary: width <= 720 });
+  }
+});
+
 // 책 노트의 title은 띠지 원제라 백 자를 넘기도 해서 결과 한 줄이 대화상자를 가득 채웠다.
 // 책장은 파일 이름을 보이므로 검색도 같은 이름을 보인다. 원제로 찾는 길은 별칭으로 남긴다.
 test('a book result shows the shelf name and still answers to its published title', async ({ page }) => {

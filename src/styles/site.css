@@ -303,7 +303,11 @@ main { flex: 1 0 auto; }
 .search-item small { display: -webkit-box; margin-top: 3px; overflow: hidden; color: var(--muted); font-size: var(--t-meta); line-height: 1.4; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 /* 찾은 말은 본문의 ==강조==와 같은 형광으로 표시한다. 결과 줄 안에는 본문 강조가 없어 두 표시가 헷갈릴 일이 없다. */
 .search-item mark { padding: 0 2px; background: var(--highlight); color: var(--ink); }
+.search-kind-inline { display: none; }
+/* 좁은 화면에서 종류 열을 두면 '문제 해결'처럼 두 어절인 종류가 두 줄로 갈라지고, 열을 넓히면 제목이 줄어 한 화면의 결과가 준다.
+   종류를 요약 앞으로 옮기고 굵기로 요약과 구분한다. 색은 요약과 같은 보조색이라 제목보다 물러난다. */
 @media (max-width: 720px) {
-  .search-item { grid-template-columns: 48px minmax(0, 1fr); gap: 8px; }
-  .search-kind { word-break: keep-all; }
+  .search-item { grid-template-columns: minmax(0, 1fr); }
+  .search-kind { display: none; }
+  .search-kind-inline { display: inline; margin-right: 8px; font-weight: 600; white-space: nowrap; }
 }
