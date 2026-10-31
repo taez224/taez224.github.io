@@ -32,7 +32,8 @@ test('dragging a node moves its neighbors without panning or selecting and then 
     const node = [...svg.querySelectorAll<SVGGElement>('.node')].find(node => node.dataset.id === chosen)!;
     const label = [...svg.querySelectorAll<SVGTextElement>('[data-labels] text')].find(label => label.dataset.for === chosen)!;
     const dot = node.querySelector<SVGCircleElement>('.dot')!;
-    return { x: Number(label.getAttribute('x')) - dot.cx.baseVal.value, y: Number(label.getAttribute('y')) - dot.cy.baseVal.value, anchor: label.getAttribute('text-anchor'), text: label.textContent };
+    // SVGLength.baseVal은 단정밀도로 반올림하므로 제목과 원을 같은 원본 좌표 정밀도로 비교한다.
+    return { x: Number(label.getAttribute('x')) - Number(dot.getAttribute('cx')), y: Number(label.getAttribute('y')) - Number(dot.getAttribute('cy')), anchor: label.getAttribute('text-anchor'), text: label.textContent };
   }, id);
   const beforeOffset = await offset();
   const regionOffsets = () => page.locator('[data-map]').evaluate(svg => {

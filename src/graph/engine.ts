@@ -128,7 +128,9 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
   const isDimmed = (id: string, neighbors: ReadonlySet<string> = selectedNeighbors()) => outOfFilter(id) || Boolean(state.selected && id !== state.selected && !neighbors.has(id));
   const minScale = () => Math.min(MIN_SCALE, fitTransform(positions, size()).scale);
   const gesture = createGraphGesture({ getMinScale: minScale, maxScale: MAX_SCALE });
-  const listen = <K extends keyof SVGElementEventMap>(type: K, handler: (event: SVGElementEventMap[K]) => void, options?: AddEventListenerOptions) => svg.addEventListener(type, handler, options);
+  const lifetime = new AbortController();
+  let resizeObserver: ResizeObserver | null = null;
+  const listen = <K extends keyof SVGElementEventMap>(type: K, handler: (event: SVGElementEventMap[K]) => void, options?: AddEventListenerOptions) => svg.addEventListener(type, handler, { ...options, signal: lifetime.signal });
   const nodeEls = new Map<string, SVGGElement>();
   svg.classList.add('graph', mode);
   svg.replaceChildren();
@@ -435,7 +437,7 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
   // 정보 판 닫기나 확대 버튼을 사이에 누른 것은 같은 노드의 연속 탭이 아니다.
   if (mode === 'map') document.addEventListener('pointerdown', event => {
     if (!svg.contains(event.target as Node)) lastTouchTap = null;
-  });
+  }, { signal: lifetime.signal });
   let motionFrame: number | null = null;
   let motionTime = 0;
   // 처음 배치에서 노드를 옮긴 적이 있는지. 전체 보기는 옮긴 적이 있을 때만 배치를 되돌린다.
@@ -623,14 +625,15 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
   if (nodeMotion) {
     const invalidateDragGeometry = () => { if (nodeDrag) nodeDrag.geometryDirty = true; };
     // 상위 스크롤 상자의 이동도 포착한다. 크기는 창 외의 레이아웃 변경으로도 달라질 수 있다.
-    window.addEventListener('scroll', invalidateDragGeometry, { capture: true, passive: true });
-    window.addEventListener('resize', invalidateDragGeometry);
-    new ResizeObserver(invalidateDragGeometry).observe(svg);
+    window.addEventListener('scroll', invalidateDragGeometry, { capture: true, passive: true, signal: lifetime.signal });
+    window.addEventListener('resize', invalidateDragGeometry, { signal: lifetime.signal });
+    resizeObserver = new ResizeObserver(invalidateDragGeometry);
+    resizeObserver.observe(svg);
     // 임계 거리를 넘기 전에는 포인터를 잡지 않으므로 무대 밖에서 놓아도 후보를 해제한다.
     const endOutside = (event: PointerEvent) => { if (nodeDrag?.pointer.id === event.pointerId) endPointer(event); };
-    window.addEventListener('pointerup', endOutside);
-    window.addEventListener('pointercancel', endOutside);
-    window.addEventListener('blur', () => { if (nodeDrag) { gesture.end(nodeDrag.pointer.id); pointerAt = null; releaseNode(); } });
+    window.addEventListener('pointerup', endOutside, { signal: lifetime.signal });
+    window.addEventListener('pointercancel', endOutside, { signal: lifetime.signal });
+    window.addEventListener('blur', () => { if (nodeDrag) { gesture.end(nodeDrag.pointer.id); pointerAt = null; releaseNode(); } }, { signal: lifetime.signal });
   }
   listen('click', (event) => {
     if (mode === 'map' && (event as PointerEvent).pointerType === 'touch') return;
@@ -702,6 +705,15 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
   listen('focusout', () => { state.hovered = null; hoverChanged(); });
 
   const api = {
+    // 폐기한 그래프가 입력과 프레임을 계속 처리하지 않도록 외부에 등록한 이벤트와 관찰자도 함께 해제한다.
+    destroy() {
+      lifetime.abort(); resizeObserver?.disconnect();
+      stopAnimation();
+      if (motionFrame !== null) cancelAnimationFrame(motionFrame);
+      nodeMotion?.stop();
+      svg.classList.remove('is-node-dragging', 'is-panning');
+      delete svg.dataset.nodeMotion;
+    },
     resetLayout() {
       if (!nodeMotion) return;
       stopAnimation();
