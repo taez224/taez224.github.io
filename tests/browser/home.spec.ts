@@ -103,28 +103,20 @@ test('the hero keeps its intro whole when the reader enlarges the text', async (
   }
 });
 
-// 첫 화면의 소개 블록은 1180px 본문 열이 화면 가운데 있다고 보고 자리를 잡는다.
-// 화면이 그보다 좁으면 왼쪽으로 밀려나 제목과 소개문의 앞부분이 잘린다.
-test('the hero intro stays inside the viewport on screens narrower than the content column', async ({ page, isMobile }) => {
-  test.skip(isMobile, '이 배치는 1000px을 넘는 폭에서만 쓴다');
-  await page.setViewportSize({ width: 1100, height: 900 });
-  await page.goto('/');
-  const left = await page.locator('.hero-about').evaluate((el) => el.getBoundingClientRect().left);
-  expect(left).toBeGreaterThanOrEqual(0);
-});
-
 // 소개와 지도를 겹치지 않는 흐름으로 두고, 낮은 휴대폰에서도 지도의 영역 이름을 읽을 공간을 남긴다.
 test('the home intro and map keep separate space side by side or stacked on narrow screens', async ({ page }) => {
-  for (const [width, height] of [[1440, 900], [1121, 800], [1120, 800], [1001, 800], [1000, 800], [721, 800], [720, 800], [390, 844], [320, 568]]) {
+  for (const [width, height] of [[1440, 900], [1121, 800], [1120, 800], [1100, 900], [1001, 800], [1000, 800], [721, 800], [720, 800], [390, 844], [320, 568]]) {
     await page.setViewportSize({ width, height });
     await page.goto('/');
     const boxes = await page.evaluate(() => {
       const rect = (selector: string) => document.querySelector(selector)!.getBoundingClientRect();
       const intro = rect('.hero-about'), graph = rect('.hero-graph'), hero = rect('.hero');
-      return { introBottom: intro.bottom, introRight: intro.right, graphLeft: graph.left, graphTop: graph.top,
+      return { introLeft: intro.left, introBottom: intro.bottom, introRight: intro.right, graphLeft: graph.left, graphTop: graph.top,
         graphWidth: graph.width, heroWidth: hero.width, graphHeight: graph.height,
         overflow: document.documentElement.scrollWidth > window.innerWidth };
     });
+    // 왼쪽으로 밀려난 요소는 scrollWidth에 잡히지 않으므로 소개의 시작 위치를 직접 확인한다.
+    expect(boxes.introLeft, `${width}px: 소개의 왼쪽이 잘리지 않는다`).toBeGreaterThanOrEqual(0);
     if (width > 1120) {
       expect(boxes.graphLeft, `${width}px: 소개 오른쪽에 지도를 둔다`).toBeGreaterThan(boxes.introRight);
       expect(boxes.graphTop).toBeLessThan(boxes.introBottom);
