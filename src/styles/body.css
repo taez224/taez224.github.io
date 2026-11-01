@@ -2,6 +2,9 @@
    콜아웃·비공개 표시처럼 사이트 렌더러(markdown.ts)만 만드는 요소도 여기에 둔다. */
 .body { font-size: var(--t-body); line-height: 1.85; }
 .body p { margin: 0 0 var(--s-paragraph-gap); }
+/* keep-all이라 줄바꿈 단위가 어절이어서, 마지막 줄에 한 어절만 남는 문단이 휴대폰 폭에서 넷 중 하나꼴이었다.
+   지원하지 않는 브라우저는 지금처럼 줄을 바꾼다. */
+.body p, .body li { text-wrap: pretty; }
 /* 본문의 외부 링크는 사이트 다른 곳(발행처·출처)과 같이 ↗를 붙여 노트 링크와 구분한다. */
 /* 링크 색이 먹색이라 본문 링크는 밑줄로 구분한다. */
 .body a { text-decoration: underline; text-decoration-color: var(--link-underline); text-decoration-thickness: 1px; text-underline-offset: .18em; }
