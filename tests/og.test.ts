@@ -1,4 +1,4 @@
-import test from 'node:test';
+import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -11,6 +11,7 @@ import { crc32, deflateSync } from 'node:zlib';
 const imageConfig = { service: { entrypoint: '', config: {} } } as Parameters<typeof imageService.transform>[2];
 
 const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'garden-og-'));
+after(() => fs.rm(dir, { recursive: true, force: true }));
 process.env.GARDEN_OG_CACHE_DIR = dir;
 const { cachedPng, pruneOgCache, fitTitle, ogSvg, renderOgPng, thumbnailDataUri } = await import('../src/lib/og.ts');
 const { pngDimensions } = await import('../src/lib/png.ts');
@@ -157,10 +158,10 @@ test('thumbnail normalization supports JPEG and WebP and same-path replacements 
   const before = await thumbnailDataUri('replace.png', { vaultRoot: dir });
   assert.ok(before, '바꾸기 전 썸네일을 읽는다');
   await fs.writeFile(imagePath, new Resvg('<svg xmlns="http://www.w3.org/2000/svg" width="80" height="60"><rect width="80" height="60" fill="red"/></svg>').render().asPng());
-  const after = await thumbnailDataUri('replace.png', { vaultRoot: dir });
-  assert.ok(after, '바꾼 뒤 썸네일도 읽는다');
-  assert.notEqual(before, after, '같은 경로라도 이미지 내용이 SVG 캐시 키에 반영된다');
-  assert.notDeepEqual(render(before), render(after));
+  const replaced = await thumbnailDataUri('replace.png', { vaultRoot: dir });
+  assert.ok(replaced, '바꾼 뒤 썸네일도 읽는다');
+  assert.notEqual(before, replaced, '같은 경로라도 이미지 내용이 SVG 캐시 키에 반영된다');
+  assert.notDeepEqual(render(before), render(replaced));
 });
 
 test('renderOgPng rejects unsupported or escaping thumbnail paths explicitly', async () => {
