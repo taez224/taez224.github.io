@@ -28,22 +28,14 @@ const bootDocument = () => {
 };
 
 // 첫 페인트 전에 도는 인라인 스크립트는 모듈을 가져올 수 없어 같은 판정을 직접 쓴다. 두 판정이 갈라지면 첫 화면만 다른 색으로 그려진다.
-test('the inline boot script decides the same theme as resolveTheme', () => {
+test('the inline boot script applies the resolved theme to the page and both browser UI colors', () => {
   for (const { stored, systemDark, expected } of cases) {
-    const { element, document } = bootDocument();
+    const { element, metas, document } = bootDocument();
     const store = { getItem: (key: string) => (key === THEME_KEY ? stored : null) };
     const run = new Function('document', 'localStorage', 'matchMedia', THEME_BOOT);
     run(document, store, () => ({ matches: systemDark }));
     assert.equal(element.dataset.theme, expected, `${stored} · ${systemDark}`);
-  }
-});
-
-// 메타는 시스템 설정에 따라 하나가 뽑힌다. 시스템과 다른 화면을 고른 독자에게 모듈 스크립트가 돌 때까지 휴대폰 상단 색이 본문과 달랐다.
-test('the boot script paints both browser UI colors with the chosen theme', () => {
-  for (const { stored, systemDark, expected } of cases) {
-    const { metas, document } = bootDocument();
-    const run = new Function('document', 'localStorage', 'matchMedia', THEME_BOOT);
-    run(document, { getItem: () => stored }, () => ({ matches: systemDark }));
+    // 모듈 실행 전에도 시스템 설정과 무관하게 두 메타가 고른 화면의 색이어야 한다.
     const paper = expected === 'dark' ? DARK_PALETTE.paper : PALETTE.paper;
     assert.deepEqual(metas.map((meta) => meta.content), [paper, paper], `${stored} · ${systemDark}`);
   }

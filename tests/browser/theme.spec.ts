@@ -9,9 +9,15 @@ test('the first visit follows the system setting and the button remembers the re
   await page.reload();
   const root = page.locator('html');
   await expect(root, '선택이 없으면 시스템 설정을 따른다').toHaveAttribute('data-theme', dark ? 'dark' : 'light');
+  // 버튼의 기호는 누르면 바뀔 화면이 아니라 지금 화면이다.
+  const sun = page.locator('.theme-toggle .is-sun'), moon = page.locator('.theme-toggle .is-moon');
+  await expect(dark ? moon : sun).toBeVisible();
+  await expect(dark ? sun : moon).toBeHidden();
 
   await page.locator('[data-theme-toggle]').click();
   await expect(root).toHaveAttribute('data-theme', dark ? 'light' : 'dark');
+  await expect(dark ? sun : moon).toBeVisible();
+  await expect(dark ? moon : sun).toBeHidden();
   await expect(page.locator('body')).toHaveCSS('background-color', rgb(dark ? PALETTE.paper : DARK_PALETTE.paper));
   // 도표와 브라우저 UI 색은 CSS 변수를 읽지 못해 스크립트가 따로 맞춘다.
   const meta = await page.locator('meta[name="theme-color"]').first().getAttribute('content');
@@ -20,19 +26,6 @@ test('the first visit follows the system setting and the button remembers the re
   // 고른 화면은 다음 페이지에서도 유지되고, 읽는 도중 시스템 설정을 다시 보지 않는다.
   await page.goto('/posts/');
   await expect(root).toHaveAttribute('data-theme', dark ? 'light' : 'dark');
-});
-
-// 버튼의 기호는 누르면 바뀔 화면이 아니라 지금 화면이다. 밝은 화면에서 해, 어두운 화면에서 달을 보인다.
-test('the theme button shows the icon of the current mode', { tag: BOTH_THEMES }, async ({ page, systemDark: dark }) => {
-  await page.goto('/books/');
-  await page.evaluate(() => localStorage.clear());
-  await page.reload();
-  const sun = page.locator('.theme-toggle .is-sun'), moon = page.locator('.theme-toggle .is-moon');
-  await expect(dark ? moon : sun).toBeVisible();
-  await expect(dark ? sun : moon).toBeHidden();
-  await page.locator('[data-theme-toggle]').click();
-  await expect(dark ? sun : moon).toBeVisible();
-  await expect(dark ? moon : sun).toBeHidden();
 });
 
 // 브라우저 UI 색 메타는 시스템 설정에 따라 하나가 뽑힌다. 시스템과 다른 화면을 고른 독자는 모듈 스크립트가 돌 때까지
