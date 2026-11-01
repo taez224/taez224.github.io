@@ -7,6 +7,7 @@ import { stripTypeScriptTypes } from 'node:module';
 import { codeLanguageLabel } from '../src/lib/highlight.ts';
 import { uiIcon } from '../src/lib/ui-icons.ts';
 import { render } from './helpers/markdown.ts';
+import { ruleBody } from './css-blocks.ts';
 
 test('codeLanguageLabel turns fence languages into the names readers know', () => {
   assert.equal(codeLanguageLabel('java'), 'Java');
@@ -165,7 +166,7 @@ test('an older clipboard response cannot replace the latest copy result', async 
 test('the copy button hover plate fits inside the code head row', () => {
   // 누르는 영역(44px)에 판을 깔면 34px 머리 줄 위아래로 넘친다. 판은 아이콘 둘레의 작은 상자에만 칠한다.
   const css = readFileSync(new URL('../src/styles/body.css', import.meta.url), 'utf8');
-  const px = (rule: string, prop: string) => Number(css.match(new RegExp(`\\n${rule.replace(/[.[\]]/g, '\\$&')} \\{[^}]*?${prop}:\\s*(\\d+)px`))?.[1] ?? NaN);
+  const px = (rule: string, prop: string) => Number(ruleBody(css, rule).match(new RegExp(`(?:^|;)\\s*${prop}:\\s*(\\d+)px`))?.[1] ?? NaN);
   const head = px('.body .code-head', 'min-height');
   const plate = px('.body .code-copy-plate', 'height');
   assert.ok(Number.isFinite(head) && Number.isFinite(plate), `머리 줄 ${head}px, 판 ${plate}px`);
