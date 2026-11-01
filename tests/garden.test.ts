@@ -2,10 +2,10 @@ import test from 'node:test';
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 import { assembleGarden } from '../src/lib/garden.ts';
 import { seriesNeighbors } from '../src/lib/note-nav.ts';
+import { makeVault } from './vault-fixture.ts';
 
 const dev = '30_Resources/Development';
 type Garden = Awaited<ReturnType<typeof assembleGarden>>;
@@ -16,14 +16,6 @@ function noteAt(garden: Garden, notePath: string) {
   return note;
 }
 
-async function makeVault(files: Record<string, string>) {
-  const vaultRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'garden-vault-'));
-  for (const [file, content] of Object.entries(files)) {
-    await fs.mkdir(path.dirname(path.join(vaultRoot, file)), { recursive: true });
-    await fs.writeFile(path.join(vaultRoot, file), content);
-  }
-  return vaultRoot;
-}
 const config = {
   basePath: '/obsidian', exclude: [], assets: ['_attachments/reviewed.svg'],
   home: { featured: ['20_Projects/blog/공개 글.md'], contacts: [], about: '소개 문장' },
@@ -45,8 +37,8 @@ const files = {
   '_attachments/reviewed.svg': '<svg xmlns="http://www.w3.org/2000/svg"></svg>'
 };
 
-test('assembleGarden publishes reviewed notes with slug urls and no private strings', async () => {
-  const vaultRoot = await makeVault(files);
+test('assembleGarden publishes reviewed notes with slug urls and no private strings', async (t) => {
+  const vaultRoot = await makeVault(t, files);
   const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
   const byPath = new Map(garden.notes.map((note) => [note.path, note]));
   assert.deepEqual([...byPath.keys()].sort(), [
@@ -74,8 +66,8 @@ test('assembleGarden publishes reviewed notes with slug urls and no private stri
   assert.equal(noteAt(garden, '01_Slipbox/생각 A.md').publication, '');
 });
 
-test('private references are labelled without exposing their metadata, body or links', async () => {
-  const vaultRoot = await makeVault({ ...files,
+test('private references are labelled without exposing their metadata, body or links', async (t) => {
+  const vaultRoot = await makeVault(t, { ...files,
     '20_Projects/blog/초안.md': '---\nstatus: draft\ntitle: HIDDEN_TITLE\n---\nSECRET_DRAFT',
     '20_Projects/blog/공개 글.md': files['20_Projects/blog/공개 글.md'] + '\n[[20_Projects/blog/초안|작업 메모]]와 [이전 기록](초안.md), [[없는 문서]]를 참고했다.'
   });
@@ -90,9 +82,9 @@ test('private references are labelled without exposing their metadata, body or l
   assert.ok(!JSON.stringify(garden).includes('HIDDEN_TITLE'));
 });
 
-test('thumbnail frontmatter resolves reviewed assets separately from body images', async () => {
+test('thumbnail frontmatter resolves reviewed assets separately from body images', async (t) => {
   const source = files['20_Projects/blog/공개 글.md'].replace('status: published', 'status: published\nthumbnail: "[[cover.svg]]"\nthumbnail_style: soft');
-  const vaultRoot = await makeVault({ ...files,
+  const vaultRoot = await makeVault(t, { ...files,
     '20_Projects/blog/공개 글.md': source,
     '20_Projects/blog/assets/cover.svg': '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"/>'
   });
@@ -106,22 +98,22 @@ test('thumbnail frontmatter resolves reviewed assets separately from body images
   assert.equal(noteAt(garden, '01_Slipbox/생각 A.md').thumbnailStyle, 'plain');
 });
 
-test('thumbnails cannot bypass the reviewed asset list and invalid styles fail the build', async () => {
+test('thumbnails cannot bypass the reviewed asset list and invalid styles fail the build', async (t) => {
   const withThumbnail = (extra: string) => files['20_Projects/blog/공개 글.md'].replace('status: published', `status: published\n${extra}`);
-  const privateRoot = await makeVault({ ...files,
+  const privateRoot = await makeVault(t, { ...files,
     '20_Projects/blog/공개 글.md': withThumbnail('thumbnail: "[[_attachments/private.svg]]"'),
     '_attachments/private.svg': '<svg xmlns="http://www.w3.org/2000/svg"/>'
   });
   await assert.rejects(assembleGarden({ vaultRoot: privateRoot, config }), /Missing or unreviewed thumbnail/);
-  const styleRoot = await makeVault({ ...files,
+  const styleRoot = await makeVault(t, { ...files,
     '20_Projects/blog/공개 글.md': withThumbnail('thumbnail: "[[_attachments/reviewed.svg]]"\nthumbnail_style: blurry')
   });
   await assert.rejects(assembleGarden({ vaultRoot: styleRoot, config }), /Unknown thumbnail_style/);
 });
 
-test('graphRule linked keeps only development notes connected to the thought map, slipbox isolates stay', async () => {
+test('graphRule linked keeps only development notes connected to the thought map, slipbox isolates stay', async (t) => {
   const pairConfig = { ...config, include: config.include.map((rule) => rule.graphRule ? { ...rule, files: [...rule.files, `${dev}/Concepts/짝 A.md`, `${dev}/Concepts/짝 B.md`] } : rule) };
-  const vaultRoot = await makeVault({ ...files,
+  const vaultRoot = await makeVault(t, { ...files,
     '01_Slipbox/외톨이.md': '---\ncreated: 2026-09-06\n---\n# 외톨이\n링크 없음.',
     [`${dev}/Concepts/짝 A.md`]: '---\ncreated: 2026-09-06\nsummary: 짝 A\ntags:\n  - 개발/설계\n---\n# 짝 A\n[[짝 B]]만 참조.',
     [`${dev}/Concepts/짝 B.md`]: '---\ncreated: 2026-09-06\nsummary: 짝 B\ntags:\n  - 개발/설계\n---\n# 짝 B\n[[짝 A]]만 참조.'
@@ -144,29 +136,29 @@ test('graphRule linked keeps only development notes connected to the thought map
   assert.ok(garden.edges.some((edge) => edge.source === devNode.id && edge.target === '01_Slipbox/생각 A.md'));
 });
 
-test('graph nodes carry only public tags so the shared data file keeps internal ones out', async () => {
+test('graph nodes carry only public tags so the shared data file keeps internal ones out', async (t) => {
   // 노드의 태그는 공개 데이터 파일(data/site.json)로 그대로 나간다. 원본 태그를 실으면 `프로젝트/*`처럼
   // 화면에서 감추는 값이 파일에는 남는다.
-  const vaultRoot = await makeVault(files);
+  const vaultRoot = await makeVault(t, files);
   const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
   const node = garden.nodes.find((item) => item.id === '01_Slipbox/생각 A.md');
   assert.ok(node, '생각 A는 지도에 있다');
   assert.deepEqual(node.tags, ['AI'], 'slipbox와 프로젝트/* 태그는 빠진다');
 });
 
-test('slug collisions fail the build with both paths named', async () => {
-  const vaultRoot = await makeVault({ ...files, '01_Slipbox/다른 생각.md': '---\ncreated: 2026-09-07\nslug: 생각-a\n---\n# 다른 생각\n중복 슬러그.' });
+test('slug collisions fail the build with both paths named', async (t) => {
+  const vaultRoot = await makeVault(t, { ...files, '01_Slipbox/다른 생각.md': '---\ncreated: 2026-09-07\nslug: 생각-a\n---\n# 다른 생각\n중복 슬러그.' });
   await assert.rejects(() => assembleGarden({ vaultRoot, config, basePath: '/obsidian' }), /생각 A\.md[\s\S]*다른 생각\.md|다른 생각\.md[\s\S]*생각 A\.md/);
 });
 
-test('automatic summaries and references use only the public body without modifying the source', async () => {
+test('automatic summaries and references use only the public body without modifying the source', async (t) => {
   const source = [
     '---', 'created: 2026-09-02', '---', '# 생각 B',
     '공개 문장.', '', '## 운영 메모', 'AUTHOR_ONLY_SENTINEL [[생각 A]]', '',
     '%%', '## 주석 속 가짜 경계', '%%', 'HIDDEN_TAIL_SENTINEL', '',
     '## 공개 절', '공개 끝.'
   ].join('\n');
-  const vaultRoot = await makeVault({ ...files, '01_Slipbox/생각 B.md': source });
+  const vaultRoot = await makeVault(t, { ...files, '01_Slipbox/생각 B.md': source });
   const garden = await assembleGarden({ vaultRoot, config });
   const note = noteAt(garden, '01_Slipbox/생각 B.md');
   assert.equal(note.summary, '공개 문장. 공개 끝.');
@@ -176,8 +168,8 @@ test('automatic summaries and references use only the public body without modify
   assert.equal(await fs.readFile(path.join(vaultRoot, note.path), 'utf8'), source);
 });
 
-test('series and publication summaries exclude author-only sections and retain explicit summaries', async () => {
-  const vaultRoot = await makeVault({ ...files,
+test('series and publication summaries exclude author-only sections and retain explicit summaries', async (t) => {
+  const vaultRoot = await makeVault(t, { ...files,
     '20_Projects/blog/연재 S.md': '---\ncreated: 2026-09-01\ntype: series\n---\n# 연재 S\n```md\n## 연재 목적\n코드 속 가짜 소개.\n```\n## 운영 메모\nHUB_SENTINEL\n## 연재 목적\n연재 소개.\n## 운영 메모\nHUB_TAIL_SENTINEL',
     '20_Projects/blog/S1.md': '---\ncreated: 2026-09-01\nstatus: published\nseries: 연재 S\nseries_order: 1\n---\n# S1\n## 운영 메모\nPOST_SENTINEL\n## 공개 절\n첫 편 소개.',
     '20_Projects/blog/공개 글.md': '---\ncreated: 2026-09-01\nstatus: published\n---\n# 공개 글\n## 운영 메모\nSTANDALONE_SENTINEL\n## 공개 절\n독립 글 소개.',
@@ -191,8 +183,8 @@ test('series and publication summaries exclude author-only sections and retain e
   assert.doesNotMatch(JSON.stringify(garden), /HUB_SENTINEL|HUB_TAIL_SENTINEL|POST_SENTINEL|STANDALONE_SENTINEL/);
 });
 
-test('graph and references ignore comments and code while keeping visible links and related', async () => {
-  const vaultRoot = await makeVault({ ...files,
+test('graph and references ignore comments and code while keeping visible links and related', async (t) => {
+  const vaultRoot = await makeVault(t, { ...files,
     '01_Slipbox/생각 A.md': [
       '---', 'created: 2026-09-01', 'related:', '  - "[[속성 연결]]"', '---', '# 생각 A',
       '%% [[생각 B]] %%', '<!-- [[생각 B]] -->',
@@ -219,9 +211,9 @@ test('graph and references ignore comments and code while keeping visible links 
   assert.equal(note.articleCards.length, 1);
 });
 
-test('series navigation and references survive with related links', async () => {
+test('series navigation and references survive with related links', async (t) => {
   const post = (order: number, related: string[], body: string) => `---\ncreated: 2026-09-0${order}\nstatus: published\nseries: 연재 S\nseries_order: ${order}\nrelated:\n${related.map((link: string) => `  - "${link}"`).join('\n')}\n---\n# S${order}\n${body}`;
-  const vaultRoot = await makeVault({ ...files,
+  const vaultRoot = await makeVault(t, { ...files,
     '20_Projects/blog/S1.md': post(1, ['[[S2]]', '[[S2#절|두 번째 편]]', '[[초안]]', '[[없는 문서]]'], '본문 1.'),
     '20_Projects/blog/S2.md': post(2, ['[[S1]]', '[[생각 B]]'], '본문 2. [[생각 B]]를 참고한다.')
   });
@@ -241,8 +233,8 @@ test('series navigation and references survive with related links', async () => 
   assert.equal(first.next.path, s2.path);
 });
 
-test('related links use the public graph candidates and ignore plain text and unpublished targets', async () => {
-  const vaultRoot = await makeVault({ ...files,
+test('related links use the public graph candidates and ignore plain text and unpublished targets', async (t) => {
+  const vaultRoot = await makeVault(t, { ...files,
     '01_Slipbox/생각 A.md': '---\ncreated: 2026-09-01\nrelated:\n  - "[[생각 B]]"\n  - "[[생각 B#절|별칭]]"\n  - "[[30_Resources/Development/Concepts/연결된 개념]]"\n  - "[[20_Projects/blog/초안]]"\n  - "[[20_Projects/blog/공개 글]]"\n  - "[[비공개 개념]]"\n  - 고립된 개념\n---\n# 생각 A\n연결은 속성에만 둔다.'
   });
   const garden = await assembleGarden({ vaultRoot, config });
@@ -252,14 +244,14 @@ test('related links use the public graph candidates and ignore plain text and un
   assert.doesNotMatch(JSON.stringify(garden), /초안|비공개 개념|DRAFT_SENTINEL|WITHHELD_SENTINEL/);
 });
 
-test('folder publication picks up new development notes without publishing helper files', async () => {
+test('folder publication picks up new development notes without publishing helper files', async (t) => {
   const folderConfig = {
     ...config,
     include: config.include.map((rule) => rule.path === `${dev}/Concepts`
       ? { path: rule.path, mode: 'all', graph: true, graphRule: 'linked' } : rule),
     exclude: [`${dev}/Concepts/비공개 개념.md`]
   };
-  const vaultRoot = await makeVault({ ...files,
+  const vaultRoot = await makeVault(t, { ...files,
     [`${dev}/Concepts/새 개념.md`]: '---\ncreated: 2026-09-06\nsummary: 새 개념 요약\ntags:\n  - 개발/설계\n---\n# 새 개념\n[[연결된 개념]]으로 연결한다.',
     [`${dev}/Concepts/_index.md`]: '# 내부 운영 안내\nHELPER_SENTINEL',
     [`${dev}/Concepts/_local/보류.md`]: '# 로컬 초안\nLOCAL_SENTINEL',
@@ -280,7 +272,7 @@ const nextreeConfig = {
   externalPublications: [{ hosts: ['nextree.io', 'www.nextree.io'], publications: ['Nextree 기술 블로그'], name: '넥스트리' }]
 };
 
-test('external blog notes expose metadata and links while excluding original body, cards and assets', async () => {
+test('external blog notes expose metadata and links while excluding original body, cards and assets', async (t) => {
   const externalSource = [
     '---',
     'created: 2026-09-06',
@@ -302,7 +294,7 @@ test('external blog notes expose metadata and links while excluding original bod
     '![[reviewed.svg]]',
     '![[external-only.svg]]'
   ].join('\n');
-  const vaultRoot = await makeVault({
+  const vaultRoot = await makeVault(t, {
     ...files,
     '01_Slipbox/생각 A.md': `${files['01_Slipbox/생각 A.md']}\n\n[[외부 원문#UNIQUE_EXTERNAL_HEADING|정의]]\n\n> [!article] 외부 글\n> [[외부 원문]]`,
     '20_Projects/blog/외부 원문.md': externalSource,
@@ -337,8 +329,8 @@ test('external blog notes expose metadata and links while excluding original bod
   assert.equal(garden.assetCopies.has('20_Projects/blog/assets/external-only.svg'), false, '외부 글에서만 쓰던 본문 이미지는 출력하지 않는다');
 });
 
-test('external notes without an explicit summary do not fall back to body excerpts', async () => {
-  const vaultRoot = await makeVault({
+test('external notes without an explicit summary do not fall back to body excerpts', async (t) => {
+  const vaultRoot = await makeVault(t, {
     ...files,
     '20_Projects/blog/요약 없는 외부 글.md': [
       '---', 'created: 2026-09-06', 'published: 2026-09-07', 'status: published',
@@ -357,8 +349,8 @@ test('external notes without an explicit summary do not fall back to body excerp
   assert.equal(JSON.stringify(garden).includes('EXTERNAL_SUMMARY_SENTINEL'), false);
 });
 
-test('published posts from other publishers keep the full body and ordinary summary fallback', async () => {
-  const vaultRoot = await makeVault({
+test('published posts from other publishers keep the full body and ordinary summary fallback', async (t) => {
+  const vaultRoot = await makeVault(t, {
     ...files,
     '20_Projects/blog/다른 발행처 글.md': [
       '---', 'created: 2026-09-06', 'published: 2026-09-07', 'status: published',
@@ -375,9 +367,9 @@ test('published posts from other publishers keep the full body and ordinary summ
   assert.ok(note.readingMinutes > 0);
 });
 
-test('wiki, Markdown and percent-encoded heading path links land on the heading under the named parent when heading names repeat', async () => {
+test('wiki, Markdown and percent-encoded heading path links land on the heading under the named parent when heading names repeat', async (t) => {
   const headings = '## A\n### 설정\n## B\n### 설정';
-  const vaultRoot = await makeVault({ ...files,
+  const vaultRoot = await makeVault(t, { ...files,
     '01_Slipbox/설정 노트.md': `---\ncreated: 2026-09-07\n---\n# 설정 노트\n${headings}\n\n[[#B#설정]] [[#A#설정]]`,
     '01_Slipbox/연결 노트.md': '---\ncreated: 2026-09-08\n---\n# 연결 노트\n[[설정 노트#B#설정|B의 설정]] [인코딩 링크](설정%20노트.md#B#설정)'
   });
@@ -394,8 +386,8 @@ test('wiki, Markdown and percent-encoded heading path links land on the heading 
   assert.ok(own.incoming.includes(linkingNote.path), '인코딩한 링크도 대상 노트의 역참조로 잡힌다');
 });
 
-test('a basename shared with an unpublished draft still links to the public note', async () => {
-  const vaultRoot = await makeVault({ ...files,
+test('a basename shared with an unpublished draft still links to the public note', async (t) => {
+  const vaultRoot = await makeVault(t, { ...files,
     '20_Projects/blog/AI 활용.md': '---\ncreated: 2026-09-06\nstatus: published\n---\n# AI 활용\n공개 글.',
     '20_Projects/blog/초고/AI 활용.md': '---\nstatus: draft\n---\n# AI 활용\nDRAFT_SENTINEL',
     '01_Slipbox/참조.md': '---\ncreated: 2026-09-07\n---\n# 참조\n[[AI 활용]]을 참조한다.'
@@ -408,8 +400,8 @@ test('a basename shared with an unpublished draft still links to the public note
   assert.ok(referrer.outgoing.includes('20_Projects/blog/AI 활용.md'));
 });
 
-test('frontmatter normalizes null values and scalar whitespace', async () => {
-  const vaultRoot = await makeVault({ ...files,
+test('frontmatter normalizes null values and scalar whitespace', async (t) => {
+  const vaultRoot = await makeVault(t, { ...files,
     '01_Slipbox/정규화.md': '---\ncreated: 2026-09-07\nstatus: null\ntype: hub   \npublication: null\n---\n# 정규화\n본문.'
   });
   const garden = await assembleGarden({ vaultRoot, config, basePath: '/obsidian' });
@@ -419,10 +411,10 @@ test('frontmatter normalizes null values and scalar whitespace', async () => {
   assert.equal(note.publication, '');
 });
 
-test('a series hub stays off the site until one of its posts is published', async () => {
+test('a series hub stays off the site until one of its posts is published', async (t) => {
   const hub = (name: string) => `---\ncreated: 2026-09-01\ntype: series\nstatus: active\nsummary: ${name} 소개\n---\n# ${name}\n연재 소개.`;
   const episode = (name: string, status: string) => `---\ncreated: 2026-09-02\nstatus: ${status}\nseries: ${name}\nseries_order: 1\nsource: https://example.com/${status}\n---\n# ${name} 1화\n본문.`;
-  const vaultRoot = await makeVault({ ...files,
+  const vaultRoot = await makeVault(t, { ...files,
     '20_Projects/blog/준비 중 연재.md': hub('준비 중 연재'),
     '20_Projects/blog/준비 중 연재 1화.md': episode('준비 중 연재', 'draft'),
     '20_Projects/blog/시작한 연재.md': hub('시작한 연재'),
@@ -435,11 +427,11 @@ test('a series hub stays off the site until one of its posts is published', asyn
   assert.deepEqual(garden.blog.series.map((s) => s.title), ['시작한 연재']);
 });
 
-test('a series is dated by its latest published episode, not by the hub last_published field', async () => {
+test('a series is dated by its latest published episode, not by the hub last_published field', async (t) => {
   // 허브의 last_published는 손으로 적는 값이라 새 편을 발행하고 고치지 않으면 옛 날짜로 남는다.
   const hub = (name: string, lastPublished: string) => `---\ncreated: 2026-01-01\ntype: series\nlast_published: ${lastPublished}\n---\n# ${name}\n연재 소개.`;
   const episode = (name: string, order: number, published: string) => `---\ncreated: 2026-01-01\npublished: ${published}\nstatus: published\nseries: ${name}\nseries_order: ${order}\n---\n# ${name} ${order}화\n본문.`;
-  const vaultRoot = await makeVault({ ...files,
+  const vaultRoot = await makeVault(t, { ...files,
     '20_Projects/blog/잊힌 허브.md': hub('잊힌 허브', '2020-01-01'),
     '20_Projects/blog/잊힌 허브 1화.md': episode('잊힌 허브', 1, '2026-09-05'),
     '20_Projects/blog/잊힌 허브 2화.md': episode('잊힌 허브', 2, '2026-08-01'),
@@ -451,7 +443,7 @@ test('a series is dated by its latest published episode, not by the hub last_pub
     '편의 순서가 아니라 가장 늦은 발행일을 쓰고, 그 날짜로 연재를 정렬한다');
 });
 
-test('an author-only section is cut from the published body but stays in the vault file', async () => {
+test('an author-only section is cut from the published body but stays in the vault file', async (t) => {
   const hub = [
     '---', 'created: 2026-09-01', 'type: series', 'status: active', 'summary: 연재 소개', '---',
     '# 검증 연재', '연재 소개 문장.', '',
@@ -459,7 +451,7 @@ test('an author-only section is cut from the published body but stays in the vau
     '## 운영 메모', '- 실제 발행 상태는 각 글의 frontmatter를 정본으로 삼는다.', '- OPERATIONAL_SENTINEL', '',
     '## 연관된 노트', '- [[생각 B]]'
   ].join('\n');
-  const vaultRoot = await makeVault({ ...files,
+  const vaultRoot = await makeVault(t, { ...files,
     '20_Projects/blog/검증 연재.md': hub,
     '20_Projects/blog/검증 연재 1화.md': '---\ncreated: 2026-09-02\nstatus: published\nseries: 검증 연재\nseries_order: 1\n---\n# 검증 연재 1화\n본문.'
   });
@@ -475,14 +467,14 @@ test('an author-only section is cut from the published body but stays in the vau
   assert.match(raw, /OPERATIONAL_SENTINEL/, 'vault 원문은 그대로다');
 });
 
-test('an author-only section ends at the next heading, not at a comment line inside its code block', async () => {
+test('an author-only section ends at the next heading, not at a comment line inside its code block', async (t) => {
   const hub = [
     '---', 'created: 2026-09-01', 'type: series', 'status: active', 'summary: 연재 소개', '---',
     '# 검증 연재', '연재 소개 문장.', '',
     '## 운영 메모', '```sh', '# 발행 확인', 'echo OPERATIONAL_SENTINEL', '```', '- 꼬리 메모 TAIL_SENTINEL', '',
     '## 연관된 노트', '- [[생각 B]]'
   ].join('\n');
-  const vaultRoot = await makeVault({ ...files,
+  const vaultRoot = await makeVault(t, { ...files,
     '20_Projects/blog/검증 연재.md': hub,
     '20_Projects/blog/검증 연재 1화.md': '---\ncreated: 2026-09-02\nstatus: published\nseries: 검증 연재\nseries_order: 1\n---\n# 검증 연재 1화\n본문.'
   });
@@ -493,17 +485,17 @@ test('an author-only section ends at the next heading, not at a comment line ins
 });
 
 // 날짜 규칙 자체는 dates.test가 검사한다. 여기서는 조립이 파일 경로와 기준일을 규칙에 넘기는지 본다.
-test('assembly hands the date rules the file path and the build day', async () => {
-  const invalidVault = await makeVault({ ...files, '01_Slipbox/생각 B.md': files['01_Slipbox/생각 B.md'].replace('created: 2026-09-02', 'created: 2026-02-30') });
+test('assembly hands the date rules the file path and the build day', async (t) => {
+  const invalidVault = await makeVault(t, { ...files, '01_Slipbox/생각 B.md': files['01_Slipbox/생각 B.md'].replace('created: 2026-09-02', 'created: 2026-02-30') });
   await assert.rejects(assembleGarden({ vaultRoot: invalidVault, config }), /created[\s\S]*2026-02-30[\s\S]*01_Slipbox\/생각 B\.md/);
-  const vaultRoot = await makeVault(files);
+  const vaultRoot = await makeVault(t, files);
   await assert.rejects(assembleGarden({ vaultRoot, config, today: '2026-09-03' }), /created[\s\S]*2026-09-0[45]/);
   await assert.doesNotReject(assembleGarden({ vaultRoot, config, today: '2026-09-05' }));
 });
 
-test('blank optional YAML dates are accepted while blank created is rejected', async () => {
+test('blank optional YAML dates are accepted while blank created is rejected', async (t) => {
   const notePath = '01_Slipbox/생각 B.md';
-  const vaultRoot = await makeVault({ ...files, [notePath]: '---\ncreated: 2026-09-02\npublished:\nupdated:\n---\n# 생각 B\n공개 본문.' });
+  const vaultRoot = await makeVault(t, { ...files, [notePath]: '---\ncreated: 2026-09-02\npublished:\nupdated:\n---\n# 생각 B\n공개 본문.' });
   const garden = await assembleGarden({ vaultRoot, config, today: '2026-09-11' });
   const note = noteAt(garden, notePath);
   assert.equal(note.date, '2026-09-02');
@@ -514,8 +506,8 @@ test('blank optional YAML dates are accepted while blank created is rejected', a
 });
 
 // updated를 남기는 규칙(작성일보다 늦을 때만)은 dates.test가 검사한다. 여기서는 본문을 싣지 않는 외부 발행 글에서 조립이 수정일을 내보내지 않는지 본다.
-test('external articles never carry updated', async () => {
-  const vaultRoot = await makeVault({
+test('external articles never carry updated', async (t) => {
+  const vaultRoot = await makeVault(t, {
     ...files,
     '20_Projects/blog/외부 원문.md': '---\ncreated: 2026-09-06\npublished: 2026-09-07\nupdated: 2026-09-09\nstatus: published\nsource: https://www.nextree.io/external-post\npublication: Nextree 기술 블로그\nsummary: 외부 글 요약\n---\n# 외부 원문\n본문.'
   });
@@ -526,27 +518,27 @@ test('external articles never carry updated', async () => {
 // 없어도 되는 폴더는 Books뿐이다. 공개 폴더가 없거나 그 밖의 읽기 오류를 건너뛰면 공개할 노트가 조용히 사이트에서 빠진다.
 const rootIgnoresPermissions = process.getuid?.() === 0 && 'root는 파일 권한 검사를 받지 않는다';
 
-test('a missing books folder is skipped with a warning', async () => {
+test('a missing books folder is skipped with a warning', async (t) => {
   const withoutBooks = Object.fromEntries(Object.entries(files).filter(([file]) => !file.startsWith('30_Resources/References/Books/')));
-  const vaultRoot = await makeVault(withoutBooks);
+  const vaultRoot = await makeVault(t, withoutBooks);
   const garden = await assembleGarden({ vaultRoot, config });
   assert.deepEqual(garden.books, []);
 });
 
-test('a public folder listed in config.json but missing from the vault fails the build', async () => {
+test('a public folder listed in config.json but missing from the vault fails the build', async (t) => {
   // vault에서 폴더 이름만 바꿔도 그 폴더의 노트가 전부 빠진 사이트가 배포되지 않게 한다.
   const withoutSlipbox = Object.fromEntries(Object.entries(files).filter(([file]) => !file.startsWith('01_Slipbox/')));
-  const vaultRoot = await makeVault(withoutSlipbox);
+  const vaultRoot = await makeVault(t, withoutSlipbox);
   await assert.rejects(assembleGarden({ vaultRoot, config }), /Include path does not exist: 01_Slipbox/);
 });
 
-test('an include path that is a file fails the build instead of being skipped as missing', async () => {
-  const vaultRoot = await makeVault({ ...files, '00_Inbox/파일.md': '---\ncreated: 2026-09-01\n---\n# 파일' });
+test('an include path that is a file fails the build instead of being skipped as missing', async (t) => {
+  const vaultRoot = await makeVault(t, { ...files, '00_Inbox/파일.md': '---\ncreated: 2026-09-01\n---\n# 파일' });
   await assert.rejects(assembleGarden({ vaultRoot, config: { ...config, include: [...config.include, { path: '00_Inbox/파일.md', mode: 'all' }] } }), { code: 'ENOTDIR' });
 });
 
-test('an unreadable folder inside a public folder fails the build instead of dropping the whole folder', { skip: rootIgnoresPermissions }, async () => {
-  const vaultRoot = await makeVault({ ...files, '01_Slipbox/잠긴 폴더/노트.md': '---\ncreated: 2026-09-01\n---\n# 노트' });
+test('an unreadable folder inside a public folder fails the build instead of dropping the whole folder', { skip: rootIgnoresPermissions }, async (t) => {
+  const vaultRoot = await makeVault(t, { ...files, '01_Slipbox/잠긴 폴더/노트.md': '---\ncreated: 2026-09-01\n---\n# 노트' });
   const locked = path.join(vaultRoot, '01_Slipbox/잠긴 폴더');
   await fs.chmod(locked, 0o000);
   try {
@@ -556,8 +548,8 @@ test('an unreadable folder inside a public folder fails the build instead of dro
   }
 });
 
-test('an unreadable book fails the build instead of leaving the shelf half full', { skip: rootIgnoresPermissions }, async () => {
-  const vaultRoot = await makeVault({ ...files, '30_Resources/References/Books/잠긴 책.md': '---\ntitle: 잠긴 책\ncreated: 2026-08-01\n---\n# 잠긴 책' });
+test('an unreadable book fails the build instead of leaving the shelf half full', { skip: rootIgnoresPermissions }, async (t) => {
+  const vaultRoot = await makeVault(t, { ...files, '30_Resources/References/Books/잠긴 책.md': '---\ntitle: 잠긴 책\ncreated: 2026-08-01\n---\n# 잠긴 책' });
   const locked = path.join(vaultRoot, '30_Resources/References/Books/잠긴 책.md');
   await fs.chmod(locked, 0o000);
   try {
@@ -567,10 +559,10 @@ test('an unreadable book fails the build instead of leaving the shelf half full'
   }
 });
 
-test('series hubs keep their own reviewed thumbnail without inheriting an episode image', async () => {
+test('series hubs keep their own reviewed thumbnail without inheriting an episode image', async (t) => {
   const hub = (name: string, thumbnail = '') => `---\ncreated: 2026-01-01\ntype: series\n${thumbnail}\n---\n# ${name}`;
   const episode = (name: string) => `---\ncreated: 2026-01-02\npublished: 2026-01-02\nstatus: published\nseries: ${name}\nthumbnail: "[[_attachments/reviewed.svg]]"\n---\n# ${name} 첫 편`;
-  const vaultRoot = await makeVault({ ...files,
+  const vaultRoot = await makeVault(t, { ...files,
     '20_Projects/blog/표지 있는 연재.md': hub('표지 있는 연재', 'thumbnail: "[[_attachments/reviewed.svg]]"\nthumbnail_style: soft'),
     '20_Projects/blog/표지 있는 연재 첫 편.md': episode('표지 있는 연재'),
     '20_Projects/blog/표지 없는 연재.md': hub('표지 없는 연재'),
@@ -587,7 +579,7 @@ test('series hubs keep their own reviewed thumbnail without inheriting an episod
 // 빈칸이나 분류와 같은 말이 찍히므로, 빌드 로그로 알려 vault에서 태그를 손보게 한다. 빌드는 멈추지 않는다.
 test('a development note whose first public tag is 개발/도구 or missing is reported in the build log', async (t) => {
   const warn = t.mock.method(console, 'warn', () => {});
-  const vaultRoot = await makeVault({
+  const vaultRoot = await makeVault(t, {
     ...files,
     [`${dev}/Concepts/연결된 개념.md`]: '---\ncreated: 2026-09-04\nsummary: 개념 요약\ntags:\n  - 개발/도구\n  - 개발/Astro\n---\n# 연결된 개념\n[[생각 A]]에서 출발.',
     [`${dev}/Concepts/고립된 개념.md`]: '---\ncreated: 2026-09-05\nsummary: 고립 요약\n---\n# 고립된 개념\n링크 없음.'
@@ -600,22 +592,18 @@ test('a development note whose first public tag is 개발/도구 or missing is r
 });
 
 
-test('configured blog outline folder never enters public output even with publication metadata', async () => {
+test('configured blog outline folder never enters public output even with publication metadata', async (t) => {
   const siteConfig = JSON.parse(await fs.readFile(new URL('../config.json', import.meta.url), 'utf8'));
   const outlinePaths = [
     '20_Projects/blog/_outlines/작업 기준.md',
     '20_Projects/blog/_outlines/nested/관리 허브.md'
   ];
-  const vaultRoot = await makeVault({ ...files,
+  const vaultRoot = await makeVault(t, { ...files,
     [outlinePaths[0]]: '---\ncreated: 2026-09-01\nstatus: published\nsummary: OUTLINE_SUMMARY_SENTINEL\n---\n# 작업 기준\nOUTLINE_BODY_SENTINEL',
     [outlinePaths[1]]: '---\ncreated: 2026-09-01\ntype: series\nstatus: active\n---\n# 관리 허브\nOUTLINE_SERIES_SENTINEL'
   });
-  try {
-    const garden = await assembleGarden({ vaultRoot, config: { ...config, exclude: siteConfig.exclude } });
-    assert.ok(garden.notes.some((note) => note.path === '20_Projects/blog/공개 글.md'));
-    assert.ok(garden.notes.every((note) => !outlinePaths.includes(note.path)));
-    assert.doesNotMatch(JSON.stringify(garden), /OUTLINE_(SUMMARY|BODY|SERIES)_SENTINEL/);
-  } finally {
-    await fs.rm(vaultRoot, { recursive: true, force: true });
-  }
+  const garden = await assembleGarden({ vaultRoot, config: { ...config, exclude: siteConfig.exclude } });
+  assert.ok(garden.notes.some((note) => note.path === '20_Projects/blog/공개 글.md'));
+  assert.ok(garden.notes.every((note) => !outlinePaths.includes(note.path)));
+  assert.doesNotMatch(JSON.stringify(garden), /OUTLINE_(SUMMARY|BODY|SERIES)_SENTINEL/);
 });
