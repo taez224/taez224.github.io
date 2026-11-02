@@ -274,7 +274,10 @@ test('closing the sheet on a phone moves the map back to where it was before the
 // 영역 이름을 가렸다. 첫 화면과 노드를 하나씩 고른 화면에서 보이는 글자끼리 겹치지 않고 조작 아래로 들어가지 않는지 잰다.
 // 고른 제목 아래 깔린 영역 이름은 흐려지므로(is-under-label) 겹침에서 뺀다.
 // 제목을 점 아래에 두었더니 허브 고리와 입구 노드 후광, 선택 링이 제목에 걸렸으므로 고리 선도 함께 잰다.
+// 노드를 고르면 시트 위로 지도를 옮긴다. 움직임 줄이기에서는 바로 옮기므로 이동이 끝난 화면을 잰다.
+// 이동 도중에 재면 CPU가 빠를 때만 옮기기 전 화면을 잡아, 도착한 화면의 겹침을 놓친다.
 test('map labels stay apart and clear of the zoom controls on a phone', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   const clashes = async () => [...await page.evaluate(() => {
     const boxes = [...document.querySelectorAll<SVGTextElement>('.map-stage svg text:not(.is-under-label)')]
       .filter((text) => text.textContent!.trim() && text.getBoundingClientRect().width > 0 && getComputedStyle(text).visibility === 'visible')
