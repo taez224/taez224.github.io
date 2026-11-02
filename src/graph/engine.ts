@@ -734,7 +734,10 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
     select(id: string | null) { state.selected = id && byId.has(id) ? id : null; render(); },
     setFilter({ topics = state.topics, hubsOnly = state.hubsOnly }: GraphFilter = {}) { state.topics = topics; state.hubsOnly = hubsOnly; refreshRegionStates(); drawEdges(); refreshNodeStates(); drawLabels(); },
     view: () => ({ ...state.transform }),
-    moveTo(target: Transform) { animateTo(target); },
+    // 제목 자리는 보이는 범위 안에서 고른다. 옮기기 전 화면에서 정한 자리를 그대로 두면, 시트 때문에 밀린 지도에서
+    // 화면 밖에 있던 노드를 고를 때 위 자리를 못 쓰고 아래에 억지로 둔 제목이 도착한 화면에서 옆 노드 고리에 걸렸다.
+    // fit처럼 이동 중에는 자리를 유지하고 도착한 화면에서 한 번 정리한다.
+    moveTo(target: Transform) { animateTo(target, 320, drawLabels); },
     fit(animate = false) {
       const target = fitTransform(positions, size());
       fitScale = target.scale;
