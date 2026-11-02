@@ -21,8 +21,8 @@
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",
     "@resvg/resvg-js": "^2.6.2",
-    "@tanstack/highlight": "^1.1.0",
-    "astro": "^7.4.2",
+    "@tanstack/highlight": "^1.2.0",
+    "astro": "^7.4.4",
     "markdown-it": "^15.0.3",
     "markdown-it-footnote": "^4.0.0",
     "mermaid": "^12.2.0",
@@ -33,7 +33,7 @@
     "@astrojs/check": "^0.9.12",
     "@google/design.md": "0.4.0",
     "@playwright/test": "^1.64.1",
-    "@types/node": "^26.6.5",
+    "@types/node": "^26.6.6",
     "@types/sanitize-html": "^2.16.2",
     "typescript": "^6.0.3"
   }
