@@ -14,6 +14,7 @@ export default defineConfig({
       { name: `mobile-${colorScheme}`, ...only, use: { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, colorScheme: colorScheme as 'light' | 'dark' } }
     ];
   }),
+  // 설정이 없으면 Playwright가 서버를 SIGKILL로 끝내 server.ts가 임시 vault와 빌드를 지우지 못하고 저장소 안에 남긴다.
   webServer: { command: 'node tests/browser/server.ts', cwd: '../..', url: 'http://127.0.0.1:4398',
-    reuseExistingServer: false, timeout: 120_000 }
+    reuseExistingServer: false, timeout: 120_000, gracefulShutdown: { signal: 'SIGTERM', timeout: 5_000 } }
 });
