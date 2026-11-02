@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import vm from 'node:vm';
 import { stripTypeScriptTypes } from 'node:module';
+import { ruleBody } from './css-blocks.ts';
 
 // 각주 판 스크립트를 Node와 같은 타입 제거 방식으로 읽는다. code-block.test.ts와 같은 방식이다.
 const source = stripTypeScriptTypes(await fs.readFile(new URL('../src/scripts/footnotes.ts', import.meta.url), 'utf8')).replace(/^import .*;\s*/m, '');
@@ -142,7 +143,8 @@ test('browsers that cannot pin the panel to the number keep the plain links', ()
 
 test('footnote styles keep the sizes DESIGN.md documents', async () => {
   const css = await fs.readFile(new URL('../src/styles/body.css', import.meta.url), 'utf8');
-  const rule = (selector: string) => css.match(new RegExp(`\\n${selector.replace(/[.()[\]:,*+]/g, '\\$&')} \\{([^}]*)\\}`))?.[1] ?? '';
+  // 선택자를 찾지 못하면 ruleBody가 예외를 던진다. 빈 문자열로 넘기면 아래 doesNotMatch가 아무것도 검사하지 않고 통과한다.
+  const rule = (selector: string) => ruleBody(css, selector);
   // 번호의 누르는 영역은 위아래로만 넓힌다. 가로로 넓히면 붙어 있는 다른 번호를 덮는다.
   assert.match(rule('.body .footnote-ref a::before'), /inset: -\d+px 0 -\d+px;/);
   assert.doesNotMatch(rule('.body .footnote-ref a'), /min-width/, '번호는 앞 글자에 붙는다');
