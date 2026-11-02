@@ -2,7 +2,8 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: '.', testMatch: '**/*.spec.ts', fullyParallel: true,
-  workers: 2, retries: process.env.CI ? 1 : 0,
+  // GitHub의 공개 저장소 러너는 4코어다. 로컬은 다른 작업과 함께 돌므로 그대로 둔다.
+  workers: process.env.CI ? 4 : 2, retries: process.env.CI ? 1 : 0,
   reporter: 'list', outputDir: '../../test-results',
   use: { baseURL: 'http://127.0.0.1:4398', browserName: 'chromium', trace: 'retain-on-failure' },
   // 어두운 화면 CSS는 칠하는 방식만 바꾸므로 배치와 입력 동작은 밝은 화면에서 한 번 본다.
