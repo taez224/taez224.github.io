@@ -14,7 +14,7 @@ test('search text excludes Obsidian comments but retains literal code examples',
 test('search text strips markdown syntax but keeps heading and link text', () => {
   const body = `# 제목\n\n> [!bug] 증상\n> 배포가 **멈춘다**.\n\n## 원인\n\n[[다른 노트|별칭]]과 [[세 번째 노트]]를 보라. [문서](https://x.y)\n\n\`\`\`java\nSEARCHABLE_CODE\n\`\`\`\n\n- 항목 \`inline\`\n\n| a | b |\n|---|---|\n| 1 | 2 |`;
   const text = searchText(body);
-  assert.match(text, /제목 증상 배포가 멈춘다\. 원인 별칭과 세 번째 노트를 보라\. 문서 SEARCHABLE_CODE 항목 inline a b 1 2/);
+  assert.equal(text, '제목 · 증상 배포가 멈춘다. 원인 · 별칭과 세 번째 노트를 보라. 문서 · SEARCHABLE_CODE · 항목 inline · a · b · 1 · 2');
   assert.doesNotMatch(text, /\[\[|\*\*|```|\|---/);
 });
 
@@ -44,7 +44,7 @@ test('search text keeps single spacing around emphasis markers inside a sentence
 });
 
 test('search text drops prose block ids but keeps code block and inline code content', () => {
-  assert.equal(searchText('문장 ^prose-id\n\n```md\n코드 ^code-id\n```\n\n`인라인 ^inline-id`'), '문장 코드 ^code-id 인라인 ^inline-id');
+  assert.equal(searchText('문장 ^prose-id\n\n```md\n코드 ^code-id\n```\n\n`인라인 ^inline-id`'), '문장 · 코드 ^code-id · 인라인 ^inline-id');
 });
 
 test('search text keeps image alt text without Obsidian size suffixes', () => {
@@ -52,12 +52,19 @@ test('search text keeps image alt text without Obsidian size suffixes', () => {
 });
 
 test('search text drops task list markers but keeps escaped ones', () => {
-  assert.equal(searchText('- [ ] 할 일\n- [x] 한 일\n- \\[x\\] 글자'), '할 일 한 일 [x] 글자');
+  assert.equal(searchText('- [ ] 할 일\n- [x] 한 일\n- \\[x\\] 글자'), '할 일 · 한 일 · [x] 글자');
+});
+
+// 검색 결과의 발췌는 이 텍스트에서 잘라 낸다. 문장 부호 없는 절 제목과 목록 항목이 다음 글과 한 문장처럼 붙지 않게,
+// 그런 블록 뒤에만 가운데 점을 둔다. 문장으로 끝난 문단 뒤에는 공백만 둔다.
+test('search text marks where a heading or list item ends but joins finished sentences with a space', () => {
+  const body = '사람을 이해하는 데 필요한 것들이다.\n\n## 채용과 위임\n\n- 위임은 사람이 아니라 업무 단위로 판단해야 한다\n- 채용은 "실제 판단"을 봐야 한다.\n\n다음과 같다:\n\n- 항목';
+  assert.equal(searchText(body), '사람을 이해하는 데 필요한 것들이다. 채용과 위임 · 위임은 사람이 아니라 업무 단위로 판단해야 한다 · 채용은 "실제 판단"을 봐야 한다. 다음과 같다: 항목');
 });
 
 // 요약 발췌는 검색 텍스트와 같은 파싱에서 나오되, 본문 흐름의 제목과 코드 블록을 뺀다.
 test('the summary excerpt drops headings and code blocks but keeps inline code', () => {
-  assert.deepEqual(analyzeText('## 제목\n\n본문 `인라인`\n\n```\n코드\n```'), { bodyText: '제목 본문 인라인 코드', excerptText: '본문 인라인' });
+  assert.deepEqual(analyzeText('## 제목\n\n본문 `인라인`\n\n```\n코드\n```'), { bodyText: '제목 · 본문 인라인 · 코드', excerptText: '본문 인라인' });
 });
 
 test('the summary excerpt omits fenced and tilde code that search text keeps', () => {

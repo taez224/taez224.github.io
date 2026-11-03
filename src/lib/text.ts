@@ -49,7 +49,21 @@ export function analyzeText(body: string): TextAnalysis {
     if (token.type === 'heading_close' && token.level === 0) skippingHeading = false;
   }
   const join = (parts: string[]) => parts.join(' ').replace(/\s+/g, ' ').trim();
-  return { bodyText: join(full), excerptText: join(excerpt) };
+  return { bodyText: joinBlocks(full), excerptText: join(excerpt) };
+}
+
+// 검색 텍스트는 블록(문단·절 제목·목록 항목·표 칸·코드)을 공백만으로 이으면 문장 부호 없는 제목과 항목이 다음 글과 붙어
+// 검색 결과의 발췌가 한 문장처럼 읽혔다("채용과 위임 위임은 사람이 아니라…"). 앞 블록이 문장 부호로 끝나지 않으면
+// 가운데 점으로 경계를 남긴다. 요약 발췌는 화면에 문장으로 보이므로 그대로 공백으로 잇는다.
+const SENTENCE_END = /[.!?…:;。！？][)"'”’」』\]]*$/;
+function joinBlocks(parts: readonly string[]): string {
+  let joined = '';
+  for (const raw of parts) {
+    const part = raw.replace(/\s+/g, ' ').trim();
+    if (!part) continue;
+    joined = joined ? `${joined}${SENTENCE_END.test(joined) ? ' ' : ' · '}${part}` : part;
+  }
+  return joined;
 }
 
 // 읽는 시간(분). 한글·한자·가나는 음절(글자) 단위로 분당 450자, 영문·숫자는 단어 단위로 분당 200단어로 센다.
