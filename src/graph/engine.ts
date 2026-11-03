@@ -84,7 +84,8 @@ export function zoomedNodeScale(scale: number, fitScale: number): number {
 }
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
-const LAYOUT = { width: 1000, height: 640 };
+// 상자가 아직 크기를 받지 못했을 때(폭·높이 0) 대신 쓰는 크기. 지도 페이지도 첫 배치에 같은 값을 쓴다.
+export const LAYOUT = { width: 1000, height: 640 };
 
 // 범례 필터(주제 집합, 허브만)에 걸려 흐려질 노드인지. 선택된 노드는 호출 쪽에서 제외한다.
 export function isFilteredOut(node: Pick<GraphNode, 'topic' | 'type'> | undefined, { topics = null, hubsOnly = false }: GraphFilter = {}) {

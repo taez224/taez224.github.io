@@ -535,3 +535,34 @@ test('the icon control fits the map after zooming and keeps separate button targ
     if (i > 0) expect(boxes[i].x).toBeGreaterThanOrEqual(boxes[i - 1].right);
   }
 });
+
+// 지도 스크립트가 무대를 재는 순간 폭이나 높이가 0이면(창이 막 열려 아직 크기가 없을 때) 그 크기로 배치한 좌표가 모두 NaN이
+// 되었고, 창 크기가 바뀌어도 배치는 다시 하지 않아 노드가 끝까지 한 점에 겹쳐 있었다. 스크립트보다 먼저 무대의 한 변을 0으로 둔다.
+// 높이만 0이었다가 돌아오면 폭은 그대로라, 폭만 보고 다시 맞추면 임시 크기에 맞춘 지도가 무대 밖으로 넘쳤다.
+for (const side of ['width', 'height'] as const) {
+  test(`a map opened before its stage has a ${side} fits the stage once it grows`, async ({ page }) => {
+    const rule = side === 'width' ? 'width: 0 !important;' : 'height: 0 !important; min-height: 0 !important;';
+    await page.route((url) => url.pathname === '/map/', async (route) => {
+      const response = await route.fetch();
+      await route.fulfill({ response, body: (await response.text()).replace('<head>', `<head><style id="zero-stage">.graph-box { ${rule} }</style>`) });
+    });
+    await page.goto('/map/');
+    await page.evaluate(() => { document.getElementById('zero-stage')!.remove(); window.dispatchEvent(new Event('resize')); });
+    const drawn = () => page.evaluate(() => {
+      const svg = document.querySelector<SVGSVGElement>('svg[data-map]')!;
+      const xs = [...svg.querySelectorAll('.node')].map((node) => Math.round(node.getBoundingClientRect().x));
+      return {
+        transform: svg.querySelector('g')!.getAttribute('transform'),
+        spread: new Set(xs).size,
+        nodes: xs.length,
+        // 그림 좌표(viewBox)가 임시 크기로 남으면 무대에 맞춰 줄어 그려져 제목이 13px보다 작아진다.
+        viewBox: [svg.viewBox.baseVal.width, svg.viewBox.baseVal.height],
+        stage: [svg.clientWidth, svg.clientHeight]
+      };
+    });
+    await expect.poll(async () => (await drawn()).transform).not.toContain('NaN');
+    const { spread, nodes, viewBox, stage } = await drawn();
+    expect(spread, '노드가 한 점에 겹치지 않고 펼쳐진다').toBeGreaterThan(nodes / 2);
+    expect(viewBox, '그림 좌표가 실제 무대 크기와 같다').toEqual(stage);
+  });
+}
