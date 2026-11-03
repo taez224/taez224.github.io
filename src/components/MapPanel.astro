@@ -1,5 +1,6 @@
 ---
 import type { GardenGraphNode } from '../lib/content-model.ts';
+import '../styles/maturity.css';
 interface Props { startpoints: GardenGraphNode[]; hubs?: GardenGraphNode[] }
 const { startpoints, hubs = [] } = Astro.props;
 ---
@@ -19,6 +20,9 @@ const { startpoints, hubs = [] } = Astro.props;
   .map-panel > .panel-close { display: none; }
   .sheet-grip { display: none; }
   .panel-head { display: flex; flex-direction: column; gap: 12px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+  /* 패널 메타 줄은 글자 줄이라 성숙도 버튼이 기준선에 맞춰지면 줄이 2px 남짓 높아진다. 줄 위에 맞추면 버튼 높이가 줄 높이와 같아
+     줄이 그대로이고, 버튼의 글자도 앞뒤 글자와 같은 높이에 놓인다. */
+  .panel-head .meta .maturity { vertical-align: top; }
   .panel-head h2 { margin: -6px 0 0; font-size: var(--t-section); line-height: 1.45; }
   .panel-topics { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: var(--t-meta); color: var(--muted); }
   .panel-topics span { display: inline-flex; align-items: center; gap: 6px; }

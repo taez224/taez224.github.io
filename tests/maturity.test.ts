@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MATURITY_STAGES, maturityOf } from '../src/lib/maturity.ts';
+import { MATURITY_STAGES, maturityOf, maturityButtonHtml, maturityNoteHtml } from '../src/lib/maturity.ts';
 import { ICON_GRIDS } from '../src/lib/pixel-icons.ts';
 
 test('a slipbox note shows its maturity under the reader-facing garden name', () => {
@@ -22,4 +22,19 @@ test('every maturity stage draws a 14-cell icon so it sits on the meta line at o
       assert.equal(ICON_GRIDS[name].length, 14, `${stage.label}: ${name}`);
     }
   }
+});
+
+test('the note page and the map panel draw one maturity button and one set of meanings', () => {
+  const [seedling, growing] = MATURITY_STAGES;
+  const button = maturityButtonHtml(seedling);
+  assert.match(button, /popovertarget="maturity-note"/);
+  assert.match(button, /aria-label="노트 성숙도: 새싹"/);
+  assert.match(button, /class="frame-2"/, '새싹은 설명을 열면 바뀌는 장면을 함께 싣는다');
+  assert.doesNotMatch(maturityButtonHtml(growing), /frame-2/);
+  const note = maturityNoteHtml(growing);
+  assert.match(note, /^<div id="maturity-note" class="maturity-note" popover>/);
+  assert.equal(note.match(/<li/g)?.length, MATURITY_STAGES.length);
+  assert.equal(note.match(/aria-current="true"/g)?.length, 1);
+  assert.match(note, /aria-current="true"><svg[^>]*>.*?<\/svg><b>묘목<\/b>/);
+  for (const stage of MATURITY_STAGES) assert.ok(note.includes(stage.meaning), stage.label);
 });
