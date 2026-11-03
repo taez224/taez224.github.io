@@ -19,4 +19,9 @@ const title = frontmatter.title;
   .intro-body :global(h2) { margin: 44px 0 18px; font-size: var(--t-h2); line-height: 1.4; }
   .intro-body :global(p) { margin: 0 0 18px; }
   .intro-body :global(a) { text-decoration: underline; text-underline-offset: 4px; }
+  .intro-body :global(.reading-guide) { margin: 24px 0; padding: 0; list-style: none; }
+  .intro-body :global(.reading-guide li) { margin: 0; }
+  .intro-body :global(.reading-guide li + li) { margin-top: 22px; }
+  .intro-body :global(.reading-guide a) { font-size: var(--t-body); font-weight: 600; line-height: 1.65; }
+  .intro-body :global(.reading-guide p) { margin: 4px 0 0; font-size: var(--t-side); line-height: 1.65; color: var(--muted); }
 </style>
