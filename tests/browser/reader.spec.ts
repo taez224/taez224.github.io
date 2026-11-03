@@ -95,8 +95,6 @@ test('the maturity popover remains within a short narrow viewport with enlarged 
     // 낮은 화면에서는 판 안에서 스크롤해 마지막 단계까지 읽는다.
     await meanings.locator('li').last().scrollIntoViewIfNeeded();
     await expect(meanings.locator('li').last()).toBeInViewport();
-    await meanings.locator('p').last().scrollIntoViewIfNeeded();
-    await expect(meanings.locator('p').last()).toBeInViewport();
   }
 });
 

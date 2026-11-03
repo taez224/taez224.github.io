@@ -1,0 +1,28 @@
+/* 노트 성숙도 버튼과 설명 판. 노트 페이지와 지도 패널의 메타 줄이 같은 마크업(src/lib/maturity.ts)과 이 규칙을 함께 쓴다. */
+
+/* 성숙도 버튼은 메타 줄의 다른 항목처럼 보조색 글자로 둔다. 도안은 격자 한 칸이 1px이 되도록 격자 크기 그대로 보인다. */
+.maturity { display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: none; color: var(--muted); font: inherit; cursor: pointer; anchor-name: --maturity; }
+.maturity svg { display: block; width: 14px; height: 14px; flex: none; }
+.maturity[aria-expanded="true"] { color: var(--ink); }
+@media (hover: hover) { .maturity:hover { color: var(--ink); } }
+/* 설명 상자가 열려 있는 동안 새싹은 떡잎이 벌어진 장면으로 끊어서 바뀐다. 독자가 누른 반응이고, 움직임 줄이기에서는 바꾸지 않는다. */
+.maturity .frame-2 { display: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .maturity[aria-expanded="true"] .frame-1 { display: none; }
+  .maturity[aria-expanded="true"] .frame-2 { display: inline; }
+}
+/* 제목을 밀어내지 않는 설명 판이다. 앵커 배치를 지원하면 버튼 아래에 붙이고, 공간이 모자라면 위로 뒤집는다.
+   지원하지 않는 브라우저에서는 기본 팝오버처럼 화면 가운데에 둔다. 세 단계 중 현재 단계만 먹색으로 읽힌다. */
+.maturity-note { display: none; position: fixed; inset: 0; width: min(480px, calc(100vw - 32px)); height: fit-content; max-height: min(65dvh, 320px); margin: auto; overflow-y: auto; padding: 12px 14px; border: 1px solid var(--overlay-line); border-radius: 6px; background: var(--paper-strong); color: var(--muted); font-size: var(--t-side); line-height: 1.6; }
+.maturity-note:popover-open { display: block; }
+@supports (position-area: bottom span-all) and (justify-self: anchor-center) {
+  .maturity-note { position-anchor: --maturity; position-area: bottom span-all; justify-self: anchor-center; position-try-fallbacks: flip-block, --maturity-center; inset: auto; margin: 6px 16px; }
+}
+/* 큰 글자·낮은 화면에서 위아래 어느 쪽에도 들어가지 않으면 화면 안에 두고 판 안에서 스크롤한다. */
+@position-try --maturity-center { position-area: none; inset: 16px; margin: auto; }
+.maturity-note p { margin: 0 0 8px; }
+.maturity-note ol { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.maturity-note li { display: grid; grid-template-columns: 14px auto minmax(0, 1fr); align-items: center; gap: 4px 8px; }
+.maturity-note li svg { display: block; width: 14px; height: 14px; }
+.maturity-note b { font-weight: 600; }
+.maturity-note li[aria-current="true"] { color: var(--ink); }

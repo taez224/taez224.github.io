@@ -1,16 +1,19 @@
 import type { GardenGraphNode, PanelData } from '../lib/content-model.ts';
 import type { InlineGraphData } from '../lib/graph-data.ts';
-type MapData = InlineGraphData<GardenGraphNode, 'path' | 'mapKey'> & PanelData;
+type MapData = InlineGraphData<GardenGraphNode, 'path' | 'mapKey' | 'kind' | 'status'> & PanelData;
 type PanelModel = ReturnType<typeof panelModel>;
 type PanelReference = PanelModel['outgoing'][number] & { nodeId?: string; isHub?: boolean };
-type DecoratedPanel = Omit<PanelModel, 'outgoing' | 'incoming'> & { outgoing: PanelReference[]; incoming: PanelReference[] };
+type DecoratedPanel = Omit<PanelModel, 'outgoing' | 'incoming'> & { outgoing: PanelReference[]; incoming: PanelReference[]; maturity: MaturityStage | null };
 
+import type { MaturityStage } from '../lib/maturity.ts';
 import { createGraph, isFilteredOut } from '../graph/engine.ts';
 import { layoutGraph, ATLAS_LAYOUT } from '../graph/layout.ts';
 import { panelModel } from '../lib/panel.ts';
 import { escapeHtml as escape } from '../lib/format.ts';
 import { REF_ICONS } from '../lib/ref-icons.ts';
+import { maturityOf, maturityButtonHtml, maturityNoteHtml, MATURITY_NOTE_ID } from '../lib/maturity.ts';
 import { loopTabFocus } from './focus-loop.ts';
+import { bindMaturity } from './maturity.ts';
 
 const page = document.querySelector<HTMLElement>('.map-page')!;
 const svg = document.querySelector<SVGSVGElement>('svg[data-map]')!;
@@ -25,14 +28,18 @@ const { out: OUT, in: IN } = REF_ICONS;
 const list = (icon: string, label: string, items: PanelReference[]) => items.length ? `<section class="list-block"><div class="meta">${icon}${label}<span class="count">${items.length}</span></div><ul class="side-list">${items.map((i) => `<li><a href="${escape(i.url)}"${i.nodeId ? ` data-node="${escape(i.nodeId)}"` : ''}>${i.isHub ? '<i class="hub-mark" aria-hidden="true"></i>' : ''}${escape(i.title)}</a></li>`).join('')}</ul></section>` : '';
 
 // 긴 참조 목록도 따로 스크롤하지 않고 패널 전체 스크롤로 읽으므로 목록마다 높이 제한과 흐림을 두지 않는다.
+// 생각 노트의 성숙도는 노트 페이지와 같은 버튼으로 메타 줄의 종류 다음에 둔다. 지도는 연결을 살피는 화면이라 뜻은 눌렀을 때만 연다.
+// 다른 노드를 고르면 패널을 새로 그리므로 열려 있던 설명 판도 함께 사라진다.
 function renderPanel(model: DecoratedPanel) {
   body.innerHTML = `<div class="panel-head">
-    <div class="meta">${escape(model.kind)}${model.isHub ? ' · <i class="hub-mark" aria-hidden="true"></i>허브' : ''}${model.date ? ` · ${model.date}` : ''}</div>
+    <div class="meta">${escape(model.kind)}${model.maturity ? ` · ${maturityButtonHtml(model.maturity)}` : ''}${model.isHub ? ' · <i class="hub-mark" aria-hidden="true"></i>허브' : ''}${model.date ? ` · ${model.date}` : ''}</div>
+    ${model.maturity ? maturityNoteHtml(model.maturity) : ''}
     <h2 class="display">${escape(model.title)}</h2>
     ${model.topics.length ? `<div class="panel-topics">${model.topics.map((t) => `<span><i style="background:${t.color}"></i>${escape(t.name)}</span>`).join('')}</div>` : ''}
     ${model.summary ? `<p class="panel-summary">${escape(model.summary)}</p>` : ''}
     <a class="btn small" href="${escape(model.url)}" style="align-self:flex-start;margin-top:4px">노트 읽기</a>
   </div><div class="panel-lists">${list(OUT, '참조', model.outgoing)}${list(IN, '역참조', model.incoming)}</div>`;
+  bindMaturity(body);
 }
 
 try {
@@ -57,11 +64,21 @@ const header = document.querySelector('.site-header');
 // MapPanel.astro의 시트 미디어 쿼리와 같아야 한다. 어긋나면 시트가 아닌데 대화상자로 가두거나 그 반대가 된다.
 const narrow = window.matchMedia('(max-width: 1000px)');
 let lastFocus: HTMLElement | SVGElement | null = null;
+// 열려 있는 성숙도 설명 판. 버튼의 aria-expanded는 비동기 toggle 이벤트로 맞추므로 연 직후에는 아직 false일 수 있어 판의 상태를 직접 읽는다.
+// :popover-open은 팝오버를 지원하는 브라우저에서만 묻는다. 지원하지 않으면 선택자 자체가 예외를 던진다.
+const openMaturityNote = () => {
+  const note = document.getElementById(MATURITY_NOTE_ID);
+  return note && typeof note.hidePopover === 'function' && note.matches(':popover-open') ? note : null;
+};
 function syncSheet() {
   const open = narrow.matches && 'open' in panel.dataset;
   if (backdrop) backdrop.hidden = !open;
   // 닫힌 시트는 화면 밖으로 밀려 있을 뿐이라 inert로 포커스·접근성 트리에서도 뺀다. 데스크톱 패널은 항상 보이므로 그대로.
-  panel.toggleAttribute('inert', narrow.matches && !open);
+  const hidden = narrow.matches && !open;
+  panel.toggleAttribute('inert', hidden);
+  // 성숙도 설명 판은 최상위 층에 떠 있어 패널을 밀어내거나 inert로 두어도 화면에 남는다.
+  // 넓은 화면에서 연 판이 창을 좁혀 닫힌 시트로 돌아갈 때 함께 닫는다.
+  if (hidden) openMaturityNote()?.hidePopover();
   if (open && !panel.hasAttribute('role')) {
     lastFocus = document.activeElement as HTMLElement | SVGElement | null;
     panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-modal', 'true'); panel.setAttribute('aria-label', '노트 정보');
@@ -117,7 +134,7 @@ function select(id: string | null, pushUrl: boolean, { open = true } = {}) {
   graph.select(id);
   const node = nodes.find((n) => n.id === id);
   // 공개 노트 레코드에는 type이 없어 허브 여부는 그래프 노드에서 가져온다.
-  if (node) { renderPanel({ ...withNodeIds(panelModel(notesByPath.get(node.path) ?? node, notesByPath, noteEdges, topicFold)), isHub: node.type === 'hub' }); if (open) panel.dataset.open = ''; }
+  if (node) { renderPanel({ ...withNodeIds(panelModel(notesByPath.get(node.path) ?? node, notesByPath, noteEdges, topicFold)), isHub: node.type === 'hub', maturity: maturityOf(node) }); if (open) panel.dataset.open = ''; }
   else { body.innerHTML = emptyPanel; delete panel.dataset.open; }
   if (pushUrl) {
     const params = new URLSearchParams();
@@ -187,8 +204,9 @@ document.addEventListener('keydown', (event) => {
   if (narrow.matches && 'open' in panel.dataset && !document.querySelector('dialog[open]')) loopTabFocus(event, panel);
 });
 // Escape: 시트가 열려 있으면 닫고, 아니면 선택을 푼다(빈 곳 클릭과 같다). 검색 다이얼로그의 Escape는 건드리지 않는다.
+// 성숙도 설명 판이 열려 있으면 그 Escape는 판만 닫는다. 판을 닫으려다 시트와 선택까지 잃지 않게 한다.
 document.addEventListener('keydown', (event) => {
-  if (event.key !== 'Escape' || document.querySelector('dialog[open]')) return;
+  if (event.key !== 'Escape' || document.querySelector('dialog[open]') || openMaturityNote()) return;
   if (narrow.matches && 'open' in panel.dataset) closeSheet();
   else if (graph.selected()) select(null, true);
 });
