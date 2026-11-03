@@ -21,7 +21,7 @@ const featured = byPath.get(garden.home.featured[0]);
 const featuredEntry = featured ? await getEntry('notes', `${kindPrefix(featured.kind)}/${featured.slug}`) : null;
 const thumbnail = featuredEntry?.data.thumbnail;
 const softThumbnail = featured?.thumbnailStyle === 'soft';
-// 최근 기록은 종류마다 최신 한 편에 최근 다듬은 노트를 더한 것이고 건수는 적지 않는다. 고르는 규칙은 recentActivity에 있고, 대표 글은 위에 따로 보이므로 뺀다.
+// 최근 기록은 쓰거나 다듬은 날짜가 최신인 다섯 편이다. 고르는 규칙은 recentActivity에 있고, 대표 글은 위에 따로 보이므로 뺀다.
 const recent = recentActivity(garden.notes, { kinds: ['slipbox', 'development', 'blog'], series: garden.blog.series, exclude: [featured?.path] })
   .map(({ note, when, tended }) => ({ note, when, tended, label: KINDS[note.kind].label, listUrl: withBase(parentLink(note).path) }));
 // 공개된 마지막 편이 가장 최근인 연재 하나. 없으면 이 영역을 그리지 않는다.
