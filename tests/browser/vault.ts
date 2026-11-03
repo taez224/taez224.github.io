@@ -77,6 +77,26 @@ tags:
 
 둘째 절의 설명이다.
 `,
+  // 첫 제목 앞 본문이 긴 노트. 절 없이 주장을 쓰고 끝에 출처와 연관된 노트만 두는 생각 노트의 모양이다.
+  // 지도에 노드를 더하지 않게 개발 노트로 두고, 홈 최근 기록을 흔들지 않게 날짜를 가장 이르게 둔다.
+  '30_Resources/Development/Concepts/앞말이 긴 노트.md': `---
+title: 앞말이 긴 노트
+slug: browser-long-intro
+created: 2025-01-01
+summary: 첫 제목 앞에 본문이 길게 이어진다.
+tags:
+  - 개발/설계
+---
+# 앞말이 긴 노트
+
+${'절 없이 이어지는 본문 문단이다.\n\n'.repeat(40)}## 출처
+
+출처 목록이다.
+
+## 연관된 노트
+
+연관된 노트 목록이다.
+`,
   '20_Projects/blog/external.md': `---
 title: 외부 발행 글
 slug: browser-external

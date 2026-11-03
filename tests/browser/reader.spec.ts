@@ -511,6 +511,34 @@ test('the table of contents follows scrolls that jump past headings', async ({ p
   await expect(current, '둘째 절 제목이 읽는 선 아래로 내려가도록 올라감').toHaveText('첫째 절');
 });
 
+// 첫 제목 앞 본문이 긴 노트는 첫 제목이 화면에 들어오기 전까지 어느 절도 가리키지 않는다. 절 없이 주장을 쓰고
+// 끝에 「출처」만 둔 생각 노트에서, 주장을 읽는 첫 화면부터 「출처」를 읽는 중으로 표시했다.
+test('the contents mark no section while the text before the first heading is read', async ({ page, isMobile }) => {
+  await page.goto('/dev/browser-long-intro/');
+  const first = page.getByRole('heading', { level: 2, name: '출처' });
+  if (isMobile) {
+    // 한 열 화면은 목차 버튼의 판에서 같은 규칙을 본다. 맨 위의 접힌 목차가 화면을 벗어나야 버튼이 나온다.
+    await page.evaluate(() => window.scrollTo({ top: 600, behavior: 'instant' }));
+    expect(await first.evaluate((heading) => heading.getBoundingClientRect().top > innerHeight), '전제: 첫 제목이 아직 화면 아래').toBe(true);
+    const button = page.locator('.toc-button');
+    await expect(button).toBeVisible();
+    await button.tap();
+    const sheet = page.locator('#toc-sheet');
+    await expect(sheet).toBeVisible();
+    await expect(sheet.locator('a[data-toc-target]')).toHaveCount(2);
+    await expect(sheet.locator('a[aria-current="location"]')).toHaveCount(0);
+    return;
+  }
+  const current = page.locator('.rail a[aria-current="location"]');
+  await expect(page.locator('.rail a[data-heading]')).toHaveCount(2);
+  await expect(current, '첫 화면').toHaveCount(0);
+  // 첫 제목이 화면 아래쪽에 막 들어오면 읽는 선을 지나지 않았어도 그 절을 가리킨다. 짧은 머리말 뒤 첫 절이 바로 오는 글과 같다.
+  await first.evaluate((heading) => window.scrollTo({ top: window.scrollY + heading.getBoundingClientRect().top - innerHeight + 80, behavior: 'instant' }));
+  await expect(current, '첫 제목이 화면에 들어옴').toHaveText('출처');
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+  await expect(current, '맨 위로').toHaveCount(0);
+});
+
 // 페이지 끝의 짧은 절은 끝까지 내려도 제목이 읽는 선에 닿지 못한다. 선 규칙만 따르면 목차에서 누른 항목 대신
 // 앞 절이 강조되어 피드백이 틀린다. 누르거나 주소로 가리킨 절은 독자가 다시 스크롤할 때까지 그대로 가리킨다.
 test('a table of contents entry chosen at the end stays marked until the reader scrolls again', async ({ page, isMobile }) => {
