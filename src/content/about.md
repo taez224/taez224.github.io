@@ -13,8 +13,8 @@ AI 시대를 살아가며 든 생각과 관심사를 담은 TaeZ의 **생각의 
 
 <ul class="reading-guide" role="list">
   <li>
-    <a href="/notes/learn-to-delegate-to-ai/">AI에게 일을 잘 맡기려면 무엇을 얼마나 알아야 할까</a>
-    <p>이 사이트를 AI와 함께 만들며 생각한 위임의 범위</p>
+    <a href="/notes/ai-generates-i-verify/">생성은 AI에게, 검증은 나에게</a>
+    <p>의심하고 다듬는 성향에 맞춘 AI 분업</p>
   </li>
   <li>
     <a href="/posts/fast-individual-slow-team/">AI로 빨라진 개인, 소화하지 못하는 팀</a>
