@@ -66,7 +66,7 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
         {featured.summaryIsExplicit && <p>{featured.summary}</p>}
       </div>
       {thumbnail && <a class:list={['featured-image', { 'is-soft': softThumbnail }]} href={featured.url} aria-label={featured.title}>
-        <Image src={thumbnail} alt="" width={560} widths={[280, 560, 840]} sizes="(max-width: 460px) calc(100vw - 40px), (max-width: 720px) 420px, (max-width: 1000px) 200px, 280px" format="webp" loading="eager" fetchpriority="high" decoding="sync" />
+        <Image src={thumbnail} alt="" width={560} widths={[280, 560, 840]} sizes="(max-width: 720px) 240px, (max-width: 1000px) 200px, 280px" format="webp" loading="eager" fetchpriority="high" decoding="sync" />
       </a>}
     </div>
   </section>}
@@ -92,7 +92,7 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
         {series.summary && <p>{series.summary}</p>}
       </div>
       {seriesThumbnail && <a class:list={['featured-image', { 'is-soft': softSeriesThumbnail }]} href={seriesUrl} aria-label={series.title}>
-        <Image src={seriesThumbnail} alt="" width={560} widths={[280, 560, 840]} sizes="(max-width: 460px) calc(100vw - 40px), (max-width: 720px) 420px, (max-width: 1000px) 200px, 280px" format="webp" loading="lazy" decoding="async" />
+        <Image src={seriesThumbnail} alt="" width={560} widths={[280, 560, 840]} sizes="(max-width: 720px) 240px, (max-width: 1000px) 200px, 280px" format="webp" loading="lazy" decoding="async" />
       </a>}
     </div>
   </section>}
@@ -217,7 +217,7 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
     .featured-meta { flex-direction: row; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; }
     .latest-series .series-meta { margin-top: 8px; }
     .featured-content.has-thumbnail { grid-template-columns: minmax(0, 1fr); gap: 24px; }
-    .featured-image { max-width: 420px; }
+    .featured-image { max-width: 240px; justify-self: center; }
     .recent li { padding: 16px 0; }
     .home-section:last-child { padding-bottom: 40px; }
 
