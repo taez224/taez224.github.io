@@ -271,11 +271,11 @@ test('keyboard footnote navigation returns to its reference without heading coll
 
 // 강조할 때 누르는 원(14px)에 판을 깔았더니 이웃 제목을 4~5px 덮었다. 지도처럼 점 테두리만 바꾸고, 칠한 원은 제목에 닿지 않는다.
 test('a linked neighbor in the small graph changes its dot outline without covering its title', { tag: BOTH_THEMES }, async ({ page }) => {
-  await page.goto('/notes/browser-start/');
+  await page.goto('/posts/browser-series-part/');
   const node = page.locator('.local-graph a.node').first();
   const dotStroke = () => node.evaluate((a) => getComputedStyle(a.querySelectorAll('circle')[1]).stroke);
   const before = await dotStroke();
-  await page.locator('.note-side .side-list a[href="/notes/browser-neighbor/"]').first().focus();
+  await page.locator('.series-hub').focus();
   await expect(node).toHaveClass(/is-linked/);
   expect(await dotStroke(), '점 테두리가 강조색으로 바뀐다').not.toBe(before);
   const covered = await node.evaluate((a) => {
@@ -339,12 +339,13 @@ test('the back link below an external article does not overlap its related notes
   expect(measured.hit).toBe(measured.href);
 });
 
-test('local graph shows up to six neighbors with two-line titles that never overlap', async ({ page }) => {
+test('local graph adapts neighbor count to its width and keeps two-line titles apart', async ({ page }) => {
   await page.goto('/notes/browser-many/');
-  await expect(page.locator('.local-graph a.node')).toHaveCount(6);
+  const width = await page.locator('.local-graph svg').evaluate(e => e.getBoundingClientRect().width);
+  await expect(page.locator('.local-graph a.node:not([hidden])')).toHaveCount(width < 280 ? 4 : 6);
   const note = page.locator('.local-graph > p.meta');
   await expect(note).toHaveCSS('font-weight', '400');
-  const boxes = await page.locator('.local-graph a.node text').evaluateAll((texts) => texts.map((text) => {
+  const boxes = await page.locator('.local-graph a.node:not([hidden]) text').evaluateAll((texts) => texts.map((text) => {
     const box = text.getBoundingClientRect();
     return { left: box.left, right: box.right, top: box.top, bottom: box.bottom, lines: text.querySelectorAll('tspan').length };
   }));
@@ -366,7 +367,7 @@ for (const width of [undefined, 320]) {
     await page.locator('.local-graph').scrollIntoViewIfNeeded();
     if (isMobile) await expect.poll(() => page.locator('.local-graph a.node circle.hit').first().evaluate((circle) => circle.getBoundingClientRect().width)).toBeGreaterThanOrEqual(43.99);
     const measured = await page.locator('.local-graph').evaluate((graph) => {
-      const nodes = [...graph.querySelectorAll('a.node')];
+      const nodes = [...graph.querySelectorAll('a.node:not([hidden])')];
       const titleHits = nodes.map((a) => {
         const box = a.querySelector('text')!.getBoundingClientRect();
         // 두 줄 제목의 줄 사이도 누를 수 있어야 하므로 글자 상자의 가운데를 누른다.
@@ -388,7 +389,8 @@ for (const width of [undefined, 320]) {
       // 그래프는 사이드바 폭에 맞춰 늘거나 줄어든다. 화면 지름과 함께, 배율과 상관없는 SVG 좌표의 반지름도 본다.
       return { titleHits, dotDiameter: dots[0].r * 2, svgRadius: parseFloat(getComputedStyle(nodes[0].querySelector('circle.hit')!).r), overlaps };
     });
-    expect(measured.titleHits.length).toBe(6);
+    expect(measured.titleHits.length).toBeGreaterThanOrEqual(4);
+    expect(measured.titleHits.length).toBeLessThanOrEqual(6);
     expect(measured.titleHits, '제목을 누르면 그 노드의 링크가 잡힌다').toEqual(measured.titleHits.map(() => true));
     if (isMobile) expect(measured.dotDiameter, '터치에서 화면 지름 44px 이상').toBeGreaterThanOrEqual(43.99);
     else expect(measured.svgRadius, '마우스에서는 점의 누르는 원을 넓히지 않는다').toBe(14);
@@ -401,9 +403,9 @@ for (const width of [undefined, 320]) {
 test('the map link under the small graph reaches 44px on touch without touching a node', async ({ page, isMobile }) => {
   test.skip(!isMobile, '누르는 영역은 터치 기기에서만 넓힌다');
   await page.goto('/notes/browser-many/');
-  const measured = await page.locator('.local-graph').evaluate((graph) => {
-    const link = graph.querySelector('.local-graph-tools a')!.getBoundingClientRect();
-    const gap = Math.min(...[...graph.querySelectorAll('a.node .hit')].map((hit) => link.top - hit.getBoundingClientRect().bottom));
+  const measured = await page.locator('[data-connections]').evaluate((graph) => {
+    const link = graph.querySelector('.connection-map a')!.getBoundingClientRect();
+    const gap = Math.min(...[...graph.querySelectorAll('a.node:not([hidden]) .hit')].map((hit) => link.top - hit.getBoundingClientRect().bottom));
     return { height: link.height, gap };
   });
   expect(measured.height).toBeGreaterThanOrEqual(44);
@@ -592,6 +594,8 @@ test('series hubs omit the repeated graph and leave space after the mobile conte
   const gap = await page.evaluate(() => document.querySelector('.series-start')!.getBoundingClientRect().top - document.querySelector('.mobile-toc')!.getBoundingClientRect().bottom);
   expect(gap).toBeGreaterThanOrEqual(16);
   await page.goto('/posts/browser-series-part/');
+  // 연재 허브와만 연결된 편도 그래프를 유지한다. 목록에서는 위 연재 블록의 링크를 중복하지 않는다.
+  await expect(page.locator('.series-block')).toBeVisible();
   await expect(page.locator('.local-graph')).toBeVisible();
 });
 
@@ -774,13 +778,14 @@ test('series hubs show the published count without a misleading reading time', a
 
 
 test('the sidebar marks remaining content without blocking links and clears at the bottom or in one column', { tag: BOTH_THEMES }, async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 600 });
+  await page.setViewportSize({ width: 1440, height: 400 });
   await page.goto('/notes/browser-many/');
+  await page.getByRole('button', { name: '목록', exact: true }).click();
   const side = page.locator('.note-side');
   await expect(side).toHaveAttribute('data-sidebar-overflow', '');
   const paint = () => side.evaluate(e => { const s = getComputedStyle(e, '::after'); return { height: s.height, position: s.position, pointer: s.pointerEvents, opacity: s.opacity }; });
   expect(await paint()).toMatchObject({ height: '24px', position: 'sticky', pointer: 'none' });
-  await side.locator('a').first().focus();
+  await side.getByRole('button', { name: '목록', exact: true }).press('Tab');
   await expect.poll(async () => (await paint()).opacity).toBe('0');
   await side.evaluate(e => { e.scrollTop = e.scrollHeight; });
   await expect(side).not.toHaveAttribute('data-sidebar-overflow');

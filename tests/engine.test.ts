@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyEdges, hoverLabelCandidates, fitTransform, offsetLine, isFilteredOut, screenBoxToScene, zoomedNodeScale } from '../src/graph/engine.ts';
+import { classifyEdges, hoverLabelCandidates, fitTransform, isFilteredOut, screenBoxToScene, zoomedNodeScale } from '../src/graph/engine.ts';
+import { offsetLine } from '../src/graph/edge-geometry.ts';
 import { labelIds } from '../src/graph/label.ts';
 
 // 제목과 영역 이름은 장면 좌표로 자리를 잡는다. 화면에 떠 있는 조작의 자리를 같은 좌표로 옮겨야 그 아래를 피할 수 있다.

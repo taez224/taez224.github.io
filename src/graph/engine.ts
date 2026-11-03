@@ -5,6 +5,7 @@ interface GraphOptions { nodes: readonly GraphNode[]; edges: readonly GraphEdge[
 interface GraphState { selected: string | null; hovered: string | null; topics: ReadonlySet<string> | null; hubsOnly: boolean; transform: Transform }
 
 import { createNodeMotion } from './node-motion.ts';
+import { offsetLine } from './edge-geometry.ts';
 import { nodeRadius } from './layout.ts';
 import { topicColor, topicLabelColor, cleanTitle } from '../lib/format.ts';
 import { createGraphGesture } from './gestures.ts';
@@ -80,12 +81,6 @@ export function screenBoxToScene(box: Box, t: Transform): Box {
 export function zoomedNodeScale(scale: number, fitScale: number): number {
   const zoom = scale / fitScale;
   return zoom > 1 ? 1 / Math.sqrt(zoom) : 1;
-}
-
-export function offsetLine(a: Point, b: Point, sign: number, distance = 2.5) {
-  const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1;
-  const nx = (-dy / d) * distance * sign, ny = (dx / d) * distance * sign;
-  return { x1: a.x + nx, y1: a.y + ny, x2: b.x + nx, y2: b.y + ny };
 }
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
