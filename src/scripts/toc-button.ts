@@ -42,8 +42,10 @@ if (button && sheet && body && typeof sheet.showPopover === 'function') {
   // 숨긴 목차로 scrollIntoView를 호출하면 본문 위치까지 바뀔 수 있으므로 목차 탭이 열린 때만 표시한다.
   const markCurrent = () => {
     if (document.getElementById('reader-toc-panel')?.hidden !== false) return;
+    // 사이드바 목차(toc.ts)와 같은 규칙이다. 첫 제목이 아직 화면 아래에 있으면 첫 제목 앞을 읽는 중이라 어느 절도 가리키지 않는다.
     const line = innerHeight * 0.3;
-    const current = headings.findLast(heading => heading.getBoundingClientRect().top <= line) ?? headings[0];
+    const first = headings[0]?.getBoundingClientRect().top < innerHeight ? headings[0] : undefined;
+    const current = headings.findLast(heading => heading.getBoundingClientRect().top <= line) ?? first;
     for (const link of links) {
       if (link.dataset.tocTarget === current?.id) { link.setAttribute('aria-current', 'location'); link.scrollIntoView({ block: 'nearest' }); }
       else link.removeAttribute('aria-current');

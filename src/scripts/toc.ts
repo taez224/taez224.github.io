@@ -33,6 +33,8 @@ if (links.length) {
     }
   };
   // 현재 절은 읽는 선(화면 위에서 30%)을 지난 제목 가운데 마지막 것이고, 아무 제목도 지나지 않았으면 첫 제목이다.
+  // 다만 첫 제목이 아직 화면 아래에 있으면 어느 절도 가리키지 않는다. 절 없이 주장을 쓰고 끝에 「출처」만 둔 생각 노트에서
+  // 첫 화면부터 「출처」를 읽는 중으로 표시했다.
   // 감시 구역을 선 근처의 좁은 띠로 두면, 스크롤 한 번에 띠를 건너뛴 제목은 교차 상태가 그대로라 알림이 오지 않아
   // 맨 위로 가도 이전 절이 남았다. 구역을 선 위로 문서보다 길게 늘려 두면 제목이 선을 넘을 때마다 상태가 바뀐다.
   // 알림이 온 제목의 상태만 고치므로 스크롤마다 모든 제목의 위치를 다시 잴 필요가 없다.
@@ -43,7 +45,8 @@ if (links.length) {
   let chosen: HTMLElement | undefined;
   let chosenSeen = false;
   let readerInput = false;
-  const update = () => mark((chosen ?? headings.findLast((heading) => passed.has(heading)) ?? headings[0])?.id);
+  let firstReached = false;
+  const update = () => mark((chosen ?? headings.findLast((heading) => passed.has(heading)) ?? (firstReached ? headings[0] : undefined))?.id);
   const onScreen = (element: Element) => { const box = element.getBoundingClientRect(); return box.bottom > 0 && box.top < innerHeight; };
   const choose = (target: HTMLElement | null) => {
     chosen = target && headings.includes(target) ? target : undefined;
@@ -60,6 +63,8 @@ if (links.length) {
     update();
   }, { rootMargin: `${ABOVE_LINE}px 0px -70% 0px` });
   headings.forEach((heading) => observer.observe(heading));
+  // 첫 제목이 화면 아래 끝을 넘어 들어왔는지 본다. 위쪽 구역을 문서보다 길게 늘려 화면 위로 지나간 뒤에도 들어온 것으로 둔다.
+  if (headings[0]) new IntersectionObserver(([entry]) => { firstReached = entry.isIntersecting; update(); }, { rootMargin: `${ABOVE_LINE}px 0px 0px 0px` }).observe(headings[0]);
   choose(hashTarget(location.hash));
   // 각주처럼 제목이 아닌 곳으로 가는 앵커는 고른 절을 풀고 선 규칙으로 돌아간다.
   document.addEventListener('click', (event) => { const link = inPageLink(event); if (link) choose(hashTarget(link.hash)); });
