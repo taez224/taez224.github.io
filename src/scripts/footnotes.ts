@@ -1,5 +1,7 @@
+import { setupSidenotes } from './sidenotes.ts';
+import { hashTarget } from './in-page-link.ts';
 import { setupCodeCopy } from './code-copy.ts';
-// 각주 번호를 누르면 번호 아래에 그 각주를 판으로 띄운다. 판을 번호에 붙이고 화면 가장자리와 아래 공간을 피하는 일은
+// 여백 각주를 쓰지 않는 화면에서 번호를 누르면 그 각주를 판으로 띄운다. 판을 번호에 붙이고 화면 가장자리와 아래 공간을 피하는 일은
 // CSS anchor positioning이 맡고(body.css의 .footnote-panel), 판을 맨 위 층에 올리는 일은 popover가 맡는다.
 // 둘 중 하나라도 없는 브라우저에서는 손대지 않으므로 번호가 링크대로 글 끝 각주 목록으로 가고, ↩로 돌아온다.
 // 키보드로 누르면(click의 detail이 0) 판을 띄우지 않고 링크대로 목록으로 간다. 화면 낭독기와 키보드 사용자는
@@ -13,6 +15,7 @@ const CLOSE_GRACE = 300;  // 번호에서 판으로 포인터를 옮기는 사�
 const SKIP_WINDOW = 300;  // 판이 닫힌 직후 이웃 번호로 옮기면 기다리지 않고 연다.
 
 const refs = [...document.querySelectorAll<HTMLAnchorElement>('.body .footnote-ref a')];
+const sidenotes = setupSidenotes(refs);
 if (refs.length && typeof HTMLElement.prototype.showPopover === 'function' && CSS.supports('anchor-name: --footnote')) {
   const panel = document.createElement('div');
   // 판은 맨 위 층에 올라가 본문 밖에 있으므로 body 클래스를 함께 달아 링크·형광·인라인 코드 모양을 물려받는다.
@@ -40,6 +43,7 @@ if (refs.length && typeof HTMLElement.prototype.showPopover === 'function' && CS
     panel.hidePopover();
   };
   const open = (ref: HTMLAnchorElement, item: HTMLElement, { instant = false } = {}) => {
+    if (sidenotes.active()) return;
     const switching = current !== null;
     close();
     const number = document.createElement('span');
@@ -62,14 +66,21 @@ if (refs.length && typeof HTMLElement.prototype.showPopover === 'function' && CS
     panel.toggleAttribute('data-instant', instant || switching);
     panel.showPopover();
   };
-  const itemFor = (ref: HTMLAnchorElement) => document.getElementById(ref.getAttribute('href')!.slice(1));
+  const itemFor = (ref: HTMLAnchorElement) => hashTarget(ref.getAttribute('href') ?? '');
 
+  const syncMode = () => {
+    close();
+    for (const ref of refs) {
+      if (sidenotes.active()) { ref.removeAttribute('aria-controls'); ref.removeAttribute('aria-expanded'); }
+      else { ref.setAttribute('aria-controls', panel.id); ref.setAttribute('aria-expanded', 'false'); }
+    }
+  };
+  document.addEventListener('sidenoteschange', syncMode);
+  syncMode();
   for (const ref of refs) {
-    ref.setAttribute('aria-controls', panel.id);
-    ref.setAttribute('aria-expanded', 'false');
     ref.addEventListener('click', (event) => {
       const item = itemFor(ref);
-      if (event.detail === 0 || !item) return;
+      if (sidenotes.active() || event.detail === 0 || !item) return;
       event.preventDefault();
       if (current === ref && pinned) close();
       else {
@@ -90,7 +101,7 @@ if (refs.length && typeof HTMLElement.prototype.showPopover === 'function' && CS
   };
   for (const ref of refs) {
     ref.addEventListener('pointerenter', (event) => {
-      if (event.pointerType !== 'mouse' || !canHover.matches || pinned) return;
+      if (sidenotes.active() || event.pointerType !== 'mouse' || !canHover.matches || pinned) return;
       const item = itemFor(ref);
       if (!item) return;
       cancelTimers();

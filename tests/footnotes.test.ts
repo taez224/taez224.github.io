@@ -6,7 +6,7 @@ import { stripTypeScriptTypes } from 'node:module';
 import { ruleBody } from './css-blocks.ts';
 
 // 각주 판 스크립트를 Node와 같은 타입 제거 방식으로 읽는다. code-block.test.ts와 같은 방식이다.
-const source = stripTypeScriptTypes(await fs.readFile(new URL('../src/scripts/footnotes.ts', import.meta.url), 'utf8')).replace(/^import .*;\s*/m, '');
+const source = stripTypeScriptTypes(await fs.readFile(new URL('../src/scripts/footnotes.ts', import.meta.url), 'utf8')).replace(/^import .*;\s*/gm, '');
 
 // 스크립트가 실제로 쓰는 DOM 기능만 갖춘 가짜 요소.
 class FakeElement {
@@ -67,6 +67,9 @@ function page({ anchorPositioning = true } = {}) {
   const initialized: FakeElement[] = [];
   const documentListeners = new Map<string, (event: unknown) => void>();
   vm.runInNewContext(source, {
+    // 여백 배치와 화면 전환은 reader-sidenotes.spec.ts에서 실제 브라우저로 검사한다.
+    setupSidenotes: () => ({ active: () => false }),
+    hashTarget: (hash: string) => items.get(decodeURIComponent(hash.slice(1))) ?? null,
     setupCodeCopy: (root: FakeElement) => initialized.push(root),
     CSS: { supports: (query: string) => anchorPositioning && /anchor-name/.test(query) },
     HTMLElement: { prototype: { showPopover() {} } },

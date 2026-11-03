@@ -25,6 +25,21 @@ const manyTitles = ['AI 시대의 판단력은 맥락을 실행 기준으로 바
 // 둘째 문장이 길어 어느 폭에서도 세 줄을 넘는 요약. 목록·카드·홈 연재가 첫 문장으로 자르지 않고 줄 수로 자르는지 본다.
 export const LONG_SUMMARY = `첫 문장은 질문으로 시작하는가? ${'둘째 문장은 글이 다루는 범위를 구체적으로 설명하면서 길게 이어진다. '.repeat(6).trim()}`;
 export const BROWSER_NOTES: Record<string, string> = {
+  '20_Projects/blog/folded-footnote.md': `---
+title: 접힌 각주 검사
+slug: browser-folded-footnote
+status: published
+created: 2026-09-01
+---
+# 접힌 각주 검사
+
+${'각주 앞의 본문입니다.\n\n'.repeat(12)}
+
+> [!note]- 접힌 설명
+> 설명 안의 각주[^folded]입니다.
+
+[^folded]: 접힌 설명에 달린 각주입니다.
+`,
   '01_Slipbox/image-loading.md': `---
 title: 이미지 로딩 검사
 slug: browser-image-loading
@@ -115,7 +130,7 @@ tags:
 [[neighbor]]
 
 [^a]: 첫 각주 내용
-[^b]: 둘째 각주 내용
+[^b]: 둘째 각주 내용과 [출처](#fn-1)
 [^code]: 코드 예제
 
     \`\`\`js

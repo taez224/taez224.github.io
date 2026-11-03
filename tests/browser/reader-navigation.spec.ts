@@ -36,7 +36,8 @@ test('a note without headings exposes its connections and closes on desktop resi
   await expect(page.locator('#reader-toc-tab')).toHaveCount(0);
   const sidebar = await page.locator('.note-side section .side-list a').evaluateAll(a => a.map(e => e.getAttribute('href')));
   const connections = await panel.locator('a').evaluateAll(a => a.map(e => e.getAttribute('href')));
-  expect(connections).toEqual(sidebar);
+  // 사이드바는 양방향 연결을 한 줄로 합치고, 탐색 판은 참조·역참조를 나눠 보여 준다.
+  expect([...new Set(connections)].sort()).toEqual([...new Set(sidebar)].sort());
   await expect(page.locator('.reader-map a')).toHaveAttribute('href', /node=/);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await expect.poll(() => page.locator('#toc-sheet').evaluate(e => e.matches(':popover-open'))).toBe(false);

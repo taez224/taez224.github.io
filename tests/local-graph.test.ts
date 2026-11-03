@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { localGraphLabelLines, localGraphLayout } from '../src/components/local-graph-layout.ts';
+import { localGraphLabelLines, localGraphLayout, fitLocalGraph } from '../src/components/local-graph-layout.ts';
+import { offsetLine } from '../src/graph/edge-geometry.ts';
 import { estimateTextWidth } from '../src/graph/label.ts';
 
 const note = (id: string) => ({ path: id, displayTitle: id, url: `/notes/${id}/`, topic: 'AI' });
@@ -69,4 +70,67 @@ test('local graph titles never overlap each other, the nodes or the center, for 
       for (const c of circles) assert.ok(!overlap(a.box, c.box), `${count}개: ${a.id} 제목이 ${c.id} 노드를 덮지 않는다`);
     }
   }
+});
+
+// 기본 글자를 작게 설정하면 rem으로 정한 사이드바가 205px보다 좁아진다(크롬 「아주 작게」 9px에서 146px).
+// 어느 폭에서도 제목 크기를 지키고, 겹치면 그리는 이웃을 줄인다.
+test('narrow graph layouts keep full-size labels inside the frame and apart', () => {
+  const many = Array.from({ length: 6 }, (_, i) => ({ ...note(`n${i}`), displayTitle: 'AI 시대의 판단력은 맥락을 실행 기준으로 바꾸는 능력이다' }));
+  for (let width = 140; width <= 279; width += 1) for (let count = 1; count <= 6; count++) {
+    const layout = localGraphLayout(note('c'), many.slice(0, count), [], { width, height: 240 });
+    assert.ok(layout.nodes.length - 1 >= 1 && layout.nodes.length - 1 <= Math.min(count, 4), `${width}px: 이웃을 하나 이상, 넷 이하로 그린다`);
+    assert.equal(layout.nodes.length - 1 + layout.hidden, count, `${width}px: 덜어 낸 이웃은 hidden으로 알린다`);
+    if (width >= 205) assert.equal(layout.nodes.length - 1, Math.min(count, 4), `${width}px: 205px 이상에서는 넷까지 그린다`);
+    const labels = layout.nodes.flatMap(n => n.label ? [n.label.box] : []);
+    for (const [i, box] of labels.entries()) {
+      assert.ok(box.left >= 0 && box.right <= width && box.top >= 0 && box.bottom <= 240);
+      for (const other of labels.slice(i + 1)) assert.ok(!(box.left < other.right && other.left < box.right && box.top < other.bottom && other.top < box.bottom));
+    }
+  }
+});
+
+// "이 노트" 아래에 이웃이 있으면 관계선이 글자 사이를 관통했다. 모든 폭과 이웃 수에서 관계선·이웃 제목·점을 피하는지 본다.
+test('the center label keeps clear of every edge, neighbor title and dot', () => {
+  type Box = { left: number; right: number; top: number; bottom: number };
+  const overlap = (a: Box, b: Box) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+  // 선을 1px 간격으로 따라가며 글자 상자에 들어오는지 본다. 상호 참조는 벌린 두 선을 모두 본다.
+  const touches = (line: { x1: number; y1: number; x2: number; y2: number }, box: Box) => {
+    const steps = Math.ceil(Math.hypot(line.x2 - line.x1, line.y2 - line.y1));
+    return Array.from({ length: steps + 1 }, (_, i) => i / steps).some((t) => {
+      const x = line.x1 + (line.x2 - line.x1) * t, y = line.y1 + (line.y2 - line.y1) * t;
+      return x > box.left && x < box.right && y > box.top && y < box.bottom;
+    });
+  };
+  const long = (i: number) => ({ ...note(`n${i}`), displayTitle: `AI 시대의 판단력은 맥락을 실행 기준으로 바꾸는 능력이다 ${i}` });
+  // 사이드바 폭은 연속해서 바뀌므로 1px마다 본다. 데스크톱 사이드바 폭(220·260·310px)에서는 판 없이 비어 있는 자리를 찾아야 한다.
+  // 휴대폰 폭에 이웃이 많으면 빈자리가 없을 수 있고, 그때는 글자 뒤의 판이 선을 가리므로 관계선 검사만 건너뛴다.
+  for (let width = 140; width <= 310; width += 1) for (let count = 1; count <= 6; count += 1) {
+    const height = width < 280 ? 240 : 190;
+    const neighbors = Array.from({ length: count }, (_, i) => long(i));
+    const layout = localGraphLayout(note('c'), neighbors, neighbors.slice(0, 1), { width, height });
+    const { box, clear } = layout.centerLabel;
+    const label = `${width}px, 이웃 ${count}개`;
+    assert.ok(box.left >= 0 && box.right <= width, `${label}: 이 노트가 그래프 폭 안에 있다`);
+    if ([220, 260, 310].includes(width)) assert.ok(clear, `${label}: 데스크톱 폭에서는 빈자리를 찾는다`);
+    if (clear) for (const edge of layout.edges) {
+      const lines = edge.direction === 'both' ? [offsetLine({ x: edge.x1, y: edge.y1 }, { x: edge.x2, y: edge.y2 }, 1), offsetLine({ x: edge.x1, y: edge.y1 }, { x: edge.x2, y: edge.y2 }, -1)] : [edge];
+      for (const line of lines) assert.ok(!touches(line, box), `${label}: 관계선이 이 노트를 지나지 않는다`);
+    }
+    for (const node of layout.nodes.filter((n) => !n.current)) {
+      assert.ok(!overlap(box, node.label!.box), `${label}: ${node.id} 제목과 겹치지 않는다`);
+      assert.ok(!overlap(box, { left: node.x - 8, right: node.x + 8, top: node.y - 8, bottom: node.y + 8 }), `${label}: ${node.id} 점과 겹치지 않는다`);
+    }
+  }
+});
+
+test('fitted graphs drop empty space without moving anything out of frame', () => {
+  for (const [width, height] of [[220, 240], [310, 190]]) for (let count = 1; count <= 6; count += 1) {
+    const layout = fitLocalGraph(localGraphLayout(note('c'), Array.from({ length: count }, (_, i) => note(`n${i}`)), [], { width, height }));
+    assert.ok(layout.height <= height, '정해 둔 높이보다 커지지 않는다');
+    const boxes = [layout.centerLabel.box, ...layout.nodes.flatMap((n) => n.label ? [n.label.box] : [])];
+    for (const box of boxes) assert.ok(box.top >= 0 && box.bottom <= layout.height, `${width}px, 이웃 ${count}개: 제목이 줄인 그림 안에 있다`);
+    for (const node of layout.nodes) assert.ok(node.y - 8 >= 0 && node.y + 8 <= layout.height, `${width}px, 이웃 ${count}개: 점이 줄인 그림 안에 있다`);
+  }
+  const single = fitLocalGraph(localGraphLayout(note('c'), [note('a')], [], { width: 220, height: 240 }));
+  assert.ok(single.height < 180, `이웃이 하나면 빈 아래쪽을 덜어낸다 (${single.height}px)`);
 });

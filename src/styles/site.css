@@ -22,6 +22,7 @@
      컴포넌트 안쪽의 작은 여백은 모양에 맞춘 값이라 묶지 않는다. 페이지 위쪽 여백은 목록형(index)과 읽는 페이지(reading) 두 단계라
      같은 종류의 페이지를 오갈 때 제목이 같은 높이에서 시작한다. */
   --s-content-max: 1180px; --s-page-gutter: 24px; --s-column-gap: 40px; --s-reader-column: 720px; --s-reader-gap: 100px; --s-sidebar: 310px;
+  --s-reader-frame: 1240px; --s-reader-navigation: 220px;
   --s-header-height: 72px; --s-page-top-index: 36px; --s-page-top-reading: 56px; --s-page-bottom: 96px;
   --s-title-gap: 40px; --s-paragraph-gap: 22px; --s-side-list-gap: 8px;
   /* 앞머리로 테마를 지정한 도표가 놓이는 판. 그 테마가 전제한 밝기를 화면 모드와 상관없이 지키므로 어두운 화면 블록에서 덮지 않는다.
@@ -205,6 +206,10 @@ main { flex: 1 0 auto; }
    이름은 왼쪽 끝에, 프로필 아이콘 줄과 사이트 정보 링크는 오른쪽에 둔다. 글자 링크는 홀로 선 링크와 같은 밑줄이다. */
 .site-footer { background: var(--accent-soft); color: var(--muted); font-size: var(--t-meta); }
 .site-footer .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 32px; padding: 24px 0; }
+/* 헤더와 바닥글은 모든 페이지에서 읽기 화면의 바깥 틀(sidenotes.css의 .note-view)과 같은 폭을 쓴다. 노트 페이지에서만 넓히면
+   목록에서 글로 들어갈 때마다 워드마크가 30~90px 옆으로 옮겨 갔다. 목록 본문보다 헤더가 넓은 쪽이 글이 헤더 밖으로 나가는 쪽보다 자연스럽다. */
+@media screen and (min-width: 1121px) { .site-header .wrap, .site-footer .wrap { width: min(var(--s-reader-frame), 100% - 2 * var(--s-page-gutter)); } }
+@media screen and (min-width: 1121px) and (min-width: 100em) { .site-header .wrap, .site-footer .wrap { width: min(85rem, 100% - 2 * var(--s-page-gutter)); } }
 /* 인장이 이름의 첫 어절을 대신한다. 글자보다 높은 도장이 끼므로 줄 기준선 대신 가운데로 맞춘다.
    인장만 먹색이다. 비워 새긴 글자가 21px에서 2px 굵기라 보조색으로는 획이 바탕에 묻힌다. */
 .site-footer .site-name { display: flex; align-items: center; gap: 8px; margin-right: auto; }

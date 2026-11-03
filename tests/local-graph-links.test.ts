@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import { stripTypeScriptTypes } from 'node:module';
 
 // 로컬 그래프 스크립트를 Node와 같은 타입 제거 방식으로 읽는다. code-block.test.ts와 같은 방식이다.
-const source = stripTypeScriptTypes(await fs.readFile(new URL('../src/scripts/local-graph.ts', import.meta.url), 'utf8')).replace(/^export \{\};\s*/, '');
+const source = stripTypeScriptTypes(await fs.readFile(new URL('../src/scripts/local-graph.ts', import.meta.url), 'utf8')).replace(/^import .*;\s*/gm, '');
 
 class FakeElement {
   href: string; classes = new Set<string>(); listeners = new Map<string, () => void>();
@@ -17,13 +17,13 @@ class FakeElement {
   get linked() { return this.classes.has('is-linked'); }
 }
 
-// 그래프 이웃 둘과 사이드바 목록 줄 셋. taste는 참조 목록과 연재 목록 양쪽에 있고, other는 그래프에 없다.
+// 함께 보이는 연재 허브·편 목록만 짝짓는다. 숨겨 전환하는 연결 목록은 포함하지 않는다.
 function sidebar({ canHover = true } = {}) {
   const nodes = [new FakeElement('/notes/taste/'), new FakeElement('/notes/judgment/')];
   const rows = [new FakeElement('/notes/taste/'), new FakeElement('/notes/judgment/'), new FakeElement('/notes/taste/'), new FakeElement('/notes/other/')];
   const graph = { querySelector: () => null, querySelectorAll: () => nodes };
   vm.runInNewContext(source, {
-    document: { querySelector: () => graph, querySelectorAll: () => rows },
+    document: { querySelector: () => graph, querySelectorAll: (selector: string) => { assert.equal(selector, '.note-side .series-list a, .note-side a.series-hub'); return rows; } },
     matchMedia: () => ({ matches: canHover })
   });
   return { nodes, rows };
