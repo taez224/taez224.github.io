@@ -137,7 +137,20 @@ test('long connection lists keep their own height limit and direction counts', a
   const list = page.locator('.connection-list');
   await expect(list).toHaveCSS('max-height', '236px');
   expect(await list.evaluate(e => e.scrollHeight > e.clientHeight)).toBe(true);
-  await expect(page.locator('.connection-directions')).toContainText(/참조\s*7/);
+  await expect(page.locator('.connection-group h3')).toHaveText(['이 글에서 언급한 글7']);
+  await expect(list.locator('a')).toHaveCount(7);
+});
+
+test('connection groups list mutual links once and omit empty directions', async ({ page }) => {
+  await page.goto('/notes/browser-start/');
+  await page.getByRole('button', { name: '목록', exact: true }).click();
+  const groups = page.locator('.connection-group');
+  await expect(groups.locator('h3')).toHaveText([/서로 언급한 글1/, /이 글을 언급한 글\d+/]);
+  await expect(groups.first().getByRole('link', { name: '이웃 노트', exact: true })).toHaveCount(1);
+  const links = await groups.locator('a').evaluateAll(items => items.map(a => a.getAttribute('href')));
+  expect(new Set(links).size).toBe(links.length);
+  const counts = await groups.locator('.count').allTextContents();
+  expect(counts.reduce((sum, count) => sum + Number(count), 0)).toBe(links.length);
 });
 
 test('switching a sticky connection view preserves the reading position', async ({ page }) => {

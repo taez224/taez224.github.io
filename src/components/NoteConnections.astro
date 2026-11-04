@@ -1,6 +1,5 @@
 ---
 import LocalGraph from './LocalGraph.astro';
-import Icon from './Icon.astro';
 import type { PublicNote, CollectionNote } from '../lib/content-model.ts';
 interface Props { note: CollectionNote; outgoing: PublicNote[]; incoming: PublicNote[]; listed: PublicNote[]; mapUrl: string; graph?: boolean }
 const { note, outgoing, incoming, mapUrl, graph = true } = Astro.props;
@@ -8,6 +7,11 @@ const out = new Set(outgoing.map(n => n.path));
 const into = new Set(incoming.map(n => n.path));
 const neighbors = [...new Map([...outgoing, ...incoming].map(n => [n.path, n])).values()];
 const { listed } = Astro.props;
+const groups = [
+  { label: '서로 언급한 글', items: listed.filter(n => out.has(n.path) && into.has(n.path)) },
+  { label: '이 글에서 언급한 글', items: listed.filter(n => out.has(n.path) && !into.has(n.path)) },
+  { label: '이 글을 언급한 글', items: listed.filter(n => !out.has(n.path) && into.has(n.path)) }
+].filter(group => group.items.length > 0);
 ---
 {neighbors.length > 0 && <section class="connection-view list-block" data-connections>
   <div class="connection-head">
@@ -19,12 +23,15 @@ const { listed } = Astro.props;
   </div>
   {graph && <div id="connection-graph" data-connection-graph hidden><LocalGraph note={note} outgoing={outgoing} incoming={incoming} /></div>}
   <div id="connection-list" data-connection-list>
-    <div class="meta connection-directions"><span><Icon name="out" />참조 {listed.filter(n => out.has(n.path)).length}</span><span><Icon name="in" />역참조 {listed.filter(n => into.has(n.path)).length}</span></div>
     {listed.length < neighbors.length && <p class="meta">연재에 속한 글은 위 연재 목록에서 볼 수 있습니다.</p>}
-    <div class:list={['scroll-list', { 'is-long': listed.length > 6 }]}><ul class="side-list connection-list">{listed.map(n => <li>
-      <a href={n.url}>{n.type === 'hub' && <i class="hub-mark" aria-hidden="true"></i>}{n.displayTitle}</a>
-      <span class="connection-relation">{out.has(n.path) && into.has(n.path) ? '서로 언급' : out.has(n.path) ? '이 글에서 언급' : '이 글을 언급'}</span>
-    </li>)}</ul></div>
+    <div class:list={['scroll-list', { 'is-long': listed.length > 6 }]}><div class="side-list connection-list">
+      {groups.map(group => <section class="connection-group">
+        <h3>{group.label}<span class="count">{group.items.length}</span></h3>
+        <ul class="connection-items">{group.items.map(n => <li>
+          <a href={n.url}>{n.type === 'hub' && <i class="hub-mark" aria-hidden="true"></i>}{n.displayTitle}</a>
+        </li>)}</ul>
+      </section>)}
+    </div></div>
   </div>
   {mapUrl && <div class="connection-map"><a href={mapUrl}>생각 지도에서 보기</a></div>}
 </section>}
@@ -37,13 +44,11 @@ const { listed } = Astro.props;
   .connection-switch button[aria-pressed="true"] { color: var(--ink); border-bottom-color: var(--ink); }
   .connection-switch button:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
   [hidden] { display: none !important; }
-  .connection-list { list-style: none; margin: 14px 0 0; padding: 0; }
-  .connection-list li { padding: 12px 0; border-bottom: 1px solid var(--line); }
-  .connection-list li:last-child { border-bottom: 0; padding-bottom: 0; }
+  .connection-list { margin: 18px 0 0; padding: 0; gap: 22px; }
+  .connection-group h3 { display: flex; align-items: baseline; gap: 7px; margin: 0 0 6px; color: var(--muted); font: inherit; font-size: var(--t-meta); }
+  .connection-items { list-style: none; margin: 0; padding: 0; }
+  .connection-items li + li { margin-top: 6px; }
   .connection-list a { display: block; color: var(--ink); font-size: var(--t-side); line-height: 1.65; }
-  .connection-relation { display: block; margin-top: 4px; color: var(--muted); font-size: var(--t-meta); line-height: 1.5; }
-  .connection-directions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; }
-  .connection-directions span { display: inline-flex; align-items: center; gap: 4px; }
   .connection-map { margin-top: 10px; font-size: var(--t-meta); }
   .connection-view :global(.local-graph) { padding: 0; }
   .connection-view :global(.local-graph > .meta:first-child) { display: none; }
