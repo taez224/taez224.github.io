@@ -102,7 +102,7 @@ const RESTING_LABEL_LIMIT = 6;
 
 // layoutSize: 좌표가 놓인 무대 크기. 홈 히어로처럼 좌표 공간(1000×640)과 상자 픽셀 크기가 다를 때 준다. 지도는 상자 크기로 배치하므로 생략한다.
 export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initialPositions, mode = 'map', nodeScale = 1, focusable = true, layoutSize = null, reserved = () => [], onSelect = () => {}, onOpen = () => {} }: GraphOptions) {
-  // nodeScale: 노드 원 크기 배율. 지도는 무대가 좁아 0.7, 홈 히어로는 0.9로 그려 밀도를 맞춘다.
+  // nodeScale: 노드 원 크기 배율. 지도는 무대가 좁아 0.7, 홈 히어로는 0.8로 그려 밀도를 맞춘다.
   // baseRadius는 맞춤 배율의 반지름이다. 지도를 맞춤보다 확대하면 원을 nodeZoom(zoomedNodeScale)만큼 줄여 그리고, 제목도 줄인 원을 기준으로 놓는다.
   const baseRadius = (node: GraphNode) => nodeRadius(node.degree ?? 0, nodeScale);
   const nodeMotion = mode === 'map' ? createNodeMotion(initialPositions, edges, new Map(nodes.map(node => [node.id, baseRadius(node)]))) : null;

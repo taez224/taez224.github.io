@@ -61,7 +61,7 @@ export function renderSnapshotSvg(nodes: readonly GraphNode[], edges: readonly G
   return `${out}</g></svg>`;
 }
 
-// 엔진의 hero 모드와 같은 값: nodeScale 0.9, 제목 13px, 영역 이름 15px, 간선 1.1(농도 .28), 색면 .07, 허브 링과 진입점 후광(RING_GAP).
+// 엔진의 hero 모드와 같은 값: nodeScale 0.8, 제목 13px, 영역 이름 15px, 간선 1.1(농도 .28), 색면 .07, 허브 링과 진입점 후광(RING_GAP).
 // 제목은 엔진처럼 고리 밖에 놓는다(ringedRadius).
 // 맞춤도 엔진의 fitTransform과 같다: 노드 경계 상자를 여백 40px으로 상자에 맞춘다. 데스크톱 상자는 폭이 넉넉해 높이(pixelHeight)가 배율을 정하므로,
 // 경계 상자에 여백을 더한 영역을 viewBox로 두면 브라우저의 meet 맞춤이 엔진과 같은 배율·위치를 낸다. u는 화면 1px의 장면 단위.
@@ -72,7 +72,7 @@ function renderDesktop(nodes: readonly GraphNode[], edges: readonly GraphEdge[],
   const minY = Math.min(...points.map((p) => p.y)), maxY = Math.max(...points.map((p) => p.y));
   const u = Math.max(1, maxY - minY) / (pixelHeight - 80), pad = 40 * u;
   const viewBox = [minX - pad, minY - pad, Math.max(1, maxX - minX) + 2 * pad, Math.max(1, maxY - minY) + 2 * pad].map((v) => v.toFixed(1)).join(' ');
-  const radiusOf = (node: GraphNode) => nodeRadius(node.degree ?? 0, 0.9);
+  const radiusOf = (node: GraphNode) => nodeRadius(node.degree ?? 0, 0.8);
   const labelRadius = (node: GraphNode) => ringedRadius(node, radiusOf(node));
   const placed = nodes.filter((node) => at(node.id));
   const regions = topicRegions(nodes, positions);

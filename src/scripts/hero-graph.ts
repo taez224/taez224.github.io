@@ -20,7 +20,7 @@ export function drawHeroGraph(box: HTMLElement): HeroGraph {
     const open = (id: string) => { const node = nodes.find((n) => n.id === id); if (node) window.location.href = node.url; };
     box.append(interactiveGraph);
     // 홈에서는 노드를 탭 순서에서 뺀다(36개를 지나야 대표 글에 닿는다). 키보드 탐색은 지도 페이지가 맡는다.
-    return createGraph(interactiveGraph, { nodes, edges, positions: new Map(positions), mode: 'hero', focusable: false, nodeScale: 0.9, layoutSize: { width: 1000, height: 640 }, onSelect: (id) => { if (id) open(id); }, onOpen: open });
+    return createGraph(interactiveGraph, { nodes, edges, positions: new Map(positions), mode: 'hero', focusable: false, nodeScale: 0.8, layoutSize: { width: 1000, height: 640 }, onSelect: (id) => { if (id) open(id); }, onOpen: open });
   } catch (error) {
     interactiveGraph?.remove();
     throw error;
