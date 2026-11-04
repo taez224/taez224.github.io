@@ -1,17 +1,12 @@
 ---
 import LocalGraph from './LocalGraph.astro';
 import type { PublicNote, CollectionNote } from '../lib/content-model.ts';
-interface Props { note: CollectionNote; outgoing: PublicNote[]; incoming: PublicNote[]; listed: PublicNote[]; mapUrl: string; graph?: boolean }
-const { note, outgoing, incoming, mapUrl, graph = true } = Astro.props;
-const out = new Set(outgoing.map(n => n.path));
-const into = new Set(incoming.map(n => n.path));
+import type { noteConnections } from '../lib/note-connections.ts';
+// 묶음은 noteConnections가 만든 것을 그대로 쓴다. 좁은 화면의 탐색 판과 기준을 한 곳에 둔다.
+interface Props { note: CollectionNote; outgoing: PublicNote[]; incoming: PublicNote[]; groups: ReturnType<typeof noteConnections>; mapUrl: string; graph?: boolean }
+const { note, outgoing, incoming, groups, mapUrl, graph = true } = Astro.props;
 const neighbors = [...new Map([...outgoing, ...incoming].map(n => [n.path, n])).values()];
-const { listed } = Astro.props;
-const groups = [
-  { label: '서로 언급한 글', items: listed.filter(n => out.has(n.path) && into.has(n.path)) },
-  { label: '이 글에서 언급한 글', items: listed.filter(n => out.has(n.path) && !into.has(n.path)) },
-  { label: '이 글을 언급한 글', items: listed.filter(n => !out.has(n.path) && into.has(n.path)) }
-].filter(group => group.items.length > 0);
+const listed = groups.flatMap(group => group.items);
 ---
 {neighbors.length > 0 && <section class="connection-view list-block" data-connections>
   <div class="connection-head">

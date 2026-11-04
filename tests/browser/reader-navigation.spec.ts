@@ -34,10 +34,15 @@ test('a note without headings exposes its connections and closes on desktop resi
   const panel = page.locator('#reader-links-panel');
   await expect(panel).toBeVisible();
   await expect(page.locator('#reader-toc-tab')).toHaveCount(0);
-  const sidebar = await page.locator('.note-side section .side-list a').evaluateAll(a => a.map(e => e.getAttribute('href')));
+  const sidebar = await page.locator('.note-side .connection-group a').evaluateAll(a => a.map(e => e.getAttribute('href')));
   const connections = await panel.locator('a').evaluateAll(a => a.map(e => e.getAttribute('href')));
-  // 사이드바는 양방향 연결을 한 줄로 합치고, 탐색 판은 참조·역참조를 나눠 보여 준다.
-  expect([...new Set(connections)].sort()).toEqual([...new Set(sidebar)].sort());
+  // 탐색 판은 사이드바와 같은 묶음으로 나눠, 양쪽으로 이어진 글도 한 번만 보여 준다.
+  expect(connections).toEqual(sidebar);
+  expect(new Set(connections).size).toBe(connections.length);
+  const panelHeadings = await panel.locator('.reader-group h3').evaluateAll(h => h.map(e => e.firstChild?.textContent?.trim()));
+  const sidebarHeadings = await page.locator('.note-side .connection-group h3').evaluateAll(h => h.map(e => e.firstChild?.textContent?.trim()));
+  expect(panelHeadings).toEqual(sidebarHeadings);
+  await expect(panel.locator('.reader-group h3').first()).toHaveText(/^서로 언급한 글/);
   await expect(page.locator('.reader-map a')).toHaveAttribute('href', /node=/);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await expect.poll(() => page.locator('#toc-sheet').evaluate(e => e.matches(':popover-open'))).toBe(false);
