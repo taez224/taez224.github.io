@@ -1,4 +1,4 @@
-import { test, expect, gotoWithDefaultFontSize } from './fixtures.ts';
+import { test, expect, gotoWithDefaultFontSize, BOTH_THEMES } from './fixtures.ts';
 
 test('reciprocal links appear once and remain navigable in the map', async ({ page }) => {
   await page.goto('/map/?node=notes/browser-start');
@@ -15,7 +15,7 @@ test('reciprocal links appear once and remain navigable in the map', async ({ pa
   await expect(panel.getByRole('link', { name: '시작 노트', exact: true })).toHaveCount(1);
 });
 
-test('the full map summary scrolls with its panel and keeps the read link reachable', async ({ page }) => {
+test('the full map summary remains scrollable and keeps the read link reachable', async ({ page }) => {
   for (const [width, height, font] of [[1440, 540, 16], [390, 844, 16], [844, 390, 16], [390, 844, 32]]) {
     await page.setViewportSize({ width, height });
     await gotoWithDefaultFontSize(page, '/map/?node=notes/browser-long-summary', font);
@@ -31,8 +31,9 @@ test('the full map summary scrolls with its panel and keeps the read link reacha
     expect(metrics.height).toBeGreaterThan(metrics.line * 2);
     expect(metrics.clamp).toBe('none');
     expect(metrics.clipped).toBeLessThanOrEqual(1);
-    expect(await panel.evaluate(element => element.scrollHeight > element.clientHeight)).toBe(true);
-    await panel.evaluate(element => { element.scrollTop = element.scrollHeight; });
+    const scroller = width > 1000 ? panel.locator('.panel-head') : panel;
+    expect(await scroller.evaluate(element => element.scrollHeight > element.clientHeight)).toBe(true);
+    await scroller.evaluate(element => { element.scrollTop = element.scrollHeight; });
     await read.scrollIntoViewIfNeeded();
     await read.focus();
     const bounds = await panel.evaluate(element => {
@@ -107,4 +108,24 @@ test('narrowing the window back to a closed sheet also closes the maturity meani
   await expect(panel).toHaveAttribute('inert', '');
   await expect(page.locator('#maturity-note')).toBeHidden();
   await expect(button).toHaveAttribute('aria-expanded', 'false');
+});
+
+
+test('desktop connections scroll below a fixed header and clear the fade at the end', { tag: BOTH_THEMES }, async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 480 });
+  await page.goto('/map/?node=notes/browser-many');
+  const panel = page.locator('.map-panel');
+  const list = panel.locator('.panel-lists');
+  const header = panel.locator('.panel-head');
+  const before = await header.boundingBox();
+  await expect(list).toHaveAttribute('data-more', '');
+  expect(await list.evaluate(e => e.clientHeight)).toBeLessThanOrEqual(340);
+  await list.evaluate(e => { e.scrollTop = e.scrollHeight; });
+  await expect(list).not.toHaveAttribute('data-more');
+  expect((await header.boundingBox())!.y).toBe(before!.y);
+  await list.locator('a').last().focus();
+  await expect(list).toHaveCSS('mask-image', 'none');
+  await page.keyboard.press('Enter');
+  await expect(panel.locator('h2')).not.toHaveText('이웃 많은 노트');
+  expect(await panel.locator('.panel-lists').evaluate(e => e.scrollTop)).toBe(0);
 });

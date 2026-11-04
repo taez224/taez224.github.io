@@ -27,7 +27,19 @@ const { both: BOTH, out: OUT, in: IN } = REF_ICONS;
 // 그래프 노드인 항목은 data-node를 달아 지도 안에서 선택되게 한다(그래프 밖 노트만 페이지로 이동).
 const list = (icon: string, label: string, items: PanelReference[]) => items.length ? `<section class="list-block"><div class="meta">${icon}${label}<span class="count">${items.length}</span></div><ul class="side-list">${items.map((i) => `<li><a href="${escape(i.url)}"${i.nodeId ? ` data-node="${escape(i.nodeId)}"` : ''}>${i.isHub ? '<i class="hub-mark" aria-hidden="true"></i>' : ''}${escape(i.title)}</a></li>`).join('')}</ul></section>` : '';
 
-// 긴 참조 목록도 따로 스크롤하지 않고 패널 전체 스크롤로 읽으므로 목록마다 높이 제한과 흐림을 두지 않는다.
+// 패널을 다시 만들 때 이전 목록의 관찰을 해제해, 사라진 노드를 계속 붙잡지 않는다.
+let releaseList = () => {};
+function observePanelList() {
+  const list = body.querySelector<HTMLElement>('.panel-lists')!;
+  const update = () => list.toggleAttribute('data-more', list.scrollHeight - list.clientHeight - list.scrollTop > 2);
+  const observer = new ResizeObserver(update);
+  observer.observe(list);
+  // 글꼴이나 줄바꿈으로 내용만 길어져도 끝 표시를 다시 계산한다.
+  for (const block of list.children) observer.observe(block);
+  list.addEventListener('scroll', update, { passive: true });
+  update();
+  releaseList = () => { observer.disconnect(); list.removeEventListener('scroll', update); };
+}
 // 생각 노트의 성숙도는 노트 페이지와 같은 버튼으로 메타 줄의 종류 다음에 둔다. 지도는 연결을 살피는 화면이라 뜻은 눌렀을 때만 연다.
 // 다른 노드를 고르면 패널을 새로 그리므로 열려 있던 설명 판도 함께 사라진다.
 function renderPanel(model: DecoratedPanel) {
@@ -40,6 +52,7 @@ function renderPanel(model: DecoratedPanel) {
     <a class="btn small" href="${escape(model.url)}" style="align-self:flex-start;margin-top:4px">노트 읽기</a>
   </div><div class="panel-lists">${list(BOTH, '서로 언급', model.mutual)}${list(OUT, '이 글에서 언급', model.outgoing)}${list(IN, '이 글을 언급', model.incoming)}</div>`;
   bindMaturity(body);
+  observePanelList();
 }
 
 try {
@@ -136,6 +149,7 @@ function keepNodeAboveSheet(id: string) {
 
 function select(id: string | null, pushUrl: boolean, { open = true } = {}) {
   // 선택해도 시점은 그대로 둔다. 이웃 제목은 자리가 나는 만큼 그 자리에서 보인다.
+  releaseList();
   graph.select(id);
   const node = nodes.find((n) => n.id === id);
   // 공개 노트 레코드에는 type이 없어 허브 여부는 그래프 노드에서 가져온다.
