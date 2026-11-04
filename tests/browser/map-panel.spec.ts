@@ -1,5 +1,20 @@
 import { test, expect, gotoWithDefaultFontSize } from './fixtures.ts';
 
+test('reciprocal links appear once and remain navigable in the map', async ({ page }) => {
+  await page.goto('/map/?node=notes/browser-start');
+  const panel = page.locator('[data-panel]');
+  const mutual = panel.locator('.list-block').filter({ hasText: '서로 언급' });
+  await expect(mutual.locator('.count')).toHaveText('1');
+  await expect(mutual.getByRole('link', { name: '이웃 노트', exact: true })).toHaveCount(1);
+  await expect(panel.getByRole('link', { name: '이웃 노트', exact: true })).toHaveCount(1);
+  await expect(panel.locator('.list-block').filter({ hasText: '이 글에서 언급' })).toHaveCount(0);
+  await expect(panel.locator('.list-block').filter({ hasText: '이 글을 언급' }).getByRole('link', { name: '요약이 긴 노트', exact: true })).toBeVisible();
+  await mutual.getByRole('link', { name: '이웃 노트', exact: true }).click();
+  await expect(panel.locator('h2')).toHaveText('이웃 노트');
+  await expect(page).toHaveURL(/node=notes%2Fbrowser-neighbor/);
+  await expect(panel.getByRole('link', { name: '시작 노트', exact: true })).toHaveCount(1);
+});
+
 test('the full map summary scrolls with its panel and keeps the read link reachable', async ({ page }) => {
   for (const [width, height, font] of [[1440, 540, 16], [390, 844, 16], [844, 390, 16], [390, 844, 32]]) {
     await page.setViewportSize({ width, height });
