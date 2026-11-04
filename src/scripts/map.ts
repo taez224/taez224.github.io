@@ -3,7 +3,7 @@ import type { InlineGraphData } from '../lib/graph-data.ts';
 type MapData = InlineGraphData<GardenGraphNode, 'path' | 'mapKey' | 'kind' | 'status'> & PanelData;
 type PanelModel = ReturnType<typeof panelModel>;
 type PanelReference = PanelModel['outgoing'][number] & { nodeId?: string; isHub?: boolean };
-type DecoratedPanel = Omit<PanelModel, 'outgoing' | 'incoming'> & { outgoing: PanelReference[]; incoming: PanelReference[]; maturity: MaturityStage | null };
+type DecoratedPanel = Omit<PanelModel, 'mutual' | 'outgoing' | 'incoming'> & { mutual: PanelReference[]; outgoing: PanelReference[]; incoming: PanelReference[]; maturity: MaturityStage | null };
 
 import type { MaturityStage } from '../lib/maturity.ts';
 import { createGraph, isFilteredOut, LAYOUT } from '../graph/engine.ts';
@@ -22,7 +22,7 @@ const body = document.querySelector<HTMLElement>('[data-panel-body]')!;
 const emptyPanel = body.innerHTML;
 const countEl = document.querySelector('[data-map-count]');
 const totalCount = countEl?.textContent ?? '';
-const { out: OUT, in: IN } = REF_ICONS;
+const { both: BOTH, out: OUT, in: IN } = REF_ICONS;
 
 // 그래프 노드인 항목은 data-node를 달아 지도 안에서 선택되게 한다(그래프 밖 노트만 페이지로 이동).
 const list = (icon: string, label: string, items: PanelReference[]) => items.length ? `<section class="list-block"><div class="meta">${icon}${label}<span class="count">${items.length}</span></div><ul class="side-list">${items.map((i) => `<li><a href="${escape(i.url)}"${i.nodeId ? ` data-node="${escape(i.nodeId)}"` : ''}>${i.isHub ? '<i class="hub-mark" aria-hidden="true"></i>' : ''}${escape(i.title)}</a></li>`).join('')}</ul></section>` : '';
@@ -38,7 +38,7 @@ function renderPanel(model: DecoratedPanel) {
     ${model.topics.length ? `<div class="panel-topics">${model.topics.map((t) => `<span><i style="background:${t.color}"></i>${escape(t.name)}</span>`).join('')}</div>` : ''}
     ${model.summary ? `<p class="panel-summary">${escape(model.summary)}</p>` : ''}
     <a class="btn small" href="${escape(model.url)}" style="align-self:flex-start;margin-top:4px">노트 읽기</a>
-  </div><div class="panel-lists">${list(OUT, '참조', model.outgoing)}${list(IN, '역참조', model.incoming)}</div>`;
+  </div><div class="panel-lists">${list(BOTH, '서로 언급', model.mutual)}${list(OUT, '이 글에서 언급', model.outgoing)}${list(IN, '이 글을 언급', model.incoming)}</div>`;
   bindMaturity(body);
 }
 
@@ -50,7 +50,7 @@ const notesByPath = new Map(notes.map((n) => [n.path, n]));
 const noteEdges = data.noteEdges.map(([source, target]) => ({ source: notes[source].path, target: notes[target].path }));
 const nodeByPath = new Map(nodes.map((n) => [n.path, n]));
 const decorate = (i: PanelModel['outgoing'][number]) => { const node = nodeByPath.get(i.path); return { ...i, nodeId: node?.id, isHub: node?.type === 'hub' }; };
-const withNodeIds = (model: PanelModel) => ({ ...model, outgoing: model.outgoing.map(decorate), incoming: model.incoming.map(decorate) });
+const withNodeIds = (model: PanelModel) => ({ ...model, mutual: model.mutual.map(decorate), outgoing: model.outgoing.map(decorate), incoming: model.incoming.map(decorate) });
 const byMapKey = new Map(nodes.map((n) => [n.mapKey, n]));
 // SVG는 마운트 전까지 기본 크기(300×150)라서 CSS로 크기가 정해진 상자를 잰다.
 const rect = svg.parentElement!.getBoundingClientRect();
@@ -191,7 +191,7 @@ filterReset?.addEventListener('click', () => {
   // 해제 버튼은 사라지므로 포커스를 첫 필터로 돌린다. 노드 선택과 지도 시점은 그대로 둔다.
   if (restoreFocus) document.querySelector<HTMLButtonElement>('[data-topic]')?.focus({ preventScroll: true });
 });
-// 패널의 시작점·참조·역참조 링크와 휴대폰 폭 그래프 아래의 시작점 목록은 페이지로 가지 않고 지도에서 그 노드를 고른다.
+// 패널의 연결 링크와 휴대폰 폭 그래프 아래의 시작점 목록은 페이지로 가지 않고 지도에서 그 노드를 고른다.
 for (const list of [panel, document.querySelector('[data-map-start]')]) list?.addEventListener('click', (event) => {
   const link = (event.target as Element).closest<HTMLAnchorElement>('a[data-node]');
   if (!link) return;

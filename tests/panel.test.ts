@@ -30,6 +30,20 @@ test('panelModel shows explicit summaries and category labels for development no
   assert.deepEqual(dev.topics.map((t) => t.name), ['설계']);
 });
 
+test('reciprocal references appear once and keep one-way public references separate', () => {
+  const model = panelModel(hubNote, notes, [
+    ...edges, { source: 'b.md', target: 'a.md' }, { source: 'a.md', target: 'b.md' },
+    { source: 'a.md', target: 'a.md' }, { source: 'private.md', target: 'a.md' }
+  ]);
+  assert.deepEqual(model.mutual.map((n) => n.path), ['b.md']);
+  assert.deepEqual(model.outgoing, []);
+  assert.deepEqual(model.incoming.map((n) => n.path), ['c.md']);
+  const reverse = panelModel(plainNote, notes, edges);
+  assert.deepEqual(reverse.mutual, []);
+  assert.deepEqual(reverse.outgoing, []);
+  assert.deepEqual(reverse.incoming.map((n) => n.path), ['a.md']);
+});
+
 test('the map graph label describes the panel without naming a direction', () => {
   // 패널은 넓은 화면에서 오른쪽에, 휴대폰 폭에서는 아래 시트로 열린다. 방향을 적으면 한쪽 독자에게 틀린 안내가 된다.
   const map = readFileSync(new URL('../src/pages/map/index.astro', import.meta.url), 'utf8');

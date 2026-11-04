@@ -3,6 +3,7 @@
 const icon = (body: string) => `<svg width="20" height="14" viewBox="0 0 20 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
 
 export const REF_ICONS = {
+  both: icon('<path d="M2 7h16M4.5 4.5L2 7l2.5 2.5M15.5 4.5L18 7l-2.5 2.5"></path>'),
   out: icon('<circle cx="4" cy="7" r="2"></circle><path d="M6 7h12m-2.5-2.5L18 7l-2.5 2.5"></path>'),
   // 점선 몸통만 butt 끝이다. 둥근 끝은 양쪽으로 굵기의 절반씩 늘어나 틈을 메우므로 실선처럼 보인다. 지도 간선(graph.css)도 butt 끝이고 대시 비율도 같다(5 4).
   in: icon('<circle cx="16" cy="7" r="2"></circle><path d="M14 7H2" stroke-dasharray="2.5 2" stroke-linecap="butt"></path><path d="M4.5 4.5L2 7l2.5 2.5"></path>')
