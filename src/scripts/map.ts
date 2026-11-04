@@ -6,7 +6,7 @@ type PanelReference = PanelModel['outgoing'][number] & { nodeId?: string; isHub?
 type DecoratedPanel = Omit<PanelModel, 'outgoing' | 'incoming'> & { outgoing: PanelReference[]; incoming: PanelReference[]; maturity: MaturityStage | null };
 
 import type { MaturityStage } from '../lib/maturity.ts';
-import { createGraph, isFilteredOut } from '../graph/engine.ts';
+import { createGraph, isFilteredOut, LAYOUT } from '../graph/engine.ts';
 import { layoutGraph, ATLAS_LAYOUT } from '../graph/layout.ts';
 import { panelModel } from '../lib/panel.ts';
 import { escapeHtml as escape } from '../lib/format.ts';
@@ -55,7 +55,12 @@ const byMapKey = new Map(nodes.map((n) => [n.mapKey, n]));
 // SVG는 마운트 전까지 기본 크기(300×150)라서 CSS로 크기가 정해진 상자를 잰다.
 const rect = svg.parentElement!.getBoundingClientRect();
 // 무대 픽셀 크기로 배치한다. 맞춤 배율이 1이 되어 제목이 13px 그대로 보인다(pad는 fitTransform의 여백과 같은 40).
-const stageSize = { width: Math.round(rect.width), height: Math.round(rect.height) };
+// 창이 막 열려 무대가 아직 크기를 받지 못했으면 그 크기로 배치한 좌표가 모두 NaN이 되거나(폭·높이 0) 한 줄로 눌렸고(위아래
+// 테두리 2px뿐), 배치는 다시 하지 않아 창이 커져도 그대로 남았다. 여백 두 배보다 작은 변은 엔진의 기본 크기로 배치하고,
+// 무대가 크기를 받으면 resize의 맞춤이 무대에 맞춘다.
+const STAGE_PAD = 40;
+const usable = (length: number) => length > 2 * STAGE_PAD;
+const stageSize = { width: usable(rect.width) ? Math.round(rect.width) : LAYOUT.width, height: usable(rect.height) ? Math.round(rect.height) : LAYOUT.height };
 let graph: ReturnType<typeof createGraph>;
 
 const backdrop = document.querySelector<HTMLElement>('[data-sheet-backdrop]');
@@ -92,7 +97,7 @@ function syncSheet() {
   }
 }
 
-const positions = layoutGraph(nodes, edges, { ...stageSize, pad: 40, ...ATLAS_LAYOUT });
+const positions = layoutGraph(nodes, edges, { ...stageSize, pad: STAGE_PAD, ...ATLAS_LAYOUT });
 graph = createGraph(svg, {
   nodes,
   edges,
@@ -211,10 +216,16 @@ document.addEventListener('keydown', (event) => {
   else if (graph.selected()) select(null, true);
 });
 // 모바일 주소창이 접히면 높이만 바뀐 resize가 온다. 무대 폭이 실제로 바뀔 때만 다시 맞춘다.
+// 다만 기본 크기로 배치했다면 무대가 폭과 높이를 모두 받는 첫 resize에서 한 번 맞춘다. 높이만 0이었다가 돌아오면 폭이 그대로라
+// 폭만 보면 그림 좌표(viewBox)가 임시 높이로 남아 지도가 줄어 그려졌다.
 let stageWidth = stageSize.width;
+let provisional = !usable(rect.width) || !usable(rect.height);
 window.addEventListener('resize', () => {
-  const width = Math.round(svg.parentElement!.getBoundingClientRect().width);
-  if (width === stageWidth) return;
+  const box = svg.parentElement!.getBoundingClientRect();
+  const width = Math.round(box.width);
+  const settled = provisional && usable(box.width) && usable(box.height);
+  if (width === stageWidth && !settled) return;
+  if (settled) provisional = false;
   stageWidth = width;
   // 맞춤이 시점을 새로 정하므로 시트 때문에 민 자리는 더 되돌리지 않는다.
   sheetOrigin = null;
