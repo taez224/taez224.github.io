@@ -860,3 +860,37 @@ test('tablet contents stay usable at a 200 percent default font size', async ({ 
   await expect.poll(() => decodeURIComponent(new URL(page.url()).hash)).toBe(target);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
+
+// 한 열과 두 열이 바뀌면 본문 위 목차가 사라지거나 생겨 본문의 높이가 크게 달라진다. 틀의 폭도 함께 바뀌어
+// 브라우저의 스크롤 앵커링이 꺼지므로, 읽던 제목이 화면 밖으로 밀렸다(16px 1120→1121px에서 200px → -194px).
+test('the body block being read stays in place when the window crosses between one and two columns', async ({ page, isMobile }) => {
+  test.skip(isMobile, '창 폭을 넓혀 두 열로 바꾸는 동작은 데스크톱에서만 생긴다.');
+  for (const [font, narrow, wide] of [[16, 1120, 1121], [20, 1401, 1402]] as const) {
+    for (const [from, to] of [[narrow, wide], [wide, narrow]]) {
+      await page.setViewportSize({ width: from, height: 900 });
+      await gotoWithDefaultFontSize(page, '/notes/browser-sections/', font);
+      const heading = page.locator('.body h2').nth(2);
+      await heading.evaluate((h) => scrollTo(0, h.getBoundingClientRect().top + scrollY - 200));
+      await page.setViewportSize({ width: to, height: 900 });
+      // 보정은 다음 프레임을 그리기 전에 일어난다. 창 크기를 바꾼 직후 바로 읽으면 그 앞의 배치가 잡히므로 한 프레임 기다린다.
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      expect(Math.abs(await heading.evaluate((h) => h.getBoundingClientRect().top) - 200), `${font}px ${from}→${to}px`).toBeLessThanOrEqual(4);
+    }
+  }
+});
+
+// 제목·요약·본문 위 목차를 읽는 동안에는 본문 블록을 기준으로 잡지 않는다. 잡으면 창을 좁힐 때 목차 높이만큼 내려가 제목이 화면 밖으로 사라졌다.
+test('the title stays put when the window crosses columns before the body is reached', async ({ page, isMobile }) => {
+  test.skip(isMobile, '창 폭을 넓혀 두 열로 바꾸는 동작은 데스크톱에서만 생긴다.');
+  for (const [from, to] of [[1121, 1120], [1120, 1121]]) {
+    await page.setViewportSize({ width: from, height: 900 });
+    await page.goto('/notes/browser-sections/');
+    await page.evaluate(() => scrollTo(0, 50));
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const before = await page.evaluate(() => scrollY);
+    await page.setViewportSize({ width: to, height: 900 });
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    expect(await page.evaluate(() => scrollY), `${from}→${to}px`).toBe(before);
+    await expect(page.locator('.note-title')).toBeInViewport();
+  }
+});
