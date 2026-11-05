@@ -3,7 +3,7 @@ import { hashTarget, inPageLink } from './in-page-link.ts';
 export function setupSidenotes(refs: HTMLAnchorElement[]) {
   const view = document.querySelector<HTMLElement>('.note-view');
   const article = view?.querySelector<HTMLElement>('.note-article');
-  const wide = matchMedia('(min-width: 1121px) and (min-width: 100em)');
+  const wide = matchMedia('(min-width: 1121px) and (min-width: 81em)');
   const notes = new Map<HTMLElement, HTMLAnchorElement[]>();
   for (const ref of refs) {
     const item = hashTarget(ref.hash);

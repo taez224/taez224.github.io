@@ -31,7 +31,7 @@ const label = hasToc && hasConnections ? '목차와 연결' : hasToc ? '목차' 
 </>}
 <style>
   .toc-sheet { display: none; }
-  @media (max-width: 1120px) {
+  @media (max-width: 1120px), (width < 70.0625em) {
     .toc-sheet { position: fixed; inset: auto 16px calc(72px + env(safe-area-inset-bottom)) auto; width: min(380px, calc(100vw - 32px)); height: min(360px, 65dvh); max-height: none; margin: 0; overflow: hidden; padding: 0; border: 1px solid var(--overlay-line); border-radius: 6px; background: var(--paper-strong); color: var(--ink); }
     .toc-sheet:popover-open { display: flex; flex-direction: column; }
     .toc-head { display: flex; align-items: center; gap: 12px; padding: 4px 12px 0 18px; flex: none; }

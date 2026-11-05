@@ -19,10 +19,50 @@ test('wide sidenotes preserve original anchors, avoid collisions and return to t
   await expect(page).toHaveURL(/#fn:1$/);
   await page.getByRole('link', { name: '1번 각주를 단 곳으로', exact: true }).press('Enter');
   await expect(page.getByRole('link', { name: '각주 1', exact: true })).toBeFocused();
-  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.setViewportSize({ width: 1295, height: 1000 });
   await expect(page.locator('.note-view')).not.toHaveAttribute('data-sidenotes');
   await expect(page.locator('.footnotes-title')).toBeVisible();
   await expect(page.locator('[id="fn:1"]')).toHaveCSS('position', 'static');
+});
+
+// 각주 열은 두 열과 같은 틀 안에 더해지므로 각주가 켜지는 순간 헤더·목차·본문이 움직이지 않아야 한다.
+test('at the default 16px text sidenotes switch on at 1296px without moving the header, sidebar or body', async ({ page }) => {
+  const lefts = () => page.evaluate(() => ['.site-header .wrap', '.note-side', '.note-article'].map(s => document.querySelector(s)!.getBoundingClientRect().left));
+  await page.setViewportSize({ width: 1295, height: 1000 });
+  await gotoWithDefaultFontSize(page, '/notes/browser-start/', 16);
+  await expect(page.locator('.note-view')).not.toHaveAttribute('data-sidenotes');
+  const before = await lefts();
+  await page.setViewportSize({ width: 1296, height: 1000 });
+  await expect(page.locator('.note-view')).toHaveAttribute('data-sidenotes', '');
+  const after = await lefts();
+  before.forEach((left, i) => expect(Math.abs(left - after[i])).toBeLessThanOrEqual(1));
+});
+
+test('at the default 18px text sidenotes stay on once they are on while the window widens', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await gotoWithDefaultFontSize(page, '/notes/browser-start/', 18);
+  let on = false;
+  for (const width of [1440, 1460, 1500, 1600, 1700, 1800, 1900, 2000]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.waitForTimeout(100);
+    const now = await page.locator('.note-view').evaluate(e => e.hasAttribute('data-sidenotes'));
+    if (on) expect(now, `${width}px`).toBe(true);
+    on ||= now;
+  }
+  expect(on).toBe(true);
+});
+
+test('at the default 16px text a 1440px window puts the first footnote between the body and the frame edge', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await gotoWithDefaultFontSize(page, '/notes/browser-start/', 16);
+  await expect(page.locator('.note-view')).toHaveAttribute('data-sidenotes', '');
+  const box = await page.evaluate(() => ({
+    note: document.querySelector('[id="fn:1"]')!.getBoundingClientRect().toJSON(),
+    article: document.querySelector('.note-article')!.getBoundingClientRect().right,
+    view: document.querySelector('.note-view')!.getBoundingClientRect().right
+  }));
+  expect(box.note.left).toBeGreaterThan(box.article);
+  expect(box.note.right).toBeLessThanOrEqual(box.view);
 });
 
 test('late footnote growth stays clear of other notes and the footer', async ({ page }) => {
@@ -35,7 +75,7 @@ test('late footnote growth stays clear of other notes and the footer', async ({ 
     const footer = document.querySelector('.note-footer')!.getBoundingClientRect();
     return notes.every((n, i) => (!i || n.top >= notes[i - 1].bottom) && n.bottom <= footer.top);
   })).toBe(true);
-  await page.setViewportSize({ width: 1599, height: 1000 });
+  await page.setViewportSize({ width: 1295, height: 1000 });
   await expect(page.locator('.note-view')).not.toHaveAttribute('data-sidenotes');
 });
 
@@ -282,4 +322,37 @@ test('a modified click on a footnote number does not open the panel on narrow sc
   });
   expect(prevented).toBe(false);
   await expect(page.locator('.footnote-panel:popover-open')).toHaveCount(0);
+});
+
+// 읽기 화면의 두 열은 1121px과 70.0625em을 모두 넘을 때 쓴다. 기본 글자 16px에서는 두 값이 같고, 큰 글자에서는 목차가 커진 만큼 늦게 두 열이 된다.
+// 1121px 하한은 작은 기본 글자에서 태블릿이 두 열로 바뀌지 않게 한다.
+async function readerLayout(page: import('@playwright/test').Page) {
+  return page.evaluate(() => {
+    const article = document.querySelector('.note-article')!.getBoundingClientRect();
+    const side = document.querySelector('.note-side')!.getBoundingClientRect();
+    const toc = document.querySelector('.mobile-toc')!.getBoundingClientRect();
+    return { twoColumns: side.right < article.left, sideBelow: side.top > article.top, tocShown: toc.width > 0 && toc.height > 0, articleWidth: article.width };
+  });
+}
+
+test('at the default 24px text the reader stays one column at 1121px and the two-column body is not narrower than one column', async ({ page }) => {
+  await page.setViewportSize({ width: 1121, height: 900 });
+  await gotoWithDefaultFontSize(page, '/notes/browser-sections/', 24);
+  const narrow = await readerLayout(page);
+  expect(narrow).toMatchObject({ twoColumns: false, sideBelow: true, tocShown: true });
+  expect(Math.abs(narrow.articleWidth - 720)).toBeLessThan(1);
+  await page.setViewportSize({ width: 1700, height: 900 });
+  const wide = await readerLayout(page);
+  expect(wide).toMatchObject({ twoColumns: true, sideBelow: false, tocShown: false });
+  expect(wide.articleWidth).toBeGreaterThanOrEqual(720);
+});
+
+test('at the default 16px text the reader switches to two columns between 1120px and 1121px with a 720px body', async ({ page }) => {
+  await page.setViewportSize({ width: 1120, height: 900 });
+  await gotoWithDefaultFontSize(page, '/notes/browser-sections/', 16);
+  expect(await readerLayout(page)).toMatchObject({ twoColumns: false, sideBelow: true, tocShown: true });
+  await page.setViewportSize({ width: 1121, height: 900 });
+  const two = await readerLayout(page);
+  expect(two).toMatchObject({ twoColumns: true, sideBelow: false, tocShown: false });
+  expect(Math.abs(two.articleWidth - 720)).toBeLessThan(1);
 });
