@@ -12,6 +12,17 @@ export function setupSidenotes(refs: HTMLAnchorElement[]) {
   if (!view || !article || !notes.size) return { active: () => false };
   let active = false;
   let pending = 0;
+  // 번호와 각주의 짝 표시. 겹치는 각주를 아래로 밀면 번호와 높이가 어긋나 숫자만으로 짝을 찾아야 했다.
+  const mark = (item: HTMLElement, name: string, on: boolean) => {
+    item.classList.toggle(name, on);
+    for (const ref of notes.get(item) ?? []) ref.classList.toggle(name, on);
+  };
+  let current: HTMLElement | null = null;
+  const select = (item: HTMLElement | null) => {
+    if (current) mark(current, 'is-current', false);
+    current = item;
+    if (item) mark(item, 'is-current', true);
+  };
   const layout = () => {
     pending = 0;
     const next = wide.matches;
@@ -21,6 +32,7 @@ export function setupSidenotes(refs: HTMLAnchorElement[]) {
       document.dispatchEvent(new Event('sidenoteschange'));
     }
     if (!next) {
+      select(null);
       for (const item of notes.keys()) item.style.removeProperty('--sidenote-top');
       view.style.removeProperty('--sidenote-overflow');
       return;
@@ -43,6 +55,28 @@ export function setupSidenotes(refs: HTMLAnchorElement[]) {
     view.style.setProperty('--sidenote-overflow', `${overflow}px`);
   };
   const schedule = () => { if (!pending) pending = requestAnimationFrame(layout); };
+  for (const [item, references] of notes) {
+    // 짝 표시는 마우스와 키보드 포커스에만 준다. 터치의 pointerenter는 탭과 함께 와서 표시가 남는다.
+    const enter = (event: Event) => { if (active && (!(event instanceof PointerEvent) || event.pointerType === 'mouse')) mark(item, 'is-paired', true); };
+    const leave = () => mark(item, 'is-paired', false);
+    for (const target of [item, ...references]) {
+      target.addEventListener('pointerenter', enter);
+      target.addEventListener('pointerleave', leave);
+      target.addEventListener('focusin', enter);
+      target.addEventListener('focusout', leave);
+    }
+    for (const ref of references) {
+      // 여백 각주는 이미 번호 옆에 있으므로 누른 번호로 스크롤하지 않고 짝만 표시한다. 읽던 줄이 밀리지 않는다.
+      // 화면 밖에 있을 때만 보일 만큼 옮긴다. 키보드로 누르면(detail 0) 링크대로 포커스를 각주로 옮기고 ↩로 돌아온다.
+      ref.addEventListener('click', (event) => {
+        if (!active || event.detail === 0) return;
+        event.preventDefault();
+        select(item);
+        const box = item.getBoundingClientRect();
+        if (box.top < 0 || box.bottom > innerHeight) item.scrollIntoView({ block: 'nearest' });
+      });
+    }
+  }
   const observer = new ResizeObserver(schedule);
   observer.observe(article);
   for (const item of notes.keys()) observer.observe(item);
