@@ -122,6 +122,8 @@ test('a hub note shows no maturity even when its status is set', async ({ page }
 });
 
 test('adjacent footnotes have their own space and open the intended note', async ({ page, isMobile }) => {
+  // 1296px부터는 여백 각주가 켜져 번호를 눌러도 판이 열리지 않으므로, 판을 쓰는 1295px 이하 폭에서 확인한다.
+  if (!isMobile) await page.setViewportSize({ width: 1280, height: 1000 });
   await page.goto('/notes/browser-start/');
   const first = page.getByRole('link', { name: '각주 1', exact: true });
   const second = page.getByRole('link', { name: '각주 2', exact: true });
@@ -162,6 +164,8 @@ const freezeClock = async (page: import('@playwright/test').Page) => {
 test('hovering a footnote number previews it until the pointer leaves both number and panel', async ({ page, isMobile }) => {
   test.skip(isMobile, '호버 미리보기는 마우스에서만 쓴다');
   await freezeClock(page);
+  // 1296px부터는 여백 각주가 켜져 번호를 눌러도 판이 열리지 않으므로, 판을 쓰는 1295px 이하 폭에서 확인한다.
+  if (!isMobile) await page.setViewportSize({ width: 1280, height: 1000 });
   await page.goto('/notes/browser-start/');
   await pushFootnotesOffscreen(page);
   const panel = page.locator('.footnote-panel');
@@ -191,6 +195,8 @@ test('hovering a footnote number previews it until the pointer leaves both numbe
 test('clicking a previewed footnote pins the panel until Escape', async ({ page, isMobile }) => {
   test.skip(isMobile, '호버 미리보기는 마우스에서만 쓴다');
   await freezeClock(page);
+  // 1296px부터는 여백 각주가 켜져 번호를 눌러도 판이 열리지 않으므로, 판을 쓰는 1295px 이하 폭에서 확인한다.
+  if (!isMobile) await page.setViewportSize({ width: 1280, height: 1000 });
   await page.goto('/notes/browser-start/');
   await pushFootnotesOffscreen(page);
   const panel = page.locator('.footnote-panel');
@@ -208,6 +214,8 @@ test('clicking a previewed footnote pins the panel until Escape', async ({ page,
 
 // 닫히는 판을 전환으로 남겨 두면 번호의 anchor-name이 먼저 빠져 그 사이 판이 화면 왼쪽 위로 튄다.
 test('a closing footnote panel disappears at once instead of losing its anchor', async ({ page, isMobile }) => {
+  // 1296px부터는 여백 각주가 켜져 번호를 눌러도 판이 열리지 않으므로, 판을 쓰는 1295px 이하 폭에서 확인한다.
+  if (!isMobile) await page.setViewportSize({ width: 1280, height: 1000 });
   await page.goto('/notes/browser-start/');
   const first = page.getByRole('link', { name: '각주 1', exact: true });
   if (isMobile) await first.tap(); else await first.click();
@@ -221,6 +229,8 @@ test('a closing footnote panel disappears at once instead of losing its anchor',
 
 test('moving to a number whose footnote is on screen closes the previous preview', async ({ page, isMobile }) => {
   test.skip(isMobile, '호버 미리보기는 마우스에서만 쓴다');
+  // 1296px부터는 여백 각주가 켜져 번호를 눌러도 판이 열리지 않으므로, 판을 쓰는 1295px 이하 폭에서 확인한다.
+  if (!isMobile) await page.setViewportSize({ width: 1280, height: 1000 });
   await page.goto('/notes/browser-start/');
   // 첫 항목은 화면 안에 두고 둘째 항목만 화면 밖으로 민다.
   await page.addStyleTag({ content: '.body .footnotes li:first-child { margin-bottom: 3000px; }' });
@@ -241,8 +251,10 @@ test('the preview stays closed when the footnote list is already on screen', asy
   await expect(page.locator('.footnote-panel')).toBeHidden();
 });
 
-test('copy works inside the footnote panel each time it opens', async ({ page, context }) => {
+test('copy works inside the footnote panel each time it opens', async ({ page, context, isMobile }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  // 1296px부터는 여백 각주가 켜져 번호를 눌러도 판이 열리지 않으므로, 판을 쓰는 1295px 이하 폭에서 확인한다.
+  if (!isMobile) await page.setViewportSize({ width: 1280, height: 1000 });
   await page.goto('/notes/browser-start/');
   for (let i = 0; i < 2; i++) {
     await page.getByRole('link', { name: '각주 3', exact: true }).click();

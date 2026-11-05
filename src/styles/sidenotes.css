@@ -1,25 +1,26 @@
-/* 1440px에서는 본문을 가운데에 두고 왼쪽 여백에 탐색을 놓는다. 더 좁으면 빈 오른쪽 여백부터 줄인다.
-   배치는 스크립트와 각주 유무에 의존하지 않아 첫 화면이나 글 이동에서 좌우가 바뀌지 않는다. */
-@media screen and (min-width: 1121px) {
-  .wrap.note-view { width: min(var(--s-reader-frame), 100% - 2 * var(--s-page-gutter)); grid-template-columns: var(--s-reader-navigation) minmax(0, var(--s-reader-column)); column-gap: var(--s-column-gap); }
+/* 두 열은 본문을 가운데에 두고 왼쪽 여백에 탐색을 놓는다. 더 좁으면 빈 오른쪽 여백부터 줄인다.
+   배치는 스크립트와 각주 유무에 의존하지 않아 첫 화면이나 글 이동에서 좌우가 바뀌지 않는다.
+   81em(기본 글자 16px에서 1296px)부터는 같은 틀 안에 각주 열을 더하므로 각주가 켜질 때 목차와 본문이 움직이지 않는다.
+   치수가 rem이라 기본 글자를 키우면 켜지는 폭도 함께 커진다. */
+@media screen and (min-width: 1121px) and (width >= 70.0625em) {
+  .wrap.note-view { width: min(var(--s-reader-frame), 100% - 2 * var(--s-page-gutter)); grid-template-columns: var(--s-reader-navigation) minmax(0, var(--s-reader-measure)); column-gap: var(--s-reader-rail-gap); }
   .wrap.note-view > .note-article { grid-column: 2; grid-row: 1; }
   .wrap.note-view > .note-side { grid-column: 1; grid-row: 1 / span 2; }
   .wrap.note-view > .note-footer { grid-column: 2; }
 }
-/* 큰 기본 글자 설정에서는 여백 각주를 강요하지 않는다. 100em은 기본 16px에서 1600px이다. */
-@media screen and (min-width: 1121px) and (min-width: 100em) {
+@media screen and (min-width: 1121px) and (min-width: 81em) {
   .wrap.note-view {
-    width: min(85rem, 100% - 2 * var(--s-page-gutter));
     position: relative;
-    grid-template-columns: 16.25rem 45rem 16.25rem;
-    column-gap: 3.75rem;
+    grid-template-columns: var(--s-reader-navigation) var(--s-reader-measure) var(--s-reader-navigation);
   }
   .note-view[data-sidenotes] > .note-footer { margin-top: var(--sidenote-overflow, 0px); }
   .note-view[data-sidenotes] .footnotes { margin: 0; }
   .note-view[data-sidenotes] .footnotes-title { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); }
   .note-view[data-sidenotes] .footnotes > ol { margin: 0; padding: 0; }
   .note-view[data-sidenotes] .footnotes > ol > li {
-    position: absolute; top: var(--sidenote-top); left: 68.75rem; width: 16.25rem;
+    position: absolute; top: var(--sidenote-top);
+    left: calc(var(--s-reader-navigation) + var(--s-reader-measure) + 2 * var(--s-reader-rail-gap));
+    width: var(--s-reader-navigation);
     box-sizing: border-box; margin: 0; padding: 12px 0 0 22px;
     border-top: 1px solid var(--line); color: var(--muted);
     font-size: var(--t-side); line-height: 1.8; scroll-margin-top: 110px;
@@ -32,4 +33,13 @@
   /* 여백의 링크는 둘레 글자와 같은 보조색으로 두고 밑줄로만 링크임을 알린다. 출처 링크가 많은 글에서 강조색 링크가 여백을 본문보다 먼저 눈에 띄게 했다. */
   .note-view[data-sidenotes] .footnotes > ol > li a:not(.footnote-backref) { color: inherit; }
   @media (hover: hover) { .note-view[data-sidenotes] .footnotes > ol > li a:not(.footnote-backref):hover { color: var(--ink); } }
+}
+/* 100em(기본 16px에서 1600px) 이상에서는 틀과 열을 한 단계 넓힌다. 81em 블록보다 뒤에 있어야 덮어쓴다. */
+@media screen and (min-width: 1121px) and (min-width: 100em) {
+  .wrap.note-view {
+    width: min(85rem, 100% - 2 * var(--s-page-gutter));
+    grid-template-columns: 16.25rem 45rem 16.25rem;
+    column-gap: 3.75rem;
+  }
+  .note-view[data-sidenotes] .footnotes > ol > li { left: 68.75rem; width: 16.25rem; }
 }

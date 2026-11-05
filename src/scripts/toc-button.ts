@@ -11,7 +11,7 @@ if (button && sheet && body && typeof sheet.showPopover === 'function') {
   const links = [...sheet.querySelectorAll<HTMLAnchorElement>('a[data-toc-target]')];
   const headings = links.map((link) => document.getElementById(link.dataset.tocTarget!)).filter((heading): heading is HTMLElement => heading !== null);
   let foldedOnScreen = !!folded;
-  const narrow = matchMedia('(max-width: 1120px)');
+  const narrow = matchMedia('(max-width: 1120px), (width < 70.0625em)');
   let queued = false;
   const update = () => {
     queued = false;
