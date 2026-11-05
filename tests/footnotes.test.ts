@@ -70,6 +70,8 @@ function page({ anchorPositioning = true } = {}) {
     // 여백 배치와 화면 전환은 reader-sidenotes.spec.ts에서 실제 브라우저로 검사한다.
     setupSidenotes: () => ({ active: () => false }),
     hashTarget: (hash: string) => items.get(decodeURIComponent(hash.slice(1))) ?? null,
+    // 보조키 누름을 거르는 판정은 in-page-link.ts가 맡고, 실제 새 탭 동작은 reader-sidenotes.spec.ts가 본다.
+    inPageLink: (event: { metaKey?: boolean; ctrlKey?: boolean; shiftKey?: boolean; altKey?: boolean }) => (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey ? null : {}),
     setupCodeCopy: (root: FakeElement) => initialized.push(root),
     CSS: { supports: (query: string) => anchorPositioning && /anchor-name/.test(query) },
     HTMLElement: { prototype: { showPopover() {} } },

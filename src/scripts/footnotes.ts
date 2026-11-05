@@ -1,5 +1,5 @@
 import { setupSidenotes } from './sidenotes.ts';
-import { hashTarget } from './in-page-link.ts';
+import { hashTarget, inPageLink } from './in-page-link.ts';
 import { setupCodeCopy } from './code-copy.ts';
 // 여백 각주를 쓰지 않는 화면에서 번호를 누르면 그 각주를 판으로 띄운다. 판을 번호에 붙이고 화면 가장자리와 아래 공간을 피하는 일은
 // CSS anchor positioning이 맡고(body.css의 .footnote-panel), 판을 맨 위 층에 올리는 일은 popover가 맡는다.
@@ -80,7 +80,8 @@ if (refs.length && typeof HTMLElement.prototype.showPopover === 'function' && CS
   for (const ref of refs) {
     ref.addEventListener('click', (event) => {
       const item = itemFor(ref);
-      if (sidenotes.active() || event.detail === 0 || !item) return;
+      // 새 탭·새 창으로 여는 누름은 inPageLink가 걸러 판을 띄우지 않고 브라우저에 맡긴다.
+      if (sidenotes.active() || event.detail === 0 || !item || !inPageLink(event)) return;
       event.preventDefault();
       if (current === ref && pinned) close();
       else {

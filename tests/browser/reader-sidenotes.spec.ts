@@ -197,3 +197,89 @@ test('small default text keeps the tablet in a single reading column', async ({ 
   const wideArticle = await page.locator('.note-article').boundingBox();
   expect(side!.x + side!.width).toBeLessThan(wideArticle!.x);
 });
+
+// 여백 각주는 이미 번호 옆에 보이는데, 번호를 누르면 링크대로 그 항목까지 스크롤해 읽던 줄이 위로 밀렸다.
+// 누른 번호와 각주는 짝으로 표시하고, 각주가 화면 밖에 있을 때만 보일 만큼 옮긴다.
+test('clicking a number beside its sidenote keeps the reading position and marks the pair', async ({ page }) => {
+  await page.setViewportSize({ width: 1800, height: 1000 });
+  await page.goto('/notes/browser-start/');
+  await expect(page.locator('.note-view')).toHaveAttribute('data-sidenotes', '');
+  const ref = page.getByRole('link', { name: '각주 1', exact: true });
+  const note = page.locator('[id="fn:1"]');
+  await ref.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+  const before = await page.evaluate(() => scrollY);
+  await ref.click();
+  expect(await page.evaluate(() => scrollY)).toBe(before);
+  await expect(page).not.toHaveURL(/#fn:1$/);
+  await expect(note).toHaveClass(/is-current/);
+  await expect(ref).toHaveClass(/is-current/);
+
+  // 짝 표시는 번호와 각주 어느 쪽을 가리켜도 같다. 밀려 내려간 각주도 숫자로 짝을 찾지 않아도 된다.
+  // 누른 번호에는 포커스가 남아 짝 표시가 유지되므로, 호버만 보려고 포커스를 뺀다.
+  await ref.blur();
+  await page.mouse.move(0, 0);
+  await note.hover();
+  await expect(ref).toHaveClass(/is-paired/);
+  await page.mouse.move(0, 0);
+  await expect(ref).not.toHaveClass(/is-paired/);
+  await ref.hover();
+  await expect(note).toHaveClass(/is-paired/);
+
+  // 번호가 화면 아래 끝에 걸려 각주가 다 보이지 않으면 보일 만큼만 옮긴다. 짧은 검사 글이라 화면 높이를 번호 아래 끝에 맞춘다.
+  await page.evaluate(() => scrollTo(0, 0));
+  const refBottom = await ref.evaluate((el) => el.getBoundingClientRect().bottom);
+  await page.setViewportSize({ width: 1800, height: Math.ceil(refBottom) + 8 });
+  expect(await note.evaluate((el) => el.getBoundingClientRect().bottom > innerHeight)).toBe(true);
+  await ref.click();
+  await expect.poll(() => note.evaluate((el) => { const b = el.getBoundingClientRect(); return b.top >= 0 && b.bottom <= innerHeight + 1; })).toBe(true);
+  await expect(page).not.toHaveURL(/#fn:1$/);
+});
+
+// ⌘·Ctrl·Shift 누름은 새 탭·새 창으로 여는 동작이라 가로채지 않는다.
+test('a modified click on a sidenote number is left to the browser', async ({ page }) => {
+  await page.setViewportSize({ width: 1800, height: 1000 });
+  await page.goto('/notes/browser-start/');
+  await expect(page.locator('.note-view')).toHaveAttribute('data-sidenotes', '');
+  const prevented = await page.getByRole('link', { name: '각주 1', exact: true }).evaluate((ref) => {
+    let result = true;
+    // 요소의 처리가 끝난 뒤 창에서 결과를 읽고, 검사 페이지가 실제로 새 창을 열지 않게 여기서 막는다.
+    const read = (event: Event) => { result = event.defaultPrevented; event.preventDefault(); };
+    window.addEventListener('click', read, { once: true });
+    ref.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, detail: 1, metaKey: true, ctrlKey: true }));
+    return result;
+  });
+  expect(prevented).toBe(false);
+  await expect(page.locator('[id="fn:1"]')).not.toHaveClass(/is-current/);
+});
+
+// 키보드 포커스가 번호에 남아 있으면 마우스가 지나가고 떠나도 짝 표시를 유지한다.
+test('the pair stays marked while focus remains after the pointer leaves', async ({ page }) => {
+  await page.setViewportSize({ width: 1800, height: 1000 });
+  await page.goto('/notes/browser-start/');
+  await expect(page.locator('.note-view')).toHaveAttribute('data-sidenotes', '');
+  const ref = page.getByRole('link', { name: '각주 1', exact: true });
+  const note = page.locator('[id="fn:1"]');
+  await ref.focus();
+  await expect(note).toHaveClass(/is-paired/);
+  await ref.hover();
+  await page.mouse.move(0, 0);
+  await expect(note).toHaveClass(/is-paired/);
+  await ref.blur();
+  await expect(note).not.toHaveClass(/is-paired/);
+});
+
+// 좁은 화면의 각주 판도 새 탭·새 창으로 여는 누름은 브라우저에 맡긴다.
+test('a modified click on a footnote number does not open the panel on narrow screens', async ({ page }) => {
+  await page.setViewportSize({ width: 1000, height: 900 });
+  await page.goto('/notes/browser-start/');
+  await expect(page.locator('.note-view')).not.toHaveAttribute('data-sidenotes');
+  const prevented = await page.getByRole('link', { name: '각주 1', exact: true }).evaluate((ref) => {
+    let result = true;
+    const read = (event: Event) => { result = event.defaultPrevented; event.preventDefault(); };
+    window.addEventListener('click', read, { once: true });
+    ref.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, detail: 1, metaKey: true, ctrlKey: true }));
+    return result;
+  });
+  expect(prevented).toBe(false);
+  await expect(page.locator('.footnote-panel:popover-open')).toHaveCount(0);
+});
