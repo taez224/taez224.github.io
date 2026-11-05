@@ -1,4 +1,4 @@
-import { hashTarget } from './in-page-link.ts';
+import { hashTarget, inPageLink } from './in-page-link.ts';
 // 원본 각주 항목을 그대로 배치해 앵커·코드 복사·반복 참조의 복귀 링크를 보존한다.
 export function setupSidenotes(refs: HTMLAnchorElement[]) {
   const view = document.querySelector<HTMLElement>('.note-view');
@@ -57,19 +57,22 @@ export function setupSidenotes(refs: HTMLAnchorElement[]) {
   const schedule = () => { if (!pending) pending = requestAnimationFrame(layout); };
   for (const [item, references] of notes) {
     // 짝 표시는 마우스와 키보드 포커스에만 준다. 터치의 pointerenter는 탭과 함께 와서 표시가 남는다.
-    const enter = (event: Event) => { if (active && (!(event instanceof PointerEvent) || event.pointerType === 'mouse')) mark(item, 'is-paired', true); };
-    const leave = () => mark(item, 'is-paired', false);
+    // 호버와 포커스를 따로 기억한다. 한쪽이 떠날 때 함께 지우면 포커스가 남은 번호의 짝 표시가 사라진다.
+    let hovered = false;
+    let focused = false;
+    const update = () => mark(item, 'is-paired', active && (hovered || focused));
     for (const target of [item, ...references]) {
-      target.addEventListener('pointerenter', enter);
-      target.addEventListener('pointerleave', leave);
-      target.addEventListener('focusin', enter);
-      target.addEventListener('focusout', leave);
+      target.addEventListener('pointerenter', (event) => { if (event.pointerType === 'mouse') { hovered = true; update(); } });
+      target.addEventListener('pointerleave', (event) => { if (event.pointerType === 'mouse') { hovered = false; update(); } });
+      target.addEventListener('focusin', () => { focused = true; update(); });
+      target.addEventListener('focusout', () => { focused = false; update(); });
     }
     for (const ref of references) {
       // 여백 각주는 이미 번호 옆에 있으므로 누른 번호로 스크롤하지 않고 짝만 표시한다. 읽던 줄이 밀리지 않는다.
       // 화면 밖에 있을 때만 보일 만큼 옮긴다. 키보드로 누르면(detail 0) 링크대로 포커스를 각주로 옮기고 ↩로 돌아온다.
+      // 새 탭·새 창으로 여는 누름은 inPageLink가 걸러 브라우저에 맡긴다.
       ref.addEventListener('click', (event) => {
-        if (!active || event.detail === 0) return;
+        if (!active || event.detail === 0 || !inPageLink(event)) return;
         event.preventDefault();
         select(item);
         const box = item.getBoundingClientRect();

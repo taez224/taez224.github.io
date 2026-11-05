@@ -215,6 +215,8 @@ test('clicking a number beside its sidenote keeps the reading position and marks
   await expect(ref).toHaveClass(/is-current/);
 
   // 짝 표시는 번호와 각주 어느 쪽을 가리켜도 같다. 밀려 내려간 각주도 숫자로 짝을 찾지 않아도 된다.
+  // 누른 번호에는 포커스가 남아 짝 표시가 유지되므로, 호버만 보려고 포커스를 뺀다.
+  await ref.blur();
   await page.mouse.move(0, 0);
   await note.hover();
   await expect(ref).toHaveClass(/is-paired/);
@@ -231,4 +233,53 @@ test('clicking a number beside its sidenote keeps the reading position and marks
   await ref.click();
   await expect.poll(() => note.evaluate((el) => { const b = el.getBoundingClientRect(); return b.top >= 0 && b.bottom <= innerHeight + 1; })).toBe(true);
   await expect(page).not.toHaveURL(/#fn:1$/);
+});
+
+// ⌘·Ctrl·Shift 누름은 새 탭·새 창으로 여는 동작이라 가로채지 않는다.
+test('a modified click on a sidenote number is left to the browser', async ({ page }) => {
+  await page.setViewportSize({ width: 1800, height: 1000 });
+  await page.goto('/notes/browser-start/');
+  await expect(page.locator('.note-view')).toHaveAttribute('data-sidenotes', '');
+  const prevented = await page.getByRole('link', { name: '각주 1', exact: true }).evaluate((ref) => {
+    let result = true;
+    // 요소의 처리가 끝난 뒤 창에서 결과를 읽고, 검사 페이지가 실제로 새 창을 열지 않게 여기서 막는다.
+    const read = (event: Event) => { result = event.defaultPrevented; event.preventDefault(); };
+    window.addEventListener('click', read, { once: true });
+    ref.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, detail: 1, metaKey: true, ctrlKey: true }));
+    return result;
+  });
+  expect(prevented).toBe(false);
+  await expect(page.locator('[id="fn:1"]')).not.toHaveClass(/is-current/);
+});
+
+// 키보드 포커스가 번호에 남아 있으면 마우스가 지나가고 떠나도 짝 표시를 유지한다.
+test('the pair stays marked while focus remains after the pointer leaves', async ({ page }) => {
+  await page.setViewportSize({ width: 1800, height: 1000 });
+  await page.goto('/notes/browser-start/');
+  await expect(page.locator('.note-view')).toHaveAttribute('data-sidenotes', '');
+  const ref = page.getByRole('link', { name: '각주 1', exact: true });
+  const note = page.locator('[id="fn:1"]');
+  await ref.focus();
+  await expect(note).toHaveClass(/is-paired/);
+  await ref.hover();
+  await page.mouse.move(0, 0);
+  await expect(note).toHaveClass(/is-paired/);
+  await ref.blur();
+  await expect(note).not.toHaveClass(/is-paired/);
+});
+
+// 좁은 화면의 각주 판도 새 탭·새 창으로 여는 누름은 브라우저에 맡긴다.
+test('a modified click on a footnote number does not open the panel on narrow screens', async ({ page }) => {
+  await page.setViewportSize({ width: 1000, height: 900 });
+  await page.goto('/notes/browser-start/');
+  await expect(page.locator('.note-view')).not.toHaveAttribute('data-sidenotes');
+  const prevented = await page.getByRole('link', { name: '각주 1', exact: true }).evaluate((ref) => {
+    let result = true;
+    const read = (event: Event) => { result = event.defaultPrevented; event.preventDefault(); };
+    window.addEventListener('click', read, { once: true });
+    ref.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, detail: 1, metaKey: true, ctrlKey: true }));
+    return result;
+  });
+  expect(prevented).toBe(false);
+  await expect(page.locator('.footnote-panel:popover-open')).toHaveCount(0);
 });
