@@ -35,7 +35,7 @@ const softSeriesThumbnail = seriesNote?.thumbnailStyle === 'soft';
 // 첫 화면과 터치 기기의 정적 지도. 인라인 SVG라 영역 이름에 페이지 서체가 적용된다. 720px보다 넓고 마우스를 쓰면 엔진이 이 그림을 대신한다.
 const positions = layoutGraph(garden.nodes, garden.edges, { width: 1000, height: 640, ...ATLAS_LAYOUT });
 // 노드의 연결과 좌우 순서는 유지하고, 넓은 무대에 맞춰 세로 간격만 줄인다. 엔진과 첫 그림에 같은 좌표를 넘긴다.
-const widePositions = new Map([...positions].map(([id, p]) => [id, { x: p.x, y: 320 + (p.y - 320) * .62 }]));
+const widePositions = new Map([...positions].map(([id, p]) => [id, { x: p.x, y: 320 + (p.y - 320) * .7 }]));
 const snapshotLabel = `생각 지도. 노드 ${garden.stats.nodes}개와 연결 ${garden.stats.edges}개.`;
 // 데스크톱(1000px 초과)은 hero-graph.ts가 살아 있는 지도를 올리기 전까지 같은 모습의 정적 그림을 보여 교체가 눈에 띄지 않게 한다.
 const snapshotDesktop = renderSnapshotSvg(garden.nodes, garden.edges, widePositions, { width: 1000, height: 640, preset: 'desktop', pixelHeight: 430, label: snapshotLabel });
