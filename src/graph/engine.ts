@@ -105,6 +105,8 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
   // nodeScale: 노드 원 크기 배율. 지도는 무대가 좁아 0.7, 홈 히어로는 0.8로 그려 밀도를 맞춘다.
   // baseRadius는 맞춤 배율의 반지름이다. 지도를 맞춤보다 확대하면 원을 nodeZoom(zoomedNodeScale)만큼 줄여 그리고, 제목도 줄인 원을 기준으로 놓는다.
   const baseRadius = (node: GraphNode) => nodeRadius(node.degree ?? 0, nodeScale);
+  // 투명 누름 원의 반지름. 그리는 원(drawNodes)과 판정(nodeAt)이 같은 값을 써야 보이지 않는 영역과 선택이 어긋나지 않는다.
+  const hitRadius = (node: GraphNode) => Math.max(22, baseRadius(node));
   const nodeMotion = mode === 'map' ? createNodeMotion(initialPositions, edges, new Map(nodes.map(node => [node.id, baseRadius(node)]))) : null;
   const positions = nodeMotion?.positions ?? initialPositions;
   let nodeZoom = 1, fitScale = 1;
@@ -285,7 +287,7 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
       const g = el('g', { class: `node${node.isEntry ? ' is-entry' : ''}`, 'data-id': node.id, tabindex: focusable ? '0' : '-1', role: 'button', ...(mode === 'map' ? { 'aria-pressed': 'false' } : {}), 'aria-label': node.type === 'hub' ? `${cleanTitle(node.displayTitle ?? node.title)}. 허브` : cleanTitle(node.displayTitle ?? node.title) });
       if (node.isEntry) g.append(circle(r + RING_GAP.entry, { class: 'entry-halo' }));
       if (node.type === 'hub') g.append(circle(r + RING_GAP.hub, { class: 'hub-ring' }));
-      g.append(circle(Math.max(22, r), { class: 'hit', fill: 'transparent' }));
+      g.append(circle(hitRadius(node), { class: 'hit', fill: 'transparent' }));
       g.append(circle(r, { class: 'dot', fill: topicColor(node.topic) }));
       g.append(circle(r + RING_GAP.select, { class: 'select-ring' }));
       nodeLayer.append(g); nodeEls.set(node.id, g);
@@ -423,6 +425,30 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
   const render = () => { drawEdges(); refreshNodeStates(); drawLabels(); };
 
   const point = (event: MouseEvent) => { const rect = svg.getBoundingClientRect(); return { x: event.clientX - rect.left, y: event.clientY - rect.top }; };
+  // 투명한 누름 영역이 겹쳐도 SVG 그리기 순서가 선택을 결정하지 않게 한다.
+  // 실제로 노드를 누른 경우에만 다시 고르고, 빈 공간·무대 밖은 그대로 둔다.
+  // 순위: 보이는 원(.dot) 안 → 필터 안의 노드 → 가까운 중심. 흐린 노드도 원을 직접 누르면 골라야 하고,
+  // 선택의 이웃이 아니라서 흐린 노드는 다음에 누를 대상이므로 필터에서 빠진 노드(outOfFilter)만 순위를 낮춘다.
+  // 허브 고리와 진입점 후광은 가운데가 빈 테두리라 원으로 치지 않는다. 그 둘레는 누름 영역으로 고를 수 있다.
+  const nodeAt = (clientX: number, clientY: number, target: Element | null) => {
+    const hit = target?.closest<SVGGElement>('.node');
+    if (!hit || hit.closest('svg') !== svg || mode !== 'map') return hit ?? null;
+    const rect = svg.getBoundingClientRect(), t = state.transform;
+    const x = (clientX - rect.left - t.x) / t.scale, y = (clientY - rect.top - t.y) / t.scale;
+    let nearest = hit, bestRank = Infinity, distance = Infinity;
+    for (const node of nodes) {
+      const p = positions.get(node.id);
+      if (!p) continue;
+      const d = Math.hypot(p.x - x, p.y - y);
+      if (d > hitRadius(node) * nodeZoom) continue;
+      const rank = d <= baseRadius(node) * nodeZoom ? 0 : outOfFilter(node.id) ? 2 : 1;
+      if (rank < bestRank || (rank === bestRank && d < distance)) {
+        nearest = nodeEls.get(node.id)!; bestRank = rank; distance = d;
+      }
+    }
+    return nearest;
+  };
+  const pointerNode = (event: MouseEvent) => nodeAt(event.clientX, event.clientY, event.target as Element);
   const pointer = (event: PointerEvent) => ({ id: event.pointerId, ...point(event), touch: event.pointerType === 'touch', onNode: Boolean((event.target as Element).closest<SVGGElement>('.node')) });
   // 매 이동마다 레이아웃을 읽지 않고, 스크롤이나 크기 변경으로 무대가 달라졌을 때만 다시 잰다.
   let nodeDrag: { id: string; pointer: ReturnType<typeof pointer>; start: Point; offset: Point; moved: boolean; frame: DOMRect; bounds: Size; geometryDirty: boolean } | null = null;
@@ -443,7 +469,7 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
   const trackPointer = (event: PointerEvent) => { if (event.pointerType !== 'touch') pointerAt = { x: event.clientX, y: event.clientY }; };
   const hoveredUnderPointer = () => {
     if (!pointerAt) return null;
-    const hit = document.elementFromPoint(pointerAt.x, pointerAt.y)?.closest<SVGGElement>('.node');
+    const hit = nodeAt(pointerAt.x, pointerAt.y, document.elementFromPoint(pointerAt.x, pointerAt.y));
     return hit?.closest('svg') === svg ? hit.dataset.id! : null;
   };
   const paintNodeMotion = (finished = false) => {
@@ -531,7 +557,7 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
     if (mode === 'map' && input.touch) {
       completedTouchTap = null;
       touchTap = !gesture.active() && !nodeDrag
-        ? { pointerId: event.pointerId, nodeId: (event.target as Element).closest<SVGGElement>('.node')?.dataset.id ?? null }
+        ? { pointerId: event.pointerId, nodeId: pointerNode(event)?.dataset.id ?? null }
         : null;
       if (!touchTap) lastTouchTap = null;
     }
@@ -543,7 +569,7 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
       suppressNodeClick = true;
     } else if (!gesture.active()) {
       suppressNodeClick = false;
-      const node = (event.target as Element).closest<SVGGElement>('.node');
+      const node = pointerNode(event);
       const at = node ? positions.get(node.dataset.id!) : null;
       const t = state.transform;
       const canDragNode = event.pointerType === 'mouse' || event.pointerType === 'pen';
@@ -557,6 +583,7 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
   });
   listen('pointermove', event => {
     trackPointer(event);
+    if (!nodeDrag?.moved && !gesture.active() && event.pointerType !== 'touch') updateHover(event);
     if (nodeDrag?.pointer.id === event.pointerId) {
       if (nodeDrag.geometryDirty) {
         nodeDrag.frame = svg.getBoundingClientRect();
@@ -594,7 +621,7 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
     // 취소·드래그·다중 터치는 제외하고, 처음 누른 노드 안에서 놓았을 때만 선택한다.
     if (tap && event.type === 'pointerup' && !gesture.active() && !gesture.shouldSuppressClick() && !suppressNodeClick) {
       const hit = document.elementFromPoint(event.clientX, event.clientY);
-      const nodeId = hit?.closest<SVGGElement>('.node')?.dataset.id ?? null;
+      const nodeId = nodeAt(event.clientX, event.clientY, hit)?.dataset.id ?? null;
       if (hit?.closest('svg') === svg && nodeId === tap.nodeId) completedTouchTap = { nodeId };
     }
     if (tap && !completedTouchTap) lastTouchTap = null;
@@ -634,10 +661,10 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
   listen('click', (event) => {
     if (mode === 'map' && (event as PointerEvent).pointerType === 'touch') return;
     if (suppressNodeClick || gesture.shouldSuppressClick()) return;
-    const g = (event.target as Element).closest<SVGGElement>('.node');
+    const g = event.detail === 0 ? (event.target as Element).closest<SVGGElement>('.node') : pointerNode(event);
     if (g) onSelect(g.dataset.id!); else if (mode === 'map') onSelect(null);
   });
-  listen('dblclick', (event) => { if (suppressNodeClick) return; const g = (event.target as Element).closest<SVGGElement>('.node'); if (g) onOpen(g.dataset.id!); });
+  listen('dblclick', (event) => { if (suppressNodeClick) return; const g = pointerNode(event); if (g) onOpen(g.dataset.id!); });
   listen('keydown', (event) => {
     const g = (event.target as Element).closest<SVGGElement>('.node');
     if (!g) return;
@@ -684,7 +711,12 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
   };
   // 호버 예고편은 지도에만 있다. 홈에서 다시 그리면 같은 간선과 같은 상태를 만들려고 간선 전체를 버렸다가 새로 만든다.
   const hoverChanged = () => { if (nodeDrag?.moved || motionFrame !== null) return; if (mode === 'map' && !state.selected) { drawEdges(); refreshNodeStates(); } drawLabels(); };
-  listen('pointerover', (event) => { trackPointer(event); if (nodeDrag?.moved) return; const g = (event.target as Element).closest<SVGGElement>('.node'); const id = g ? g.dataset.id! : null; if (id !== state.hovered) { state.hovered = id; hoverChanged(); } });
+  const updateHover = (event: PointerEvent) => {
+    if (event.pointerType === 'touch' || nodeDrag?.moved) return;
+    const id = pointerNode(event)?.dataset.id ?? null;
+    if (id !== state.hovered) { state.hovered = id; hoverChanged(); }
+  };
+  listen('pointerover', (event) => { trackPointer(event); updateHover(event); });
   listen('pointerleave', () => { pointerAt = null; if (nodeDrag?.moved) return; if (state.hovered) { state.hovered = null; hoverChanged(); } });
   if (mode === 'map') listen('wheel', (event) => { event.preventDefault(); if (nodeDrag) return; api.zoom(event.deltaY < 0 ? 1.12 : 1 / 1.12, point(event)); }, { passive: false });
   listen('focusin', (event) => {
