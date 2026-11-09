@@ -171,12 +171,12 @@ test('a folded callout anchors its sidenote to the summary until expanded', asyn
   await expect.poll(() => aligned('details.callout > summary')).toBe(true);
 });
 
-test('long connection lists keep their own height limit and direction counts', async ({ page }) => {
+test('connection lists scroll only in the sidebar on wide screens and retain direction counts', async ({ page, isMobile }) => {
   await page.goto('/notes/browser-many/');
   await page.getByRole('button', { name: '목록', exact: true }).click();
   const list = page.locator('.connection-list');
-  await expect(list).toHaveCSS('max-height', '236px');
-  expect(await list.evaluate(e => e.scrollHeight > e.clientHeight)).toBe(true);
+  await expect(list).toHaveCSS('max-height', isMobile ? '236px' : 'none');
+  expect(await list.evaluate(e => e.scrollHeight > e.clientHeight)).toBe(isMobile);
   await expect(page.locator('.connection-group h3')).toHaveText(['이 글에서 언급한 글7']);
   await expect(list.locator('a')).toHaveCount(7);
 });

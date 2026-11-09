@@ -41,7 +41,7 @@ const lines = (edge: { x1: number; y1: number; x2: number; y2: number; direction
           </a>)}
     </g>
   </svg>
-  <p class="meta" data-graph-overflow hidden={!layout.hidden}>가까운 연결 {layout.nodes.length - 1}개만 그렸습니다. 전체 제목은 목록에서 확인할 수 있습니다.</p>
+  <p class="meta" data-graph-overflow hidden={!layout.hidden}>{neighborCount}개 중 {layout.nodes.length - 1}개 표시</p>
 </div>
 <style>
   /* 참조·역참조와 같은 블록이다. 위 선은 사이드바가 긋고, 제목 모양은 site.css의 .list-block이 준다.

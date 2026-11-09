@@ -172,7 +172,7 @@ test('feedback links are large enough to tap without covering their neighbours',
   // 넓은 터치 화면(가로로 든 태블릿)은 두 열이라 목차 아래의 링크를 쓴다.
   await page.setViewportSize({ width: 1180, height: 820 });
   await page.goto('/notes/browser-sections/');
-  const rail = await boxOf(page, '.rail-feedback .feedback-link'), last = await boxOf(page, '.rail a:last-child'), next = await boxOf(page, '.rail-feedback + *');
+  const rail = await boxOf(page, '.rail-feedback .feedback-link'), last = await boxOf(page, '.rail a:last-child'), next = await boxOf(page, '[data-connections]');
   expect(rail.bottom - rail.top, '목차 아래의 링크는 44px이다').toBeGreaterThanOrEqual(44);
   expect(rail.top, '마지막 목차 줄을 덮지 않는다').toBeGreaterThanOrEqual(last.bottom);
   expect(rail.bottom, '다음 블록을 덮지 않는다').toBeLessThanOrEqual(next.top);

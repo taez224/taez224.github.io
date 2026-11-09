@@ -579,6 +579,7 @@ test('a table of contents entry chosen at the end stays marked until the reader 
 // 겹쳐 그리면 막대가 잘려 굵은 제목만 남았다. 막대 자리를 눌렀을 때 그 줄이 잡히는지로 실제로 그려지는지 본다.
 test('a long table of contents shows the bar beside the current section', async ({ page, isMobile }) => {
   test.skip(isMobile, '한 열 화면에서는 사이드바 목차를 쓰지 않는다');
+  await page.setViewportSize({ width: 1440, height: 650 });
   await page.goto('/posts/browser-long-toc/');
   const current = page.locator('.rail a[aria-current="location"]');
   const atBar = () => current.evaluate((link) => {
@@ -586,7 +587,7 @@ test('a long table of contents shows the bar beside the current section', async 
     return document.elementFromPoint(box.left + 1, box.top + box.height / 2) === link;
   });
   await expect(current).toHaveText('1번 절');
-  expect(await page.locator('.rail').evaluate((rail) => rail.scrollHeight > rail.clientHeight), '전제: 목차가 안에서 스크롤된다').toBe(true);
+  expect(await page.locator('.note-side').evaluate((side) => side.scrollHeight > side.clientHeight), '전제: 사이드바가 스크롤된다').toBe(true);
   expect(await atBar(), '첫 절').toBe(true);
   // 목차가 스크롤된 뒤의 줄도 같다.
   await page.evaluate(() => {
@@ -594,7 +595,7 @@ test('a long table of contents shows the bar beside the current section', async 
     window.scrollTo({ top: window.scrollY + document.getElementById(link.dataset.heading!)!.getBoundingClientRect().top + 300, behavior: 'instant' });
   });
   await expect(current).toHaveText('11번 절');
-  await expect.poll(() => page.locator('.rail').evaluate((rail) => rail.scrollTop), '전제: 목차가 현재 절까지 내려갔다').toBeGreaterThan(0);
+  await expect.poll(() => page.locator('.note-side').evaluate((side) => side.scrollTop), '전제: 사이드바가 현재 절까지 내려갔다').toBeGreaterThan(0);
   await expect.poll(atBar, '스크롤된 목차의 절').toBe(true);
 });
 
@@ -893,4 +894,18 @@ test('the title stays put when the window crosses columns before the body is rea
     expect(await page.evaluate(() => scrollY), `${from}→${to}px`).toBe(before);
     await expect(page.locator('.note-title')).toBeInViewport();
   }
+});
+
+
+test('long contents and connections share the sidebar scroll without a disclosure', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 700 });
+  await page.goto('/posts/browser-long-toc/');
+  const side = page.locator('.note-side');
+  await expect(side.locator('details')).toHaveCount(0);
+  await expect(side.locator('.rail')).toHaveCSS('overflow-y', 'visible');
+  const before = await page.evaluate(() => scrollY);
+  await side.locator('.local-graph a.node').last().focus();
+  await expect(side.locator('.local-graph a.node').last()).toBeInViewport();
+  expect(await page.evaluate(() => scrollY)).toBe(before);
+  expect(await side.evaluate(e => e.scrollTop)).toBeGreaterThan(0);
 });

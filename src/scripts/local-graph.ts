@@ -52,7 +52,7 @@ if (graph) {
       const overflow = graph.querySelector<HTMLElement>('[data-graph-overflow]')!;
       const count = layout.nodes.length - 1;
       overflow.hidden = Number(graph.getAttribute('data-neighbor-count')) <= count;
-      overflow.textContent = `가까운 연결 ${count}개만 그렸습니다. 전체 제목은 목록에서 확인할 수 있습니다.`;
+      overflow.textContent = `${graph.getAttribute('data-neighbor-count')}개 중 ${count}개 표시`;
     };
     resize();
     new ResizeObserver(resize).observe(svg);
