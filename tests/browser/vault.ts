@@ -331,12 +331,13 @@ series_order: 1
 | --- | --- |
 | Organizational OS | 조직 운영 구조 설계 |
 `,
-  // 절이 열둘인 글. 목차가 11줄 이상이면 사이드바의 목차만 따로 스크롤한다. 지도에 노드를 더하지 않게 블로그 글로 둔다.
+  // 절이 열둘인 글. 긴 목차가 있는 사이드바의 스크롤을 확인한다. 지도에 노드를 더하지 않게 블로그 글로 둔다.
   '20_Projects/blog/long-toc.md': `---
 title: 절이 많은 글
 status: published
 created: 2026-09-07
 slug: browser-long-toc
+summary: 절이 많은 글에서도 요약을 먼저 읽고 본문으로 이어진다.
 ---
 # 절이 많은 글
 

@@ -834,19 +834,19 @@ test('the sidebar marks remaining content without blocking links and clears at t
   await expect(side).not.toHaveAttribute('data-sidebar-overflow');
 });
 
-// 처음 그릴 때 폭에 맞는 상태를 정하되, 이후 크기 변경으로 독자가 고른 상태를 덮어쓰지 않는다.
-test('the inline contents start open on tablets and closed on phones before modules load', async ({ page }) => {
+// 본문 앞 목차는 접힌 상태로 시작하며, 크기가 바뀌어도 독자가 펼친 상태를 유지한다.
+test('the inline contents start closed and preserve the reader choice across sizes', async ({ page }) => {
   for (const width of [320, 390, 720, 721, 820, 1000, 1120, 1121, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
     await gotoBeforeModules(page, '/notes/browser-sections/');
     const toc = page.locator('.mobile-toc');
-    await expect(toc).toHaveJSProperty('open', width > 720);
+    await expect(toc).toHaveJSProperty('open', false);
     await expect(toc).toBeVisible({ visible: width <= 1120 });
     if (width > 1120) continue;
     await toc.locator('summary').click();
-    await expect(toc).toHaveJSProperty('open', width <= 720);
+    await expect(toc).toHaveJSProperty('open', true);
     await page.setViewportSize({ width: width <= 720 ? 820 : 390, height: 1000 });
-    await expect(toc).toHaveJSProperty('open', width <= 720);
+    await expect(toc).toHaveJSProperty('open', true);
   }
 });
 
@@ -854,7 +854,8 @@ test('tablet contents stay usable at a 200 percent default font size', async ({ 
   await page.setViewportSize({ width: 820, height: 1180 });
   await gotoWithDefaultFontSize(page, '/notes/browser-sections/', 32);
   const toc = page.locator('.mobile-toc');
-  await expect(toc).toHaveJSProperty('open', true);
+  await expect(toc).toHaveJSProperty('open', false);
+  await toc.locator('summary').click();
   const link = toc.locator('a').first();
   const target = await link.getAttribute('href');
   await link.click();
@@ -908,4 +909,16 @@ test('long contents and connections share the sidebar scroll without a disclosur
   await expect(side.locator('.local-graph a.node').last()).toBeInViewport();
   expect(await page.evaluate(() => scrollY)).toBe(before);
   expect(await side.evaluate(e => e.scrollTop)).toBeGreaterThan(0);
+});
+
+
+test('a blog lead precedes the closed contents and leaves the body visible on a tablet', async ({ page }) => {
+  await page.setViewportSize({ width: 952, height: 966 });
+  await page.goto('/posts/browser-long-toc/');
+  await expect(page.locator('.note-lead')).toHaveText('절이 많은 글에서도 요약을 먼저 읽고 본문으로 이어진다.');
+  await expect(page.locator('.mobile-toc')).toHaveJSProperty('open', false);
+  await expect(page.locator('.body h2').first()).toBeInViewport();
+  const positions = await page.locator('.note-title, .note-lead, .mobile-toc, .note-article .body').evaluateAll(elements => elements.map(e => e.getBoundingClientRect().top));
+  expect(positions).toHaveLength(4);
+  expect(positions).toEqual([...positions].sort((a, b) => a - b));
 });
