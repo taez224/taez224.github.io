@@ -5,7 +5,7 @@ import type { BlogPost } from './blog.ts';
 
 export interface GardenConfig extends PublicationConfig {
   basePath?: string; entry?: string; minTopicNodes?: number;
-  home?: { featured?: string[]; contacts?: { name: string; url: string; icon?: string }[]; about?: string };
+  home?: { featuredBook?: string; featured?: string[]; contacts?: { name: string; url: string; icon?: string }[]; about?: string };
 }
 type Candidate = VaultNote & { publicContent: string; linkTargets: string[]; text: TextAnalysis };
 type BaseRecord = Omit<PublicNote, 'slug' | 'publicTags' | 'topic' | 'headings' | 'outgoing' | 'incoming' | 'thumbnail' | 'thumbnailStyle' | 'articleCards' | 'bodyText' | 'bodyHtml' | 'isEntry' | 'aliases' | 'readingMinutes' | 'topicTag'>;
@@ -324,6 +324,7 @@ export async function assembleGarden({ vaultRoot, config, basePath = '', today =
 
   return {
     home: {
+      featuredBook: config.home?.featuredBook || '',
       featured: (config.home?.featured || []).filter((notePath) => notes.some((note) => note.path === notePath)),
       contacts: config.home?.contacts || [],
       about: String(config.home?.about ?? '')

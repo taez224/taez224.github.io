@@ -1,0 +1,41 @@
+---
+import type { PublicNote } from '../lib/content-model.ts';
+import type { RecentRow } from '../lib/home.ts';
+import { formatDate, topicColor } from '../lib/format.ts';
+import { pixelIcon } from '../lib/pixel-icons.ts';
+interface Props { rows: RecentRow<PublicNote>[] }
+const { rows } = Astro.props;
+---
+<div class="recent"><ol>{rows.map(({ note, when, tended }) => <li>
+  <span class="recent-main"><a class="recent-title" href={note.url}>{note.title}</a>{tended && <span class="tended" role="img" aria-label="다듬은 노트" title="다듬은 노트" set:html={pixelIcon('tended', 'tendedPour')} />}</span>
+  <div class="meta recent-meta"><time class="recent-date" datetime={when}>{formatDate(when)}</time><span class="recent-topic"><i style={`background:${topicColor(note.topic)}`} aria-hidden="true"></i>{note.topicTag || note.topic}</span></div>
+</li>)}</ol></div>
+<style>
+  .recent { container-type: inline-size; }
+  ol { list-style: none; margin: 0; padding: 0; }
+  li { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; padding: 20px 0; border-bottom: 1px solid var(--line); }
+  .recent-main { min-width: 0; text-wrap: balance; word-break: keep-all; overflow-wrap: anywhere; }
+  .recent-title { font-size: var(--t-list-small); line-height: 1.6; font-weight: 600; }
+  .recent-title::after { content: ''; position: absolute; inset: 0; }
+  .recent-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; font-size: var(--t-meta); }
+  .recent-topic { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .recent-topic i { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .recent-date { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tended { position: relative; z-index: 1; display: inline-block; margin-left: 8px; color: var(--muted); vertical-align: -2px; cursor: help; }
+  .tended :global(svg) { display: block; width: 14px; height: 14px; }
+  .tended :global(.frame-2) { display: none; }
+  @media (prefers-reduced-motion: no-preference) {
+    li:focus-within .tended :global(.frame-1) { display: none; }
+    li:focus-within .tended :global(.frame-2) { display: inline; }
+  }
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    li:hover .tended :global(.frame-1) { display: none; }
+    li:hover .tended :global(.frame-2) { display: inline; }
+  }
+  /* 목록 자체의 폭을 기준으로 바꿔 중간 폭과 큰 기본 글자에서도 제목 공간을 남긴다. */
+  @container (min-width: 26em) {
+    ol { display: grid; grid-template-columns: minmax(0, 1fr) max-content max-content; column-gap: 16px; }
+    li { grid-column: 1 / -1; grid-template-columns: subgrid; align-items: baseline; column-gap: inherit; }
+    .recent-meta { grid-column: 2 / -1; display: grid; grid-template-columns: subgrid; column-gap: inherit; }
+  }
+</style>

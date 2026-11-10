@@ -32,7 +32,7 @@ test('a status mark is filled on its own pixel grid', () => {
 });
 
 test('status marks are shown at their grid size so one cell stays one pixel', () => {
-  assert.equal(width(read('src/pages/index.astro'), '.tended :global(svg)'), ICON_GRIDS.tended.length);
+  assert.equal(width(read('src/components/HomeList.astro'), '.tended :global(svg)'), ICON_GRIDS.tended.length);
   assert.equal(ICON_GRIDS.tendedPour.length, ICON_GRIDS.tended.length);
   assert.equal(width(read('src/styles/maturity.css'), '.maturity svg'), ICON_GRIDS.seedling.length);
 });

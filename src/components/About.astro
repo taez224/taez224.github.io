@@ -1,22 +1,25 @@
 ---
 import Contacts from './Contacts.astro';
-interface Props { about: string; contacts: { name: string; url: string; icon?: string }[]; aboutUrl?: string; mapUrl?: string }
-const { about, contacts, aboutUrl, mapUrl } = Astro.props;
+interface Props { about: string; contacts: { name: string; url: string; icon?: string }[]; aboutUrl?: string }
+const { about, contacts, aboutUrl } = Astro.props;
 ---
 <div class="about">
   <h1 class="display">Thinking Garden</h1>
   <p>{about}</p>
-  <div class="about-actions">
-    {aboutUrl && <a class="hero-link" href={aboutUrl}>이 위키에 대해</a>}
-    {mapUrl && <a class="hero-link" href={mapUrl}>생각 지도 보기</a>}
+  <div class="about-links">
+    <div class="about-actions">
+      {aboutUrl && <a class="hero-link" href={aboutUrl}>이 위키에 대해</a>}
+    </div>
+    <Contacts contacts={contacts} />
   </div>
-  <Contacts contacts={contacts} />
 </div>
 <style>
   .about { display: flex; flex-direction: column; align-items: flex-start; gap: 18px; }
   .about h1 { margin: 0; font-size: var(--t-hero); line-height: 1.45; }
   .about p { margin: 0; color: var(--muted); font-size: var(--t-body); line-height: 1.85; }
-  .about-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 6px; }
+  .about-links { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 32px; margin-top: 6px; width: 100%; }
+  .about-links :global(.contacts) { flex-shrink: 0; }
+  .about-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
   .hero-link { font-size: var(--t-meta); text-decoration: underline; text-decoration-color: var(--link-underline); text-underline-offset: 4px; }
   @media (hover: hover) { .hero-link:hover { text-decoration-color: var(--ink); } }
   @media (max-width: 720px) {

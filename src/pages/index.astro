@@ -1,37 +1,22 @@
 ---
 import Shell from '../layouts/Shell.astro';
-import { Image } from 'astro:assets';
-import { getEntry } from 'astro:content';
 import '../styles/graph.css';
 import About from '../components/About.astro';
 import { getGarden } from '../lib/get-garden.ts';
-import { formatDate, withBase, inlineJson, topicColor } from '../lib/format.ts';
+import { withBase, inlineJson } from '../lib/format.ts';
 import { inlineGraph } from '../lib/graph-data.ts';
-import { parentLink } from '../lib/note-nav.ts';
-import { latestSeries } from '../lib/blog.ts';
-import { recentActivity } from '../lib/home.ts';
-import { pixelIcon } from '../lib/pixel-icons.ts';
-import { KINDS } from '../lib/kinds.ts';
-import { kindPrefix } from '../lib/slug.ts';
+import HomeList from '../components/HomeList.astro';
+import HomeBooks from '../components/HomeBooks.astro';
+import { recentActivity, homeBooks } from '../lib/home.ts';
 import { layoutGraph, ATLAS_LAYOUT } from '../graph/layout.ts';
 import { renderSnapshotSvg } from '../graph/snapshot.ts';
 const garden = await getGarden();
 const byPath = new Map(garden.notes.map((n) => [n.path, n]));
 const featured = byPath.get(garden.home.featured[0]);
-const featuredEntry = featured ? await getEntry('notes', `${kindPrefix(featured.kind)}/${featured.slug}`) : null;
-const thumbnail = featuredEntry?.data.thumbnail;
-const softThumbnail = featured?.thumbnailStyle === 'soft';
-// 최근 기록은 쓰거나 다듬은 날짜가 최신인 다섯 편이다. 고르는 규칙은 recentActivity에 있고, 대표 글은 위에 따로 보이므로 뺀다.
-const recent = recentActivity(garden.notes, { kinds: ['slipbox', 'development', 'blog'], series: garden.blog.series, exclude: [featured?.path] })
-  .map(({ note, when, tended }) => ({ note, when, tended, label: KINDS[note.kind].label, listUrl: withBase(parentLink(note).path) }));
-// 공개된 마지막 편이 가장 최근인 연재 하나. 없으면 이 영역을 그리지 않는다.
-const series = latestSeries(garden.blog.series);
-const seriesUrl = series && (series.noteUrl || series.posts[0]?.url);
-// 연재 전체를 대표하는 이미지는 허브가 정한다. 각 편의 이미지를 대신 가져오지 않는다.
-const seriesNote = series?.noteUrl ? garden.notes.find((note) => note.url === series.noteUrl) : null;
-const seriesEntry = seriesNote?.thumbnail ? await getEntry('notes', `${kindPrefix(seriesNote.kind)}/${seriesNote.slug}`) : null;
-const seriesThumbnail = seriesEntry?.data.thumbnail;
-const softSeriesThumbnail = seriesNote?.thumbnailStyle === 'soft';
+const thoughts = recentActivity(garden.notes, { kinds: ['slipbox'], limit: 4 });
+const development = recentActivity(garden.notes, { kinds: ['development'], limit: 3 });
+const articles = recentActivity(garden.notes, { kinds: ['blog'], series: garden.blog.series, exclude: [featured?.path], limit: 3 });
+const books = homeBooks(garden.books, garden.home.featuredBook);
 // 첫 화면과 터치 기기의 정적 지도. 인라인 SVG라 영역 이름에 페이지 서체가 적용된다. 720px보다 넓고 마우스를 쓰면 엔진이 이 그림을 대신한다.
 const positions = layoutGraph(garden.nodes, garden.edges, { width: 1000, height: 640, ...ATLAS_LAYOUT });
 // 노드의 연결과 좌우 순서는 유지하고, 넓은 무대에 맞춰 세로 간격만 줄인다. 엔진과 첫 그림에 같은 좌표를 넘긴다.
@@ -46,7 +31,7 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
 ---
 <Shell title="TaeZ" description={garden.home.about} path="/">
   <section class="wrap hero" aria-label="소개와 생각 지도">
-    <div class="hero-about"><About about={garden.home.about} contacts={garden.home.contacts} aboutUrl={withBase('/about/')} mapUrl={withBase('/map/')} /></div>
+    <div class="hero-about"><About about={garden.home.about} contacts={garden.home.contacts} aboutUrl={withBase('/about/')} /></div>
     {/* 살아 있는 지도가 첫 화면 전에 올라오도록 데이터와 좌표를 페이지에 둔다. hero-graph.ts는 fetch 없이 이걸 읽는다. */}
     {/* 정적 그림은 전체를 눌러 지도를 연다. 살아 있는 지도에서는 노드가 노트로 이어지고 빈 곳은 이동하지 않는다. */}
     <div class="hero-graph" data-graph>
@@ -54,53 +39,32 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
       <a class="hero-snapshot" href={withBase('/map/')} aria-label="생각 지도 보기"><Fragment set:html={snapshotDesktop} /><Fragment set:html={snapshotTablet} /><Fragment set:html={snapshot} /></a>
     </div>
   </section>
-  {/* 대표 글과 최근 연재는 기존 썸네일과 문구를 그대로 싣는다. */}
-  {featured && <section class="wrap home-section featured" aria-labelledby="featured-heading">
-    <div class="section-info">
-      <h2 id="featured-heading" class="display section-title">대표 글</h2>
-      <div class="meta featured-meta"><time datetime={featured.date}>{formatDate(featured.date)}</time>{featured.publication && <span>{featured.publication}</span>}</div>
-    </div>
-    <div class:list={['featured-content', { 'has-thumbnail': thumbnail }]}>
-      <div class="featured-copy">
+  <div class="wrap home-grid">
+    <section class="home-articles" aria-labelledby="articles-heading">
+      <header class="home-heading"><h2 id="articles-heading" class="display">글</h2><a href={withBase('/posts/')} aria-label="글 전체 보기">전체 보기</a></header>
+      {featured && <article class="featured-copy">
         <h3 class="display"><a href={featured.url}>{featured.title}</a></h3>
         {featured.summaryIsExplicit && <p>{featured.summary}</p>}
-      </div>
-      {thumbnail && <a class:list={['featured-image', { 'is-soft': softThumbnail }]} href={featured.url} aria-label={featured.title}>
-        <Image src={thumbnail} alt="" width={560} widths={[280, 560, 840]} sizes="(max-width: 720px) 240px, (max-width: 1000px) 200px, 280px" format="webp" loading="eager" fetchpriority="high" decoding="sync" />
-      </a>}
-    </div>
-  </section>}
-  <section class="wrap home-section recent" aria-labelledby="recent-heading">
-    <h2 id="recent-heading" class="display section-title">최근 기록</h2>
-    <ol>{recent.map(({ note, when, tended, label, listUrl }) => <li>
-      {/* 날짜는 쓴 날과 다듬은 날 가운데 늦은 날이다. 다듬은 날이면 제목 뒤에 물뿌리개를 둔다. 글자 대신 기호를 쓴 것은 새 글과 다듬은 글의 구분이 독자에게 가벼운 정보이기 때문이다. */}
-      <span class="recent-main"><a class="recent-title" href={note.url}>{note.title}</a>{tended && <span class="tended" role="img" aria-label="다듬은 노트" title="다듬은 노트" set:html={pixelIcon('tended', 'tendedPour')} />}</span>
-      <div class="meta recent-meta">
-        <time class="recent-date" datetime={when}>{formatDate(when)}</time>
-        <a class="recent-kind" href={listUrl}>{label}</a>
-        <span class="recent-topic"><i style={`background:${topicColor(note.topic)}`} aria-hidden="true"></i>{note.topicTag || note.topic}</span>
-      </div>
-    </li>)}</ol>
-  </section>
-  {series && seriesUrl && <section class="wrap home-section latest-series" aria-labelledby="series-heading">
-    <div class="section-info">
-      <h2 id="series-heading" class="display section-title">최근 연재</h2>
-      <p class="meta series-meta">{series.posts.length}편 · {series.ended ? '완결' : '진행 중'}</p>
-    </div>
-    <div class:list={['featured-content', { 'has-thumbnail': seriesThumbnail }]}>
-      <div class="series-copy"><h3><a href={seriesUrl}>{series.title}</a></h3>
-        {series.summary && <p>{series.summary}</p>}
-      </div>
-      {seriesThumbnail && <a class:list={['featured-image', { 'is-soft': softSeriesThumbnail }]} href={seriesUrl} aria-label={series.title}>
-        <Image src={seriesThumbnail} alt="" width={560} widths={[280, 560, 840]} sizes="(max-width: 720px) 240px, (max-width: 1000px) 200px, 280px" format="webp" loading="lazy" decoding="async" />
-      </a>}
-    </div>
-  </section>}
-
+      </article>}
+      <HomeList rows={articles} />
+    </section>
+    <section class="home-thoughts" aria-labelledby="thoughts-heading">
+      <header class="home-heading"><h2 id="thoughts-heading" class="display">생각 노트</h2><a href={withBase('/map/')} aria-label="생각 지도에서 보기">지도에서 보기</a></header>
+      <HomeList rows={thoughts} />
+    </section>
+    <section class="home-development" aria-labelledby="development-heading">
+      <header class="home-heading"><h2 id="development-heading" class="display">개발 노트</h2><a href={withBase('/dev/')} aria-label="개발 노트 전체 보기">전체 보기</a></header>
+      <HomeList rows={development} />
+    </section>
+    {books.length > 0 && <section class="home-books" aria-labelledby="books-heading">
+      <header class="home-heading"><h2 id="books-heading" class="display">책장</h2><a href={withBase('/books/')} aria-label="책장 전체 보기">전체 보기</a></header>
+      <HomeBooks books={books} />
+    </section>}
+  </div>
 </Shell>
 <style>
   /* 두 칸 모두 문서 흐름에 둔다. 소개가 길어지거나 글자를 키워도 지도와 겹치지 않고 첫 화면 높이가 늘어난다. */
-  .hero { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 36px; align-items: center; padding: 24px 0 28px; }
+  .hero { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 36px; align-items: center; padding: 24px 0; }
   .hero-about { min-width: 0; padding: 24px 0; }
   .hero-graph { position: relative; min-width: 0; width: 100%; height: 430px; }
   .hero-graph :global(svg), .hero-snapshot { display: block; width: 100%; height: 100%; }
@@ -119,80 +83,28 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
   :global(:root[data-theme="dark"]) .hero-snapshot :global([data-regions]) { opacity: .11; }
   /* 넓은 화면의 네 가장자리 흐림은 두 SVG가 안에서 도형 층에만 씌운다(src/graph/hero-fade.ts). 상자에 CSS 마스크를 걸면 가장자리 가까이 놓인 영역 이름까지 흐려진다. */
   .hero-graph > :global(.graph) { cursor: default; }
-  .home-section { display: grid; grid-template-columns: 134px minmax(0, 1fr); gap: 30px; padding: 30px 0; border-top: 1px solid var(--line); }
-  .section-title { margin: 0; font-size: var(--t-section); line-height: 1.4; letter-spacing: -.02em; }
-  .featured { padding-bottom: 34px; border-top-color: var(--ink); }
-  .featured .section-info { padding-top: 5px; }
-  .featured-meta { display: flex; flex-direction: column; gap: 4px; margin-top: 12px; }
-  .latest-series .series-meta { margin: 12px 0 0; font-size: var(--t-meta); line-height: 1.6; }
-  .featured-content { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 28px 40px; }
-  .featured-content.has-thumbnail { grid-template-columns: minmax(0, 1fr) 280px; }
-  .featured-copy h3 { margin: 0 0 18px; max-width: 24ch; font-size: var(--t-featured); line-height: 1.45; letter-spacing: -.02em; }
-  /* 긴 제목의 마지막 줄에 한 단어만 남는 것을 줄인다. 원문과 글자 크기는 유지한다. */
-  .featured-copy h3, .latest-series h3 { text-wrap: balance; }
-  .featured-copy h3 a { color: var(--ink); }
-  .featured-copy p { max-width: 630px; margin: 0; color: var(--muted); font-size: var(--t-body); line-height: 1.7; }
-  .featured-image { display: block; width: 100%; }
-  .featured-image :global(img) { display: block; width: 100%; height: auto; }
-  @media (min-width: 721px) {
-    .featured-image.is-soft :global(img) {
-      -webkit-mask-image: linear-gradient(90deg, transparent, #000 18%, #000 90%, transparent), linear-gradient(180deg, transparent, #000 14%, #000 86%, transparent);
-      mask-image: linear-gradient(90deg, transparent, #000 18%, #000 90%, transparent), linear-gradient(180deg, transparent, #000 14%, #000 86%, transparent);
-      -webkit-mask-composite: source-in; mask-composite: intersect;
-    }
-  }
-  .recent ol { list-style: none; margin: 0; padding: 0; }
-  .recent li { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: 7px; padding: 20px 0; border-bottom: 1px solid var(--line); }
-  .recent-main { min-width: 0; overflow-wrap: anywhere; }
-  .recent-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
-  .recent-date { font-variant-numeric: tabular-nums; }
-  .recent-date, .recent-kind, .recent-topic { white-space: nowrap; }
-  /* 최근 기록은 행 어디를 눌러도 글로 간다. 분류 링크는 위에 올려 따로 누른다. */
-  .recent-title::after { position: absolute; inset: 0; content: ""; }
-  /* 행 전체가 제목 링크이고 분류 링크는 그 위에 올라간다. 열을 가득 채우면 글자 옆 빈 곳을 눌러도 노트가 아니라 목록으로 가므로 글자 폭만 차지하게 한다.
-     "글"처럼 한 글자짜리는 11px이라 맞히기 어려워 WCAG 2.5.8의 최소 24px까지만 넓힌다. 행을 눌러 노트를 여는 일이 훨씬 잦아 그 이상은 가져가지 않는다. */
-  .recent-kind { position: relative; z-index: 1; justify-self: start; min-width: 24px; }
-  .recent li:first-child { padding-top: 0; }
-  .recent li:last-child { border-bottom: 0; padding-bottom: 0; }
-  .recent-title { color: var(--ink); font-size: var(--t-list); font-weight: 600; line-height: 1.45; }
-  .recent-kind { color: var(--muted); }
-  .recent-topic { display: inline-flex; align-items: center; gap: 6px; }
-  .recent-topic i { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; }
-  /* 물뿌리개는 행 전체를 덮는 제목 링크 위에 올려야 설명(title)이 뜬다. 격자 한 칸이 1px이 되도록 격자 크기 그대로 보인다. */
-  .tended { position: relative; z-index: 1; display: inline-block; margin-left: 8px; color: var(--muted); vertical-align: -2px; cursor: help; }
-  .tended :global(svg) { display: block; width: 14px; height: 14px; }
-  /* 행에 마우스를 올리거나 키보드로 그 행에 들어오면 물방울이 흩어지는 둘째 장면으로 바꾼다. 서서히 바꾸면 칸 경계가 흐려지므로 끊어서 바꾼다.
-     움직임 줄이기를 켠 독자에게는 그림이 바뀌는 것도 움직임이라 첫 장면에 둔다. 손가락 기기에는 호버가 없어 키보드 초점에서만 바뀐다. */
-  .tended :global(.frame-2) { display: none; }
-  @media (prefers-reduced-motion: no-preference) {
-    li:focus-within .tended :global(.frame-1) { display: none; }
-    li:focus-within .tended :global(.frame-2) { display: inline; }
-  }
-  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
-    li:hover .tended :global(.frame-1) { display: none; }
-    li:hover .tended :global(.frame-2) { display: inline; }
-  }
-  /* 최근 연재 제목은 목록 제목 크기로 두어 대표 글보다 낮은 위계에 둔다. */
-  .latest-series h3 { margin: 0; font-size: var(--t-list); font-weight: 600; line-height: 1.45; }
-  .latest-series p { margin: 10px 0 0; color: var(--muted); line-height: 1.7; }
-  /* 연재 요약은 글 목록처럼 전체를 쓰고 세 줄까지 보인다. 메타 줄도 p라 .series-copy로 좁힌다. */
-  .series-copy p { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
-  .home-section:last-child { padding-bottom: 48px; }
-  /* 열 너비를 목록 전체에서 공유해 분류와 주제 길이가 달라도 날짜가 움직이지 않는다.
-     em 경계는 브라우저 기본 글자를 키웠을 때도 제목 아래 배치로 전환한다. */
-  @media (min-width: 70.0625em) {
-    .recent ol { display: grid; grid-template-columns: minmax(0, 1fr) max-content max-content max-content; column-gap: 20px; }
-    .recent li { grid-column: 1 / -1; grid-template-columns: subgrid; align-items: baseline; column-gap: inherit; }
-    .recent-meta { display: grid; grid-column: 2 / -1; grid-template-columns: subgrid; column-gap: inherit; }
-    .recent-date { text-align: right; }
+  .home-grid { display: grid; grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr); grid-template-areas: 'thoughts articles' 'development books'; gap: 56px 64px; padding-block: 8px 64px; align-items: start; }
+  .home-grid > section { min-width: 0; }
+  .home-articles { grid-area: articles; }
+  .home-thoughts { grid-area: thoughts; }
+  .home-development { grid-area: development; }
+  .home-books { grid-area: books; }
+  .home-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--ink); }
+  .home-heading h2 { margin: 0; font-size: var(--t-section); }
+  .home-heading > a { flex-shrink: 0; color: var(--muted); font-size: var(--t-side); padding-block: 8px; }
+  .home-heading > a:focus-visible { text-decoration: underline; text-underline-offset: .25em; }
+  @media (hover: hover) { .home-heading > a:hover { text-decoration: underline; text-underline-offset: .25em; } }
+  .featured-copy { padding-block: 22px 26px; border-bottom: 1px solid var(--line); }
+  .featured-copy h3 { margin: 0 0 16px; font-size: var(--t-featured); line-height: 1.45; text-wrap: balance; word-break: keep-all; overflow-wrap: anywhere; }
+  .featured-copy p { margin: 0; color: var(--muted); font-size: var(--t-body); line-height: 1.75; }
+  @media (max-width: 720px) {
+    .home-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'articles' 'thoughts' 'development' 'books'; gap: 40px; padding-block: 4px 40px; }
+    .home-heading { padding-bottom: 8px; }
+    .featured-copy { padding-top: 14px; }
   }
   @media (max-width: 1120px) {
     .hero { grid-template-columns: minmax(0, 1fr); gap: 0; padding: 0 0 20px; }
     .hero-about { max-width: 640px; padding: 36px 0 16px; }
-  }
-  @media (min-width: 721px) and (max-width: 1000px) {
-    .home-section { grid-template-columns: 100px minmax(0, 1fr); gap: 28px; }
-    .featured-content.has-thumbnail { grid-template-columns: minmax(0, 1fr) 200px; gap: 24px; }
   }
   /* 좁은 화면에서는 기존 정적 배치를 쓰고, 링크와 영역 이름을 그대로 남긴다. */
   @media (max-width: 1000px) {
@@ -211,17 +123,6 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
     .hero { padding-bottom: 0; }
     .hero-graph { height: clamp(230px, 78vw, 350px); height: clamp(150px, calc(100svh - 530px), clamp(230px, 78vw, 350px)); margin-bottom: 8px; }
     .hero-about { padding: 20px 0 0; }
-    .home-section { grid-template-columns: minmax(0, 1fr); gap: 24px; padding: 28px 0; }
-    .featured { row-gap: 20px; }
-    .featured .section-info { padding-top: 0; }
-    .featured-meta { flex-direction: row; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; }
-    .latest-series .series-meta { margin-top: 8px; }
-    .featured-content.has-thumbnail { grid-template-columns: minmax(0, 1fr); gap: 24px; }
-    .featured-image { max-width: 240px; justify-self: center; }
-    .recent li { padding: 16px 0; }
-    .home-section:last-child { padding-bottom: 40px; }
-
   }
-  @media (pointer: coarse) { .latest-series h3 a, .recent-kind { padding-block: 12px; margin-block: -12px; } }
 </style>
 <script src="../scripts/hero.ts"></script>
