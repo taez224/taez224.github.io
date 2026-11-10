@@ -623,6 +623,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 접히는 콜아웃은 제목 앞의 삼각형이 오른쪽에서 아래로 돌아가며 펼침 상태를 알린다. 일반 안내는 연필 대신 삼각형을 쓰고, 경고·오류 등 의미 아이콘은 유지한다. 제목 행 전체를 누르거나 키보드로 펼칠 수 있다. 호버할 때는 제목을 먹색으로 바꾸어 호버 판 위에서도 대비를 유지한다.
 
 - **본문 이미지:** 그림을 눌러 모달로 크게 본다. 먼저 화면에 맞춰 보여 주고 원래 크기로 바꾸면 스크롤로 세부를 읽는다. 닫기 버튼·Esc·배경 누르기로 닫으면 누른 이미지로 포커스를 돌려준다. 링크 이미지와 글 카드의 이동은 가로채지 않는다. 로딩 중 누른 확대 요청은 다른 이미지를 누르거나 다른 모달을 열지 않은 경우에만 로드가 끝나면 처리한다. 지연 상태와 실패 안내는 이미지 바로 아래 보조 글자로 표시하고, 실패했을 때만 다시 시도를 제공한다. 첫 그림은 바로 불러오고 이후 그림은 지연 로딩한다. 원본 비율을 알면 자리를 미리 확보해 로딩 뒤 본문이 밀리지 않게 한다.
+- **본문 만화:** 넓은 화면과 모바일에서 같은 이미지 한 벌을 수동으로 넘긴다. 이미지의 전체 비율을 보존하고 앞뒤 버튼·좌우 방향키·가로 스와이프와 현재 위치를 제공한다. 앞뒤 버튼과 위치 표시는 그림 아래 한 줄에 두어 그림을 가리지 않는다. 원본 비율을 알면 같은 묶음의 가장 긴 이미지에 맞춰 높이를 확보한다. 자동 재생과 반복 재생은 하지 않는다. 화면 밖 이미지에는 키보드 초점이 들어가지 않고, 그림을 누르면 기존 이미지 확대를 사용한다. 이미지가 한 장이면 탐색 조작을 붙이지 않는다.
 - **코드 블록:** 문단보다 토큰 종류를 빨리 가려 읽어야 하므로 사이트 톤보다 문법 구분과 대비를 앞세운다. 밝은 화면은 흰 바탕을 쓴다. 가장 흐린 주석이 종이색 위에서 4.5:1에 못 미치기 때문이다. 강조는 빌드 때 끝내 방문자에게 스크립트를 보내지 않는다. 복사 버튼은 스크립트 없이는 동작하지 않으므로 스크립트가 붙인다.
 - **도표:** 노드는 한 가지 면 색으로 두고 색은 묶음이 지게 한다. 노드까지 색을 돌리면 색이 묶음을 뜻하는지 항목을 뜻하는지 가릴 수 없다. 앞머리로 테마를 지정한 도표는 사이트 색을 입히지 않고, 그 테마가 전제한 밝기의 판에 화면 모드와 상관없이 둔다.
 - **글 카드:** 사방 테두리를 쓴다. 위아래 괘선만 두면 절 제목의 밑줄과 다음 절의 구분선으로 읽혀 한 덩어리로 묶이지 않는다. 테두리는 링크에 두어 누르는 자리와 강조되는 영역을 맞춘다.
@@ -721,6 +722,7 @@ Gowun Batang은 제목과 요약·인용에, Pretendard Variable은 본문·목�
 | 지도 노드 끌기와 이웃 반응 | `src/graph/node-motion.ts`, `src/graph/engine.ts` | `tests/node-motion.test.ts`, `tests/browser/node-motion.spec.ts` |
 | 블로그 목록의 발행 흐름 | `src/lib/publishing-rhythm.ts`, `src/components/PublishingRhythm.astro`, `src/scripts/publishing-rhythm.ts` | `tests/publishing-rhythm.test.ts`, `tests/browser/publishing-rhythm.spec.ts` |
 | 본문 이미지 확대와 원래 크기·포커스 복귀 | `src/scripts/image-viewer.ts`, `src/styles/body.css` | `tests/browser/image-viewer.spec.ts` |
+| 본문 만화 문법과 순서·탐색·비율 | `src/lib/markdown.ts`, `src/scripts/comic.ts`, `src/styles/comic.css` | `tests/markdown-comic.test.ts`, `tests/browser/comic.spec.ts` |
 | 도표 색과 배치 설정 | `src/scripts/mermaid-config.ts` | `tests/mermaid.test.ts` |
 | 글꼴 조각과 적재 | `scripts/vendor-fonts.ts`가 만든 `src/styles/fonts.css`, `public/fonts` | `tests/fonts.test.ts` |
 | 대체 서체 목록 | `site.css`의 `--display`·`--sans` | 없음 |

@@ -131,6 +131,14 @@ const longValue = '${'word'.repeat(100)}';
 | 표본 | 가로로 스크롤해 읽는 표 | 완료 |
 
 [![연결된 이미지](reader.png)](https://example.com/linked-image)
+
+> [!comic]
+> ![[reader.png|첫 장]]
+>
+> ![[delayed.png|둘째 장]]
+>
+> ![[comic-portrait.png|셋째 장]]
+
 `,
   '01_Slipbox/start.md': `---
 title: 시작 노트
@@ -366,6 +374,7 @@ export async function writeBrowserVault(projectRoot: string, vault: string): Pro
   await fs.mkdir(path.join(vault, '01_Slipbox'), { recursive: true });
   await sharp({ create: { width: 1800, height: 1000, channels: 3, background: 'white' } }).png().toFile(path.join(vault, '01_Slipbox/reader.png'));
   await sharp({ create: { width: 1200, height: 800, channels: 3, background: 'white' } }).png().toFile(path.join(vault, '01_Slipbox/delayed.png'));
+  await sharp({ create: { width: 800, height: 1200, channels: 3, background: 'white' } }).png().toFile(path.join(vault, '01_Slipbox/comic-portrait.png'));
   await fs.writeFile(path.join(projectRoot, 'config.json'), JSON.stringify(BROWSER_CONFIG));
   for (const [file, content] of Object.entries(BROWSER_NOTES)) {
     await fs.mkdir(path.dirname(path.join(vault, file)), { recursive: true });
