@@ -1,15 +1,14 @@
 ---
 import Contacts from './Contacts.astro';
-interface Props { about: string; contacts: { name: string; url: string; icon?: string }[]; aboutUrl?: string; mapUrl?: string }
-const { about, contacts, aboutUrl, mapUrl } = Astro.props;
+interface Props { about: string; contacts: { name: string; url: string; icon?: string }[]; aboutUrl?: string }
+const { about, contacts, aboutUrl } = Astro.props;
 ---
 <div class="about">
   <h1 class="display">Thinking Garden</h1>
   <p>{about}</p>
   <div class="about-links">
     <div class="about-actions">
-      {aboutUrl && <a class="hero-link" href={aboutUrl}>이 위키에 대해</a>}
-      {mapUrl && <a class="hero-link" href={mapUrl}>생각 지도 보기</a>}
+      {aboutUrl && <a class="hero-link" href={aboutUrl}>About</a>}
     </div>
     <Contacts contacts={contacts} />
   </div>

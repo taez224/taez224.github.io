@@ -1,0 +1,32 @@
+---
+import type { Book } from '../lib/content-model.ts';
+import { bookDisplayTitle } from '../lib/books.ts';
+interface Props { books: Book[] }
+const { books } = Astro.props;
+---
+<ul class="home-shelf">{books.map((book) => <li>
+  <a href={book.url} aria-label={[bookDisplayTitle(book), book.rate > 0 ? `5점 만점에 ${book.rate.toFixed(1)}점` : '', book.status === '읽는 중' ? '읽는 중' : ''].filter(Boolean).join(', ')}>
+    <div class="cover">
+      {book.coverUrl && <img src={book.coverUrl} alt="" width="120" height="180" loading="lazy" onerror="this.parentElement.classList.add('is-missing')" />}
+      <span class="placeholder">{bookDisplayTitle(book)}</span>
+    </div>
+    <div class="book-meta">
+      {book.rate > 0 && <span class="rating" aria-label={`5점 만점에 ${book.rate.toFixed(1)}점`}><span aria-hidden="true">★ {book.rate.toFixed(1)}</span></span>}
+      {book.status === '읽는 중' && <span>읽는 중</span>}
+    </div>
+  </a>
+</li>)}</ul>
+<style>
+  .home-shelf { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; list-style: none; margin: 24px 0 0; padding: 0; }
+  li { min-width: 0; }
+  a { display: block; }
+  .cover { height: 168px; }
+  img { display: block; width: 100%; height: 100%; object-fit: contain; object-position: bottom left; }
+  .placeholder { display: flex; align-items: center; height: 100%; padding: 10px; border: 1px solid var(--line); font-size: var(--t-side); word-break: keep-all; overflow-wrap: anywhere; overflow: hidden; }
+  img + .placeholder { display: none; }
+  .is-missing img { display: none; }
+  .is-missing img + .placeholder { display: flex; }
+  .book-meta { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-top: 12px; color: var(--muted); font-size: var(--t-meta); }
+  .rating { color: var(--accent); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  @media (max-width: 720px) { .home-shelf { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 24px; } .cover { height: 180px; } }
+</style>

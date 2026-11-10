@@ -47,35 +47,6 @@ test('the static home map opens the full map on a touch device', async ({ page, 
   }
 });
 
-// 행 전체가 제목 링크인데 그 위에 올린 분류 링크가 열을 가득 채우면, 빈 곳을 눌러도 노트가 열리지 않는다.
-// 다만 "글"처럼 한 글자짜리는 11px이라 맞히기 어려워, WCAG 2.5.8의 최소 24px까지만 넓힌다.
-test('the kind link in a recent row is at least 24px and no wider than it needs', async ({ page }) => {
-  await page.goto('/');
-  const rows = page.locator('.recent li').filter({ has: page.locator('.recent-kind') });
-  await expect(rows.first()).toBeAttached();
-  for (const row of await rows.all()) {
-    await row.scrollIntoViewIfNeeded();
-    const measured = await row.evaluate((item) => {
-      const kind = item.querySelector('.recent-kind')!;
-      const range = item.ownerDocument.createRange();
-      range.selectNodeContents(kind);
-      const box = kind.getBoundingClientRect();
-      const at = (x: number, y: number) => item.ownerDocument.elementFromPoint(x, y)?.closest('a')?.getAttribute('href') ?? null;
-      return {
-        label: kind.textContent,
-        width: box.width,
-        textWidth: range.getBoundingClientRect().width,
-        titleHref: item.querySelector('.recent-title')!.getAttribute('href'),
-        // 분류 링크 바로 오른쪽의 빈 자리다. 여기는 노트로 가야 한다.
-        beside: at(box.right + 4, box.top + box.height / 2)
-      };
-    });
-    expect(measured.width, `${measured.label}: 최소 24px`).toBeGreaterThanOrEqual(24);
-    expect(measured.width, `${measured.label}: 글자와 최소 폭보다 넓지 않다`).toBeLessThanOrEqual(Math.max(measured.textWidth, 24) + 1);
-    expect(measured.beside, `${measured.label}: 옆 빈 자리는 노트로 간다`).toBe(measured.titleHref);
-  }
-});
-
 // 태블릿 세로 폭도 살아 있는 지도의 경계 안이었다. 그 SVG가 세로 스와이프를 가져가 페이지가 내려가지 않았다.
 test.describe('손가락으로 쓰는 태블릿', () => {
   test.use({ viewport: { width: 834, height: 1000 }, hasTouch: true, isMobile: true });
@@ -299,30 +270,24 @@ test('home region names stay clear of resting node titles at intermediate mouse 
   }
 });
 
-test('recent metadata shares columns and wraps below long titles on narrower screens', async ({ page }) => {
+test('home dates align within each list and move below titles when the list is narrow', async ({ page }) => {
   for (const width of [320, 390, 720, 918, 1120, 1121, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/');
-    const row = page.locator('.recent li').first();
-    await row.locator('.recent-title').evaluate((el) => { el.textContent = '제목이 길어져도 날짜와 분류와 주제를 밀어내지 않고 자연스럽게 다음 줄로 이어져야 한다. '.repeat(3); });
-    const boxes = await row.evaluate((el) => {
-      const row = el.getBoundingClientRect(), title = el.querySelector('.recent-main')!.getBoundingClientRect(), meta = el.querySelector('.recent-meta')!.getBoundingClientRect();
-      return { rowWidth: row.width, titleWidth: title.width, titleRight: title.right, titleBottom: title.bottom, metaLeft: meta.left, metaTop: meta.top, overflow: el.scrollWidth > el.clientWidth };
-    });
-    if (width > 1120) {
-      expect(boxes.metaLeft).toBeGreaterThan(boxes.titleRight);
-      expect(boxes.metaTop).toBeLessThan(boxes.titleBottom);
-    } else {
-      expect(boxes.titleWidth).toBeCloseTo(boxes.rowWidth, 0);
-      expect(boxes.metaTop).toBeGreaterThan(boxes.titleBottom);
-    }
-    expect(boxes.overflow).toBe(false);
-    if (width > 1120) {
-      for (const selector of ['.recent-date', '.recent-kind', '.recent-topic']) {
-        const starts = await page.locator(selector).evaluateAll((items) => items.map((item) => item.getBoundingClientRect().left));
-        expect(starts.length).toBeGreaterThan(1);
-        expect(Math.max(...starts) - Math.min(...starts), selector).toBeLessThan(1);
+    const lists = await page.locator('.recent').evaluateAll((items) => items.map((list) => {
+      const font = parseFloat(getComputedStyle(list).fontSize);
+      return { inline: list.clientWidth >= 26 * font, rows: [...list.querySelectorAll('li')].map((item) => {
+        const title = item.querySelector('.recent-main')!.getBoundingClientRect();
+        const meta = item.querySelector('.recent-meta')!.getBoundingClientRect();
+        return { beside: meta.left > title.right, below: meta.top >= title.bottom, right: meta.right, overflow: item.scrollWidth > item.clientWidth };
+      }) };
+    }));
+    for (const list of lists) {
+      for (const row of list.rows) {
+        expect(row.overflow).toBe(false);
+        expect(list.inline ? row.beside : row.below).toBe(true);
       }
+      if (list.inline && list.rows.length > 1) expect(Math.max(...list.rows.map((r) => r.right)) - Math.min(...list.rows.map((r) => r.right))).toBeLessThan(1);
     }
   }
 });
@@ -355,4 +320,49 @@ test('home map titles sit clear of the node rings', async ({ page, isMobile }) =
   const live = page.locator('svg.graph.hero');
   await expect(live).toBeVisible();
   expect(await live.evaluate(textsOnRings), '살아 있는 지도').toEqual([]);
+});
+
+
+test('home books use four columns on wide screens and two on phones without clipping', async ({ page }) => {
+  for (const width of [320, 390, 720, 900, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/');
+    const shelf = page.locator('.home-shelf');
+    const layout = await shelf.evaluate((el) => ({
+      columns: getComputedStyle(el).gridTemplateColumns.split(' ').length,
+      overflow: el.scrollWidth > el.clientWidth,
+      links: [...el.querySelectorAll('a')].map((link) => ({ href: link.getAttribute('href'), label: link.getAttribute('aria-label') }))
+    }));
+    expect(layout.columns).toBe(width <= 720 ? 2 : 4);
+    expect(layout.overflow).toBe(false);
+    expect(layout.links.length).toBeGreaterThan(0);
+    for (const link of layout.links) {
+      expect(link.href).toMatch(/^\/books\/#book-/);
+      expect(link.label).toBeTruthy();
+    }
+    const order = await page.locator('.home-grid > section').evaluateAll((sections) => sections.map((el) => ({ name: el.className, top: el.getBoundingClientRect().top })));
+    if (width <= 720) expect([...order].sort((a, b) => a.top - b.top).map((item) => item.name)).toEqual(['home-articles', 'home-thoughts', 'home-development', 'home-books']);
+  }
+});
+
+
+test('the introduction links to About and the full map link stays beside the live map', async ({ page }) => {
+  for (const width of [390, 900, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/');
+    await expect(page.locator('.about-actions a')).toHaveText('About');
+    await expect(page.locator('.about-actions a')).toHaveAttribute('href', '/about/');
+    const live = await page.evaluate(() => matchMedia('(min-width: 721px) and (hover: hover) and (pointer: fine)').matches);
+    const link = page.locator('.hero-map-link');
+    if (live) {
+      await expect(link).toBeVisible();
+      const boxes = await page.evaluate(() => ({ map: document.querySelector('.hero-graph')!.getBoundingClientRect().bottom, link: document.querySelector('.hero-map-link')!.getBoundingClientRect().top }));
+      expect(boxes.link).toBeGreaterThanOrEqual(boxes.map);
+      await link.click();
+      await expect(page).toHaveURL(/\/map\/$/);
+    } else {
+      await expect(link).toBeHidden();
+      await expect(page.locator('.hero-snapshot')).toBeVisible();
+    }
+  }
 });

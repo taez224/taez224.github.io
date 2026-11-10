@@ -40,7 +40,7 @@ npm run mark:build           # 표식 도안을 고쳤을 때만. public/favicon
 
 ## 아키텍처
 
-`src/lib/garden.ts`의 `assembleGarden()`이 vault를 한 번 조립하고, 나머지는 모두 그 결과를 읽는다. 노트 상세 페이지 셋(`posts/[slug]`, `notes/[slug]`, `dev/[slug]`)은 `getCollection('notes')`로 경로와 본문을 만들고, 참조·그래프처럼 조립 결과가 필요한 부분은 `NotePage.astro`가 `getGarden()`으로 읽는다. 나머지 페이지와 엔드포인트(`data/*.json.ts`, `og/*.png.ts`, `rss.xml.ts`, `feeds/[kind].xml.ts`, `llms.txt.ts`)는 `getGarden()`으로 읽는다. 최적화한 썸네일은 컬렉션에만 있으므로 홈과 글 카드(`ArticleBody.astro`)는 썸네일을 `getEntry('notes')`로 가져온다. `get-garden.ts`가 결과를 메모이즈하고, dev에서는 2초가 지나면 다시 조립한다.
+`src/lib/garden.ts`의 `assembleGarden()`이 vault를 한 번 조립하고, 나머지는 모두 그 결과를 읽는다. 노트 상세 페이지 셋(`posts/[slug]`, `notes/[slug]`, `dev/[slug]`)은 `getCollection('notes')`로 경로와 본문을 만들고, 참조·그래프처럼 조립 결과가 필요한 부분은 `NotePage.astro`가 `getGarden()`으로 읽는다. 나머지 페이지와 엔드포인트(`data/*.json.ts`, `og/*.png.ts`, `rss.xml.ts`, `feeds/[kind].xml.ts`, `llms.txt.ts`)는 `getGarden()`으로 읽는다. 최적화한 썸네일은 컬렉션에만 있으므로 글 카드(`ArticleBody.astro`)는 썸네일을 `getEntry('notes')`로 가져온다. `get-garden.ts`가 결과를 메모이즈하고, dev에서는 2초가 지나면 다시 조립한다.
 
 - 조립 코드의 규칙(모듈 책임과 의존 방향, 빌드를 멈추는 조건, OG 카드 캐시)은 `src/lib/AGENTS.md`에 있다. `src/lib/`을 고치기 전에 읽는다.
 - 조립이 읽는 입력을 새로 더하면 `src/loaders/vault.ts`의 `watchPathsFor`에도 더한다. 빠뜨리면 dev에서 그 파일을 고쳐도 다시 조립되지 않는다.
