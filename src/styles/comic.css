@@ -1,0 +1,18 @@
+.body .comic { position: relative; margin: 32px 0; }
+.body .comic-page { margin: 0 0 16px; }
+.body .comic.is-enhanced { --comic-height: calc(min(100cqi, 540px) * var(--comic-height-ratio, 1)); container-type: inline-size; }
+.body .comic.is-enhanced .comic-pages { display: flex; width: 100%; height: var(--comic-height); overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+.body .comic-pages::-webkit-scrollbar { display: none; }
+.body .comic.is-enhanced .comic-page { position: relative; display: flex; flex: 0 0 100%; flex-direction: column; justify-content: center; align-items: center; min-width: 0; height: 100%; margin: 0; scroll-snap-align: start; scroll-snap-stop: always; }
+.body .comic.is-enhanced .image-zoom { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; min-height: 0; margin: 0; }
+.body .comic.is-enhanced img { display: block; flex-shrink: 1; width: auto; height: auto; max-width: 100%; max-height: 100%; margin: 0; object-fit: contain; }
+.body .comic.is-enhanced .image-load-state:not(:empty) { flex: 0 0 auto; }
+.body .comic-controls { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 8px; }
+.body .comic-previous, .body .comic-next { display: grid; place-items: center; flex: 0 0 44px; width: 44px; height: 44px; padding: 0; border: 1px solid var(--line); border-radius: 4px; color: var(--ink); background: var(--paper-strong); cursor: pointer; }
+.body .comic button svg { display: block; width: 16px; height: 16px; }
+.body .comic-previous:disabled, .body .comic-next:disabled { visibility: hidden; }
+.body .comic-position { min-width: 5ch; color: var(--muted); font-size: var(--t-side); text-align: center; font-variant-numeric: tabular-nums; }
+.body .comic button:focus-visible, .body .comic-pages:focus-visible { outline: 2px solid var(--ink); outline-offset: -3px; }
+@media (hover: hover) {
+  .body .comic-previous:hover, .body .comic-next:hover { background: var(--accent-soft); }
+}

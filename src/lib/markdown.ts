@@ -25,6 +25,7 @@ const CALLOUT_TITLES: Record<string, string> = {
   caution: '주의',
   check: '확인',
   cite: '인용',
+  comic: '만화',
   compare: '비교',
   'compare-stacked': '비교',
   danger: '주의',
@@ -497,6 +498,26 @@ function createMarkdownIt() {
     const only = inline.children?.length === 1 ? inline.children[0] : null;
     return only !== null && (only.type === 'image' || (only.type === 'html_inline' && /^<img\b/i.test(only.content)));
   };
+  // 이미지 문단만 있는 만화는 순서대로 넘길 수 있다. 다른 내용은 일반 콜아웃으로 남겨 숨기지 않는다.
+  markdown.core.ruler.push('comic_pages', (state) => {
+    const tokens = state.tokens;
+    for (let i = 0; i < tokens.length; i += 1) {
+      const open = tokens[i];
+      if (open.type !== 'callout_open' || !open.meta?.comic) continue;
+      let end = i + 1;
+      while (end < tokens.length && !(tokens[end].type === 'callout_close' && tokens[end].level === open.level)) end += 1;
+      const body = tokens.slice(i + 1, end);
+      if (!body.length || body.length % 3 !== 0 || end === tokens.length) continue;
+      if (!body.every((token, index) => index % 3 === 0 ? token.type === 'paragraph_open'
+        : index % 3 === 1 ? token.type === 'inline' && isImageOnly(token) : token.type === 'paragraph_close')) continue;
+      open.type = 'comic_open';
+      tokens[end].type = 'comic_close';
+      for (let j = 0; j < body.length; j += 3) body[j].attrJoin('class', 'comic-page');
+    }
+  });
+  markdown.renderer.rules.comic_open = () => '<div class="comic"><div class="comic-pages">';
+  markdown.renderer.rules.comic_close = () => '</div></div>\n';
+
   const isWhollyItalic = (inline: Token) => {
     const kids = inline.children ?? [];
     if (kids.length < 3 || kids[0].type !== 'em_open' || kids[kids.length - 1].type !== 'em_close') return false;
@@ -597,6 +618,7 @@ function createMarkdownIt() {
     const kind = type.replace(/[^a-z0-9_-]/gi, '') || 'note';
     const canonical = CALLOUT_ALIASES[kind];
     open.meta = {
+      comic: type === 'comic' && !foldMarker && !customTitle?.trim(),
       expanded: foldMarker === '+',
       title: customTitle?.trim() || CALLOUT_TITLES[type] || type,
       className: canonical ? `callout callout-${canonical} callout-${kind}` : `callout callout-${kind}`

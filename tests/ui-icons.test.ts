@@ -37,6 +37,8 @@ test('control icons are shown at their grid size so a 2px stroke lands on whole 
   assert.equal(width(read('src/styles/body.css'), '.body .code-copy-plate svg'), UI_ICON_GRIDS.copy);
   assert.equal(UI_ICON_GRIDS.copyDone, UI_ICON_GRIDS.copy);
   assert.equal(width(read('src/components/NotePage.astro'), '.toc-button svg'), UI_ICON_GRIDS.contents);
+  assert.equal(width(read('src/styles/comic.css'), '.body .comic button svg'), UI_ICON_GRIDS.previous);
+  assert.equal(UI_ICON_GRIDS.previous, UI_ICON_GRIDS.next);
   const map = read('src/pages/map/index.astro');
   for (const name of ['zoomOut', 'zoomIn', 'fit'] as const) assert.equal(width(map, '.graph-controls svg'), UI_ICON_GRIDS[name], name);
 });
