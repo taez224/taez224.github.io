@@ -11,7 +11,7 @@ const { books } = Astro.props;
       <span class="placeholder">{bookDisplayTitle(book)}</span>
     </div>
     <div class="book-meta">
-      {book.rate > 0 && <span class="rating" aria-label={`5점 만점에 ${book.rate.toFixed(1)}점`}><span aria-hidden="true">★ {book.rate.toFixed(1)}</span></span>}
+      {book.rate > 0 && <span class="rating">★ {book.rate.toFixed(1)}</span>}
       {book.status === '읽는 중' && <span>읽는 중</span>}
     </div>
   </a>

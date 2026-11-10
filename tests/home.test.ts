@@ -75,13 +75,13 @@ const shelf = (books: ReturnType<typeof book>[]) => homeBooks(books, 'favorite')
 const completed = [book('favorite', 3), book('best', 5), book('recent', 4, '완독', '2026-09-01'), book('older', 2)];
 
 test('home books preserve the personal favorite and end with up to two currently reading books', () => {
-  assert.deepEqual(shelf(completed), ['favorite', 'best', 'recent', 'older']);
-  assert.deepEqual(shelf([...completed, book('reading', 0, '읽는 중')]), ['favorite', 'best', 'recent', 'reading']);
+  assert.deepEqual(shelf(completed), ['favorite', 'recent', 'best']);
+  assert.deepEqual(shelf([...completed, book('reading', 0, '읽는 중')]), ['favorite', 'recent', 'best', 'reading']);
   const reading = [book('read-a', 0, '읽는 중', '2026-08-01'), book('read-b', 4, '읽는 중', '2026-09-01'), book('read-c', 0, '읽는 중')];
-  assert.deepEqual(shelf([...completed, ...reading]), ['favorite', 'best', 'read-b', 'read-a']);
+  assert.deepEqual(shelf([...completed, ...reading]), ['favorite', 'recent', 'read-b', 'read-a']);
 });
 
-test('home books do not duplicate the favorite and use recent finish dates to break rating ties', () => {
+test('home books do not duplicate the favorite and order the rest by the most recent finish date', () => {
   const books = [book('favorite', 5), book('older', 4), book('newer', 4, '완독', '2026-09-01')];
   assert.deepEqual(shelf(books), ['favorite', 'newer', 'older']);
   assert.deepEqual(shelf([...books].reverse()), shelf(books));
@@ -91,9 +91,14 @@ test('home books do not duplicate the favorite and use recent finish dates to br
 test('home books tolerate a missing favorite and do not fill empty slots with planned or abandoned books', () => {
   assert.deepEqual(shelf([book('planned', 0, '예정'), book('stopped', 3, '중단'), book('read', 0, '읽는 중')]), ['read']);
   assert.deepEqual(shelf([]), []);
-  assert.deepEqual(shelf([book('unrated', 0), book('rated', 4)]), ['rated', 'unrated']);
+  assert.deepEqual(shelf([book('unrated', 0), book('rated', 4)]), ['rated']);
 });
 
 test('a favorite that is being read appears only at the first position', () => {
-  assert.deepEqual(shelf([book('favorite', 3, '읽는 중'), ...completed.slice(1), book('reading', 0, '읽는 중')]), ['favorite', 'best', 'recent', 'reading']);
+  assert.deepEqual(shelf([book('favorite', 3, '읽는 중'), ...completed.slice(1), book('reading', 0, '읽는 중')]), ['favorite', 'recent', 'best', 'reading']);
+});
+
+test('home books leave out finished books rated below four even when slots stay empty', () => {
+  assert.deepEqual(shelf([book('low', 3.9), book('edge', 4), book('high', 4.8, '완독', '2026-03-01')]), ['high', 'edge']);
+  assert.deepEqual(shelf([book('favorite', 2), book('low', 3)]), ['favorite']);
 });

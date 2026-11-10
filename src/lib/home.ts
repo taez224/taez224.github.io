@@ -35,7 +35,11 @@ export function recentActivity<T extends RecentNote>(notes: readonly T[], { kind
 
 type ShelfBook = Pick<Book, 'slug' | 'title' | 'status' | 'rate' | 'finishDate' | 'startDate' | 'created'>;
 
-// 대표 추천과 높은 평가를 먼저 보여 주고, 읽는 중인 책은 마지막 두 자리까지만 쓴다.
+// 홈 책장에 올릴 완독 도서의 최저 평점. 별점을 함께 보이므로 권하지 않는 책은 올리지 않는다.
+const SHELF_MIN_RATE = 4;
+
+// 대표 추천을 먼저 두고, 평점이 높은 책 가운데 최근에 읽은 순으로 채운다. 평점순으로만 고르면 늘 같은 책이 남는다.
+// 읽는 중인 책은 마지막 두 자리까지만 쓴다.
 export function homeBooks<T extends ShelfBook>(books: readonly T[], favoriteSlug = ''): T[] {
   const selected: T[] = [];
   const add = (book: T | undefined) => {
@@ -44,11 +48,9 @@ export function homeBooks<T extends ShelfBook>(books: readonly T[], favoriteSlug
   const completed = books.filter((book) => book.status === '완독');
   const recent = newestFirst<T>((book) => book.finishDate || book.created, (book) => book.title);
   add(books.find((book) => book.slug === favoriteSlug));
-  add([...completed].filter((book) => book.rate > 0 && !selected.includes(book))
-    .sort((a, b) => b.rate - a.rate || recent(a, b))[0]);
   const reading = books.filter((book) => book.status === '읽는 중' && !selected.includes(book))
     .sort(newestFirst((book) => book.startDate || book.created, (book) => book.title)).slice(0, 2);
-  for (const book of [...completed].sort(recent)) {
+  for (const book of completed.filter((item) => item.rate >= SHELF_MIN_RATE).sort(recent)) {
     if (selected.length >= 4 - reading.length) break;
     add(book);
   }

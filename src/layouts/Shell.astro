@@ -84,7 +84,7 @@ const jsonLd = inlineJson(structuredData({ ogType, kind, pageType, title: path =
       <div class="wrap">
         <span class="site-name"><Seal label={sealLabel} />{restOfTitle.join(' ')}</span>
         <Contacts contacts={contacts} />
-        <nav aria-label="사이트 정보"><a href={withBase('/about/')}>About</a><a class="rss-link" href={withBase('/rss.xml')}><Fragment set:html={uiIcon('rss')} /><span>RSS</span></a>{feedback && <FeedbackLink path={feedbackPath} />}</nav>
+        <nav aria-label="사이트 정보"><a href={withBase('/about/')}>이 위키에 대해</a><a class="rss-link" href={withBase('/rss.xml')}><Fragment set:html={uiIcon('rss')} /><span>RSS</span></a>{feedback && <FeedbackLink path={feedbackPath} />}</nav>
       </div>
     </footer>}
   </body>

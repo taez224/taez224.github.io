@@ -346,23 +346,16 @@ test('home books use four columns on wide screens and two on phones without clip
 });
 
 
-test('the introduction links to About and the full map link stays beside the live map', async ({ page }) => {
+// 살아 있는 지도에서는 헤더 메뉴가 전체 지도로 가는 길이다. 정적 그림을 쓰는 화면에서는 그림 전체가 지도 링크다.
+test('the introduction links to the about page and only the static map links to the full map', async ({ page }) => {
   for (const width of [390, 900, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/');
-    await expect(page.locator('.about-actions a')).toHaveText('About');
+    await expect(page.locator('.about-actions a')).toHaveText('이 위키에 대해');
     await expect(page.locator('.about-actions a')).toHaveAttribute('href', '/about/');
     const live = await page.evaluate(() => matchMedia('(min-width: 721px) and (hover: hover) and (pointer: fine)').matches);
-    const link = page.locator('.hero-map-link');
-    if (live) {
-      await expect(link).toBeVisible();
-      const boxes = await page.evaluate(() => ({ map: document.querySelector('.hero-graph')!.getBoundingClientRect().bottom, link: document.querySelector('.hero-map-link')!.getBoundingClientRect().top }));
-      expect(boxes.link).toBeGreaterThanOrEqual(boxes.map);
-      await link.click();
-      await expect(page).toHaveURL(/\/map\/$/);
-    } else {
-      await expect(link).toBeHidden();
-      await expect(page.locator('.hero-snapshot')).toBeVisible();
-    }
+    const snapshot = page.locator('.hero a[href="/map/"]');
+    await expect(snapshot).toHaveCount(1);
+    if (live) await expect(snapshot).toBeHidden(); else await expect(snapshot).toBeVisible();
   }
 });
