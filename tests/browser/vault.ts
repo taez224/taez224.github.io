@@ -105,6 +105,7 @@ status: published
 source: https://example.com/article
 publication: 테스트 발행처
 summary: 외부에서 읽는 글의 공개 요약이다.
+thumbnail: "[[reader.png]]"
 ---
 # 외부 발행 글
 

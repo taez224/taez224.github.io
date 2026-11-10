@@ -359,3 +359,35 @@ test('the introduction links to the about page and only the static map links to 
     if (live) await expect(snapshot).toBeHidden(); else await expect(snapshot).toBeVisible();
   }
 });
+
+// 대표 글을 오른쪽 목록 안에 두면 삽화 높이가 왼쪽 목록 아래의 빈 공간으로 남는다.
+// 별도 행의 그림·텍스트가 서로 겹치지 않고, 좁은 화면에서는 읽는 순서대로 쌓이는지 본다.
+test('the featured illustration sits beside its text or below it before the home lists', async ({ page }) => {
+  for (const width of [320, 390, 720, 721, 900, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/');
+    await page.evaluate(() => document.fonts.ready);
+    const image = page.locator('.featured-art img');
+    await expect(image).toBeVisible();
+    await expect(image).toHaveJSProperty('complete', true);
+    const layout = await page.locator('.featured-wide').evaluate((section) => {
+      const text = section.querySelector('.featured-text')!.getBoundingClientRect();
+      const image = section.querySelector('img')!;
+      const picture = image.getBoundingClientRect();
+      const title = section.querySelector('h3')!.getBoundingClientRect();
+      const summary = section.querySelector('p')!.getBoundingClientRect();
+      return { textRight: text.right, textBottom: text.bottom, imageLeft: picture.left, imageTop: picture.top,
+        imageWidth: picture.width, imageHeight: picture.height, ratio: image.naturalWidth / image.naturalHeight,
+        titleWidth: title.width, summaryWidth: summary.width,
+        bottom: section.getBoundingClientRect().bottom, listsTop: document.querySelector('.home-grid')!.getBoundingClientRect().top,
+        overflow: document.documentElement.scrollWidth > innerWidth };
+    });
+    if (width <= 720) expect(layout.imageTop).toBeGreaterThanOrEqual(layout.textBottom);
+    else expect(layout.imageLeft).toBeGreaterThanOrEqual(layout.textRight);
+    // srcset의 밀도 보정과 정수 이미지 치수에서 생기는 반올림은 표시 높이 1px 안에서 허용한다.
+    expect(Math.abs(layout.imageHeight - layout.imageWidth / layout.ratio)).toBeLessThan(1);
+    expect(layout.titleWidth).toBeCloseTo(layout.summaryWidth, 0);
+    expect(layout.listsTop).toBeGreaterThanOrEqual(layout.bottom - 1);
+    expect(layout.overflow).toBe(false);
+  }
+});
