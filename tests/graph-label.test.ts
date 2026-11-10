@@ -132,3 +132,13 @@ test('wrapLabel keeps short titles on one line and folds long ones into two bala
   assert.ok(Math.abs([...lines[0]].length - [...lines[1]].length) <= 8, lines.join('|'));
   assert.equal(lines.join(' '), '산출물이 팀의 자산이 되려면 판단·추적·복구가 가능해야 한다');
 });
+
+test('required edge labels stay inside the view even when every slot overlaps other content', () => {
+  const node = { id: 'edge', title: '제텔카스텐은 상향식으로 글감을 확장시키는 시스템이다' };
+  const inside = (b: { left: number; right: number; top: number; bottom: number }) => b.left >= 0 && b.right <= 600 && b.top >= 0 && b.bottom <= 400;
+  const obstacles = [{ left: -1000, right: 1000, top: -1000, bottom: 1000 }];
+  for (const p of [at(20, 200), at(580, 200), at(300, 15), at(300, 385)]) {
+    const plan = placeLabels([{ node, mustPlace: true }], { positions: new Map([[node.id, p]]), radius, obstacles, inside });
+    assert.ok(inside(planFor(plan, node.id).g.box), '겹침을 허용해도 화면 밖에는 두지 않는다');
+  }
+});

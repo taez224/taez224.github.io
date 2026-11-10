@@ -98,8 +98,8 @@ export function labelGeometry(p: Point, r: number, lines: string[], placement: s
 
 // 제목 배치. order는 우선순위 순의 [{ node, mustPlace, overNodes }]. 후보 자리를 차례로 시도해 이미 놓인 제목·장애물과 겹치지 않고
 // 보이는 범위(inside) 안에 드는 첫 자리를 준다. 그런 자리가 없을 때 overNodes는 노드 원(nodeObstacles) 위라도 다른 제목·장애물과
-// 겹치지 않는 자리를 찾고, mustPlace는 그래도 없으면 아래에 둔다. 같은 노드는 한 번만 놓는다.
-// blocked는 억지로 두는 제목도 덮지 않는 자리(무대 위 조작)다. 아래 자리가 막히면 보이는 범위 안의 다른 자리를 찾고, 없으면 두지 않는다.
+// 겹치지 않는 자리를 찾고, mustPlace는 그래도 없으면 보이는 범위 안에서 겹침을 허용한다. 같은 노드는 한 번만 놓는다.
+// blocked는 억지로 두는 제목도 덮지 않는 자리(무대 위 조작)다. 아래 자리가 막히거나 화면 밖이면 보이는 범위 안의 다른 자리를 찾고, 없으면 두지 않는다.
 // 조작 아래로 들어간 제목은 일부만 보여 읽히지 않고, 고른 노드라면 시트가 제목을 보여 준다.
 // 결과는 id → { placement, lines, g }. 엔진(살아 있는 지도)과 스냅샷(정적 SVG)이 같은 규칙으로 그린다.
 export function placeLabels<T extends Pick<GraphNode, 'id'> & Partial<Pick<GraphNode, 'title' | 'displayTitle'>>>(order: readonly { node: T; mustPlace: boolean; overNodes?: boolean }[], { positions, radius, u = 1, obstacles = [], nodeObstacles = [], blocked = [], inside = () => true, labelGap = 0 }: { positions: ReadonlyMap<string, Point>; radius: (node: T) => number; u?: number; obstacles?: readonly Box[]; nodeObstacles?: readonly Box[]; blocked?: readonly Box[]; inside?: (box: Box) => boolean; labelGap?: number }) {
@@ -114,7 +114,7 @@ export function placeLabels<T extends Pick<GraphNode, 'id'> & Partial<Pick<Graph
     // 첫 후보가 아래 자리다. 억지로 둘 때도 그 자리가 먼저다.
     const candidates = PLACEMENTS.map((placement) => ({ placement, g: labelGeometry(p, r, lines, placement, u) }));
     const free = candidates.find(({ g }) => clear(g.box, true)) ?? (overNodes ? candidates.find(({ g }) => clear(g.box, false)) : undefined);
-    const forced = !mustPlace ? undefined : open(candidates[0].g.box) ? candidates[0] : candidates.find(({ g }) => inside(g.box) && open(g.box));
+    const forced = !mustPlace ? undefined : candidates.find(({ g }) => inside(g.box) && open(g.box));
     const chosen = free ?? forced;
     if (!chosen) continue;
     // 간격은 화면 픽셀 기준으로 예약해 확대해도 제목 사이의 여유가 일정하게 남는다.
