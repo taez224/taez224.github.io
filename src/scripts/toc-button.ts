@@ -18,7 +18,8 @@ if (button && sheet && body && typeof sheet.showPopover === 'function') {
     // 본문 위 목차가 보이는 동안은 같은 목차를 두 곳에 두지 않는다.
     button.hidden = foldedOnScreen || !narrow.matches;
     if (button.hidden) { if (sheet.matches(':popover-open')) sheet.hidePopover(); return; }
-    const last = body.lastElementChild ?? body;
+    // 연결 영역과 각주는 읽기 진행률에서 제외한다.
+    const last = [...body.children].findLast(el => !el.matches('.reader-end-connections, .footnotes, script, style')) ?? body;
     const progress = readingProgress({
       bodyTop: body.getBoundingClientRect().top,
       lastBlockTop: last.getBoundingClientRect().top,

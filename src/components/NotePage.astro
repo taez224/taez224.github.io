@@ -1,8 +1,9 @@
 ---
-import { render } from 'astro:content';
 import Shell from '../layouts/Shell.astro';
 import ReaderNavigation from './ReaderNavigation.astro';
 import NoteSidebar from './NoteSidebar.astro';
+import NoteConnections from './NoteConnections.astro';
+import { readingConnections } from '../lib/reading-connections.ts';
 import ArticleBody from './ArticleBody.astro';
 import FeedbackLink from './FeedbackLink.astro';
 import { getGarden } from '../lib/get-garden.ts';
@@ -18,9 +19,7 @@ import type { NoteEntry, PublicNote } from '../lib/content-model.ts';
 interface Props { entry: NoteEntry }
 const { entry } = Astro.props;
 const note = entry.data;
-const mobileToc = note.headings.filter((heading) => heading.level === 2 || heading.level === 3);
 const title = cleanTitle(note.title); // 허브 노트의 🗺 같은 이모지는 리더 제목·문서 제목에서 뺀다
-const { Content } = await render(entry);
 const garden = await getGarden();
 const byPath = new Map(garden.notes.map((n) => [n.path, n]));
 const resolve = (paths: string[]): PublicNote[] => paths.map((p) => byPath.get(p)).filter((note): note is PublicNote => note !== undefined);
@@ -34,11 +33,16 @@ const topics = note.publicTags.slice(0, 2).map((tag) => { const head = tag.split
 const parent = parentLink(note, mapNode?.mapKey);
 const parentUrl = withBase(parent.path);
 const series = note.kind === 'blog' ? seriesNeighbors(note, garden.blog.series) : null;
+const publicNote = byPath.get(note.path)!;
+const connections = readingConnections(publicNote, garden.notes, garden.noteEdges, series);
+const readingHeadings = connections.preferred.length
+  ? [...note.headings.filter(h => h.id !== connections.headingId), ...(connections.neighbors.length ? note.headings.filter(h => h.id === connections.headingId) : [])]
+  : note.headings;
+const mobileToc = readingHeadings.filter(h => h.level === 2 || h.level === 3);
 const hasSeriesNav = series && (series.prev || series.next);
-// 노트(Slipbox)는 사이드바의 "생각 지도에서 보기"가 같은 곳으로 가므로 페이지 끝에 목록 링크를 두지 않는다.
-// 사이드바는 모바일에서도 보이므로 여기서 한 번 더 두면 같은 링크가 두 개가 된다.
-const endLink = note.kind === 'slipbox' ? null : parent.listLabel;
-// 제보 링크는 넓은 화면의 목차 아래와 글 끝 줄에서 같은 페이지 주소를 폼에 채운다.
+// 연결 영역에 지도 링크가 있을 때만 글 끝 줄에서 생략한다. 허브와 이웃 없는 글도 지도에 돌아갈 수 있어야 한다.
+const endLink = note.kind === 'slipbox' && mapUrl && connections.neighbors.length > 0 ? null : parent.listLabel;
+// 제보 링크는 글 끝 줄에서 읽은 페이지 주소를 폼에 채운다.
 const feedbackPath = articleMeta(note).path;
 // 생각 노트의 성숙도. 이름은 메타 줄에 늘 보이고, 뜻은 눌러서 여는 설명 상자가 알린다. 휴대폰에는 툴팁이 없어 이름만으로는 뜻을 전할 수 없다.
 const maturity = maturityOf(note);
@@ -69,15 +73,16 @@ const maturity = maturityOf(note);
         <div><span class="meta">공개된 글 {series.total}편</span><p>{series.first.title}</p></div>
         <a class="btn" href={series.first.url}>1편부터 읽기</a>
       </nav>}
-      <div class="body">{note.articleCards?.length
-        ? <ArticleBody html={byPath.get(note.path)!.bodyHtml} cards={note.articleCards} notes={garden.notes} />
-        : <Content />}</div>
+      <div class="body">
+        <ArticleBody html={connections.bodyHtml} cards={note.articleCards} notes={garden.notes} />
+        <NoteConnections note={publicNote} connections={connections} mapUrl={mapUrl} topicFold={topicFold} graph={!series?.isHub} />
+      </div>
       {series && hasSeriesNav && <nav class:list={['note-end', 'series-links', { 'is-single': !series.prev || !series.next }]} aria-label="이어서 읽기">
         {series.prev && <a class="series-link" href={series.prev.url}><span class="series-direction"><span aria-hidden="true">←</span> 이전 편</span><span class="series-title">{series.prev.title}</span></a>}
         {series.next && <a class="series-link is-next" href={series.next.url}><span class="series-direction">{series.isHub ? '1편부터 읽기' : '다음 편'} <span aria-hidden="true">→</span></span><span class="series-title">{series.next.title}</span></a>}
       </nav>}
     </article>
-    <NoteSidebar note={note} headings={note.headings} outgoing={outgoing} incoming={incoming} mapUrl={mapUrl} series={series} feedbackPath={feedbackPath} />
+    <NoteSidebar headings={readingHeadings} note={note} series={series} feedbackPath={feedbackPath} />
     {/* 글 끝 줄: 목록으로 돌아가는 링크와 제보 링크. 사이트 소개 링크는 모든 페이지의 바닥글에 있어 여기에 두지 않는다.
        목록 링크가 없는 생각 노트는 제보 링크만 왼쪽에 둔다. */}
     <footer class="note-footer">{endLink && <a href={parentUrl}><span aria-hidden="true">←</span> {endLink}</a>}<FeedbackLink path={feedbackPath} /></footer>
@@ -136,10 +141,9 @@ const maturity = maturityOf(note);
   /* 본문 720 + 사이드바 310 + 최소 간격 40 + 좌우 여백 48을 확보하기 전에는 본문 폭을 줄이지 않는다. */
   @media (max-width: 1120px), (width < 70.0625em) {
     .note-view { grid-template-columns: minmax(0, var(--s-reader-column)); justify-content: center; gap: 20px; }
-    /* 한 열에서는 본문과 연결 목록을 먼저 읽고, 목록 링크와 사이트 소개가 있는 페이지 끝 줄로 이동한다. */
-    .note-view > .note-side { grid-column: 1; grid-row: auto; }
-    .note-side { position: static; max-height: none; overflow: visible; padding-top: 0; } /* 본문과의 경계선은 목차를 뺀 첫 블록의 위 선이 맡는다 */
-    .note-side .rail-scroll { display: none; }
+    .note-view > .note-side { grid-column: 1; grid-row: auto; position: static; max-height: none; overflow: visible; padding-top: 0; }
+    .note-view > .note-side:not(.has-series) { display: none; }
+    .note-side .rail-scroll, .note-side .rail-feedback { display: none; }
     .mobile-toc { display: block; margin: -8px 0 28px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
     /* 펼침 표시는 브라우저 기본 삼각형 대신 접히는 콜아웃과 같은 꺾쇠를 줄 오른쪽 끝에 둔다. */
     .mobile-toc summary { position: relative; padding: 11px 24px 11px 0; color: var(--muted); font-size: var(--t-side); list-style: none; cursor: pointer; }
@@ -194,6 +198,7 @@ const maturity = maturityOf(note);
 <script src="../scripts/code-copy.ts"></script>
 <script src="../scripts/footnotes.ts"></script>
 <script src="../scripts/toc-button.ts"></script>
+<script src="../scripts/reader-network.ts"></script>
 <script src="../scripts/reading-anchor.ts"></script>
 <script src="../scripts/maturity.ts"></script>
 <script src="../scripts/image-viewer.ts"></script>

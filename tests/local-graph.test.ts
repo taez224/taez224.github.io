@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { localGraphLabelLines, localGraphLayout, fitLocalGraph } from '../src/components/local-graph-layout.ts';
+import { localGraphLabelLines, localGraphLayout } from '../src/components/local-graph-layout.ts';
 import { offsetLine } from '../src/graph/edge-geometry.ts';
 import { estimateTextWidth } from '../src/graph/label.ts';
 
@@ -121,16 +121,4 @@ test('the center label keeps clear of every edge, neighbor title and dot', () =>
       assert.ok(!overlap(box, { left: node.x - 8, right: node.x + 8, top: node.y - 8, bottom: node.y + 8 }), `${label}: ${node.id} 점과 겹치지 않는다`);
     }
   }
-});
-
-test('fitted graphs drop empty space without moving anything out of frame', () => {
-  for (const [width, height] of [[220, 240], [310, 190]]) for (let count = 1; count <= 6; count += 1) {
-    const layout = fitLocalGraph(localGraphLayout(note('c'), Array.from({ length: count }, (_, i) => note(`n${i}`)), [], { width, height }));
-    assert.ok(layout.height <= height, '정해 둔 높이보다 커지지 않는다');
-    const boxes = [layout.centerLabel.box, ...layout.nodes.flatMap((n) => n.label ? [n.label.box] : [])];
-    for (const box of boxes) assert.ok(box.top >= 0 && box.bottom <= layout.height, `${width}px, 이웃 ${count}개: 제목이 줄인 그림 안에 있다`);
-    for (const node of layout.nodes) assert.ok(node.y - 8 >= 0 && node.y + 8 <= layout.height, `${width}px, 이웃 ${count}개: 점이 줄인 그림 안에 있다`);
-  }
-  const single = fitLocalGraph(localGraphLayout(note('c'), [note('a')], [], { width: 220, height: 240 }));
-  assert.ok(single.height < 180, `이웃이 하나면 빈 아래쪽을 덜어낸다 (${single.height}px)`);
 });

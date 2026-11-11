@@ -7,6 +7,8 @@ import { getGarden } from '../../lib/get-garden.ts';
 import { topicColor, inlineJson } from '../../lib/format.ts';
 import { inlineGraph, inlinePanelNotes } from '../../lib/graph-data.ts';
 import '../../styles/graph.css';
+import '../../styles/hub-sections.css';
+import { hubSections } from '../../lib/reading-connections.ts';
 const { nodes, edges, notes, noteEdges, stats, topicFold } = await getGarden();
 const startpoints = nodes.filter((n) => n.isEntry);
 const hubs = nodes.filter((n) => n.type === 'hub' && !n.isEntry).sort((a, b) => (b.degree ?? 0) - (a.degree ?? 0));
@@ -19,6 +21,7 @@ const topics = [...topicCounts].map(([name, count]) => ({ name, color: topicColo
 <Shell title="생각 지도" description="노트를 고르고 연결된 생각을 따라가는 지도." path="/map/" active="map" footer={false}>
   {/* 그래프와 패널이 쓰는 데이터를 전부 페이지에 인라인한다. 스크립트가 실행되는 즉시(첫 화면 전에) 그래프와 선택된 노트 패널까지 한 번에 그린다. */}
   <div class="wrap map-page">
+    <script type="application/json" data-hub-sections is:inline set:html={inlineJson(notes.filter(n => n.type === 'hub').map(n => ({ path: n.path, title: n.displayTitle, url: n.url, sections: hubSections(n, notes).map(s => ({ id: s.id, title: s.title, items: s.items.map(item => ({ path: item.path, title: item.displayTitle, url: item.url, color: topicColor(topicFold[item.topic] ?? item.topic) })) })) })).filter(h => h.sections.length))}></script>
     <script type="application/json" data-map-data is:inline set:html={inlineJson({ ...inlineGraph(nodes, edges, { extra: ['path', 'mapKey', 'kind', 'status'] }), ...inlinePanelNotes(notes, noteEdges, topicFold) })}></script>
     <div class="page-head"><h1 class="display">생각 지도</h1><span class="meta" role="status" data-map-count>노트 {stats.nodes} · 연결 {stats.edges}</span><FeedbackLink path="/map/" /></div>
     <div class="map-layout">

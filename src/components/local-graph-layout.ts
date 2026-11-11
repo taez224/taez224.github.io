@@ -112,28 +112,9 @@ function placeCenterLabel(cx: number, cy: number, nodes: LocalGraphNode[], edges
     return edges.some((edge) => crosses(edge, wide))
       || nodes.some((n) => (n.label && overlaps(box, n.label.box)) || overlaps(box, { left: n.x - 8, right: n.x + 8, top: n.y - 8, bottom: n.y + 8 }));
   };
-  // 이웃이 많은 좁은 그래프(휴대폰 사이드바 폭 280~291px에 이웃 5~6개)는 빈자리가 없다. 그때는 아래에 두고
-  // 글자 뒤의 종이색 판(LocalGraph.astro)이 지나가는 선을 가린다. clear는 판 없이도 비어 있는 자리를 찾았는지 알린다.
+  // 이웃이 많은 좁은 그래프에는 제목을 둘 빈자리가 없을 수 있다. 그때는 아래에 두고
+  // OG 카드의 글자 뒤 종이색 판이 지나가는 선을 가린다. clear는 판 없이도 비어 있는 자리를 찾았는지 알린다.
   const free = candidates.find((candidate) => !blocked(boxOf(candidate)));
   const [dx, dy] = free ?? candidates[0];
   return { x: cx + dx, y: cy + dy, box: boxOf([dx, dy]), clear: free !== undefined };
 }
-
-// 그린 내용의 위아래 끝에 맞춰 그림 높이를 줄인다. 이웃이 한두 개인 글은 정해 둔 높이의 절반 가까이가 비어 사이드바가 헐거워 보였다.
-// 좌표는 함께 옮기므로 겹침 판정은 그대로다. 너비와 가로 좌표는 바꾸지 않는다.
-export function fitLocalGraph<T extends ReturnType<typeof localGraphLayout>>(layout: T, padding = 6): T {
-  const tops = [layout.centerLabel.box.top, ...layout.nodes.map((n) => Math.min(n.y - (n.current ? 17 : 8), n.label?.box.top ?? Infinity))];
-  const bottoms = [layout.centerLabel.box.bottom, ...layout.nodes.map((n) => Math.max(n.y + (n.current ? 17 : 8), n.label?.box.bottom ?? -Infinity))];
-  const top = Math.min(...tops) - padding, bottom = Math.max(...bottoms) + padding;
-  const height = Math.min(layout.height, Math.ceil(bottom - top));
-  const shift = -Math.max(0, Math.min(top, layout.height - height));
-  const moveBox = (box: Box) => ({ ...box, top: box.top + shift, bottom: box.bottom + shift });
-  return {
-    ...layout,
-    height,
-    nodes: layout.nodes.map((n) => ({ ...n, y: n.y + shift, label: n.label && { ...n.label, y: n.label.y + shift, box: moveBox(n.label.box) } })),
-    edges: layout.edges.map((e) => ({ ...e, y1: e.y1 + shift, y2: e.y2 + shift })),
-    centerLabel: { ...layout.centerLabel, y: layout.centerLabel.y + shift, box: moveBox(layout.centerLabel.box) }
-  };
-}
-

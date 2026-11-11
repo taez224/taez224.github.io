@@ -31,6 +31,7 @@ vault를 사이트 데이터로 조립하는 코드에 적용하는 규칙이다
 
 - 공개 본문 사본은 `note-body.ts`의 `publicBody`, 자동 요약은 같은 파일의 `summaryFor`가 만든다. vault 원문은 바꾸지 않는다.
 - 참조·역참조: `links.ts`가 본문과 `related`에서 대상을 뽑고, `garden.ts`가 공개 색인으로 해석해 공개 대상만 남긴다.
+- 본문 끝 연결과 허브의 절별 목록: `reading-connections.ts`. 이미 공개된 본문을 읽어 페이지 표시용 자료만 만들며 조립 본문과 검색 데이터는 바꾸지 않는다.
 - 연재 목차와 이전·다음 탐색: `blog.ts`와 `note-nav.ts`.
 - URL 경로와 슬러그 생성: `kinds.ts`와 `slug.ts`.
 - 본문 이미지의 로딩과 원본 비율에 따른 자리 확보: `image-loading.ts`. `public-assets.ts`가 원문에서 참조한 공개 이미지의 크기만 읽고, 조립 중 같은 파일을 다시 읽지 않게 한다.

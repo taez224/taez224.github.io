@@ -84,11 +84,17 @@ test.describe('without JavaScript', () => {
   test('all connection titles and the original footnotes remain readable', async ({ page }) => {
     await page.setViewportSize({ width: 1800, height: 1000 });
     await page.goto('/notes/browser-start/');
-    await expect(page.locator('[data-connection-list]')).toBeVisible();
+    // 허브 본문은 원래 링크를 유지하고 자동 그래프를 반복하지 않는다.
+    await expect(page.locator('.reader-network')).toHaveCount(0);
     await expect(page.locator('.connection-switch')).toBeHidden();
     await expect(page.locator('.footnotes-title')).toBeVisible();
     await expect(page.locator('[id="fn:1"]')).toHaveCSS('position', 'static');
-    await expect(page.locator('.note-side').getByRole('link', { name: '생각 지도에서 보기' })).toBeVisible();
+    await expect(page.locator('.body a[href="/notes/browser-neighbor/"]').first()).toBeVisible();
+    await page.goto('/notes/browser-many/');
+    await expect(page.locator('.reader-network')).toBeVisible();
+    await expect(page.locator('a.network-note')).toHaveCount(7);
+    for (const link of await page.locator('a.network-note').all()) await expect(link).toBeVisible();
+    await expect(page.getByRole('link', { name: '전체 지도' })).toBeVisible();
   });
 });
 
@@ -98,21 +104,6 @@ test('large default text keeps footnotes in the normal reading flow', async ({ p
   await expect(page.locator('.note-view')).not.toHaveAttribute('data-sidenotes');
 });
 
-test('connections switch between graph and complete unique titles without showing both at once', async ({ page }) => {
-  await page.goto('/notes/browser-start/');
-  const region = page.locator('[data-connections]');
-  await expect(region.locator('[data-connection-graph]')).toBeVisible();
-  await expect(region.locator('[data-connection-list]')).toBeHidden();
-  await region.getByRole('button', { name: '목록', exact: true }).press('Enter');
-  await expect(region.locator('[data-connection-graph]')).toBeHidden();
-  await expect(region.locator('[data-connection-list]')).toBeVisible();
-  await expect(region.getByRole('link', { name: '생각 지도에서 보기' })).toBeVisible();
-  const urls = await region.locator('[data-connection-list] a').evaluateAll(es => es.map(e => e.getAttribute('href')));
-  expect(urls.length).toBeGreaterThan(0);
-  expect(new Set(urls).size).toBe(urls.length);
-  await region.getByRole('button', { name: '그래프', exact: true }).press('Enter');
-  await expect(region.locator('[data-connection-list]')).toBeHidden();
-});
 
 test('the sidebar starts on the left before modules and stays there without footnotes', async ({ page }) => {
   for (const width of [1121, 1280, 1440, 1600, 1800]) {
@@ -134,7 +125,7 @@ test('reading widths keep body alignment and graph text size across laptop and w
   await page.goto('/notes/browser-many/');
   for (const width of [1280, 1440, 1600]) {
     await page.setViewportSize({ width, height: 1000 });
-    await expect.poll(() => page.locator('.local-graph svg').evaluate(svg => Math.abs((svg as SVGSVGElement).getScreenCTM()!.a - 1))).toBeLessThan(.01);
+    await expect(page.locator('.network-title').first()).toHaveCSS('font-size', '15px');
     const article = await page.locator('.note-article').boundingBox();
     expect(article!.width).toBe(720);
     expect(Math.abs(article!.x + article!.width / 2 - width / 2)).toBeLessThanOrEqual(4);
@@ -171,43 +162,8 @@ test('a folded callout anchors its sidenote to the summary until expanded', asyn
   await expect.poll(() => aligned('details.callout > summary')).toBe(true);
 });
 
-test('connection lists scroll only in the sidebar on wide screens and retain direction counts', async ({ page, isMobile }) => {
-  await page.goto('/notes/browser-many/');
-  await page.getByRole('button', { name: '목록', exact: true }).click();
-  const list = page.locator('.connection-list');
-  await expect(list).toHaveCSS('max-height', isMobile ? '236px' : 'none');
-  expect(await list.evaluate(e => e.scrollHeight > e.clientHeight)).toBe(isMobile);
-  await expect(page.locator('.connection-group h3')).toHaveText(['이 글에서 언급한 글7']);
-  await expect(list.locator('a')).toHaveCount(7);
-});
 
-test('connection groups list mutual links once and omit empty directions', async ({ page }) => {
-  await page.goto('/notes/browser-start/');
-  await page.getByRole('button', { name: '목록', exact: true }).click();
-  const groups = page.locator('.connection-group');
-  await expect(groups.locator('h3')).toHaveText([/서로 언급한 글1/, /이 글을 언급한 글\d+/]);
-  await expect(groups.first().getByRole('link', { name: '이웃 노트', exact: true })).toHaveCount(1);
-  const links = await groups.locator('a').evaluateAll(items => items.map(a => a.getAttribute('href')));
-  expect(new Set(links).size).toBe(links.length);
-  const counts = await groups.locator('.count').allTextContents();
-  expect(counts.reduce((sum, count) => sum + Number(count), 0)).toBe(links.length);
-});
 
-test('switching a sticky connection view preserves the reading position', async ({ page }) => {
-  await page.setViewportSize({ width: 1600, height: 1000 });
-  await page.goto('/notes/browser-start/');
-  await page.locator('.note-article .body').evaluate(body => {
-    const spacer = document.createElement('p');
-    spacer.style.height = '3000px';
-    body.prepend(spacer);
-  });
-  await page.evaluate(() => scrollTo(0, 900));
-  const before = await page.evaluate(() => scrollY);
-  await page.getByRole('button', { name: '목록', exact: true }).click();
-  expect(await page.evaluate(() => scrollY)).toBe(before);
-  await page.getByRole('button', { name: '그래프', exact: true }).click();
-  expect(await page.evaluate(() => scrollY)).toBe(before);
-});
 
 test('sidenote links stay in the muted margin color while body links keep their color', { tag: BOTH_THEMES }, async ({ page }) => {
   await page.setViewportSize({ width: 1800, height: 1000 });
@@ -331,7 +287,7 @@ async function readerLayout(page: import('@playwright/test').Page) {
     const article = document.querySelector('.note-article')!.getBoundingClientRect();
     const side = document.querySelector('.note-side')!.getBoundingClientRect();
     const toc = document.querySelector('.mobile-toc')!.getBoundingClientRect();
-    return { twoColumns: side.right < article.left, sideBelow: side.top > article.top, tocShown: toc.width > 0 && toc.height > 0, articleWidth: article.width };
+    return { twoColumns: side.width > 0 && side.right < article.left, sideHidden: side.width === 0, tocShown: toc.width > 0 && toc.height > 0, articleWidth: article.width };
   });
 }
 
@@ -339,20 +295,20 @@ test('at the default 24px text the reader stays one column at 1121px and the two
   await page.setViewportSize({ width: 1121, height: 900 });
   await gotoWithDefaultFontSize(page, '/notes/browser-sections/', 24);
   const narrow = await readerLayout(page);
-  expect(narrow).toMatchObject({ twoColumns: false, sideBelow: true, tocShown: true });
+  expect(narrow).toMatchObject({ twoColumns: false, sideHidden: true, tocShown: true });
   expect(Math.abs(narrow.articleWidth - 720)).toBeLessThan(1);
   await page.setViewportSize({ width: 1700, height: 900 });
   const wide = await readerLayout(page);
-  expect(wide).toMatchObject({ twoColumns: true, sideBelow: false, tocShown: false });
+  expect(wide).toMatchObject({ twoColumns: true, sideHidden: false, tocShown: false });
   expect(wide.articleWidth).toBeGreaterThanOrEqual(720);
 });
 
 test('at the default 16px text the reader switches to two columns between 1120px and 1121px with a 720px body', async ({ page }) => {
   await page.setViewportSize({ width: 1120, height: 900 });
   await gotoWithDefaultFontSize(page, '/notes/browser-sections/', 16);
-  expect(await readerLayout(page)).toMatchObject({ twoColumns: false, sideBelow: true, tocShown: true });
+  expect(await readerLayout(page)).toMatchObject({ twoColumns: false, sideHidden: true, tocShown: true });
   await page.setViewportSize({ width: 1121, height: 900 });
   const two = await readerLayout(page);
-  expect(two).toMatchObject({ twoColumns: true, sideBelow: false, tocShown: false });
+  expect(two).toMatchObject({ twoColumns: true, sideHidden: false, tocShown: false });
   expect(Math.abs(two.articleWidth - 720)).toBeLessThan(1);
 });

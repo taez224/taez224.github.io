@@ -110,6 +110,8 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
   const nodeMotion = mode === 'map' ? createNodeMotion(initialPositions, edges, new Map(nodes.map(node => [node.id, baseRadius(node)]))) : null;
   const positions = nodeMotion?.positions ?? initialPositions;
   let nodeZoom = 1, fitScale = 1;
+  // 허브에서 고른 절에 속한 노트 제목을 먼저 배치한다. 노드 위치와 실제 관계는 바꾸지 않는다.
+  let emphasized: ReadonlySet<string> | null = null;
   const el = <K extends keyof SVGElementTagNameMap>(name: K, attrs: Record<string, string | number> = {}) => { const node = document.createElementNS(SVG_NS, name); for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, String(v)); return node; };
   const size = () => ({ width: svg.clientWidth || LAYOUT.width, height: svg.clientHeight || LAYOUT.height });
   const byId = new Map(nodes.map((n) => [n.id, n]));
@@ -123,7 +125,7 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
     if (state.selected) for (const e of edges) { if (e.source === state.selected) neighbors.add(e.target); if (e.target === state.selected) neighbors.add(e.source); }
     return neighbors;
   };
-  const isDimmed = (id: string, neighbors: ReadonlySet<string> = selectedNeighbors()) => outOfFilter(id) || Boolean(state.selected && id !== state.selected && !neighbors.has(id));
+  const isDimmed = (id: string, neighbors: ReadonlySet<string> = selectedNeighbors()) => outOfFilter(id) || (emphasized ? !emphasized.has(id) : Boolean(state.selected && id !== state.selected && !neighbors.has(id)));
   const minScale = () => Math.min(MIN_SCALE, fitTransform(positions, size()).scale);
   const gesture = createGraphGesture({ getMinScale: minScale, maxScale: MAX_SCALE });
   const lifetime = new AbortController();
@@ -269,7 +271,7 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
       const a = positions.get(edge.source), b = positions.get(edge.target);
       if (!a || !b) continue;
       const line = edge.offset ? offsetLine(a, b, edge.offset) : { x1: a.x, y1: a.y, x2: b.x, y2: b.y };
-      const topicDim = outOfFilter(edge.source) || outOfFilter(edge.target);
+      const topicDim = outOfFilter(edge.source) || outOfFilter(edge.target) || Boolean(emphasized && (!emphasized.has(edge.source) || !emphasized.has(edge.target)));
       const element = el('line', { class: `edge is-${edge.state}${topicDim ? ' is-topic-dim' : ''}`, x1: line.x1.toFixed(1), y1: line.y1.toFixed(1), x2: line.x2.toFixed(1), y2: line.y2.toFixed(1) });
       edgeLayer.append(element);
       drawnEdges.push({ line: element, source: edge.source, target: edge.target, offset: edge.offset });
@@ -300,7 +302,7 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
     // 선택 전 호버는 허브를 남기고 해당 노드의 이웃 제목을 미리 보여준다.
     const preview = mode === 'map' && !state.selected && state.hovered && !outOfFilter(state.hovered)
       ? state.hovered : null;
-    const base = preview
+    const base = emphasized ? [...emphasized] : preview
       ? [...new Set([preview, ...nodes.filter((node) => node.type === 'hub' && !outOfFilter(node.id)).map((node) => node.id)])]
       : [...labelIds(nodes, edges, { selected: state.selected, hovered: null })];
     const scale = state.transform.scale || 1;
@@ -733,6 +735,7 @@ export function createGraph(svg: SVGSVGElement, { nodes, edges, positions: initi
   listen('focusout', () => { state.hovered = null; hoverChanged(); });
 
   const api = {
+    emphasize(ids: readonly string[] | null) { emphasized = ids ? new Set(ids) : null; refreshNodeStates(); drawEdges(); drawLabels(); },
     // 폐기한 그래프가 입력과 프레임을 계속 처리하지 않도록 외부에 등록한 이벤트와 관찰자도 함께 해제한다.
     destroy() {
       lifetime.abort(); resizeObserver?.disconnect();
