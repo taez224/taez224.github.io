@@ -72,7 +72,7 @@ test('reader layout switches on the same pair of conditions in every file that d
   const one = '(max-width: 1120px), (width < 70.0625em)';
   const files: [string, string[]][] = [
     ['src/styles/sidenotes.css', [two]], ['src/styles/site.css', [two]], ['src/components/NotePage.astro', [two, one]],
-    ['src/components/ReaderNavigation.astro', [one]], ['src/components/NoteSidebar.astro', [one]], ['src/scripts/toc-button.ts', [one]]
+    ['src/components/ReaderNavigation.astro', [one]], ['src/scripts/toc-button.ts', [one]]
   ];
   for (const [path, expected] of files) {
     const text = read(path);

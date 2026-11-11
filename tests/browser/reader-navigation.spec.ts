@@ -34,14 +34,8 @@ test('a note without headings exposes its connections and closes on desktop resi
   const panel = page.locator('#reader-links-panel');
   await expect(panel).toBeVisible();
   await expect(page.locator('#reader-toc-tab')).toHaveCount(0);
-  const sidebar = await page.locator('.note-side .connection-group a').evaluateAll(a => a.map(e => e.getAttribute('href')));
   const connections = await panel.locator('a').evaluateAll(a => a.map(e => e.getAttribute('href')));
-  // 탐색 판은 사이드바와 같은 묶음으로 나눠, 양쪽으로 이어진 글도 한 번만 보여 준다.
-  expect(connections).toEqual(sidebar);
   expect(new Set(connections).size).toBe(connections.length);
-  const panelHeadings = await panel.locator('.reader-group h3').evaluateAll(h => h.map(e => e.firstChild?.textContent?.trim()));
-  const sidebarHeadings = await page.locator('.note-side .connection-group h3').evaluateAll(h => h.map(e => e.firstChild?.textContent?.trim()));
-  expect(panelHeadings).toEqual(sidebarHeadings);
   await expect(panel.locator('.reader-group h3').first()).toHaveText(/^서로 언급한 글/);
   await expect(page.locator('.reader-map a')).toHaveAttribute('href', /node=/);
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -85,7 +79,7 @@ test('a series hub lists its episodes without linking to itself in the connectio
   await expect(panel).toBeVisible();
   await expect(panel.locator('a[href="/posts/browser-series/"]')).toHaveCount(0);
   await expect(panel.locator('a[href="/posts/browser-series-part/"]')).toBeVisible();
-  const episodes = await page.locator('.note-side .series-list a').evaluateAll(links => links.map(link => link.getAttribute('href')));
+  const episodes = await page.locator('.series-block .series-list a').evaluateAll(links => links.map(link => link.getAttribute('href')));
   const sheetLinks = await panel.locator('a').evaluateAll(links => links.map(link => link.getAttribute('href')));
   expect(sheetLinks).toEqual(episodes);
   await expect(page.locator('.reader-count')).toHaveText(String(episodes.length));
@@ -93,10 +87,10 @@ test('a series hub lists its episodes without linking to itself in the connectio
 
 test.describe('without scripts', () => {
   test.use({ javaScriptEnabled: false });
-  test('the sidebar connections remain available without the floating control', async ({ page }) => {
+  test('the end connections remain available without the floating control', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/notes/browser-neighbor/');
     await expect(page.locator('.toc-button')).toBeHidden();
-    await expect(page.locator('.note-side .side-list a').first()).toBeVisible();
+    await expect(page.locator('a.network-note').first()).toBeVisible();
   });
 });

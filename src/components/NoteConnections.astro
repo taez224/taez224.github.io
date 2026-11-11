@@ -1,55 +1,30 @@
 ---
-import LocalGraph from './LocalGraph.astro';
-import type { PublicNote, CollectionNote } from '../lib/content-model.ts';
-import type { noteConnections } from '../lib/note-connections.ts';
-// 묶음은 noteConnections가 만든 것을 그대로 쓴다. 좁은 화면의 탐색 판과 기준을 한 곳에 둔다.
-interface Props { note: CollectionNote; outgoing: PublicNote[]; incoming: PublicNote[]; groups: ReturnType<typeof noteConnections>; mapUrl: string; graph?: boolean }
-const { note, outgoing, incoming, groups, mapUrl, graph = true } = Astro.props;
-const neighbors = [...new Map([...outgoing, ...incoming].map(n => [n.path, n])).values()];
-const listed = groups.flatMap(group => group.items);
+import { inlineJson, topicColor } from '../lib/format.ts';
+import type { readingConnections } from '../lib/reading-connections.ts';
+import type { PublicNote, TopicFold } from '../lib/content-model.ts';
+import '../styles/reader-connections.css';
+interface Props { note: PublicNote; connections: ReturnType<typeof readingConnections>; mapUrl: string; topicFold: TopicFold; graph?: boolean }
+const { note, connections, mapUrl, topicFold, graph = true } = Astro.props;
+const { neighbors, hubs, edges, headingId, headingTitle } = connections;
+const nodes = [note, ...neighbors];
+const showGraph = graph && neighbors.length > 2;
 ---
-{neighbors.length > 0 && <section class="connection-view list-block" data-connections>
-  <div class="connection-head">
-    <div class="meta">연결된 글<span class="count">{graph ? neighbors.length : listed.length}</span></div>
-    {graph && <div class="connection-switch" role="group" aria-label="연결 보기 방식" hidden>
-      <button type="button" data-connection-mode="graph" aria-controls="connection-graph" aria-pressed="true">그래프</button>
-      <button type="button" data-connection-mode="list" aria-controls="connection-list" aria-pressed="false">목록</button>
-    </div>}
-  </div>
-  {graph && <div id="connection-graph" data-connection-graph hidden><LocalGraph note={note} outgoing={outgoing} incoming={incoming} /></div>}
-  <div id="connection-list" data-connection-list>
-    {listed.length < neighbors.length && <p class="meta">연재에 속한 글은 위 연재 목록에서 볼 수 있습니다.</p>}
-    <div class:list={['scroll-list', { 'is-long': listed.length > 6 }]}><div class="side-list connection-list">
-      {groups.map(group => <section class="connection-group">
-        <h3>{group.label}<span class="count">{group.items.length}</span></h3>
-        <ul class="connection-items">{group.items.map(n => <li>
-          <a href={n.url}>{n.type === 'hub' && <i class="hub-mark" aria-hidden="true"></i>}{n.displayTitle}</a>
-        </li>)}</ul>
-      </section>)}
-    </div></div>
-  </div>
-  {mapUrl && <div class="connection-map"><a href={mapUrl}>생각 지도에서 보기</a></div>}
+{(neighbors.length > 0 || hubs.length > 0) && <section class="reader-end-connections" aria-labelledby={neighbors.length ? headingId : undefined}>
+  {neighbors.length > 0 && <header class="reader-related-header">
+    <h2 class="reader-related-heading" id={headingId}>{headingTitle}</h2>
+    {mapUrl && <a class="reader-map-link" href={mapUrl}><span class="reader-map-label">전체 지도</span><span aria-hidden="true">→</span></a>}
+  </header>}
+  {neighbors.length > 0 && <div class="reader-network compact-network" data-reader-network={showGraph || undefined} role="group" aria-label="이 글과 연결된 노트">
+    {showGraph && <script type="application/json" data-reader-network-data is:inline set:html={inlineJson({ center: note.path, nodes: nodes.map(n => ({ id: n.path, topic: n.topic })), edges })} />}
+    <svg aria-hidden="true"></svg>
+    <div class="network-note current-note" data-node={note.path}><i style={`background:${topicColor(topicFold[note.topic] ?? note.topic)}`} aria-hidden="true"></i><span class="network-title"><span>이 글</span></span></div>
+    {neighbors.map(n => <a class="network-note" href={n.url} data-node={n.path}><i style={`background:${topicColor(topicFold[n.topic] ?? n.topic)}`} aria-hidden="true"></i><span class="network-title"><span>{n.displayTitle}</span></span></a>)}
+  </div>}
+  {hubs.length > 0 && <nav class="reader-hub-context" aria-label="주제별로 더 읽기">
+    <p class="reader-hub-label">주제별로 더 읽기</p>
+    <div class="reader-hub-links">{hubs.flatMap(hub => (hub.sections.length ? hub.sections : [null]).map(section => <div class="reader-hub-row">
+      <a class="reader-hub-name" href={hub.url}>{hub.title}</a>
+      {section && <span class="reader-hub-destination"><span class="reader-hub-separator" aria-hidden="true">·</span><a class="reader-hub-section" href={`${hub.url}#${encodeURIComponent(section.id)}`}>{section.title}</a></span>}
+    </div>))}</div>
+  </nav>}
 </section>}
-<style>
-  .connection-view { padding: 20px 0; overflow-anchor: none; }
-  .connection-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
-  .connection-head>.meta { display: flex; align-items: baseline; gap: 7px; color: var(--ink); margin: 0; }
-  .connection-switch { display: flex; gap: 12px; flex-shrink: 0; }
-  .connection-switch button { appearance: none; border: 0; border-bottom: 2px solid transparent; background: none; padding: 5px 0; color: var(--muted); font: inherit; font-size: var(--t-meta); cursor: pointer; }
-  .connection-switch button[aria-pressed="true"] { color: var(--ink); border-bottom-color: var(--ink); }
-  .connection-switch button:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
-  [hidden] { display: none !important; }
-  .connection-list { margin: 18px 0 0; padding: 0; gap: 22px; }
-  .connection-group h3 { display: flex; align-items: baseline; gap: 7px; margin: 0 0 6px; color: var(--muted); font: inherit; font-size: var(--t-meta); }
-  .connection-items { list-style: none; margin: 0; padding: 0; }
-  .connection-items li + li { margin-top: 6px; }
-  .connection-list a { display: block; color: var(--ink); font-size: var(--t-side); line-height: 1.65; }
-  .connection-map { margin-top: 10px; font-size: var(--t-meta); }
-  .connection-view :global(.local-graph) { padding: 0; }
-  .connection-view :global(.local-graph > .meta:first-child) { display: none; }
-  @media (pointer: coarse) {
-    .connection-switch button { min-height: 44px; padding: 8px 4px; }
-    .connection-map a { display: inline-flex; align-items: center; min-height: 44px; }
-  }
-</style>
-<script src="../scripts/connection-view.ts"></script>

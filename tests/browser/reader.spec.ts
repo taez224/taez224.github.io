@@ -279,40 +279,6 @@ test('keyboard footnote navigation returns to its reference without heading coll
   await expect(page.getByRole('link', { name: '각주 1', exact: true })).toBeFocused();
 });
 
-// 강조할 때 누르는 원(14px)에 판을 깔았더니 이웃 제목을 4~5px 덮었다. 지도처럼 점 테두리만 바꾸고, 칠한 원은 제목에 닿지 않는다.
-test('a linked neighbor in the small graph changes its dot outline without covering its title', { tag: BOTH_THEMES }, async ({ page }) => {
-  await page.goto('/posts/browser-series-part/');
-  const node = page.locator('.local-graph a.node').first();
-  const dotStroke = () => node.evaluate((a) => getComputedStyle(a.querySelectorAll('circle')[1]).stroke);
-  const before = await dotStroke();
-  await page.locator('.series-hub').focus();
-  await expect(node).toHaveClass(/is-linked/);
-  expect(await dotStroke(), '점 테두리가 강조색으로 바뀐다').not.toBe(before);
-  const covered = await node.evaluate((a) => {
-    const t = a.querySelector('text')!.getBoundingClientRect();
-    return [...a.querySelectorAll('circle')].filter((c) => !['none', 'rgba(0, 0, 0, 0)'].includes(getComputedStyle(c).fill)).some((c) => {
-      const r = c.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
-      return Math.hypot(Math.max(t.left - x, 0, x - t.right), Math.max(t.top - y, 0, y - t.bottom)) < r.width / 2;
-    });
-  });
-  expect(covered, '칠한 원이 제목을 덮지 않는다').toBe(false);
-});
-
-// 누르는 원(14px)이 투명한데도 점과 같은 종이색 테두리를 받아, 그 고리가 간선을 가로질러 점 앞에서 선이 끊겨 보였다.
-// 간선 끝을 떼는 종이색 테두리는 보이는 점에만 둔다.
-test('small graph edges reach each neighbor dot without a gap from the invisible hit circle', { tag: BOTH_THEMES }, async ({ page }) => {
-  await page.goto('/notes/browser-many/');
-  const strokes = await page.locator('.local-graph a.node').evaluateAll((nodes) => nodes.map((a) => {
-    const [hit, dot] = a.querySelectorAll('circle');
-    return { hit: getComputedStyle(hit).stroke, dot: getComputedStyle(dot).stroke };
-  }));
-  expect(strokes.length).toBeGreaterThan(0);
-  for (const { hit, dot } of strokes) {
-    expect(hit, '누르는 원은 테두리를 그리지 않는다').toBe('none');
-    expect(dot, '보이는 점은 종이색 테두리로 간선 끝을 뗀다').not.toBe('none');
-  }
-});
-
 test('home switches both ways across the live graph breakpoint without duplicate engines', async ({ page, isMobile }) => {
   await page.goto('/');
   const snapshot = page.locator('.hero-snapshot');
@@ -349,78 +315,6 @@ test('the back link below an external article does not overlap its related notes
   expect(measured.hit).toBe(measured.href);
 });
 
-test('local graph adapts neighbor count to its width and keeps two-line titles apart', async ({ page }) => {
-  await page.goto('/notes/browser-many/');
-  const width = await page.locator('.local-graph svg').evaluate(e => e.getBoundingClientRect().width);
-  await expect(page.locator('.local-graph a.node:not([hidden])')).toHaveCount(width < 280 ? 4 : 6);
-  const note = page.locator('.local-graph > p.meta');
-  await expect(note).toHaveCSS('font-weight', '400');
-  const boxes = await page.locator('.local-graph a.node:not([hidden]) text').evaluateAll((texts) => texts.map((text) => {
-    const box = text.getBoundingClientRect();
-    return { left: box.left, right: box.right, top: box.top, bottom: box.bottom, lines: text.querySelectorAll('tspan').length };
-  }));
-  const circles = await page.locator('.local-graph circle').evaluateAll((items) => items.map((item) => item.getBoundingClientRect()).map(({ left, right, top, bottom }) => ({ left, right, top, bottom })));
-  const overlap = (a: typeof boxes[number] | typeof circles[number], b: typeof boxes[number] | typeof circles[number]) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
-  for (const [index, box] of boxes.entries()) {
-    expect(box.lines).toBeLessThanOrEqual(2);
-    for (const other of boxes.slice(index + 1)) expect(overlap(box, other)).toBe(false);
-    // 제목은 자기 노드의 누르는 원(투명) 안쪽으로 조금 들어올 수 있으므로 보이는 점만 검사한다.
-    for (const circle of circles.filter((c) => c.right - c.left <= 20)) expect(overlap(box, circle)).toBe(false);
-  }
-});
-
-// 이웃 제목이 pointer-events: none이라 지름 28px 점만 눌렸다(#41). 제목도 같은 링크로 누르고, 손가락 기기에서는 점을 44px로 넓힌다.
-for (const width of [undefined, 320]) {
-  test(`a neighbor in the small graph opens from its title and its dot reaches 44px on touch without overlapping another (${width ?? 'default'}px)`, async ({ page, isMobile }) => {
-    await page.goto('/notes/browser-many/');
-    if (width) await page.setViewportSize({ width, height: 844 });
-    await page.locator('.local-graph').scrollIntoViewIfNeeded();
-    if (isMobile) await expect.poll(() => page.locator('.local-graph a.node circle.hit').first().evaluate((circle) => circle.getBoundingClientRect().width)).toBeGreaterThanOrEqual(43.99);
-    const measured = await page.locator('.local-graph').evaluate((graph) => {
-      const nodes = [...graph.querySelectorAll('a.node:not([hidden])')];
-      const titleHits = nodes.map((a) => {
-        const box = a.querySelector('text')!.getBoundingClientRect();
-        // 두 줄 제목의 줄 사이도 누를 수 있어야 하므로 글자 상자의 가운데를 누른다.
-        const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)?.closest('a.node');
-        return hit === a;
-      });
-      const circle = (c: Element) => { const r = c.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, r: r.width / 2 }; };
-      const dots = nodes.map((a) => circle(a.querySelector('circle.hit')!));
-      const titles = nodes.map((a) => a.querySelector('rect.hit')!.getBoundingClientRect());
-      const ring = circle(graph.querySelector('.is-current .ring')!);
-      const touches = (c: { x: number; y: number; r: number }, b: DOMRect) => Math.hypot(Math.max(b.left - c.x, 0, c.x - b.right), Math.max(b.top - c.y, 0, c.y - b.bottom)) < c.r;
-      const overlaps: string[] = [];
-      dots.forEach((dot, i) => {
-        if (Math.hypot(dot.x - ring.x, dot.y - ring.y) < dot.r + ring.r) overlaps.push(`${i}: 가운데 노드`);
-        dots.forEach((other, j) => { if (j > i && Math.hypot(dot.x - other.x, dot.y - other.y) < dot.r + other.r) overlaps.push(`${i}·${j}: 점`); });
-        titles.forEach((title, j) => { if (j !== i && touches(dot, title)) overlaps.push(`${i}의 점·${j}의 제목`); });
-      });
-      titles.forEach((a, i) => titles.forEach((b, j) => { if (j > i && a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom) overlaps.push(`${i}·${j}: 제목`); }));
-      // 그래프는 사이드바 폭에 맞춰 늘거나 줄어든다. 화면 지름과 함께, 배율과 상관없는 SVG 좌표의 반지름도 본다.
-      return { titleHits, dotDiameter: dots[0].r * 2, svgRadius: parseFloat(getComputedStyle(nodes[0].querySelector('circle.hit')!).r), overlaps };
-    });
-    expect(measured.titleHits.length).toBeGreaterThanOrEqual(4);
-    expect(measured.titleHits.length).toBeLessThanOrEqual(6);
-    expect(measured.titleHits, '제목을 누르면 그 노드의 링크가 잡힌다').toEqual(measured.titleHits.map(() => true));
-    if (isMobile) expect(measured.dotDiameter, '터치에서 화면 지름 44px 이상').toBeGreaterThanOrEqual(43.99);
-    else expect(measured.svgRadius, '마우스에서는 점의 누르는 원을 넓히지 않는다').toBe(14);
-    expect(measured.overlaps, '한 노드의 누르는 영역이 다른 노드에 닿지 않는다').toEqual([]);
-  });
-
-}
-
-// 작은 그래프 아래의 지도 링크는 24px이라 사이드바의 다른 링크와 달리 손가락 기기에서 넓혀지지 않았다.
-test('the map link under the small graph reaches 44px on touch without touching a node', async ({ page, isMobile }) => {
-  test.skip(!isMobile, '누르는 영역은 터치 기기에서만 넓힌다');
-  await page.goto('/notes/browser-many/');
-  const measured = await page.locator('[data-connections]').evaluate((graph) => {
-    const link = graph.querySelector('.connection-map a')!.getBoundingClientRect();
-    const gap = Math.min(...[...graph.querySelectorAll('a.node:not([hidden]) .hit')].map((hit) => link.top - hit.getBoundingClientRect().bottom));
-    return { height: link.height, gap };
-  });
-  expect(measured.height).toBeGreaterThanOrEqual(44);
-  expect(measured.gap, '지도 링크가 그래프 노드의 누르는 영역에 닿지 않는다').toBeGreaterThanOrEqual(0);
-});
 
 // 외부 발행 글 머리의 원문 링크가 터치에서 21px이었다. 노트 머리의 메타 줄은 넓혔는데 같은 역할의 이 줄은 빠졌다.
 // 줄에 링크가 하나뿐이고 위는 페이지 여백이라, 아래 제목만 덮지 않으면 44px을 채울 수 있다.
@@ -469,7 +363,7 @@ test('the contents button bar fills as the body is read and is full when the las
   const early = await progress();
   expect(early).toBeGreaterThan(0);
   expect(early).toBeLessThan(0.5);
-  await page.evaluate(() => { const last = document.querySelector('.note-article .body')!.lastElementChild!; window.scrollTo({ top: window.scrollY + last.getBoundingClientRect().top - innerHeight + 40, behavior: 'instant' }); });
+  await page.evaluate(() => { const last = [...document.querySelector('.note-article .body')!.children].findLast(e => !e.matches('.reader-end-connections, .footnotes, script, style'))!; window.scrollTo({ top: window.scrollY + last.getBoundingClientRect().top - innerHeight + 40, behavior: 'instant' }); });
   await expect.poll(progress, { message: '마지막 문단이 화면에 들어오면 다 찬다' }).toBe(1);
 });
 
@@ -579,7 +473,7 @@ test('a table of contents entry chosen at the end stays marked until the reader 
 // 겹쳐 그리면 막대가 잘려 굵은 제목만 남았다. 막대 자리를 눌렀을 때 그 줄이 잡히는지로 실제로 그려지는지 본다.
 test('a long table of contents shows the bar beside the current section', async ({ page, isMobile }) => {
   test.skip(isMobile, '한 열 화면에서는 사이드바 목차를 쓰지 않는다');
-  await page.setViewportSize({ width: 1440, height: 650 });
+  await page.setViewportSize({ width: 1440, height: 400 });
   await page.goto('/posts/browser-long-toc/');
   const current = page.locator('.rail a[aria-current="location"]');
   const atBar = () => current.evaluate((link) => {
@@ -633,9 +527,9 @@ test('series hubs omit the repeated graph and leave space after the mobile conte
   const gap = await page.evaluate(() => document.querySelector('.series-start')!.getBoundingClientRect().top - document.querySelector('.mobile-toc')!.getBoundingClientRect().bottom);
   expect(gap).toBeGreaterThanOrEqual(16);
   await page.goto('/posts/browser-series-part/');
-  // 연재 허브와만 연결된 편도 그래프를 유지한다. 목록에서는 위 연재 블록의 링크를 중복하지 않는다.
+  // 연재에 이미 있는 편과 허브를 연결 영역에서 되풀이하지 않는다.
   await expect(page.locator('.series-block')).toBeVisible();
-  await expect(page.locator('.local-graph')).toBeVisible();
+  await expect(page.locator('.reader-network')).toHaveCount(0);
 });
 
 test('table identifiers stay on one line while long values scroll inside the table', async ({ page }) => {
@@ -818,13 +712,13 @@ test('series hubs show the published count without a misleading reading time', a
 
 test('the sidebar marks remaining content without blocking links and clears at the bottom or in one column', { tag: BOTH_THEMES }, async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 400 });
-  await page.goto('/notes/browser-many/');
-  await page.getByRole('button', { name: '목록', exact: true }).click();
+  await page.goto('/posts/browser-long-toc/');
   const side = page.locator('.note-side');
   await expect(side).toHaveAttribute('data-sidebar-overflow', '');
   const paint = () => side.evaluate(e => { const s = getComputedStyle(e, '::after'); return { height: s.height, position: s.position, pointer: s.pointerEvents, opacity: s.opacity }; });
   expect(await paint()).toMatchObject({ height: '24px', position: 'sticky', pointer: 'none' });
-  await side.getByRole('button', { name: '목록', exact: true }).press('Tab');
+  await side.locator('.rail a').first().focus();
+  await page.keyboard.press('Tab');
   await expect.poll(async () => (await paint()).opacity).toBe('0');
   await side.evaluate(e => { e.scrollTop = e.scrollHeight; });
   await expect(side).not.toHaveAttribute('data-sidebar-overflow');
@@ -898,15 +792,17 @@ test('the title stays put when the window crosses columns before the body is rea
 });
 
 
-test('long contents and connections share the sidebar scroll without a disclosure', async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 700 });
+test('long contents use the sidebar alone without a disclosure', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 400 });
   await page.goto('/posts/browser-long-toc/');
+  await page.evaluate(() => scrollTo(0, 400));
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   const side = page.locator('.note-side');
   await expect(side.locator('details')).toHaveCount(0);
   await expect(side.locator('.rail')).toHaveCSS('overflow-y', 'visible');
   const before = await page.evaluate(() => scrollY);
-  await side.locator('.local-graph a.node').last().focus();
-  await expect(side.locator('.local-graph a.node').last()).toBeInViewport();
+  await side.locator('.rail a').last().focus();
+  await expect(side.locator('.rail a').last()).toBeInViewport();
   expect(await page.evaluate(() => scrollY)).toBe(before);
   expect(await side.evaluate(e => e.scrollTop)).toBeGreaterThan(0);
 });

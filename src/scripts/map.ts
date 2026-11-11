@@ -12,6 +12,7 @@ import { panelModel } from '../lib/panel.ts';
 import { escapeHtml as escape } from '../lib/format.ts';
 import { REF_ICONS } from '../lib/ref-icons.ts';
 import { maturityOf, maturityButtonHtml, maturityNoteHtml, MATURITY_NOTE_ID } from '../lib/maturity.ts';
+import { setupHubSections } from './hub-sections.ts';
 import { loopTabFocus } from './focus-loop.ts';
 import { bindMaturity } from './maturity.ts';
 
@@ -65,6 +66,7 @@ const nodeByPath = new Map(nodes.map((n) => [n.path, n]));
 const decorate = (i: PanelModel['outgoing'][number]) => { const node = nodeByPath.get(i.path); return { ...i, nodeId: node?.id, isHub: node?.type === 'hub' }; };
 const withNodeIds = (model: PanelModel) => ({ ...model, mutual: model.mutual.map(decorate), outgoing: model.outgoing.map(decorate), incoming: model.incoming.map(decorate) });
 const byMapKey = new Map(nodes.map((n) => [n.mapKey, n]));
+const hubSections = setupHubSections(svg, panel, body, new Map(nodes.map(n => [n.path, n.id])), ids => graph.emphasize(ids), id => select(id, true));
 // SVG는 마운트 전까지 기본 크기(300×150)라서 CSS로 크기가 정해진 상자를 잰다.
 const rect = svg.parentElement!.getBoundingClientRect();
 // 무대 픽셀 크기로 배치한다. 맞춤 배율이 1이 되어 제목이 13px 그대로 보인다(pad는 fitTransform의 여백과 같은 40).
@@ -155,8 +157,10 @@ function select(id: string | null, pushUrl: boolean, { open = true } = {}) {
   // 공개 노트 레코드에는 type이 없어 허브 여부는 그래프 노드에서 가져온다.
   if (node) { renderPanel({ ...withNodeIds(panelModel(notesByPath.get(node.path) ?? node, notesByPath, noteEdges, topicFold)), isHub: node.type === 'hub', maturity: maturityOf(node) }); if (open) panel.dataset.open = ''; }
   else { body.innerHTML = emptyPanel; delete panel.dataset.open; }
+  hubSections.update(node?.path ?? null);
   if (pushUrl) {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams(window.location.search);
+    params.delete('node');
     if (node) params.set('node', node.mapKey);
     window.history.replaceState(null, '', `${window.location.pathname}${params.size ? `?${params}` : ''}`);
   }
@@ -210,7 +214,10 @@ for (const list of [panel, document.querySelector('[data-map-start]')]) list?.ad
   const link = (event.target as Element).closest<HTMLAnchorElement>('a[data-node]');
   if (!link) return;
   event.preventDefault();
+  const keepSectionFocus = event instanceof MouseEvent && event.detail === 0 && (link.matches('.section-hub-return') || link.closest('.hub-section-browser'));
   select(link.dataset.node!, true);
+  // 허브 목록을 다시 만들더라도 키보드로 고른 위치를 잃지 않는다.
+  if (keepSectionFocus) (body.querySelector<HTMLElement>('.section-hub-return') ?? body.querySelector<HTMLElement>('[data-hub-section][aria-pressed="true"]'))?.focus({ preventScroll: true });
 });
 document.querySelector('[data-graph-zoom="in"]')!.addEventListener('click', () => graph.zoom(1.25));
 document.querySelector('[data-graph-zoom="out"]')!.addEventListener('click', () => graph.zoom(1 / 1.25));

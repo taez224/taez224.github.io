@@ -10,7 +10,7 @@ export const BROWSER_SERIES_PUBLISHED = '2026-09-01';
 
 export const BROWSER_CONFIG = {
   basePath: '', entry: '01_Slipbox/start.md',
-  include: [{ path: '01_Slipbox', mode: 'all', graph: true }, { path: '20_Projects/blog', statuses: ['published'], types: ['series'], graph: false }, { path: '30_Resources/Development/Concepts', mode: 'all', graph: false }], exclude: [], assets: [],
+  include: [{ path: '01_Slipbox/reader-fixtures', mode: 'all', graph: false }, { path: '01_Slipbox', mode: 'all', graph: true }, { path: '20_Projects/blog', statuses: ['published'], types: ['series'], graph: false }, { path: '30_Resources/Development/Concepts', mode: 'all', graph: false }], exclude: [], assets: [],
   externalPublications: [{ name: '테스트 발행처', hosts: ['example.com'], publications: ['테스트 발행처'] }],
   home: { about: '어느 소프트웨어 엔지니어의 개인 위키입니다. AI 시대에 개발자로 살아가며 배운 개념과 기술, 그 과정에서 든 생각, 발행한 글과 읽은 책을 모아둡니다.', featured: ['20_Projects/blog/external.md'],
     contacts: [{ name: 'GitHub', url: 'https://example.com/profile', icon: 'github.svg' }] }
@@ -44,6 +44,71 @@ summary: 한 글의 만화 묶음을 구분한다.
 >
 > ![[comic-portrait.png|둘째 만화 둘째 장]]
 `,
+  // 읽기 그래프용 입력은 전체 지도 배치와 드래그 검사의 기하를 바꾸지 않는다.
+  '01_Slipbox/reader-fixtures/dense-reader.md': `---
+title: 긴 제목이 모인 연결
+slug: browser-dense-reader
+created: 2025-01-01
+---
+${Array.from({ length: 12 }, (_, i) => `[[dense-reader-${i}]]`).join('\n')}
+`,
+  ...Object.fromEntries(Array.from({ length: 12 }, (_, i) => [`01_Slipbox/reader-fixtures/dense-reader-${i}.md`, `---
+title: 긴 제목 ${i}는 여러 줄로 표시되어도 다른 노트를 누르는 영역과 겹치지 않아야 한다
+slug: browser-dense-reader-${i}
+created: 2025-01-01
+---
+본문이다.
+`])),
+  '01_Slipbox/curated-reader.md': `---
+title: 설명을 남긴 추천
+slug: browser-curated-reader
+created: 2025-01-01
+---
+본문에서 [[reader-target-one]]를 언급한다.
+
+## 연관된 노트
+
+- [[reader-target-two]] - 추천한 이유를 보존한다.
+`,
+  ...Object.fromEntries(['one', 'two'].map(id => [`01_Slipbox/reader-target-${id}.md`, `---
+title: 읽기 검사 대상 ${id}
+slug: browser-reader-target-${id}
+created: 2025-01-01
+---
+본문이다.
+`])),
+  '01_Slipbox/empty-reader.md': `---
+title: 연결 없는 글
+slug: browser-empty-reader
+created: 2025-01-01
+---
+본문만 있다.
+`,
+  '01_Slipbox/hub-only-reader.md': `---
+title: 주제 소속만 있는 글
+slug: browser-hub-only-reader
+created: 2025-01-01
+---
+[[section-hub]]
+`,
+  '01_Slipbox/section-hub.md': `---
+title: 절별 허브
+slug: browser-section-hub
+type: hub
+created: 2025-01-01
+---
+# 절별 허브
+
+## 검증과 안전장치
+
+- [[neighbor]]
+- [[many]]
+
+## 기록
+
+- [[start]]
+`,
+
   '20_Projects/blog/folded-footnote.md': `---
 title: 접힌 각주 검사
 slug: browser-folded-footnote

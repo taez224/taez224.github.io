@@ -1,84 +1,40 @@
 ---
-import { noteConnections } from '../lib/note-connections.ts';
-import NoteConnections from './NoteConnections.astro';
-import FeedbackLink from './FeedbackLink.astro';
 import type { PublicNote, CollectionNote } from '../lib/content-model.ts';
 import type { seriesNeighbors } from '../lib/note-nav.ts';
-interface Props { note: CollectionNote; headings: PublicNote['headings']; outgoing: PublicNote[]; incoming: PublicNote[]; mapUrl: string; series?: ReturnType<typeof seriesNeighbors>; feedbackPath: string }
-const { note, headings, outgoing, incoming, mapUrl, series = null, feedbackPath } = Astro.props;
-// 목차는 h2·h3. h3에는 자기 h2의 id를 달아 두고, 스크립트가 읽고 있는 절의 h3만 펼친다(JS 없이는 전부 보인다).
+import SeriesContents from './SeriesContents.astro';
+import FeedbackLink from './FeedbackLink.astro';
+interface Props { headings: PublicNote['headings']; note: CollectionNote; series: ReturnType<typeof seriesNeighbors>; feedbackPath: string }
+const { headings, note, series, feedbackPath } = Astro.props;
 let section = '';
-const toc = headings.filter((h) => h.level === 2 || h.level === 3).map((h) => { if (h.level === 2) section = h.id; return { ...h, parent: h.level === 3 ? section : '' }; });
-const blocks = noteConnections(outgoing, incoming, series);
-// 연결이 하나도 없으면 로컬 그래프는 "이 노트" 점 하나뿐이라 그리지 않는다. 지도에 있는 노트라면 지도로 가는 링크만 남긴다.
-const listed = blocks.flatMap(b => b.items);
-const hasNeighbors = outgoing.length + incoming.length > 0;
+const toc = headings.filter(h => h.level === 2 || h.level === 3).map(h => { if (h.level === 2) section = h.id; return { ...h, parent: h.level === 3 ? section : '' }; });
 ---
-<aside class="note-side">
+<aside class:list={["note-side", { "has-series": series && series.total > 0 }]}>
   {toc.length >= 2 && <div class="rail-scroll"><nav class="rail" aria-label="목차">
-    {toc.map((h) => <a href={`#${h.id}`} data-heading={h.id} data-parent={h.parent || undefined} class:list={[{ 'level-3': h.level === 3 }]}>{h.title}</a>)}
+    {toc.map(h => <a href={`#${h.id}`} data-heading={h.id} data-parent={h.parent || undefined} class:list={[{ 'level-3': h.level === 3 }]}>{h.title}</a>)}
   </nav></div>}
-  {/* 읽는 도중에 닿는 제보 링크. 지금 읽는 절을 보려고 목차를 볼 때 함께 보인다. 목차가 없는 짧은 글은 글 끝 줄이 가까워 두지 않는다.
-     목차와 같은 스크롤 흐름 안에서 바로 다음에 둔다. */}
   {toc.length >= 2 && <div class="rail-feedback"><FeedbackLink path={feedbackPath} /></div>}
-  {series && series.total > 0 && <section class="list-block series-block">
-    <div class="meta">연재<span class="count">{series.isHub ? series.total : `${series.position} / ${series.total}`}</span></div>
-    {!series.isHub && (series.url ? <a class="series-hub" href={series.url}>{series.title}</a> : <span class="series-hub">{series.title}</span>)}
-    <ol class="side-list series-list">{series.posts.map((post) => <li><a href={post.url} aria-current={post.path === note.path ? 'page' : undefined}>{post.title}</a></li>)}</ol>
-  </section>}
-  {(series?.isHub ? listed.length > 0 : hasNeighbors) ? <NoteConnections note={note} outgoing={outgoing} incoming={incoming} groups={blocks} mapUrl={mapUrl} graph={!series?.isHub} /> : mapUrl && !series?.isHub && <div class="map-link"><a href={mapUrl}>생각 지도에서 보기</a></div>}
-
+  {series && <SeriesContents note={note} series={series} />}
 </aside>
 <style>
-  /* 사이드바의 리듬: 블록마다 위에 선 하나, 여백은 20px 한 값. 블록이 자기 아래 선을 따로 갖지 않는다(연재 아래 선과 그래프 위 선이 겹치고 그래프 아래가 유독 넓던 문제).
-     목차는 왼쪽 레일이 경계라 위 선을 두지 않는다. 목차가 없는 글에서도 첫 블록이 위 선으로 시작해야 제목 옆에 떠 보이지 않는다. */
-  .note-side { display: flex; flex-direction: column; }
-  /* 마지막 가상 요소를 아래 끝에 붙인다. 음수 여백으로 스크롤 길이를 바꾸지 않고 클릭도 가로채지 않는다. */
-  .note-side[data-sidebar-overflow]::after { content: ''; position: sticky; bottom: 0; flex: none; height: 24px; margin-top: -24px; pointer-events: none; background: linear-gradient(to bottom, transparent, var(--paper)); }
-  /* 키보드로 선택한 링크와 포커스 윤곽선에는 겹치지 않는다. */
-  .note-side:has(:focus-visible)::after { opacity: 0; }
-  /* 로컬 그래프는 다른 컴포넌트의 루트라 스코프 속성이 없다. :global로 두어야 그래프에도 선이 붙는다. */
-  .note-side > :global(:not(.rail-scroll, .rail-feedback)) { border-top: 1px solid var(--line); }
   .rail-scroll { padding-bottom: 12px; }
-  /* 제보 링크는 목차와 한 덩어리로 읽히게 목차의 글자 시작선에 맞추고 위 선을 두지 않는다. 색은 목차 줄과 같은 보조색이다. */
-  .rail-feedback { flex: none; padding: 0 0 22px 16px; font-size: var(--t-meta); line-height: 1.5; }
+  .rail-feedback { padding: 0 0 22px 16px; font-size: var(--t-meta); line-height: 1.5; }
   .rail-feedback :global(.feedback-link) { color: var(--muted); }
   @media (hover: hover) { .rail-feedback :global(.feedback-link:hover) { color: var(--accent); } }
-  /* 한 열 화면에서는 제보 링크를 글 끝에만 두므로 사이드바 목차와 함께 숨긴다. */
-  @media (max-width: 1120px), (width < 70.0625em) { .rail-feedback { display: none; } }
-  .note-side .list-block { padding: 20px 0; border-bottom: 0; }
-  .map-link { padding: 20px 0; font-size: var(--t-meta); }
-  /* 왼쪽 선은 줄마다 자기 테두리로 그린다. 목차 상자에 선을 두고 현재 줄의 막대를 그 위에 겹치면, 긴 목차에서는 상자가 스크롤 상자라
-     테두리 위로 나간 막대가 잘린다. */
+  @media (pointer: coarse) { .rail-feedback :global(.feedback-link) { display: inline-block; padding-block: calc((44px - 1.5em) / 2); margin-block: -12px calc((1.5em - 44px) / 2); } }
   .rail { display: flex; flex-direction: column; }
-  /* 목차와 연결 목록을 각각 스크롤하지 않고 사이드바 한 곳에서 읽는다. */
-  .note-side > :global(*) { flex-shrink: 0; }
-  @media (min-width: 1121px) and (width >= 70.0625em) {
-    .note-side :global(.scroll-list.is-long .side-list) { max-height: none; overflow: visible; padding-right: 0; }
-    .note-side :global(.scroll-list::after) { display: none; }
-  }
   .rail a { display: block; padding: 5px 0 5px 16px; border-left: 2px solid var(--line); color: var(--muted); font-size: var(--t-side); line-height: 1.5; }
   .rail a.level-3 { padding-left: 28px; font-size: var(--t-meta); }
   /* 현재 위치 레일은 이 노트의 주제색(NotePage가 --topic으로 준다). */
   .rail a[aria-current="location"] { border-left-color: var(--topic, var(--accent)); color: var(--ink); font-weight: 600; }
   @media (hover: hover) { .rail a:hover { color: var(--accent); text-decoration: none; } }
-  /* 연재 블록: 접기·스크롤·서수 없이 편 목록 전체. 현재 편은 색과 굵기 하나로만 표시한다. */
-  .series-hub { display: block; margin: 4px 0 6px; color: var(--muted); font-size: var(--t-meta); }
-  @media (hover: hover) { .series-hub:hover { color: var(--accent); } }
-  .series-list { margin: 0; padding: 0; list-style: none; }
-  .series-list a[aria-current="page"] { color: var(--accent); font-weight: 600; }
-  /* 로컬 그래프의 노드에 마우스를 올리거나 포커스하면 같은 노트의 줄을 링크 호버와 같은 밑줄로 강조한다(local-graph.ts). */
-  .side-list a.is-linked, .series-hub.is-linked { text-decoration: underline; text-underline-offset: 4px; }
-  @media (pointer: coarse) {
-    .rail a { padding-block: calc((44px - 1.5em) / 2); }
-    /* 목차 줄과 같은 식으로 44px을 채운다. 위쪽은 목차까지의 간격(12px)만큼만 당겨 마지막 목차 줄을 덮지 않는다. */
-    .rail-feedback :global(.feedback-link) { display: inline-block; padding-block: calc((44px - 1.5em) / 2); margin-block: -12px calc((1.5em - 44px) / 2); }
-    .series-hub { padding-block: 10px; margin-block: -6px -4px; }
-  }
+
+  .note-side[data-sidebar-overflow]::after { content: ''; display: block; position: sticky; bottom: 0; height: 24px; margin-top: -24px; pointer-events: none; background: linear-gradient(to bottom, transparent, var(--paper)); }
+  .note-side:has(:focus-visible)::after { opacity: 0; }
+  @media (pointer: coarse) { .rail a { padding-block: calc((44px - 1.5em) / 2); } }
 </style>
 <script src="../scripts/toc.ts"></script>
 <script>
-  import { setupScrollFades, setupSidebarFade } from '../scripts/scroll-fades.ts';
-  const sidebar = document.querySelector<HTMLElement>('.note-side');
-  if (sidebar) { setupScrollFades(sidebar); setupSidebarFade(sidebar); }
+import { setupSidebarFade } from '../scripts/scroll-fades.ts';
+const sidebar = document.querySelector<HTMLElement>('.note-side');
+if (sidebar) setupSidebarFade(sidebar);
 </script>

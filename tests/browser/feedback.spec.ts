@@ -149,7 +149,7 @@ test('a wrapped end row keeps the feedback link at the right end with the two ta
 // 화살표 상자가 줄 높이만큼 크면 글자 상자 위아래로 나가, 윤곽선이 화살표에서 한 단 튀어나온다.
 test('the arrow stays within the text box so the focus outline is one rectangle', { tag: BOTH_THEMES }, async ({ page, isMobile }) => {
   test.skip(isMobile, '터치에서는 링크가 상자로 바뀌어 윤곽선이 그 상자를 따른다');
-  for (const [width, path, selector] of [[1100, '/notes/browser-sections/', '.rail-feedback .feedback-link'], [900, '/map/', '.map-start-end .feedback-link']] as const) {
+  for (const [width, path, selector] of [[1180, '/notes/browser-sections/', '.rail-feedback .feedback-link'], [900, '/map/', '.map-start-end .feedback-link']] as const) {
     await page.setViewportSize({ width, height: 800 });
     await page.goto(path);
     const link = page.locator(selector);
@@ -172,8 +172,7 @@ test('feedback links are large enough to tap without covering their neighbours',
   // 넓은 터치 화면(가로로 든 태블릿)은 두 열이라 목차 아래의 링크를 쓴다.
   await page.setViewportSize({ width: 1180, height: 820 });
   await page.goto('/notes/browser-sections/');
-  const rail = await boxOf(page, '.rail-feedback .feedback-link'), last = await boxOf(page, '.rail a:last-child'), next = await boxOf(page, '[data-connections]');
+  const rail = await boxOf(page, '.rail-feedback .feedback-link'), last = await boxOf(page, '.rail a:last-child');
   expect(rail.bottom - rail.top, '목차 아래의 링크는 44px이다').toBeGreaterThanOrEqual(44);
   expect(rail.top, '마지막 목차 줄을 덮지 않는다').toBeGreaterThanOrEqual(last.bottom);
-  expect(rail.bottom, '다음 블록을 덮지 않는다').toBeLessThanOrEqual(next.top);
 });
