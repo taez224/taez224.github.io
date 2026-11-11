@@ -1,14 +1,16 @@
 import { uiIcon } from '../lib/ui-icons.ts';
 
-for (const comic of document.querySelectorAll<HTMLElement>('.comic')) {
+const comics = [...document.querySelectorAll<HTMLElement>('.comic')].filter(comic => comic.querySelectorAll('.comic-page').length > 1);
+for (const [comicIndex, comic] of comics.entries()) {
   const viewport = comic.querySelector<HTMLElement>('.comic-pages')!;
   const pages = [...viewport.querySelectorAll<HTMLElement>(':scope > .comic-page')];
-  if (pages.length < 2) continue;
+  const name = comics.length > 1 ? `만화 ${comicIndex + 1}` : '만화';
 
   comic.setAttribute('role', 'region');
-  comic.setAttribute('aria-label', '만화');
+  comic.setAttribute('aria-label', name);
   viewport.tabIndex = 0;
-  viewport.setAttribute('aria-label', '만화 이미지, 좌우 방향키로 넘기기');
+  viewport.setAttribute('role', 'group');
+  viewport.setAttribute('aria-label', `${name} 이미지, 좌우 방향키로 넘기기`);
   const controls = document.createElement('div');
   controls.className = 'comic-controls';
   const previous = document.createElement('button');
@@ -25,9 +27,14 @@ for (const comic of document.querySelectorAll<HTMLElement>('.comic')) {
   status.setAttribute('aria-atomic', 'true');
   controls.append(previous, status, next);
   comic.append(controls);
-  let current = 0;
+  let current = -1;
   function show(index: number) {
+    // 종료 알림과 크기 변경이 같은 장을 가리켜도 위치 안내를 다시 읽지 않게 한다.
+    if (index === current) return;
     current = index;
+    // 전체 묶음을 한꺼번에 받지 않고, 다음 입력에서 볼 그림 한 장만 준비한다.
+    const nextImage = pages[index + 1]?.querySelector('img');
+    if (nextImage) nextImage.loading = 'eager';
     previous.disabled = index === 0;
     next.disabled = index === pages.length - 1;
     if ((previous.disabled && document.activeElement === previous) || (next.disabled && document.activeElement === next)) viewport.focus({ preventScroll: true });

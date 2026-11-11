@@ -25,6 +25,25 @@ const manyTitles = ['AI 시대의 판단력은 맥락을 실행 기준으로 바
 // 둘째 문장이 길어 어느 폭에서도 세 줄을 넘는 요약. 목록·카드가 첫 문장으로 자르지 않고 줄 수로 자르는지 본다.
 export const LONG_SUMMARY = `첫 문장은 질문으로 시작하는가? ${'둘째 문장은 글이 다루는 범위를 구체적으로 설명하면서 길게 이어진다. '.repeat(6).trim()}`;
 export const BROWSER_NOTES: Record<string, string> = {
+  '30_Resources/Development/Concepts/comic-groups.md': `---
+title: 만화 탐색 묶음
+created: 2026-09-01
+slug: browser-comic-groups
+summary: 한 글의 만화 묶음을 구분한다.
+---
+> [!comic]
+> ![[reader.png|한 장 그림]]
+
+> [!comic]
+> ![[reader.png|첫 만화 첫 장]]
+>
+> ![[delayed.png|첫 만화 둘째 장]]
+
+> [!comic]
+> ![[reader.png|둘째 만화 첫 장]]
+>
+> ![[comic-portrait.png|둘째 만화 둘째 장]]
+`,
   '20_Projects/blog/folded-footnote.md': `---
 title: 접힌 각주 검사
 slug: browser-folded-footnote

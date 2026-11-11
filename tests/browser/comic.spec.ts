@@ -3,7 +3,7 @@ import { test, expect, BOTH_THEMES, gotoWithDefaultFontSize } from './fixtures.t
 test('comic navigation keeps only the current image focusable and restores focus after zoom', { tag: BOTH_THEMES }, async ({ page }) => {
   await page.goto('/notes/browser-image/');
   const comic = page.getByRole('region', { name: '만화', exact: true });
-  const viewport = comic.locator('.comic-pages');
+  const viewport = comic.getByRole('group', { name: '만화 이미지, 좌우 방향키로 넘기기', exact: true });
   await expect(comic.locator('.comic-position')).toHaveText('1 / 3');
   const previous = comic.locator('.comic-previous');
   const next = comic.locator('.comic-next');
@@ -220,4 +220,59 @@ test('a failed retry on a departed comic page does not reclaim focus after retur
     await expect(previous).toBeFocused();
     await expect(page.locator('.image-viewer')).toHaveCount(0);
   } finally { release(); }
+});
+
+test('comic position updates only when the page changes and resize keeps its alignment', async ({ page }) => {
+  await page.goto('/notes/browser-image/');
+  const comic = page.locator('.comic');
+  const viewport = comic.locator('.comic-pages');
+  const status = comic.locator('.comic-position');
+  await expect(status).toHaveText('1 / 3');
+  await status.evaluate(element => {
+    element.setAttribute('data-updates', '0');
+    let updates = 0;
+    new MutationObserver(records => {
+      updates += records.length;
+      element.setAttribute('data-updates', String(updates));
+    }).observe(element, { childList: true, characterData: true, subtree: true });
+  });
+  await comic.locator('.comic-next').click();
+  await expect(status).toHaveText('2 / 3');
+  // 클릭 뒤 발생하는 종료 알림과 같은 장에서의 알림은 다시 읽을 이유가 없다.
+  await viewport.dispatchEvent('scrollend');
+  await expect(status).toHaveAttribute('data-updates', '1');
+  await page.setViewportSize({ width: 500, height: 800 });
+  await expect.poll(() => viewport.evaluate(e => Math.abs(e.scrollLeft - e.clientWidth))).toBeLessThan(1);
+  await viewport.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await expect(status).toHaveAttribute('data-updates', '1');
+  await viewport.press('ArrowRight');
+  await expect(status).toHaveText('3 / 3');
+  await viewport.press('ArrowRight');
+  await viewport.dispatchEvent('scrollend');
+  await expect(status).toHaveAttribute('data-updates', '2');
+});
+
+test('multiple comic groups have distinct accessible names and independent keyboard navigation', async ({ page }) => {
+  await page.goto('/dev/browser-comic-groups/');
+  await expect(page.getByRole('region', { name: /^만화/ })).toHaveCount(2);
+  const first = page.getByRole('region', { name: '만화 1', exact: true });
+  const second = page.getByRole('region', { name: '만화 2', exact: true });
+  const viewport = first.getByRole('group', { name: '만화 1 이미지, 좌우 방향키로 넘기기', exact: true });
+  await viewport.focus();
+  await viewport.press('ArrowRight');
+  await expect(first.locator('.comic-position')).toHaveText('2 / 2');
+  await expect(second.locator('.comic-position')).toHaveText('1 / 2');
+  await expect(viewport).toBeFocused();
+  await expect(second.getByRole('group', { name: '만화 2 이미지, 좌우 방향키로 넘기기', exact: true })).toBeVisible();
+});
+
+test('comic loading advances one image ahead without eagerly loading the whole sequence', async ({ page }) => {
+  await page.goto('/notes/browser-image/');
+  const comic = page.locator('.comic');
+  const images = comic.locator('.comic-page img');
+  await expect(images.nth(1)).toHaveAttribute('loading', 'eager');
+  await expect(images.nth(2)).toHaveAttribute('loading', 'lazy');
+  await comic.locator('.comic-next').click();
+  await expect(images.nth(2)).toHaveAttribute('loading', 'eager');
+  await expect.poll(() => images.nth(2).evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
 });
