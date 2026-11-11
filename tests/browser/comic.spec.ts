@@ -130,3 +130,94 @@ test('portrait comic pages retain the available width instead of fitting a squar
   const next = (await comic.locator('.comic-controls').boundingBox())!;
   expect(next.y).toBeGreaterThanOrEqual(box.y + box.height);
 });
+
+for (const returnBeforeLoad of [false, true]) {
+  test(`turning a comic page cancels its pending zoom${returnBeforeLoad ? ' even after returning' : ''}`, async ({ page }) => {
+    let release!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    await page.route('**/delayed.png', async route => { await gate; await route.continue(); });
+    try {
+      await page.goto('/notes/browser-image/');
+      const comic = page.locator('.comic');
+      await comic.locator('.comic-next').click();
+      const zoom = comic.locator('.comic-page').nth(1).locator('.image-zoom');
+      await zoom.click();
+      await expect(zoom).toHaveAttribute('aria-busy', 'true');
+      await comic.locator('.comic-next').click();
+      if (returnBeforeLoad) await comic.locator('.comic-previous').click();
+      release();
+      await expect(zoom).not.toHaveAttribute('aria-busy');
+      await expect(page.locator('.image-viewer')).toHaveCount(0);
+      await expect(comic.locator('.comic-position')).toHaveText(returnBeforeLoad ? '2 / 3' : '3 / 3');
+      if (!returnBeforeLoad) await comic.locator('.comic-previous').click();
+      // 넘기기는 자동 확대만 취소하고, 돌아와 다시 누르는 동작은 유지한다.
+      await zoom.click();
+      const viewer = page.getByRole('dialog', { name: '이미지 크게 보기' });
+      await expect(viewer).toBeVisible();
+      await viewer.getByRole('button', { name: '닫기', exact: true }).click();
+      await expect(zoom).toBeFocused();
+    } finally { release(); }
+  });
+}
+
+test('a new zoom request on a returned comic page reuses its pending load', async ({ page }) => {
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  await page.route('**/delayed.png', async route => { await gate; await route.continue(); });
+  try {
+    await page.goto('/notes/browser-image/');
+    const comic = page.locator('.comic');
+    await comic.locator('.comic-next').click();
+    const zoom = comic.locator('.comic-page').nth(1).locator('.image-zoom');
+    await zoom.locator('img').evaluate(element => {
+      const image = element as HTMLImageElement;
+      const decode = image.decode.bind(image);
+      let calls = 0;
+      image.decode = () => { image.dataset.decodeCalls = String(++calls); return decode(); };
+    });
+    await zoom.click();
+    await expect(zoom).toHaveAttribute('aria-busy', 'true');
+    await comic.locator('.comic-next').click();
+    await comic.locator('.comic-previous').click();
+    await zoom.click();
+    release();
+    const viewer = page.getByRole('dialog', { name: '이미지 크게 보기' });
+    await expect(viewer).toBeVisible();
+    await expect(viewer).toHaveCount(1);
+    await expect(zoom.locator('img')).toHaveAttribute('data-decode-calls', '1');
+    await viewer.getByRole('button', { name: '닫기', exact: true }).click();
+    await expect(zoom).toBeFocused();
+  } finally { release(); }
+});
+
+test('a failed retry on a departed comic page does not reclaim focus after returning', async ({ page }) => {
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  let requests = 0;
+  await page.route('**/delayed.png', async route => {
+    if (++requests > 1) await gate;
+    await route.abort();
+  });
+  try {
+    await page.goto('/notes/browser-image/');
+    const comic = page.locator('.comic');
+    await comic.locator('.comic-next').click();
+    const slide = comic.locator('.comic-page').nth(1);
+    const zoom = slide.locator('.image-zoom');
+    await zoom.click();
+    const retry = slide.getByRole('button', { name: '둘째 장 다시 시도', exact: true });
+    await expect(retry).toBeVisible();
+    await retry.click();
+    await expect(zoom).toHaveAttribute('aria-busy', 'true');
+    await comic.locator('.comic-next').click();
+    const previous = comic.locator('.comic-previous');
+    await previous.click();
+    // 모바일의 탭은 버튼에 초점을 두지 않으므로 검사할 복귀 위치를 명시한다.
+    await previous.focus();
+    release();
+    await expect(zoom).not.toHaveAttribute('aria-busy');
+    await expect(retry).toBeVisible();
+    await expect(previous).toBeFocused();
+    await expect(page.locator('.image-viewer')).toHaveCount(0);
+  } finally { release(); }
+});
