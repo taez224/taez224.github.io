@@ -50,8 +50,8 @@ test('comic navigation keeps only the current image focusable and restores focus
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
-for (const nativeScrollEnd of [true, false]) {
-test(`a touch swipe updates the comic ${nativeScrollEnd ? 'with' : 'without'} scrollend support`, async ({ page, context, isMobile }) => {
+for (const [nativeScrollEnd, touchEnd] of [[true, 'touchEnd'], [false, 'touchEnd'], [false, 'touchCancel']] as const) {
+test(`a touch swipe updates the comic ${nativeScrollEnd ? 'with' : 'without'} scrollend support${touchEnd === 'touchCancel' ? ' after touch cancellation' : ''}`, async ({ page, context, isMobile }) => {
   test.skip(!isMobile, '실제 터치 입력은 모바일에서 확인한다.');
   if (!nativeScrollEnd) await page.addInitScript(() => {
     let prototype = Object.getPrototypeOf(document.createElement('div'));
@@ -73,7 +73,13 @@ test(`a touch swipe updates the comic ${nativeScrollEnd ? 'with' : 'without'} sc
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: start - box.width * .7 * step / 8, y }] });
     await page.waitForTimeout(20);
   }
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await expect.poll(() => viewport.evaluate(e => e.scrollLeft / e.clientWidth)).toBeGreaterThan(.5);
+  // 지연 타이머보다 오래 멈춰도 손을 떼기 전에는 읽는 장과 초점 범위를 바꾸지 않는다.
+  await page.waitForTimeout(350);
+  await expect(page.locator('.comic-position')).toHaveText('1 / 3');
+  await expect(page.locator('.comic-page').first()).toHaveJSProperty('inert', false);
+  await expect(page.locator('.comic-page').nth(1)).toHaveJSProperty('inert', true);
+  await cdp.send('Input.dispatchTouchEvent', { type: touchEnd, touchPoints: [] });
   await expect(page.locator('.comic-position')).toHaveText('2 / 3');
   await expect(page.getByRole('dialog', { name: '이미지 크게 보기' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: '둘째 장 크게 보기' })).toBeVisible();

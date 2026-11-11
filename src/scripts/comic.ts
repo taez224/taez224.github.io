@@ -70,10 +70,19 @@ for (const [comicIndex, comic] of comics.entries()) {
     viewport.addEventListener('scrollend', syncPosition);
   } else {
     let timer: ReturnType<typeof setTimeout>;
-    viewport.addEventListener('scroll', () => {
+    let touching = false;
+    const schedulePosition = () => {
       clearTimeout(timer);
-      timer = setTimeout(syncPosition, 150);
-    }, { passive: true });
+      // 스크롤이 잠시 멈춰도 손을 대고 있는 동안에는 장과 초점 범위를 확정하지 않는다.
+      if (!touching) timer = setTimeout(syncPosition, 150);
+    };
+    viewport.addEventListener('scroll', schedulePosition, { passive: true });
+    for (const type of ['touchstart', 'touchend', 'touchcancel'] as const) {
+      viewport.addEventListener(type, event => {
+        touching = event.touches.length > 0;
+        schedulePosition();
+      }, { passive: true });
+    }
   }
   // 세로 그림도 정사각형 틀에 맞추느라 작아지지 않게, 가장 긴 비율로 자리를 확보한다.
   const ratios = pages.map(page => {
