@@ -11,6 +11,7 @@ import { parentLink, seriesNeighbors } from '../lib/note-nav.ts';
 import { articleMeta } from '../lib/seo.ts';
 import { maturityOf, maturityButtonHtml, maturityNoteHtml } from '../lib/maturity.ts';
 import '../styles/body.css';
+import '../styles/comic.css';
 import '../styles/sidenotes.css';
 import '../styles/maturity.css';
 import type { NoteEntry, PublicNote } from '../lib/content-model.ts';
@@ -196,4 +197,5 @@ const maturity = maturityOf(note);
 <script src="../scripts/reading-anchor.ts"></script>
 <script src="../scripts/maturity.ts"></script>
 <script src="../scripts/image-viewer.ts"></script>
+<script src="../scripts/comic.ts"></script>
 <script src="../scripts/overflow-hints.ts"></script>

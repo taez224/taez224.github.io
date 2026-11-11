@@ -1,5 +1,8 @@
 ---
 import Shell from '../layouts/Shell.astro';
+import { Image } from 'astro:assets';
+import { getEntry } from 'astro:content';
+import { kindPrefix } from '../lib/slug.ts';
 import '../styles/graph.css';
 import About from '../components/About.astro';
 import { getGarden } from '../lib/get-garden.ts';
@@ -13,7 +16,9 @@ import { renderSnapshotSvg } from '../graph/snapshot.ts';
 const garden = await getGarden();
 const byPath = new Map(garden.notes.map((n) => [n.path, n]));
 const featured = byPath.get(garden.home.featured[0]);
-const thoughts = recentActivity(garden.notes, { kinds: ['slipbox'], limit: 4 });
+const featuredEntry = featured ? await getEntry('notes', `${kindPrefix(featured.kind)}/${featured.slug}`) : undefined;
+const featuredImage = featuredEntry?.data.thumbnail;
+const thoughts = recentActivity(garden.notes, { kinds: ['slipbox'], limit: 3 });
 const development = recentActivity(garden.notes, { kinds: ['development'], limit: 3 });
 const articles = recentActivity(garden.notes, { kinds: ['blog'], series: garden.blog.series, exclude: [featured?.path], limit: 3 });
 const books = homeBooks(garden.books, garden.home.featuredBook);
@@ -39,13 +44,21 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
       <a class="hero-snapshot" href={withBase('/map/')} aria-label="생각 지도 보기"><Fragment set:html={snapshotDesktop} /><Fragment set:html={snapshotTablet} /><Fragment set:html={snapshot} /></a>
     </div>
   </section>
+  {featured && <section class="wrap featured-wide" aria-labelledby="featured-heading">
+    <article class:list={['featured-copy', { 'has-image': featuredImage }]}>
+      <div class="featured-text">
+        <h2 id="featured-heading" class="featured-label">대표 글</h2>
+        <h3 class="display"><a href={featured.url}>{featured.title}</a></h3>
+        {featured.summaryIsExplicit && <p>{featured.summary}</p>}
+      </div>
+      {featuredImage && <a class="featured-art" href={featured.url} aria-label={`${featured.title} 읽기`}>
+        <Image src={featuredImage} alt="" width={440} widths={[440, 880]} sizes="(max-width: 420px) calc(100vw - 40px), (max-width: 720px) 380px, (max-width: 1120px) 40vw, 440px" format="webp" />
+      </a>}
+    </article>
+  </section>}
   <div class="wrap home-grid">
     <section class="home-articles" aria-labelledby="articles-heading">
       <header class="home-heading"><h2 id="articles-heading" class="display">글</h2><a href={withBase('/posts/')} aria-label="글 전체 보기">전체 보기</a></header>
-      {featured && <article class="featured-copy">
-        <h3 class="display"><a href={featured.url}>{featured.title}</a></h3>
-        {featured.summaryIsExplicit && <p>{featured.summary}</p>}
-      </article>}
       <HomeList rows={articles} />
     </section>
     <section class="home-thoughts" aria-labelledby="thoughts-heading">
@@ -94,13 +107,24 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
   .home-heading > a { flex-shrink: 0; color: var(--muted); font-size: var(--t-side); padding-block: 8px; }
   .home-heading > a:focus-visible { text-decoration: underline; text-underline-offset: .25em; }
   @media (hover: hover) { .home-heading > a:hover { text-decoration: underline; text-underline-offset: .25em; } }
-  .featured-copy { padding-block: 22px 26px; border-bottom: 1px solid var(--line); }
+  .featured-wide { padding-block: 20px 36px; }
+  .featured-copy { padding: 24px 0 32px; border-block: 1px solid var(--line); }
+  .featured-copy.has-image { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .8fr); align-items: center; gap: 48px; }
+  .featured-text { min-width: 0; }
+  .featured-label { margin: 0 0 12px; color: var(--muted); font-size: var(--t-side); font-weight: 400; }
+  .featured-art { display: block; width: min(100%, 440px); justify-self: end; }
+  .featured-art :global(img) { display: block; width: 100%; height: auto; }
+  .featured-art:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
   .featured-copy h3 { margin: 0 0 16px; font-size: var(--t-featured); line-height: 1.45; text-wrap: balance; word-break: keep-all; overflow-wrap: anywhere; }
   .featured-copy p { margin: 0; color: var(--muted); font-size: var(--t-body); line-height: 1.75; }
   @media (max-width: 720px) {
     .home-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'articles' 'thoughts' 'development' 'books'; gap: 40px; padding-block: 4px 40px; }
     .home-heading { padding-bottom: 8px; }
-    .featured-copy { padding-top: 14px; }
+    .featured-wide { padding-block: 0 24px; }
+    .featured-copy { padding: 16px 0 24px; }
+    .featured-copy.has-image { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+    .featured-art { justify-self: center; max-width: 380px; }
+    .featured-label { margin-bottom: 8px; }
   }
   @media (max-width: 1120px) {
     .hero { grid-template-columns: minmax(0, 1fr); gap: 0; padding: 0 0 20px; }

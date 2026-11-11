@@ -2,12 +2,16 @@ import { closeOnBackdrop } from './dialog-backdrop.ts';
 import { fitViewerSize } from './mermaid-viewer.ts';
 
 let latestRequest = 0;
-// 다른 모달을 열었다 닫아도 이전 확대 요청이 다시 살아나지 않게 한다.
+let latestTrigger: HTMLButtonElement | null = null;
+// 다른 모달을 열거나 만화를 넘겼다가 돌아와도 이전 확대 요청이 다시 살아나지 않게 한다.
 new MutationObserver((records) => {
-  if (records.some(record => record.target instanceof HTMLDialogElement && record.oldValue === null)) {
+  if (records.some(record => record.oldValue === null && (
+    (record.attributeName === 'open' && record.target instanceof HTMLDialogElement) ||
+    (record.attributeName === 'inert' && record.target instanceof Element && latestTrigger && record.target.contains(latestTrigger))
+  ))) {
     latestRequest++;
   }
-}).observe(document.body, { attributes: true, attributeFilter: ['open'], attributeOldValue: true, subtree: true });
+}).observe(document.body, { attributes: true, attributeFilter: ['open', 'inert'], attributeOldValue: true, subtree: true });
 
 // 링크와 카드의 이동을 가로채지 않는다. 스크립트가 없으면 원래 이미지 그대로 읽는다.
 for (const image of document.querySelectorAll<HTMLImageElement>('.body img')) {
@@ -36,6 +40,7 @@ for (const image of document.querySelectorAll<HTMLImageElement>('.body img')) {
   const requestOpen = async (reload = false) => {
     // 같은 이미지의 로딩은 재사용하되, 취소 뒤 다시 누른 확대 의도는 새로 받는다.
     request = ++latestRequest;
+    latestTrigger = button;
     if (pending) return;
     pending = true;
     retry.hidden = true;
@@ -51,12 +56,12 @@ for (const image of document.querySelectorAll<HTMLImageElement>('.body img')) {
       clearTimeout(timer);
       message.textContent = '';
       // 로딩 중 다른 작업을 시작했다면 완료되어도 확대창을 열지 않는다.
-      if (request === latestRequest && !document.querySelector('dialog[open]')) openViewer();
+      if (request === latestRequest && !button.closest('[inert]') && !document.querySelector('dialog[open]')) openViewer();
     } catch {
       clearTimeout(timer);
       message.textContent = '이미지를 불러오지 못했습니다.';
       retry.hidden = false;
-      if (reload && request === latestRequest && !document.querySelector('dialog[open]')) {
+      if (reload && request === latestRequest && !button.closest('[inert]') && !document.querySelector('dialog[open]')) {
         retry.focus({ preventScroll: true });
       }
     } finally {
