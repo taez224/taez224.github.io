@@ -21,12 +21,12 @@
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",
     "@resvg/resvg-js": "^2.6.2",
-    "@tanstack/highlight": "^1.2.11",
-    "astro": "^7.4.7",
+    "@tanstack/highlight": "^1.2.12",
+    "astro": "^7.4.11",
     "markdown-it": "^15.0.3",
     "markdown-it-footnote": "^4.0.0",
     "mermaid": "^12.3.0",
-    "sanitize-html": "^2.18.1",
+    "sanitize-html": "^2.18.2",
     "sharp": "^0.35.5"
   },
   "devDependencies": {
