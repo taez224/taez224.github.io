@@ -19,20 +19,20 @@
     "test:browser": "playwright test --config tests/browser/playwright.config.ts"
   },
   "dependencies": {
-    "@astrojs/sitemap": "^3.7.4",
+    "@astrojs/sitemap": "^3.7.6",
     "@resvg/resvg-js": "^2.6.2",
-    "@tanstack/highlight": "^1.2.11",
-    "astro": "^7.4.7",
+    "@tanstack/highlight": "^1.2.12",
+    "astro": "^7.4.13",
     "markdown-it": "^15.0.3",
     "markdown-it-footnote": "^4.0.0",
     "mermaid": "^12.3.0",
-    "sanitize-html": "^2.18.1",
+    "sanitize-html": "^2.18.2",
     "sharp": "^0.35.5"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
     "@google/design.md": "0.4.0",
-    "@playwright/test": "^1.65.0",
+    "@playwright/test": "^1.65.1",
     "@types/node": "^26.6.6",
     "@types/sanitize-html": "^2.16.2",
     "typescript": "^6.0.3"
