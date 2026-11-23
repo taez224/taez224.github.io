@@ -1,0 +1,14 @@
+---
+import Shell from '../../layouts/Shell.astro';
+import ComicReader from '../../components/ComicReader.astro';
+import { comics } from '../../content/comics.ts';
+import { comicNeighbors, type ComicWork } from '../../lib/comics.ts';
+export function getStaticPaths() {
+  return comics.map(work => ({ params: { slug: work.slug }, props: { work, next: comicNeighbors(comics, work.slug).next } }));
+}
+interface Props { work: ComicWork; next: ComicWork | null }
+const { work, next } = Astro.props;
+---
+<Shell noindex title={work.title} description={`TaeZ의 만화, ${work.title}.`} path={`/comics/${work.slug}/`} feedback={false}>
+  <ComicReader work={work} next={next} />
+</Shell>

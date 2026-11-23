@@ -1,0 +1,15 @@
+---
+import Shell from '../../../layouts/Shell.astro';
+import ComicReader from '../../../components/ComicReader.astro';
+import { comics } from '../../../content/comics.ts';
+import { comicNeighbors, type ComicWork } from '../../../lib/comics.ts';
+export function getStaticPaths() {
+  return comics.map(work => ({ params: { slug: work.slug }, props: { work, next: comicNeighbors(comics, work.slug).next } }));
+}
+interface Props { work: ComicWork; next: ComicWork | null }
+const { work, next } = Astro.props;
+---
+<!-- 작품 페이지와 같은 리더를 크게 보기로 열어 둔 채 시작한다. path를 작품 주소로 넘겨 canonical과 og:url이 작품 페이지를 가리키게 한다. -->
+<Shell noindex title={work.title} description={`TaeZ의 만화, ${work.title}.`} path={`/comics/${work.slug}/`} feedback={false}>
+  <ComicReader work={work} next={next} startOpen />
+</Shell>

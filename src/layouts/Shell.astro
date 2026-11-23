@@ -16,7 +16,7 @@ import { PALETTE, DARK_PALETTE } from '../lib/palette.ts';
 import { getGarden } from '../lib/get-garden.ts';
 import { THEME_BOOT } from '../lib/theme.ts';
 import { uiIcon } from '../lib/ui-icons.ts';
-interface Props { title: string; description: string; path: string; active?: string; ogType?: string; ogImage?: string | null; kind?: string | null; pageType?: string | null; published?: string | null; updated?: string | null; footer?: boolean; feedback?: boolean; feedbackPath?: string | null }
+interface Props { noindex?: boolean; title: string; description: string; path: string; active?: string; ogType?: string; ogImage?: string | null; kind?: string | null; pageType?: string | null; published?: string | null; updated?: string | null; footer?: boolean; feedback?: boolean; feedbackPath?: string | null }
 const umami = siteConfig.analytics?.umami?.websiteId ? siteConfig.analytics.umami : null;
 // Search Console 소유권 확인 토큰. 공개되는 값이고, 지우면 소유권이 풀리므로 확인 뒤에도 남긴다.
 const googleSiteVerification = siteConfig.googleSiteVerification ?? '';
@@ -51,6 +51,7 @@ const jsonLd = inlineJson(structuredData({ ogType, kind, pageType, title: path =
     <script is:inline set:html={THEME_BOOT}></script>
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
+    {Astro.props.noindex && <meta name="robots" content="noindex, nofollow" />}
     <meta name="author" content="TaeZ" />
     {googleSiteVerification && <meta name="google-site-verification" content={googleSiteVerification} />}
     {naverSiteVerification && <meta name="naver-site-verification" content={naverSiteVerification} />}
