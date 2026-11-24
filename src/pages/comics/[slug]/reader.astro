@@ -1,10 +1,10 @@
 ---
 import Shell from '../../../layouts/Shell.astro';
 import ComicReader from '../../../components/ComicReader.astro';
-import { comics } from '../../../content/comics.ts';
-import { comicNeighbors, type ComicWork } from '../../../lib/comics.ts';
+import { comicCatalogue } from '../../../content/comics.ts';
+import { nextCatalogueWork, type ComicWork } from '../../../lib/comics.ts';
 export function getStaticPaths() {
-  return comics.map(work => ({ params: { slug: work.slug }, props: { work, next: comicNeighbors(comics, work.slug).next } }));
+  return comicCatalogue.map((work, index) => ({ params: { slug: work.slug }, props: { work, next: nextCatalogueWork(comicCatalogue, index) } }));
 }
 interface Props { work: ComicWork; next: ComicWork | null }
 const { work, next } = Astro.props;

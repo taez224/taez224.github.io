@@ -1,9 +1,8 @@
 ---
 import Shell from '../../layouts/Shell.astro';
-import { comics } from '../../content/comics.ts';
+import { comicCatalogue as works } from '../../content/comics.ts';
 import { comicCover } from '../../lib/comics.ts';
 import { withBase } from '../../lib/format.ts';
-const works = comics.toReversed();
 ---
 <Shell noindex title="만화" description="TaeZ의 만화." path="/comics/" feedback={false}>
   <div class="wrap comics-page">

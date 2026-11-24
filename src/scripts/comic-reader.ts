@@ -16,7 +16,6 @@ for (const root of document.querySelectorAll<HTMLElement>('[data-comic-book]')) 
   const dialog = root.querySelector<HTMLDialogElement>('dialog')!;
   const slot = dialog.querySelector<HTMLElement>('[data-comic-slot]')!;
   const ambient = dialog.querySelector<HTMLImageElement>('[data-comic-ambient]')!;
-  const restart = track.querySelector<HTMLButtonElement>('[data-comic-restart]');
   let current = -1;
   const motion = createIdPhotoMotion(track, step => turn(current + step));
 
@@ -110,7 +109,6 @@ for (const root of document.querySelectorAll<HTMLElement>('[data-comic-book]')) 
   previous.addEventListener('click', () => turn(current - 1));
   next.addEventListener('click', () => turn(current + 1));
   open.addEventListener('click', openBig);
-  restart?.addEventListener('click', () => go(0));
   dialog.querySelector('[data-comic-close]')!.addEventListener('click', () => dialog.close());
   document.addEventListener('keydown', event => {
     if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
@@ -161,7 +159,6 @@ for (const root of document.querySelectorAll<HTMLElement>('[data-comic-book]')) 
   });
 
   controls.hidden = false;
-  if (restart) restart.hidden = false;
   root.classList.add('is-enhanced');
   // 전용 주소는 공유받은 조각과 상관없이 표지부터 크게 보기로 연다.
   if (root.hasAttribute('data-start-open')) {

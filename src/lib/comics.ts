@@ -20,9 +20,8 @@ export function comicCover(work: ComicWork): ComicPage {
   return work.pages[0];
 }
 
-// 등록 순서가 읽는 순서다. 목록의 최신순 표시와 이전·다음 방향을 뒤섞지 않는다.
-export function comicNeighbors(works: readonly ComicWork[], slug: string) {
-  const index = works.findIndex(work => work.slug === slug);
-  if (index < 0) throw new Error(`Unknown comic: ${slug}`);
-  return { previous: works[index - 1] ?? null, next: works[index + 1] ?? null };
+// 끝 장은 목록의 다음 표지로 이어지고, 맨 끝에서는 첫 표지로 돌아간다.
+export function nextCatalogueWork(works: readonly ComicWork[], index: number): ComicWork | null {
+  if (works.length < 2) return null;
+  return works[index + 1] ?? works[0]!;
 }

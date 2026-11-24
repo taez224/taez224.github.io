@@ -43,10 +43,11 @@ test('the unlisted catalogue links to the work and the reader returns to the cat
   await page.getByRole('link', { name: /말랑한 마력핵/ }).click();
   await expect(page).toHaveURL(workPath);
   const location = page.getByRole('navigation', { name: '만화 위 탐색' });
-  await expect(location.getByRole('link', { name: '만화', exact: true })).toHaveAttribute('href', '/comics/');
-  await expect(location.getByRole('heading', { name: '말랑한 마력핵', level: 1 })).toBeVisible();
-  await expect(page.getByRole('link', { name: '목록으로', exact: true })).toHaveCount(1);
-  await page.getByRole('navigation', { name: '만화 아래 탐색' }).getByRole('link', { name: '목록으로' }).click();
+  await expect(location.getByRole('link', { name: '만화 목록', exact: true })).toHaveAttribute('href', '/comics/');
+  await expect(location).toHaveText('← 만화 목록');
+  await expect(page.getByRole('heading', { name: '말랑한 마력핵', level: 1 })).toHaveCount(1);
+  await expect(page.getByRole('link', { name: '목록으로', exact: true })).toHaveCount(0);
+  await location.getByRole('link', { name: '만화 목록' }).click();
   await expect(page).toHaveURL('/comics/');
   await expect(page.getByRole('heading', { name: '만화', exact: true })).toBeVisible();
 });
@@ -122,10 +123,8 @@ test('the ID photo comic opens on its cover and turns through twelve pages to th
   await expect(book.getByRole('status')).toHaveText('끝');
   await expect(page).toHaveURL(/#end$/);
   await expect(next).toBeDisabled();
-  // 사원증 사진은 마지막 작품이라 끝 장에는 목록으로 가는 링크 하나만 둔다.
   const end = book.getByRole('group', { name: '끝' });
-  await expect(end.getByRole('link')).toHaveCount(1);
-  await expect(end.getByRole('link', { name: '만화 목록' })).toHaveAttribute('href', '/comics/');
+  await expect(end.getByRole('link', { name: /다른 만화 말랑한 마력핵/ })).toHaveAttribute('href', '/comics/soft-mana-core/');
   await book.getByRole('group', { name: '끝' }).press('ArrowLeft');
   await expect(book.getByRole('status')).toHaveText('12 / 12');
 });
@@ -136,11 +135,14 @@ test('the end slide leads to the next work by its first page', async ({ page }) 
   await expect(book.getByRole('status')).toHaveText('끝');
   const nextWork = book.getByRole('link', { name: /사원증 사진/ });
   await expect(nextWork.locator('img')).toHaveAttribute('src', '/comics/id-photo/cover.webp');
-  await book.getByRole('button', { name: '처음부터' }).click();
-  await expect(book.getByRole('status')).toHaveText('1 / 8');
-  await book.getByRole('button', { name: '이전 이미지' }).focus();
-  await page.keyboard.press('ArrowLeft');
-  await expect(book.getByRole('status')).toHaveText('1 / 8');
+  const cover = nextWork.locator('img');
+  await expect(cover).toBeInViewport();
+  const box = (await cover.boundingBox())!;
+  expect(box.width / box.height).toBeCloseTo(4 / 5, 2);
+  const end = book.getByRole('group', { name: '끝' });
+  await expect(end.getByRole('button')).toHaveCount(0);
+  await end.getByRole('link', { name: '만화 목록', exact: true }).click();
+  await expect(page).toHaveURL('/comics/');
   await page.goto(`${workPath}#end`);
   await book.getByRole('link', { name: /사원증 사진/ }).click();
   await expect(page).toHaveURL('/comics/id-photo/');
@@ -436,8 +438,9 @@ test('arrow keys turn the work on arrival and leave the search field alone', asy
   await page.locator('[data-comic-track]').focus();
   await page.keyboard.press('ArrowLeft');
   await expect(status).toHaveText('1 / 8');
-  // 제목을 눌러 초점이 main으로 옮겨 가도 방향키로 넘긴다.
-  await page.getByRole('heading', { name: '말랑한 마력핵' }).click();
+  // 본문 여백을 눌렀을 때처럼 main에 초점이 있어도 방향키로 넘긴다.
+  await page.getByRole('main').focus();
+  await expect(page.getByRole('main')).toBeFocused();
   await page.keyboard.press('ArrowRight');
   await expect(status).toHaveText('2 / 8');
 });
@@ -471,7 +474,7 @@ test('a cover picked from the list moves into the first page only on that entry'
   await expect(page.locator('.comic-position')).toHaveText('1 / 8');
   // 읽던 장에서 목록으로 돌아갈 때는 화면 밖의 첫 장이 날아들지 않는다.
   await page.keyboard.press('ArrowRight');
-  await page.getByRole('link', { name: '목록으로' }).click();
+  await page.getByRole('navigation', { name: '만화 위 탐색' }).getByRole('link').click();
   await expect(page).toHaveURL('/comics/');
   expect(await outcome()).not.toBe('ran');
   // 뒤로 가기로 작품에 돌아온 경우도 목록에서 고른 것이 아니므로 바로 바꾼다.

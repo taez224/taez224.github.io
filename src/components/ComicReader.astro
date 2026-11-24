@@ -13,9 +13,9 @@ const nextCover = next ? comicCover(next) : null;
 <div class:list={['comic-stage', { 'has-paper': work.paper }]} style={work.paper ? { '--comic-paper': work.paper } : undefined}>
   <article class="comic-reader" aria-labelledby="comic-title">
     <nav class="reader-location" aria-label="만화 위 탐색">
-      <a href={listPath}>만화</a><span aria-hidden="true">/</span>
-      <h1 id="comic-title" aria-current="page">{work.title}</h1>
+      <a href={listPath}><span aria-hidden="true">←&nbsp;</span>만화 목록</a>
     </nav>
+    <h1 id="comic-title" class="visually-hidden">{work.title}</h1>
     <div class="comic-book" data-comic-book data-page-count={work.pages.length} data-work-path={withBase(`/comics/${work.slug}/`)} data-start-open={startOpen ? '' : undefined} role="region" aria-label="만화">
       <div class="comic-home" data-comic-home>
         <!-- 본문과 크게 보기가 이 한 덩어리를 옮겨 쓰므로 읽던 장이 두 화면 사이에서 어긋나지 않는다.
@@ -30,23 +30,16 @@ const nextCover = next ? comicCover(next) : null;
               </div>
             ))}
             <div class="comic-slide comic-end" role="group" aria-label="끝">
-              {next && nextCover ? (
-                <div class="comic-end-card">
+              <div class="comic-end-card">
+                {next && nextCover && (
                   <a class="comic-end-next" href={withBase(`/comics/${next.slug}/`)}>
-                    <span class="comic-end-label">다음 만화</span>
+                    <span class="comic-end-label">다른 만화</span>
                     <img src={withBase(nextCover.src)} width={nextCover.width} height={nextCover.height} alt="" loading="lazy" draggable="false" />
                     <strong>{next.title} →</strong>
                   </a>
-                  <div class="comic-end-actions">
-                    <button type="button" data-comic-restart hidden>처음부터</button>
-                    <a href={listPath}>목록</a>
-                  </div>
-                </div>
-              ) : (
-                <div class="comic-end-card is-last">
-                  <a class="comic-end-list" href={listPath}>만화 목록</a>
-                </div>
-              )}
+                )}
+                <a class="comic-end-list" href={listPath}><span aria-hidden="true">←&nbsp;</span>만화 목록</a>
+              </div>
             </div>
           </div>
           <div class="comic-book-controls" hidden>
@@ -66,13 +59,12 @@ const nextCover = next ? comicCover(next) : null;
         <div class="comic-big-slot" data-comic-slot></div>
       </dialog>
     </div>
-    <nav class="comic-after" aria-label="만화 아래 탐색">
+    <div class="comic-after">
       {Boolean(work.related?.length) && <aside class="comic-related" aria-labelledby="related-title">
         <h2 id="related-title" class="meta">이어지는 글</h2>
         <ul>{work.related!.map(note => <li><a href={withBase(note.path)}>{note.title}</a></li>)}</ul>
       </aside>}
-      <div class="list-action"><a class="all" href={listPath}><Fragment set:html={uiIcon('contents')} />목록으로</a></div>
-    </nav>
+    </div>
   </article>
 </div>
 <script src="../scripts/comic-reader.ts"></script>

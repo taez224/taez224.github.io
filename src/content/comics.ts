@@ -39,3 +39,5 @@ export const comics: readonly ComicWork[] = [
     ]
   }
 ];
+
+export const comicCatalogue = comics.toReversed();

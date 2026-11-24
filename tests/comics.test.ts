@@ -2,18 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { comicCover, comicNeighbors, type ComicWork } from '../src/lib/comics.ts';
+import { comicCover, nextCatalogueWork, type ComicWork } from '../src/lib/comics.ts';
 import { comics } from '../src/content/comics.ts';
 const work = (slug: string): ComicWork => ({ slug, title: slug, pages: [{ src: '/p1.webp', width: 1080, height: 1350, alt: slug }] });
-test('a single comic has no previous or next work', () => {
-  assert.deepEqual(comicNeighbors([work('one')], 'one'), { previous: null, next: null });
-});
-test('comic navigation follows registration order and never wraps at the ends', () => {
-  const works = ['one', 'two', 'three'].map(work);
-  assert.deepEqual(comicNeighbors(works, 'one'), { previous: null, next: works[1] });
-  assert.deepEqual(comicNeighbors(works, 'two'), { previous: works[0], next: works[2] });
-  assert.deepEqual(comicNeighbors(works, 'three'), { previous: works[1], next: null });
-  assert.throws(() => comicNeighbors(works, 'missing'), /Unknown comic/);
+test('the end card follows catalogue order and wraps without recommending the same work', () => {
+  const works = ['three', 'two', 'one'].map(work);
+  assert.equal(nextCatalogueWork(works, 0), works[1]);
+  assert.equal(nextCatalogueWork(works, 1), works[2]);
+  assert.equal(nextCatalogueWork(works, 2), works[0]);
+  assert.equal(nextCatalogueWork([work('one')], 0), null);
 });
 test('the catalogue cover is the first reading page', () => {
   const w = work('one');
