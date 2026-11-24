@@ -7,6 +7,8 @@ const workPath = `/comics/${work.slug}/`;
 test('an unlisted comic opens directly and stays out of discovery', async ({ page, request }) => {
   await page.goto(workPath);
   await expect(page.getByRole('heading', { name: '말랑한 마력핵' })).toHaveCount(1);
+  // 초점을 받는 트랙은 스크린 리더가 이름과 조작 안내를 읽을 수 있게 그룹으로 둔다.
+  await expect(page.getByRole('group', { name: '만화 장면, 좌우 방향키로 넘기기' })).toHaveCount(1);
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow');
   await expect(page.locator('.comic-slide:not(.comic-end) > img')).toHaveCount(8);
   await expect(page.getByRole('status')).toHaveText('1 / 8');
@@ -202,6 +204,13 @@ test('the inline artwork respects the device and the reader supports outer taps'
     await art.tap();
     await expect(page.locator('dialog.comic-big')).not.toBeVisible();
     await expect(book.getByRole('status')).toHaveText('1 / 8');
+    // 휴대폰 본문에서는 그림의 좌우 3분의 1을 탭해 넘긴다. 가운데는 위에서 본 대로 그대로 둔다.
+    const box = (await art.boundingBox())!;
+    await art.tap({ position: { x: box.width * 0.85, y: box.height / 2 } });
+    await expect(book.getByRole('status')).toHaveText('2 / 8');
+    await expect(page.locator('dialog.comic-big')).not.toBeVisible();
+    await art.tap({ position: { x: box.width * 0.15, y: box.height / 2 } });
+    await expect(book.getByRole('status')).toHaveText('1 / 8');
     await page.goto(workPath + 'reader/');
   } else {
     await art.click();
@@ -217,6 +226,33 @@ test('the inline artwork respects the device and the reader supports outer taps'
   await expect(dialog.getByRole('status')).toHaveText('2 / 8');
   await page.mouse.click(viewport.width * 0.15, y);
   await expect(dialog.getByRole('status')).toHaveText('1 / 8');
+});
+
+test('edge taps rest while the page is pinch-zoomed and resume after zooming out', async ({ page, isMobile }) => {
+  test.skip(!isMobile, '본문 탭 넘기기는 휴대폰 본문에만 있다.');
+  // 핀치 확대를 자동화로 재현할 수 없어 배율 값만 바꾼다. 리더는 이 값으로 확대 중인지 판단한다.
+  const zoom = (scale: number) => page.evaluate(value => Object.defineProperty(visualViewport!, 'scale', { configurable: true, get: () => value }), scale);
+  await page.goto(workPath);
+  const book = page.getByRole('region', { name: '만화' });
+  const art = book.locator('.comic-slide:not([inert]) > img');
+  const box = (await art.boundingBox())!;
+  const right = { position: { x: box.width * 0.85, y: box.height / 2 } };
+  await zoom(2);
+  await art.tap(right);
+  await expect(book.getByRole('status')).toHaveText('1 / 8');
+  await zoom(1);
+  await art.tap(right);
+  await expect(book.getByRole('status')).toHaveText('2 / 8');
+  await page.goto(workPath + 'reader/');
+  const dialog = page.locator('dialog.comic-big[open]');
+  await expect(dialog.getByRole('status')).toHaveText('1 / 8');
+  const viewport = page.viewportSize()!;
+  await zoom(2);
+  await page.touchscreen.tap(viewport.width * 0.85, viewport.height / 2);
+  await expect(dialog.getByRole('status')).toHaveText('1 / 8');
+  await zoom(1);
+  await page.touchscreen.tap(viewport.width * 0.85, viewport.height / 2);
+  await expect(dialog.getByRole('status')).toHaveText('2 / 8');
 });
 
 test('big view controls sit directly under the artwork', async ({ page }) => {
@@ -348,8 +384,26 @@ test('motion artwork is requested only when approaching the spread', async ({ pa
   await expect(page.getByRole('status')).toHaveText('1 / 12');
   expect(requested.size).toBe(0);
   await expect(page.locator('.comic-art-layer image[href]')).toHaveCount(0);
-  await page.goto('/comics/id-photo/#page-6');
+  // 6/12 바로 앞인 5/12까지는 받지 않고, 6/12에 도착해야 받기 시작한다.
+  await page.goto('/comics/id-photo/#page-5');
+  await expect(page.getByRole('status')).toHaveText('5 / 12');
+  expect(requested.size).toBe(0);
+  await page.getByRole('button', { name: '다음 이미지' }).click();
+  await expect(page.getByRole('status')).toHaveText('6 / 12');
   await expect.poll(() => requested.size).toBe(5);
+});
+
+test('the spread and badge still turn as still pictures when the motion artwork never arrives', async ({ page }) => {
+  await page.route('**/id-photo/motion/**', route => route.abort());
+  await page.goto('/comics/id-photo/#page-7');
+  const track = page.locator('[data-comic-track]');
+  const status = page.getByRole('status');
+  for (const [button, position] of [['다음 이미지', 8], ['다음 이미지', 9], ['이전 이미지', 8]] as const) {
+    await page.getByRole('button', { name: button }).click();
+    await expect(status).toHaveText(`${position} / 12`);
+    await expect(track.locator('.is-painting')).toHaveCount(0);
+    await expect(track).not.toHaveClass(/is-animating/);
+  }
 });
 
 test('reduced motion preserves the static spread, portrait and return order', async ({ page }) => {
@@ -382,4 +436,64 @@ test('arrow keys turn the work on arrival and leave the search field alone', asy
   await page.locator('[data-comic-track]').focus();
   await page.keyboard.press('ArrowLeft');
   await expect(status).toHaveText('1 / 8');
+  // 제목을 눌러 초점이 main으로 옮겨 가도 방향키로 넘긴다.
+  await page.getByRole('heading', { name: '말랑한 마력핵' }).click();
+  await page.keyboard.press('ArrowRight');
+  await expect(status).toHaveText('2 / 8');
+});
+
+test('skipping to the main content keeps the page being read', async ({ page, isMobile }) => {
+  test.skip(isMobile, '건너뛰기 링크는 키보드 사용자를 위한 것이다.');
+  await page.goto(`${workPath}#page-5`);
+  const status = page.locator('.comic-position');
+  await expect(status).toHaveText('5 / 8');
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('link', { name: '본문으로 건너뛰기' })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(status).toHaveText('5 / 8');
+  await page.keyboard.press('ArrowRight');
+  await expect(status).toHaveText('6 / 8');
+});
+
+test('a cover picked from the list moves into the first page only on that entry', async ({ page }) => {
+  // 전환이 실제로 일어났는지는 화면으로 단언하기 어렵다. 새 문서가 받은 전환의 ready가 이행되면 실행, 거부되면 건너뜀이다.
+  await page.addInitScript(() => {
+    addEventListener('pagereveal', event => {
+      const transition = (event as Event & { viewTransition: ViewTransition | null }).viewTransition;
+      Reflect.set(window, '__coverTransition', transition ? transition.ready.then(() => 'ran', () => 'skipped') : 'none');
+    });
+  });
+  const outcome = () => page.evaluate(() => Reflect.get(window, '__coverTransition') as Promise<string> | string);
+  await page.goto('/comics/');
+  await page.getByRole('link', { name: '말랑한 마력핵' }).click();
+  await expect(page).toHaveURL(workPath);
+  expect(await outcome()).toBe('ran');
+  await expect(page.locator('.comic-position')).toHaveText('1 / 8');
+  // 읽던 장에서 목록으로 돌아갈 때는 화면 밖의 첫 장이 날아들지 않는다.
+  await page.keyboard.press('ArrowRight');
+  await page.getByRole('link', { name: '목록으로' }).click();
+  await expect(page).toHaveURL('/comics/');
+  expect(await outcome()).not.toBe('ran');
+  // 뒤로 가기로 작품에 돌아온 경우도 목록에서 고른 것이 아니므로 바로 바꾼다.
+  await page.goBack();
+  await expect(page).toHaveURL(`${workPath}#page-2`);
+  expect(await outcome()).not.toBe('ran');
+  // 끝 장의 다음 만화로 넘어갈 때도 목록에서 고른 것이 아니므로 바로 바꾼다.
+  await page.goto(`${workPath}#end`);
+  await page.getByRole('link', { name: /사원증 사진/ }).click();
+  await expect(page).toHaveURL('/comics/id-photo/');
+  expect(await outcome()).not.toBe('ran');
+});
+
+test('reduced motion opens a work from the list without the cover transition', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.addInitScript(() => {
+    addEventListener('pagereveal', event => {
+      Reflect.set(window, '__coverTransition', (event as Event & { viewTransition: ViewTransition | null }).viewTransition ? 'offered' : 'none');
+    });
+  });
+  await page.goto('/comics/');
+  await page.getByRole('link', { name: '말랑한 마력핵' }).click();
+  await expect(page).toHaveURL(workPath);
+  expect(await page.evaluate(() => Reflect.get(window, '__coverTransition'))).toBe('none');
 });

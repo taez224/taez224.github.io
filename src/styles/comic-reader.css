@@ -1,4 +1,9 @@
 /* 독립 만화 작품의 리더. 노트 본문 만화(comic.css)와 선택자를 나눠 서로의 규칙이 섞이지 않게 한다. */
+/* 목록 표지가 첫 장으로 옮겨 가는 문서 사이 전환. 실제로 전환할지는 작품 페이지의 pagereveal 처리기가 정한다.
+   기본 0.25초는 표지가 커지는 거리에 비해 짧아 튀어 보이므로 조금 늘리고, 끝을 부드럽게 멈춘다. */
+@view-transition { navigation: auto; }
+@media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
+::view-transition-group(*) { animation-duration: .32s; animation-timing-function: cubic-bezier(.2, .7, .2, 1); }
 .comic-stage { display: flow-root; padding-top: 8px; }
 .comic-stage.has-paper { background: linear-gradient(to bottom, transparent, var(--comic-paper) 132px); }
 :root[data-theme="dark"] .comic-stage.has-paper { background: none; }

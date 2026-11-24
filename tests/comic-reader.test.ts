@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { clampSlide, positionLabel, slideFromHash, slideHash, tapDirection } from '../src/lib/comic-reader.ts';
+import { clampSlide, isSlideHash, positionLabel, slideFromHash, slideHash, tapDirection } from '../src/lib/comic-reader.ts';
 
 test('the position label counts pictures from one and names the closing slide', () => {
   assert.equal(positionLabel(2, 8), '3 / 8');
@@ -49,4 +49,12 @@ test('a tap in the left third goes back, the right third goes forward, and the m
 test('a tap exactly on a third line counts as the middle', () => {
   assert.equal(tapDirection(125, 375), 0);
   assert.equal(tapDirection(250, 375), 0);
+});
+
+test('only the reader fragments count as page addresses', () => {
+  assert.equal(isSlideHash('#page-3'), true);
+  assert.equal(isSlideHash('#end'), true);
+  assert.equal(isSlideHash('#app'), false, '본문으로 건너뛰기 조각은 장 주소가 아니다');
+  assert.equal(isSlideHash(''), false);
+  assert.equal(isSlideHash('#page-0'), false);
 });

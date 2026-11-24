@@ -21,10 +21,11 @@ const nextCover = next ? comicCover(next) : null;
         <!-- 본문과 크게 보기가 이 한 덩어리를 옮겨 쓰므로 읽던 장이 두 화면 사이에서 어긋나지 않는다.
              장에는 id를 두지 않는다. #page-n과 같은 id가 있으면 브라우저가 주소 조각을 따라 페이지를 세로로 내려 머리글을 가린다. -->
         <div class="comic-viewer" data-comic-viewer>
-          <div class="comic-track" data-comic-track tabindex="0" aria-label="만화 장면, 좌우 방향키로 넘기기">
+          <div class="comic-track" data-comic-track tabindex="0" role="group" aria-label="만화 장면, 좌우 방향키로 넘기기">
             {work.pages.map((page, index) => (
               <div class="comic-slide">
-                <img src={withBase(page.src)} width={page.width} height={page.height} alt={page.alt} loading={index ? 'lazy' : 'eager'} draggable="false" />
+                {/* 첫 장만 목록 표지와 같은 전환 이름을 가진다. 언제 실제로 전환할지는 작품 페이지의 pagereveal 처리기가 정한다. */}
+                <img src={withBase(page.src)} width={page.width} height={page.height} alt={page.alt} loading={index ? 'lazy' : 'eager'} draggable="false" style={index ? undefined : `view-transition-name: comic-cover-${work.slug}`} />
                 {page.artworkLayer && <IdPhotoLayers part={page.artworkLayer} />}
               </div>
             ))}

@@ -24,6 +24,11 @@ export function slideHash(index: number, pageCount: number): string {
   return slide === pageCount ? END_HASH : `#page-${slide + 1}`;
 }
 
+// 리더가 쓰는 조각(#page-n, #end)인지 가린다. 「본문으로 건너뛰기」의 #app처럼 다른 조각까지 장 이동으로 읽으면 읽던 장이 표지로 돌아간다.
+export function isSlideHash(hash: string): boolean {
+  return hash === END_HASH || PAGE_HASH.test(hash);
+}
+
 // 형식이 틀리거나 없는 장을 가리키는 주소는 첫 그림으로 연다. 가장 가까운 장으로 맞추면 잘못 적은 주소가 결말을 먼저 보여 줄 수 있다.
 export function slideFromHash(hash: string, pageCount: number): number {
   if (hash === END_HASH) return Math.max(pageCount, 0);

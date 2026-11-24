@@ -1,5 +1,5 @@
 import { createIdPhotoMotion } from './id-photo-motion.ts';
-import { clampSlide, positionLabel, slideFromHash, slideHash, tapDirection } from '../lib/comic-reader.ts';
+import { clampSlide, isSlideHash, positionLabel, slideFromHash, slideHash, tapDirection } from '../lib/comic-reader.ts';
 
 // 독립 만화 작품의 리더다. 노트 본문 만화(comic.ts)와 달리 끝 장, 주소 조각, 크게 보기를 맡는다.
 for (const root of document.querySelectorAll<HTMLElement>('[data-comic-book]')) {
@@ -119,26 +119,46 @@ for (const root of document.querySelectorAll<HTMLElement>('[data-comic-book]')) 
     const target = event.target;
     if (!(target instanceof HTMLElement)) return;
     // 첫 진입 때는 본문에 초점이 있다. 머리글과 다른 위젯의 방향키는 해당 조작에 맡긴다.
-    if (target !== document.body && target !== document.documentElement && !root.contains(target)) return;
+    // 본문 여백이나 제목을 누르면 초점이 body가 아니라 초점을 받을 수 있는 main(#app)으로 간다. 이 경우도 첫 진입과 같이 본다.
+    const page = target === document.body || target === document.documentElement || target.matches('main');
+    if (!page && !root.contains(target)) return;
     if (target.isContentEditable || target.closest('input, textarea, select, [role="textbox"]')) return;
     if (document.querySelector('dialog[open]:not(.comic-big)')) return;
     event.preventDefault();
     turn(current + (event.key === 'ArrowRight' ? 1 : -1));
   });
+  // 작은 글씨는 브라우저 확대에 맡긴다. 확대한 채 화면을 옮기려고 가장자리를 누를 때 장이 넘어가면 읽던 자리를 잃으므로, 확대를 풀 때까지 탭 넘기기를 쉰다.
+  // 확대를 풀어도 배율이 1에서 아주 조금 어긋나게 남는 기기가 있어 여유를 둔다.
+  const pinchZoomed = () => (visualViewport?.scale ?? 1) > 1.01;
   track.addEventListener('click', event => {
-    if (!dialog.open && open.getClientRects().length && (event.target as Element).matches('.comic-slide > img')) openBig();
+    const target = event.target as Element;
+    if (dialog.open || !target.matches('.comic-slide > img')) return;
+    if (open.getClientRects().length) {
+      openBig();
+      return;
+    }
+    // 휴대폰 본문에는 크게 보기 버튼이 없어 그림을 눌러도 할 일이 없다. 크게 보기와 같은 좌우 3분의 1 규칙으로 넘긴다.
+    // 그림 안쪽만 받는다. 그림 밖의 본문 여백은 세로 스크롤을 시작하는 자리로 남긴다.
+    if (pinchZoomed()) return;
+    const box = target.getBoundingClientRect();
+    const direction = tapDirection(event.clientX - box.left, box.width);
+    if (direction) turn(current + direction);
   });
   // 크게 보기에서는 그림 위아래의 흐린 여백도 누르는 자리로 쓴다. 폰에서는 여백이 넓어 그림 높이 안쪽만 받으면 누를 자리를 가늠해야 한다.
   dialog.addEventListener('click', event => {
     const target = event.target as Element;
     // 머리줄, 버튼, 끝 장의 링크는 각자의 동작이 있으므로 넘기기로 가로채지 않는다.
     if (target.closest('a, button, .comic-end, .comic-big-top, [role="status"]')) return;
+    if (pinchZoomed()) return;
     const direction = tapDirection(event.clientX, innerWidth);
     if (direction) turn(current + direction);
   });
   new ResizeObserver(align).observe(track);
   // 주소창에서 조각만 바꾸면 문서를 다시 읽지 않으므로 직접 그 장으로 옮긴다. replaceState는 이 이벤트를 일으키지 않는다.
-  addEventListener('hashchange', () => go(slideFromHash(location.hash, pageCount)));
+  // 「본문으로 건너뛰기」(#app) 같은 다른 조각 이동은 장과 관계가 없으므로 그대로 둔다.
+  addEventListener('hashchange', () => {
+    if (isSlideHash(location.hash)) go(slideFromHash(location.hash, pageCount));
+  });
 
   controls.hidden = false;
   if (restart) restart.hidden = false;

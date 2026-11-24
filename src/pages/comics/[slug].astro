@@ -3,12 +3,29 @@ import Shell from '../../layouts/Shell.astro';
 import ComicReader from '../../components/ComicReader.astro';
 import { comics } from '../../content/comics.ts';
 import { comicNeighbors, type ComicWork } from '../../lib/comics.ts';
+import { withBase } from '../../lib/format.ts';
 export function getStaticPaths() {
   return comics.map(work => ({ params: { slug: work.slug }, props: { work, next: comicNeighbors(comics, work.slug).next } }));
 }
 interface Props { work: ComicWork; next: ComicWork | null }
 const { work, next } = Astro.props;
+const listPath = withBase('/comics/');
 ---
 <Shell noindex title={work.title} description={`TaeZ의 만화, ${work.title}.`} path={`/comics/${work.slug}/`} feedback={false}>
+  {/* pagereveal은 첫 화면 직전에 한 번 오므로 모듈 스크립트로는 늦다. 머리에 인라인으로 둔다. */}
+  <script slot="head" is:inline define:vars={{ listPath }}>
+    // 목록에서 표지를 눌러 들어온 경우에만 그 표지가 첫 장 자리로 옮겨 가는 전환을 보인다.
+    // 뒤로·앞으로 가기, 새로고침, 주소 조각으로 뒤쪽 장에 들어온 경우에는 첫 장이 화면에 없거나 같은 그림이 아니므로 바로 바꾼다.
+    // Navigation API가 없는 브라우저는 어디서 왔는지 알 수 없으므로 전환하지 않는다.
+    addEventListener('pagereveal', event => {
+      if (!event.viewTransition) return;
+      const activation = self.navigation?.activation;
+      const from = activation?.from?.url;
+      const fromList = activation?.navigationType === 'push' && from && new URL(from).pathname === listPath;
+      if (!fromList || location.hash) event.viewTransition.skipTransition();
+    });
+    // 작품을 떠날 때는 읽던 장이 표지가 아닐 수 있다. 화면 밖의 첫 장이 날아드는 대신 바로 바꾼다.
+    addEventListener('pageswap', event => event.viewTransition?.skipTransition());
+  </script>
   <ComicReader work={work} next={next} />
 </Shell>
