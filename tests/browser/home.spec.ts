@@ -341,7 +341,7 @@ test('home books use four columns on wide screens and two on phones without clip
       expect(link.label).toBeTruthy();
     }
     const order = await page.locator('.home-grid > section').evaluateAll((sections) => sections.map((el) => ({ name: el.className, top: el.getBoundingClientRect().top })));
-    if (width <= 720) expect([...order].sort((a, b) => a.top - b.top).map((item) => item.name)).toEqual(['home-articles', 'home-thoughts', 'home-development', 'home-books']);
+    if (width <= 720) expect([...order].sort((a, b) => a.top - b.top).map((item) => item.name)).toEqual(['home-articles', 'home-thoughts', 'home-development', 'home-books', 'home-comic']);
   }
 });
 
