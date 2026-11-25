@@ -4,7 +4,7 @@ import { comics } from '../../src/content/comics.ts';
 
 const work = comics.find(comic => comic.slug === 'soft-mana-core')!;
 const workPath = `/comics/${work.slug}/`;
-test('an unlisted comic opens directly and stays out of discovery', async ({ page, request }) => {
+test('a comic opens directly and stays out of search, feeds and the sitemap', async ({ page, request }) => {
   await page.goto(workPath);
   await expect(page.getByRole('heading', { name: '말랑한 마력핵' })).toHaveCount(1);
   // 초점을 받는 트랙은 스크린 리더가 이름과 조작 안내를 읽을 수 있게 그룹으로 둔다.
@@ -12,7 +12,7 @@ test('an unlisted comic opens directly and stays out of discovery', async ({ pag
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow');
   await expect(page.locator('.comic-slide:not(.comic-end) > img')).toHaveCount(8);
   await expect(page.getByRole('status')).toHaveText('1 / 8');
-  for (const url of ['/', '/data/search.json', '/rss.xml', '/sitemap-0.xml']) {
+  for (const url of ['/data/search.json', '/rss.xml', '/sitemap-0.xml']) {
     const response = await request.get(url);
     expect(response.ok()).toBe(true);
     expect(await response.text()).not.toContain('/comics/');
@@ -35,7 +35,21 @@ test('the comic reader keeps navigation outside the artwork and supports theme a
   await expect(page).toHaveURL('/');
 });
 
-test('the unlisted catalogue links to the work and the reader returns to the catalogue', async ({ page }) => {
+test('the home links to the latest two works and the catalogue', async ({ page }) => {
+  await page.goto('/');
+  const section = page.getByRole('region', { name: '만화', exact: true });
+  const covers = section.getByRole('list').getByRole('link');
+  const recent = comics.toReversed().slice(0, 2);
+  await expect(covers).toHaveCount(recent.length);
+  for (const [index, comic] of recent.entries()) {
+    await expect(covers.nth(index)).toHaveAccessibleName(comic.title);
+    await expect(covers.nth(index)).toHaveAttribute('href', `/comics/${comic.slug}/`);
+  }
+  await expect(section.getByRole('link', { name: '만화 전체 보기' })).toHaveAttribute('href', '/comics/');
+  await expect(page.locator('.site-nav a[href*="/comics/"]')).toHaveCount(0);
+});
+
+test('the catalogue links to the work and the reader returns to the catalogue', async ({ page }) => {
   await page.goto('/comics/');
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow');
   const links = page.getByRole('list', { name: '만화 목록' }).getByRole('link');
