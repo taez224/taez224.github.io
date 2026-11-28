@@ -10,9 +10,12 @@ import { withBase, inlineJson } from '../lib/format.ts';
 import { inlineGraph } from '../lib/graph-data.ts';
 import HomeList from '../components/HomeList.astro';
 import HomeBooks from '../components/HomeBooks.astro';
+import { comicCatalogue } from '../content/comics.ts';
+import { comicCover } from '../lib/comics.ts';
 import { recentActivity, homeBooks } from '../lib/home.ts';
 import { layoutGraph, ATLAS_LAYOUT } from '../graph/layout.ts';
 import { renderSnapshotSvg } from '../graph/snapshot.ts';
+const recentComics = comicCatalogue.slice(0, 2);
 const garden = await getGarden();
 const byPath = new Map(garden.notes.map((n) => [n.path, n]));
 const featured = byPath.get(garden.home.featured[0]);
@@ -73,6 +76,16 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
       <header class="home-heading"><h2 id="books-heading" class="display">책장</h2><a href={withBase('/books/')} aria-label="책장 전체 보기">전체 보기</a></header>
       <HomeBooks books={books} />
     </section>}
+    {recentComics.length > 0 && <section class="home-comic" id="home-comic" aria-labelledby="comic-heading">
+      <header class="home-heading"><h2 id="comic-heading" class="display">만화</h2><a href={withBase('/comics/')} aria-label="만화 전체 보기">전체 보기</a></header>
+      <ul class="comic-covers">
+        {recentComics.map(work => (
+          <li><a href={withBase(`/comics/${work.slug}/`)}>
+            <img src={withBase(comicCover(work).src)} width="1080" height="1350" alt={work.title} loading="lazy" />
+          </a></li>
+        ))}
+      </ul>
+    </section>}
   </div>
 </Shell>
 <style>
@@ -97,6 +110,10 @@ const snapshot = renderSnapshotSvg(garden.nodes, garden.edges, positions, { widt
   /* 넓은 화면의 네 가장자리 흐림은 두 SVG가 안에서 도형 층에만 씌운다(src/graph/hero-fade.ts). 상자에 CSS 마스크를 걸면 가장자리 가까이 놓인 영역 이름까지 흐려진다. */
   .hero-graph > :global(.graph) { cursor: default; }
   .home-grid { display: grid; grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr); grid-template-areas: 'thoughts articles' 'development books'; gap: 56px 64px; padding-block: 8px 64px; align-items: start; }
+  .home-comic { grid-column: 1; }
+  .comic-covers { list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 0; margin: 24px 0 0; }
+  .comic-covers a, .comic-covers img { display: block; }
+  .comic-covers img { width: 100%; height: auto; border: 1px solid var(--line); }
   .home-grid > section { min-width: 0; }
   .home-articles { grid-area: articles; }
   .home-thoughts { grid-area: thoughts; }

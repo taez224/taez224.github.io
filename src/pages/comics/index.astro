@@ -1,0 +1,30 @@
+---
+import Shell from '../../layouts/Shell.astro';
+import { comicCatalogue as works } from '../../content/comics.ts';
+import { comicCover } from '../../lib/comics.ts';
+import { withBase } from '../../lib/format.ts';
+---
+<Shell noindex title="만화" description="TaeZ의 만화." path="/comics/" feedback={false}>
+  <div class="wrap comics-page">
+    <div class="page-head"><h1 class="display">만화</h1><span class="meta">{works.length}편</span></div>
+    <ol class="comic-list" aria-label="만화 목록">
+      {works.map((work, index) => <li><a class="comic-entry" aria-label={work.title} href={withBase(`/comics/${work.slug}/`)}>
+        <div class="comic-cover" aria-hidden="true"><img src={withBase(comicCover(work).src)} width="1080" height="1350" alt="" loading={index === 0 ? "eager" : "lazy"} style={`view-transition-name: comic-cover-${work.slug}`} /></div>
+      </a></li>)}
+    </ol>
+  </div>
+</Shell>
+<style>
+/* 표지를 누르면 그 표지가 작품의 첫 장 자리로 옮겨 간다. 두 문서가 모두 선언해야 전환이 일어난다. */
+@view-transition { navigation: auto; }
+@media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
+.comics-page { max-width: 900px; padding-block: var(--s-page-top-index) var(--s-page-bottom); }
+.comic-list { list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 8px; margin: 24px 0 0; padding: 0; }
+.comic-entry { display: block; aspect-ratio: 4 / 5; color: var(--ink); background: var(--paper-strong); border: 1px solid var(--line); }
+.comic-cover { height: 100%; }
+.comic-cover img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.comic-entry:focus-visible { outline: 3px solid var(--body-link); outline-offset: 2px; }
+@media (max-width: 720px) {
+  .comic-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 16px; }
+}
+</style>

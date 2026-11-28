@@ -1,0 +1,70 @@
+---
+import IdPhotoLayers from './IdPhotoLayers.astro';
+import '../styles/comic-reader.css';
+import { comicCover, type ComicWork } from '../lib/comics.ts';
+import { withBase } from '../lib/format.ts';
+import { uiIcon } from '../lib/ui-icons.ts';
+interface Props { work: ComicWork; next: ComicWork | null; startOpen?: boolean }
+const { work, next, startOpen = false } = Astro.props;
+const listPath = withBase('/comics/');
+const cover = comicCover(work);
+const nextCover = next ? comicCover(next) : null;
+---
+<div class:list={['comic-stage', { 'has-paper': work.paper }]} style={work.paper ? { '--comic-paper': work.paper } : undefined}>
+  <article class="comic-reader" aria-labelledby="comic-title">
+    <nav class="reader-location" aria-label="만화 위 탐색">
+      <a href={listPath}><span aria-hidden="true">←&nbsp;</span>만화 목록</a>
+    </nav>
+    <h1 id="comic-title" class="visually-hidden">{work.title}</h1>
+    <div class="comic-book" data-comic-book data-page-count={work.pages.length} data-work-path={withBase(`/comics/${work.slug}/`)} data-start-open={startOpen ? '' : undefined} role="region" aria-label="만화">
+      <div class="comic-home" data-comic-home>
+        <!-- 본문과 크게 보기가 이 한 덩어리를 옮겨 쓰므로 읽던 장이 두 화면 사이에서 어긋나지 않는다.
+             장에는 id를 두지 않는다. #page-n과 같은 id가 있으면 브라우저가 주소 조각을 따라 페이지를 세로로 내려 머리글을 가린다. -->
+        <div class="comic-viewer" data-comic-viewer>
+          <div class="comic-track" data-comic-track tabindex="0" role="group" aria-label="만화 장면, 좌우 방향키로 넘기기">
+            {work.pages.map((page, index) => (
+              <div class="comic-slide">
+                {/* 첫 장만 목록 표지와 같은 전환 이름을 가진다. 언제 실제로 전환할지는 작품 페이지의 pagereveal 처리기가 정한다. */}
+                <img src={withBase(page.src)} width={page.width} height={page.height} alt={page.alt} loading={index ? 'lazy' : 'eager'} draggable="false" style={index ? undefined : `view-transition-name: comic-cover-${work.slug}`} />
+                {page.artworkLayer && <IdPhotoLayers part={page.artworkLayer} />}
+              </div>
+            ))}
+            <div class="comic-slide comic-end" role="group" aria-label="끝">
+              <div class="comic-end-card">
+                {next && nextCover && (
+                  <a class="comic-end-next" href={withBase(`/comics/${next.slug}/`)}>
+                    <span class="comic-end-label">다른 만화</span>
+                    <img src={withBase(nextCover.src)} width={nextCover.width} height={nextCover.height} alt="" loading="lazy" draggable="false" />
+                    <strong>{next.title} →</strong>
+                  </a>
+                )}
+                <a class="comic-end-list" href={listPath}><span aria-hidden="true">←&nbsp;</span>만화 목록</a>
+              </div>
+            </div>
+          </div>
+          <div class="comic-book-controls" hidden>
+            <button type="button" class="comic-step" data-comic-step="-1" aria-label="이전 이미지" set:html={uiIcon('previous')}></button>
+            <div class="comic-position" role="status" aria-atomic="true"></div>
+            <button type="button" class="comic-step" data-comic-step="1" aria-label="다음 이미지" set:html={uiIcon('next')}></button>
+            <button type="button" class="comic-open" data-comic-open aria-haspopup="dialog">크게 보기</button>
+          </div>
+        </div>
+      </div>
+      <dialog class="comic-big" aria-labelledby="comic-big-title">
+        <img class="comic-big-ambient" data-comic-ambient src={withBase(cover.src)} alt="" />
+        <div class="comic-big-top">
+          <h2 id="comic-big-title">{work.title}</h2>
+          <button type="button" class="comic-big-close" data-comic-close aria-label="크게 보기 닫기" set:html={uiIcon('close')}></button>
+        </div>
+        <div class="comic-big-slot" data-comic-slot></div>
+      </dialog>
+    </div>
+    <div class="comic-after">
+      {Boolean(work.related?.length) && <aside class="comic-related" aria-labelledby="related-title">
+        <h2 id="related-title" class="meta">이어지는 글</h2>
+        <ul>{work.related!.map(note => <li><a href={withBase(note.path)}>{note.title}</a></li>)}</ul>
+      </aside>}
+    </div>
+  </article>
+</div>
+<script src="../scripts/comic-reader.ts"></script>

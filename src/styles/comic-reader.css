@@ -1,0 +1,100 @@
+/* 독립 만화 작품의 리더. 노트 본문 만화(comic.css)와 선택자를 나눠 서로의 규칙이 섞이지 않게 한다. */
+/* 목록 표지가 첫 장으로 옮겨 가는 문서 사이 전환. 실제로 전환할지는 작품 페이지의 pagereveal 처리기가 정한다.
+   기본 0.25초는 표지가 커지는 거리에 비해 짧아 튀어 보이므로 조금 늘리고, 끝을 부드럽게 멈춘다. */
+@view-transition { navigation: auto; }
+@media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
+::view-transition-group(*) { animation-duration: .32s; animation-timing-function: cubic-bezier(.2, .7, .2, 1); }
+.comic-stage { display: flow-root; padding-top: 8px; }
+.comic-stage.has-paper { background: linear-gradient(to bottom, transparent, var(--comic-paper) 132px); }
+:root[data-theme="dark"] .comic-stage.has-paper { background: none; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme]) .comic-stage.has-paper { background: none; } }
+.comic-reader { width: min(540px, calc(100% - 2 * var(--s-page-gutter))); margin: 0 auto; padding-bottom: 40px; }
+.reader-location { display: flex; align-items: center; gap: 12px; min-height: 52px; font-size: var(--t-meta); color: var(--muted); }
+.reader-location a { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink); }
+
+.comic-book { max-width: 540px; margin: 0 auto; }
+.comic-track { display: flex; width: 100%; aspect-ratio: 4 / 5; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+.comic-track::-webkit-scrollbar { display: none; }
+.comic-track:focus-visible { outline: none; }
+/* 장이 크기 컨테이너여야 그리드 칸 안에서도 그림과 끝 장이 가로세로 중 좁은 쪽에 맞춰 4:5를 지킨다. */
+.comic-slide { flex: 0 0 100%; min-width: 0; height: 100%; display: grid; place-items: center; scroll-snap-align: start; scroll-snap-stop: always; container-type: size; }
+.comic-slide > img { display: block; width: auto; height: auto; max-width: 100cqw; max-height: 100cqh; user-select: none; -webkit-user-drag: none; }
+.comic-book.is-enhanced .comic-slide > img { cursor: zoom-in; }
+
+.comic-book-controls { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px; }
+.comic-book-controls[hidden] { display: none; }
+.comic-step { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 4px; color: var(--ink); background: transparent; cursor: pointer; }
+.comic-step svg { display: block; width: 16px; height: 16px; }
+.comic-step:disabled { opacity: .35; cursor: default; }
+.comic-position { min-width: 5ch; color: var(--muted); font-size: var(--t-side); text-align: center; font-variant-numeric: tabular-nums; }
+/* 장 이동 묶음과 같은 줄에 두되 세로 괘선으로 성격이 다른 동작임을 나눈다. */
+.comic-open { min-height: 44px; margin-left: 8px; padding: 0 4px 0 16px; border: 0; border-left: 1px solid var(--line); background: none; color: var(--muted); font: inherit; font-size: var(--t-side); cursor: pointer; }
+.comic-book-controls button:focus-visible { outline: 2px solid var(--ink); outline-offset: -3px; }
+.comic-book:has(.comic-track:focus-visible) .comic-book-controls { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 4px; }
+@media (hover: hover) {
+  .comic-step:not(:disabled):hover { background: var(--accent-soft); }
+  .comic-open:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 4px; }
+}
+
+.comic-end-card { width: min(100cqw, 80cqh); aspect-ratio: 4 / 5; display: flex; flex-direction: column; padding: 24px; border: 1px solid var(--line); background: var(--paper-strong); color: var(--ink); }
+.comic-end-list:only-child { margin-block: auto; }
+.comic-end-next { display: grid; flex: 1; min-height: 0; grid-template-rows: auto minmax(0, 1fr) auto; gap: 10px; color: var(--ink); text-decoration: none; }
+.comic-end-label { text-align: center; font-size: var(--t-meta); color: var(--muted); }
+.comic-end-next img { place-self: center; width: auto; height: auto; max-width: 100%; max-height: 100%; object-fit: contain; }
+.comic-end-next strong { text-align: center; font: 400 var(--t-h3)/1.3 var(--display); }
+.comic-end-list { align-self: center; display: inline-flex; align-items: center; min-height: 44px; margin-top: 8px; color: var(--ink); font-size: var(--t-meta); text-decoration: none; }
+@media (hover: hover) {
+  .comic-end-next:hover, .comic-end-list:hover { text-decoration: none; }
+}
+
+.comic-after { margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--line); }
+.comic-related { margin-bottom: 24px; }
+.comic-related h2 { margin: 0 0 8px; font-weight: 400; }
+.comic-related ul { margin: 0; padding: 0; list-style: none; }
+.comic-related a { overflow-wrap: anywhere; }
+
+/* 크게 보기: 본문의 트랙과 조작 줄을 그대로 옮겨 오고, 그림과 조작 줄을 한 덩어리로 화면 가운데에 둔다. */
+.comic-big { width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; overflow: hidden; background: #201f1e; color: #f4f3ef; }
+.comic-big::backdrop { background: #201f1e; }
+.comic-big[open] { display: grid; grid-template-rows: auto minmax(0, 1fr); isolation: isolate; }
+.comic-big-ambient { position: absolute; z-index: -1; inset: -40px; width: calc(100% + 80px); height: calc(100% + 80px); object-fit: cover; filter: blur(36px) brightness(.42); pointer-events: none; }
+.comic-big-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px; padding: max(4px, env(safe-area-inset-top)) 8px 0 20px; }
+.comic-big-top h2 { margin: 0; font-size: var(--t-ui); font-weight: 400; }
+.comic-big-close { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; background: none; color: inherit; cursor: pointer; }
+.comic-big-close svg { display: block; width: 18px; height: 18px; }
+.comic-big-slot { display: flex; flex-direction: column; justify-content: center; min-height: 0; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+.comic-big .comic-viewer { width: 100%; }
+.comic-big .comic-track { aspect-ratio: auto; height: min(calc(100dvh - 136px), 125vw); }
+.comic-big .comic-slide > img { cursor: default; }
+.comic-big .comic-step { color: #f4f3ef; }
+.comic-big .comic-position { color: #d6d4cc; }
+.comic-big .comic-open { display: none; }
+.comic-big :focus-visible, .comic-big .comic-book-controls button:focus-visible { outline-color: #fff; }
+.comic-big .comic-viewer:has(.comic-track:focus-visible) .comic-book-controls { outline-color: #fff; }
+@media (hover: hover) { .comic-big .comic-step:not(:disabled):hover { background: #ffffff1f; } }
+
+@media (pointer: coarse) and ((max-width: 720px) or (max-height: 540px)) {
+  .comic-home .comic-open { display: none; }
+  .comic-book.is-enhanced .comic-home .comic-slide > img { cursor: default; }
+}
+
+@media (max-width: 720px) {
+  .comic-stage { padding-top: 0; }
+  .reader-location { min-height: 48px; margin-inline: var(--s-page-gutter); }
+  .comic-reader { width: 100%; padding-bottom: 24px; }
+  .comic-after { margin-inline: var(--s-page-gutter); margin-top: 24px; padding-top: 20px; }
+}
+
+.comic-slide:has(> .comic-art-layer) { position: relative; }
+.comic-art-layer { display: none; }
+.comic-slide.is-painting > .comic-art-layer {
+  display: block; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(100cqw, 80cqh); height: auto; aspect-ratio: 4 / 5;
+  background: white; pointer-events: none;
+}
+.comic-track.is-animating { scroll-snap-type: none; }
+.comic-track.is-badge-stop { overflow-x: hidden; touch-action: pan-y pinch-zoom; }
+.comic-big .comic-track:has(.comic-art-layer) { width: min(100%, calc((100dvh - 136px) * .8)); margin-inline: auto; }
+.comic-book:not(.is-enhanced) .comic-track { display: block; aspect-ratio: auto; overflow: visible; }
+.comic-book:not(.is-enhanced) .comic-slide { height: auto; container-type: normal; }
+.comic-book:not(.is-enhanced) .comic-slide > img { width: 100%; max-width: 100%; max-height: none; }

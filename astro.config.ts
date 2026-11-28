@@ -14,6 +14,6 @@ export default defineConfig({
   output: 'static',
   trailingSlash: 'always',
   build: { format: 'directory' },
-  integrations: [sitemap(), vaultAssets(), modulePreload({ renderBlocking: ['/map/'] })],
+  integrations: [sitemap({ filter: (page) => !new URL(page).pathname.startsWith(`${config.basePath || ''}/comics/`) }), vaultAssets(), modulePreload({ renderBlocking: ['/map/'] })],
   vite: { server: { fs: { allow: ['.', vaultRoot] } } }
 });

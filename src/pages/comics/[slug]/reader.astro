@@ -1,0 +1,20 @@
+---
+import Shell from '../../../layouts/Shell.astro';
+import ComicReader from '../../../components/ComicReader.astro';
+import { comicCatalogue } from '../../../content/comics.ts';
+import { nextCatalogueWork, type ComicWork } from '../../../lib/comics.ts';
+export function getStaticPaths() {
+  return comicCatalogue.map((work, index) => ({ params: { slug: work.slug }, props: { work, next: nextCatalogueWork(comicCatalogue, index) } }));
+}
+interface Props { work: ComicWork; next: ComicWork | null }
+const { work, next } = Astro.props;
+---
+<!-- 작품 페이지와 같은 리더를 크게 보기로 열어 둔 채 시작한다. path를 작품 주소로 넘겨 canonical과 og:url이 작품 페이지를 가리키게 한다. -->
+<Shell noindex title={work.title} description={`TaeZ의 만화, ${work.title}.`} path={`/comics/${work.slug}/`} feedback={false}>
+  {/* 전용 주소는 크게 보기로 열고 닫으므로 표지 전환을 쓰지 않는다. 끝 장의 링크로 목록에 가도 화면 밖의 첫 장이 날아들지 않게 막는다. */}
+  <script slot="head" is:inline>
+    addEventListener('pagereveal', event => event.viewTransition?.skipTransition());
+    addEventListener('pageswap', event => event.viewTransition?.skipTransition());
+  </script>
+  <ComicReader work={work} next={next} startOpen />
+</Shell>

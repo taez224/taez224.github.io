@@ -340,8 +340,17 @@ test('home books use four columns on wide screens and two on phones without clip
       expect(link.href).toMatch(/^\/books\/#book-/);
       expect(link.label).toBeTruthy();
     }
+    if (width > 720) {
+      const development = (await page.locator('.home-development').boundingBox())!;
+      const comics = (await page.locator('.home-comic').boundingBox())!;
+      const books = (await page.locator('.home-books').boundingBox())!;
+      expect(comics.x).toBeCloseTo(development.x);
+      expect(comics.y).toBeGreaterThanOrEqual(development.y + development.height);
+      expect(comics.x + comics.width).toBeLessThanOrEqual(books.x);
+      continue;
+    }
     const order = await page.locator('.home-grid > section').evaluateAll((sections) => sections.map((el) => ({ name: el.className, top: el.getBoundingClientRect().top })));
-    if (width <= 720) expect([...order].sort((a, b) => a.top - b.top).map((item) => item.name)).toEqual(['home-articles', 'home-thoughts', 'home-development', 'home-books']);
+    expect([...order].sort((a, b) => a.top - b.top).map((item) => item.name)).toEqual(['home-articles', 'home-thoughts', 'home-development', 'home-books', 'home-comic']);
   }
 });
 

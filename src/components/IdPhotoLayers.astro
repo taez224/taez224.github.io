@@ -1,0 +1,74 @@
+---
+import { withBase } from '../lib/format.ts';
+interface Props { part: 'gaze' | 'badge' }
+const { part } = Astro.props;
+---
+{part === 'gaze' ? (
+<svg data-layer={part} class="comic-art-layer" viewBox="0 0 400 500" aria-hidden="true">
+<image data-src={withBase('/comics/id-photo/motion/gaze.webp')} width="400" height="500" />
+<g id="bubble-left" transform="translate(-21 0)">
+<path id="offscreen-bubble" d="M401 242 C400 233 389 229 376 230 C360 230 352 236 352 246 C352 257 363 263 377 263 C388 263 398 259 401 251 L416 248 Z" fill="#fffefb" stroke="#47382f" stroke-width="1.6" stroke-linejoin="round"/>
+<image data-src={withBase('/comics/id-photo/motion/bubble.webp')} x="362" y="236" width="32" height="21"/>
+</g>
+<g id="notice" fill="none" stroke="#46372c" stroke-width="2.2" stroke-linecap="round">
+<path d="M291 211l5-9 M295 218l11-7 M297 225l8-2"/>
+</g>
+</svg>
+) : (
+<svg data-layer={part} class="comic-art-layer" id="pan" viewBox="0 0 400 500" aria-hidden="true">
+<defs>
+<radialGradient id="soft">
+<stop offset=".67" stop-color="white"/>
+<stop offset="1" stop-color="white" stop-opacity="0"/>
+</radialGradient>
+<radialGradient id="wipe">
+<stop offset=".63" stop-color="white"/>
+<stop offset="1" stop-color="white" stop-opacity="0"/>
+</radialGradient>
+<mask id="case-reveal" maskUnits="userSpaceOnUse" x="-140" y="-210" width="700" height="860">
+<ellipse id="case-iris" cx="200" cy="236" rx="0" ry="0" fill="url(#wipe)"/>
+</mask>
+<filter id="feather" x="-50%" y="-50%" width="200%" height="200%">
+<feGaussianBlur stdDeviation="6"/>
+</filter>
+<mask id="edge" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="500">
+<rect x="79" y="111" width="245" height="232" rx="13" fill="white" filter="url(#feather)"/>
+</mask>
+<mask id="reveal" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="500">
+<ellipse id="iris" cx="200" cy="235" rx="75" ry="90" fill="url(#soft)"/>
+</mask>
+</defs>
+
+<g id="right">
+<image data-src={withBase('/comics/id-photo/motion/colleague.webp')} width="400" height="500"/>
+</g>
+<g id="gaze-cues">
+<path id="gaze-tip" d="M159 389.64l2 .79 M157.05 385.94l3.95 4.49-5.95.57" fill="none" stroke="#564333" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+<image data-src={withBase('/comics/id-photo/motion/shake.webp')} x="125" y="411" width="20" height="29"/>
+</g>
+<g id="detail" opacity="0">
+<g mask="url(#edge)">
+<image data-next-page width="400" height="500" mask="url(#reveal)"/>
+</g>
+</g>
+<g id="card-glass">
+<defs>
+<clipPath id="photo-window">
+<rect x="95" y="137" width="110" height="106" rx="3"/>
+</clipPath>
+</defs>
+<g clip-path="url(#photo-window)">
+<image data-src={withBase('/comics/id-photo/motion/portrait.webp')} width="300" height="375" preserveAspectRatio="none"/>
+<g id="reflection">
+<rect x="95" y="137" width="110" height="106" fill="#e2ddd4" opacity=".64"/>
+<path id="glints" d="M59 243 L165 137 H220 L114 243 Z M122 243 L228 137 H235 L129 243 Z" fill="#fffaf0" fill-opacity=".92"/>
+</g>
+</g>
+</g>
+<g id="finish" opacity="0">
+<g mask="url(#case-reveal)">
+<image data-src={withBase('/comics/id-photo/motion/portrait.webp')} transform="translate(200 265) scale(2.22) translate(-150 -205)" width="300" height="375" preserveAspectRatio="none"/>
+</g>
+</g>
+</svg>
+)}
